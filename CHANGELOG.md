@@ -12,6 +12,15 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [1.3.1] - 2026-05-07
+
+### Changed
+- README restructured: 'See it in action' section moved to top (before Install)
+- README: examples explicitly marked as 'real output - not fabricated'
+- README: added 'Without MCPs' table showing what you get at each setup level
+- README: Development Companion Mode clarified as session-scoped, with RESEARCH.md
+  as the restore mechanism in new sessions
+
 ## [1.3.0] - 2026-05-07
 
 ### Added

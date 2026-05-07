@@ -3,13 +3,40 @@
 **Research first. Build once.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-1.3.0-blue.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.3.1-blue.svg)](CHANGELOG.md)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-skill-orange.svg)](https://github.com/anthropics/claude-code)
 
 A Claude Code skill that scans 15-20 real GitHub repos, extracts pitfalls from actual Issues,
 and builds a battle-tested scaffold — before writing a single line of code.
 
 After scaffolding, enters **Development Companion Mode**: keeps searching and suggesting as you build.
+
+---
+
+## See it in action
+
+Real output from a TypeScript CLI project — not fabricated:
+
+- [`examples/typescript-cli/RESEARCH.md`](examples/typescript-cli/RESEARCH.md) — 17 repos analyzed, sources linked
+- [`examples/typescript-cli/PITFALLS.md`](examples/typescript-cli/PITFALLS.md) — 4 real pitfalls from GitHub Issues
+- [`examples/typescript-cli/ROADMAP.md`](examples/typescript-cli/ROADMAP.md) — 5-phase development plan
+
+This is what you get. If the quality here looks useful, the skill is worth trying.
+
+---
+
+## Without MCPs
+
+Genesis Architect works at three levels depending on your setup:
+
+| Setup | What you get |
+|-------|-------------|
+| No MCPs (default) | Web search only - finds public repos, shallower issue analysis |
+| GitHub MCP | Deep repo scan + real issue extraction (recommended) |
+| GitHub + Exa | Full research: repos + Reddit/HN/StackOverflow ecosystem context |
+
+The skill never blocks on a missing tool - it reports what it's using and continues.
+Web search alone still finds real repos and real pitfalls; it's slower and less deep.
 
 ---
 
@@ -71,7 +98,7 @@ Every project receives:
 
 ## Development Companion Mode
 
-After scaffolding, Genesis Architect stays active. Tell it what you're working on:
+After scaffolding, Genesis Architect stays active within the session. Tell it what you're working on:
 
 ```
 genesis help I need to add authentication
@@ -79,6 +106,8 @@ genesis research rate limiting patterns
 ```
 
 It searches the repos it already analyzed and returns grounded suggestions — not generic advice.
+
+**Session scope**: The companion remembers the research from Phases 2-4 within the current Claude Code session. In a new session, it reads `RESEARCH.md` from your project folder to restore context — this is why that file is a mandatory deliverable.
 
 ---
 

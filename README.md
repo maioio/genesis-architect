@@ -15,16 +15,8 @@ After scaffolding, enters **Development Companion Mode**: keeps searching and su
 
 ## Demo
 
-<!-- DEMO GIF -->
-<!-- After recording, upload to GitHub:
-     1. Open any Issue in this repo → drag the .gif file in → copy the URL
-     2. Replace the img src below with that URL
-     3. Delete this comment block -->
-
 <p align="center">
-  <img src="https://raw.githubusercontent.com/maioio/genesis-architect/main/assets/demo.gif"
-       alt="Genesis Architect demo — genesis init running"
-       width="860" />
+  <img src="assets/demo.gif" alt="Genesis Architect demo — genesis init running" width="860" />
 </p>
 
 > Full recording: `genesis init a Python CLI for log analysis` → 17 repos scanned → scaffold complete in under 3 minutes.

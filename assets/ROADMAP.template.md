@@ -1,0 +1,23 @@
+# Development Roadmap: {{PROJECT_NAME}}
+
+## Phase 1: Foundation (complete)
+{{PHASE_1_DESCRIPTION}}
+
+## Phase 2: {{PHASE_2_NAME}}
+{{PHASE_2_DESCRIPTION}}
+Estimated effort: {{PHASE_2_EFFORT}}
+
+## Phase 3: {{PHASE_3_NAME}}
+{{PHASE_3_DESCRIPTION}}
+Estimated effort: {{PHASE_3_EFFORT}}
+
+## Phase 4: {{PHASE_4_NAME}}
+{{PHASE_4_DESCRIPTION}}
+Estimated effort: {{PHASE_4_EFFORT}}
+
+## Phase 5: {{PHASE_5_NAME}}
+{{PHASE_5_DESCRIPTION}}
+Estimated effort: {{PHASE_5_EFFORT}}
+
+## Success Criteria
+{{SUCCESS_CRITERIA}}

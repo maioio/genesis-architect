@@ -1,0 +1,40 @@
+{
+  "version": "1.1.0",
+  "description": "Eval queries for Genesis Architect trigger rate testing",
+  "target_accuracy": 0.9,
+  "should_trigger": [
+    "genesis init a REST API in TypeScript",
+    "I want to build a CLI tool that converts CSV to JSON",
+    "scaffold a new Python project for web scraping",
+    "set up a project for a Telegram bot",
+    "start building a Chrome extension",
+    "create a tool that monitors GitHub repos for new releases",
+    "make a CLI for managing dotfiles",
+    "bootstrap a new Node.js microservice",
+    "I want to build a browser extension that blocks ads",
+    "new project: a Discord bot that plays music",
+    "בנה פרויקט לאוטומציה של אימיילים",
+    "צור פרויקט ל-CLI שמנהל קבצי config",
+    "התחל פרויקט חדש לשרת FastAPI",
+    "I want to create a tool for batch image processing",
+    "help me scaffold a React component library",
+    "I need to build a data pipeline from scratch",
+    "make me a project for a VS Code extension",
+    "start a new project: PDF to Markdown converter"
+  ],
+  "should_not_trigger": [
+    "how do I center a div in CSS",
+    "what is the difference between async and await",
+    "fix this bug in my Python code",
+    "explain what a closure is",
+    "review my pull request",
+    "help me write a commit message",
+    "what does this error mean: TypeError cannot read property",
+    "refactor this function to be more readable",
+    "add a test for this existing function",
+    "how do I deploy to Vercel",
+    "translate this code from Python to TypeScript",
+    "what is the time complexity of this algorithm",
+    "help me understand this regex pattern"
+  ]
+}

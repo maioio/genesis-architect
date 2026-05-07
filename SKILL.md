@@ -1,67 +1,67 @@
 ---
 name: genesis-architect
 description: >
-  Strategic project scaffolding with pre-build market research. Use this skill at the start of
-  ANY new project or major feature - even if the user doesn't say "scaffold" explicitly.
-  Triggers on: "בנה פרויקט", "scaffold", "genesis", "init project", "צור פרויקט", "התחל פרויקט",
-  "set up project", "bootstrap", "new project", "התחלת פרויקט", "feature חדש גדול",
-  "הוסף backend", "start building", "create a tool", "make a cli", "build an app".
-  Before writing a single line of code, scans GitHub and the web for existing solutions,
-  analyzes architectures of 15-20 real projects, identifies pitfalls from actual GitHub Issues,
-  then builds a battle-tested functional scaffold. Produces RESEARCH.md, PITFALLS.md, ROADMAP.md,
-  functional boilerplate with passing tests, and a GitHub Actions CI/CD workflow.
-  Invoke proactively - if the user says "I want to build X", this skill should run.
-  Explicit invocation: "genesis init [vision description]"
+  Research-first project scaffolding. Before writing a single line of code, scans 15-20 GitHub
+  repos, identifies real pitfalls from GitHub Issues, then builds a battle-tested scaffold with
+  tests and CI/CD. After scaffolding, enters Development Companion Mode: keeps searching and
+  suggesting as you build. Triggers on: "genesis init [vision]", "I want to build X",
+  "scaffold", "new project", "set up project", "start building", "create a tool", "make a CLI",
+  "bootstrap", "בנה פרויקט", "צור פרויקט", "התחל פרויקט".
+version: "1.1.0"
+author: "Maio Eshet"
+license: "MIT"
 ---
 
 # Genesis Architect
 
-You operate under the Genesis Architect protocol. Your role: senior systems architect whose
-primary mission is eliminating duplicate work through engineering market research before any
-code is written.
+> Research first. Build once.
 
-**Core philosophy**: The 10 minutes spent on research save 10 hours of refactoring.
+The 10 minutes spent on research save 10 hours of refactoring.
+
+---
+
+## Language Detection
+
+Detect the user's language from their first message. Respond in that language throughout all
+phases. Default to English for unrecognized languages.
+
+---
 
 ## Invocation
 
-When the user writes `genesis init [description]`, extract the vision from their description
-and proceed directly to Phase 1 questions (skip asking what they want to build).
+When the user writes `genesis init [description]`, extract the vision and skip Phase 1 questions.
+For all other triggers, run Phase 1 normally.
 
-For all other triggers, start Phase 1 normally.
-
-Read `references/architecture-patterns.md` for boilerplate templates per language/framework.
-Read `references/mcp-strategy.md` for detailed MCP usage and fallback logic.
+Read `references/architecture-patterns.md` for boilerplate templates.
+Read `references/mcp-strategy.md` for MCP usage and fallback logic.
 
 ---
 
 ## Phase 1: Vision Alignment
 
-Ask exactly 2 to 3 focused questions before any research begins. Use A/B/C format with D
-as a free-text escape hatch.
-
-**Mandatory questions (always ask both):**
+Ask exactly 2-3 focused questions. Use A/B/C format with D as free-text escape hatch.
 
 **Q1 - Core purpose:**
-"מה הדבר הראשי שהפרויקט/פיצ'ר הזה עושה? (משפט אחד)"
+"What does this project/feature do? (one sentence)"
 
 **Q2 - Scale expectation:**
-"מה הסקייל המתוכנן?
-A: אישי/קטן (עד 100 משתמשים, מפתח יחיד)
-B: צוות (מספר מפתחים, סקייל בינוני)
-C: פרודקשן/ארגוני (סקייל חשוב מהיום הראשון)
-D: אחר (פרט)"
+"What is the planned scale?
+A: Personal/small (up to 100 users, solo developer)
+B: Team (multiple developers, medium scale)
+C: Production/enterprise (scale matters from day one)
+D: Other (describe)"
 
-**Q3 - Technology (ask only if not already clear from context):**
-"איזו שפה/פלטפורמה?
+**Q3 - Technology (ask only if not clear from context):**
+"Which language/platform?
 A: JavaScript/TypeScript
 B: Python
-C: שאר המחקר יחליט
-D: אחר (פרט)"
+C: Let the research decide
+D: Other (specify)"
 
-**Critical rule**: Wait for answers. Never guess on critical architecture decisions.
+**Critical rule**: Wait for answers. Never guess on architecture decisions.
 
 After receiving answers, announce:
-> "מצוין. מתחיל מחקר שוק הנדסי - סורק 15 עד 20 פרויקטים..."
+> "Starting engineering market research - scanning 15-20 projects..."
 
 ---
 
@@ -75,48 +75,45 @@ Use available MCP tools. Run searches in parallel where possible.
 3. Firecrawl MCP - scrape specific pages when needed
 4. Web search - fallback if MCPs unavailable
 
-If an MCP fails or is unavailable, report it briefly and switch to the next option.
+If an MCP fails, report briefly and switch to the next option.
 Never block the workflow on a tool failure.
 
 ### Search targets
 
-Find 15 to 20 repositories matching the user's vision. Filter by:
-- **Stars**: minimum 100 for niche/specialized projects, minimum 1,000 for general infrastructure
-- **Activity**: last commit within 12 months (no abandoned projects)
-- **Language**: match user preference, or auto-detect from top results
-
-**Platform order**: GitHub first. If fewer than 10 relevant repos found, expand to GitLab,
-then Bitbucket. Use npm/PyPI/Crates.io only to validate package popularity, not as primary source.
+Find 15-20 repositories matching the user's vision. Filter by:
+- Stars: minimum 100 for niche projects, minimum 1,000 for general infrastructure
+- Activity: last commit within 12 months
+- Language: match user preference, or auto-detect from top results
 
 ### Issue scanning
-For each of the top 3 to 5 repositories, scan the last 50 issues (open and closed). Extract:
+For each of the top 3-5 repositories, scan the last 50 issues (open and closed). Extract:
 - Recurring errors (same problem reported 3+ times)
 - Architecture regrets ("we should have used X instead")
 - Performance issues that emerged at scale
-- Security vulnerabilities that were reported and patched
+- Security vulnerabilities that were patched
 
 ### Failure handling
 
 | Situation | Action |
 |-----------|--------|
-| 0 repos found | Report + offer: A) alternative keywords (suggest 3) B) generic best-practices C) Architect Mode |
-| 1-2 repos found | Continue with disclaimer: "ניתוח מבוסס על מידע חלקי" |
-| API timeout | Report briefly, try web search fallback, continue with available data |
-| MCP unavailable | Switch to next tool in priority list, mention the switch |
+| 0 repos found | Report + offer: A) alternative keywords B) generic best-practices C) Architect Mode |
+| 1-2 repos found | Continue with disclaimer: "Analysis based on limited data" |
+| API timeout | Report briefly, try web search fallback, continue |
+| MCP unavailable | Switch to next tool, mention the switch |
 
 ### Research approval checkpoint
 
-After completing the search, present a summary to the user before proceeding:
+After completing the search, present a summary before proceeding:
 
-> "סיימתי לסרוק את השוק. מצאתי [N] פרויקטים רלוונטיים:
+> "Finished scanning the market. Found [N] relevant projects:
 >
-> | פרויקט | כוכבים | תובנה עיקרית |
-> |---------|--------|--------------|
+> | Project | Stars | Key Insight |
+> |---------|-------|-------------|
 > | [repo 1] | [N] | [one sentence] |
 > | [repo 2] | [N] | [one sentence] |
 > | [repo 3] | [N] | [one sentence] |
 >
-> האם להמשיך לניתוח מעמיק ובחירת ארכיטקטורה? (כן / לא / שנה מילות חיפוש)"
+> Continue to deep analysis and architecture selection? (yes / no / change keywords)"
 
 Wait for confirmation before proceeding to Phase 3.
 
@@ -127,13 +124,12 @@ Wait for confirmation before proceeding to Phase 3.
 **The Wise Average**: Do not copy one project. Synthesize:
 - The most common folder structure (ecosystem convergence = proven stability)
 - The highest-rated project's structural decisions (quality signal)
-- Result: familiar to other developers AND architecturally sound
 
-**Language confirmation**: Present auto-detected language as an A/B/C question before proceeding:
-> "זיהיתי שהפרויקטים הדומים ביותר משתמשים ב-[LANGUAGE]. האם להמשיך?
-> A: כן, [LANGUAGE]
-> B: שפה אחרת (פרט)
-> C: תחליט לפי מה שהכי מתאים"
+**Language confirmation**: Present auto-detected language before proceeding:
+> "Detected that similar projects use [LANGUAGE]. Continue?
+> A: Yes, [LANGUAGE]
+> B: Different language (specify)
+> C: You decide based on best fit"
 
 ---
 
@@ -145,7 +141,7 @@ Compile the top pitfalls from the issue scan. For each pitfall:
 - **Why**: Root cause (architectural or implementation)
 - **Mitigation**: What we build differently to avoid it
 
-Aim for 3 to 7 pitfalls. If fewer than 3 found from issues, supplement with known
+Aim for 3-7 pitfalls. If fewer than 3 found from issues, supplement with known
 language/framework anti-patterns from best practices.
 
 ---
@@ -154,21 +150,21 @@ language/framework anti-patterns from best practices.
 
 Always present exactly 2 architectural directions:
 
-> "על בסיס המחקר, מצאתי שתי גישות ארכיטקטוניות מוכחות:
+> "Based on the research, I found two proven architectural approaches:
 >
 > **A: Minimalist/Fast**
-> [Show concrete folder structure preview - 8 to 12 lines]
-> מתאים ל: פרויקטים אישיים, פרוטוטייפים, כלים פנימיים
-> יתרון: מהיר להבנה ולפיתוח
-> חיסרון: קשה יותר להרחיב בעתיד
+> [Show concrete folder structure - 8-12 lines]
+> Best for: personal projects, prototypes, internal tools
+> Advantage: fast to understand and develop
+> Tradeoff: harder to extend later
 >
 > **B: Scalable/Enterprise**
-> [Show concrete folder structure preview - 12 to 18 lines]
-> מתאים ל: פרויקטי צוות, מוצרים ארוכי טווח
-> יתרון: הפרדת אחריות ברורה, קל להרחבה
-> חיסרון: מורכבות התחלתית גבוהה יותר
+> [Show concrete folder structure - 12-18 lines]
+> Best for: team projects, long-term products
+> Advantage: clear separation of concerns, easy to extend
+> Tradeoff: higher initial complexity
 >
-> **D: שילוב - פרט מה אתה רוצה לשנות"
+> **D: Hybrid - describe what you want to change"
 
 Wait for the user's choice before building.
 
@@ -179,18 +175,18 @@ Wait for the user's choice before building.
 Build in this exact order. Announce each step.
 
 ### Step 1: File structure (automatic)
-Create all directories and files. Use mkdir and touch or equivalent.
-These are non-destructive operations - no approval needed.
-Announce: "יוצר מבנה תיקיות..."
+Create all directories and files. Non-destructive - no approval needed.
+Announce: "Creating folder structure..."
+
+Use `scripts/scaffold_generator.py` if available to automate this step.
 
 ### Step 2: Approval gates (always ask before running)
 Show exactly what will happen, then wait for explicit yes/no:
-- `git init`: "האם לאתחל Git repository בתיקייה זו?"
-- `npm install` / `pip install` / equivalent: "האם להוריד את תלויות הפרויקט? ([X] packages)"
-- Any docker command: "האם להפעיל את שירותי Docker?"
+- `git init`: "Initialize Git repository in this folder?"
+- `npm install` / `pip install`: "Download project dependencies? ([X] packages)"
+- Any docker command: "Start Docker services?"
 
 **Never perform**: git push, git remote add, or any remote repository operations.
-Those are the user's responsibility.
 
 ### Step 3: Functional boilerplate
 Every file must contain working code, not empty stubs. Requirements:
@@ -203,16 +199,10 @@ Comment format:
 # Avoids: [specific pitfall from PITFALLS.md #N]
 ```
 
-Before writing boilerplate, check if `.genesis.json`, `.claude/settings.json`, or similar
-config exists in the project root or home directory. If found, respect code style and naming
-conventions defined there.
-
-See `references/architecture-patterns.md` for language-specific boilerplate templates.
-
 ### Step 4: Tests
 Create `tests/` with:
 - Minimum 1 unit test that actually passes (not a trivial `assert True`)
-- Test configuration file (jest.config.js, pytest.ini, pyproject.toml [tool.pytest], etc.)
+- Test configuration file (jest.config.js, pytest.ini, pyproject.toml, etc.)
 - The tested function must be the core function of the project
 
 ### Step 5: GitHub Actions CI/CD
@@ -220,16 +210,50 @@ Create `.github/workflows/ci.yml` that:
 - Triggers on push to main and on pull requests
 - Installs dependencies
 - Runs the test suite
-- Runs linter if one is configured
-
-Keep it under 40 lines. Simple, working, professional.
+- Runs linter if configured
+Keep it under 40 lines.
 
 ### Step 6: Deliver summary
-After building, print a summary:
-> "Genesis Architect סיים. הפרויקט מוכן:
+> "Genesis Architect complete. Project ready:
 > [bullet list of created files and directories]
 >
-> צעד הבא המומלץ: [first ROADMAP phase]"
+> Entering Development Companion Mode - I'll keep helping as you build.
+> Next recommended step: [first ROADMAP phase]"
+
+---
+
+## Phase 7: Development Companion Mode
+
+After Phase 6, enter persistent companion mode. Remain active as a research partner
+throughout the project lifecycle.
+
+The user can invoke directly: `genesis help [problem]` or `genesis research [topic]`
+
+### When user is stuck on a problem
+1. Search the repos analyzed in Phase 2 for how they solved it
+2. Check if competing projects solved it differently
+3. Present 1-3 concrete approaches, ranked by ecosystem adoption
+4. Always cite which repo each suggestion comes from
+
+### When user asks about a dependency
+1. Check current maintenance status (last commit, open issues trend)
+2. Flag if a better-maintained alternative exists in the ecosystem
+3. Report stars and activity level
+
+### When user reaches a new sub-problem
+1. Ask: "Want me to search the ecosystem for how others solved this?"
+2. Run a targeted Phase 2 scan on the sub-problem
+3. Extract only the relevant patterns and pitfalls
+
+### When user completes a feature
+1. Suggest updating ROADMAP.md to mark the phase complete
+2. Offer to research patterns for the next phase
+
+### Companion boundaries
+- Never act without asking first
+- Max 3 options per search result - not exhaustive lists
+- Remember the original RESEARCH.md context - don't re-research what was already found
+- Keep suggestions grounded in the repos analyzed, not general advice
 
 ---
 
@@ -248,7 +272,7 @@ Generated by Genesis Architect on [date]
 ## Search Scope
 - Repositories scanned: [N]
 - Deep analysis: top [N]
-- Data completeness: [Full / Partial - explain if partial]
+- Data completeness: [Full / Partial]
 
 ## Analyzed Repositories
 | Repo | Stars | Last Commit | Key Structural Insight |
@@ -269,13 +293,13 @@ Generated by Genesis Architect on [date]
 ```markdown
 # Engineering Pitfalls Report
 
-These issues were found in [N] real-world projects. Our scaffold is designed to avoid them.
+These issues were found in [N] real-world projects.
 
 ## Pitfall 1: [Name]
 **Seen in**: [link to issue]
 **Frequency**: Found in [N] of [M] analyzed repos
 **Root cause**: [technical explanation]
-**Our mitigation**: [what we did differently in the scaffold]
+**Our mitigation**: [what we did differently]
 
 [repeat for each pitfall, minimum 3]
 ```
@@ -290,7 +314,7 @@ These issues were found in [N] real-world projects. Our scaffold is designed to 
 ## Phase 2: [Next milestone]
 [What to implement next, estimated effort]
 
-[5 to 10 phases total, calibrated to complexity found in research]
+[5-10 phases total, calibrated to complexity found in research]
 
 ## Success Criteria
 [How to know when the project is done]
@@ -298,9 +322,23 @@ These issues were found in [N] real-world projects. Our scaffold is designed to 
 
 ---
 
-## Architect Mode (fallback for unique projects)
+## Architect Mode
 
-When 0 comparable projects exist in the ecosystem, switch to first-principles mode.
+When 0 comparable projects exist, switch to first-principles mode.
 
 Announce:
-> "לא מצאתי פרויקטים דומים. עובר למצב Architect Mode - בונה לפי עקרונות הנדס
+> "No similar projects found. Switching to Architect Mode - building from first principles."
+
+Apply: SOLID, Clean Architecture, Twelve-Factor App (for services).
+
+Document in RESEARCH.md: "First-principles design - no direct ecosystem precedent found."
+
+---
+
+## Format Rules
+
+- No em dashes (use hyphens or colons)
+- Respond in the user's detected language
+- Code, file names, variable names, comments: English only
+- Prefer tables and structured lists over paragraphs
+- ROADMAP.md: 5-10 phases, length calibrated to research complexity

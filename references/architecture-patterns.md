@@ -249,3 +249,126 @@ Use these patterns when writing boilerplate comments:
 # Architecture note: Async-first design throughout
 # Reason: 8/15 analyzed repos reported blocking I/O as the main bottleneck at scale
 ```
+
+---
+
+## Go - Minimalist
+
+```
+project/
+├── cmd/
+│   └── main.go           # Entry point
+├── internal/
+│   ├── core/
+│   │   └── core.go       # Core logic
+│   └── utils/
+│       └── utils.go
+├── tests/
+│   └── core_test.go
+├── .github/workflows/ci.yml
+├── go.mod
+├── .env.example
+├── RESEARCH.md
+├── PITFALLS.md
+└── ROADMAP.md
+```
+
+**Core template (core.go):**
+```go
+// Package core contains the main business logic.
+// Architecture note: no external dependencies here - pure domain logic.
+// Inspired by ecosystem research - avoids "fat main" pitfall (see PITFALLS.md #1)
+package core
+
+// Run executes the core logic.
+func Run() error {
+    // TODO: implement
+    return nil
+}
+```
+
+---
+
+## Go - Scalable
+
+```
+project/
+├── cmd/
+│   └── main.go
+├── internal/
+│   ├── domain/           # Business entities and rules
+│   ├── service/          # Use cases
+│   └── repository/       # External integrations
+├── pkg/
+│   └── config/
+│       └── config.go
+├── tests/
+│   ├── unit/
+│   └── integration/
+├── .github/workflows/ci.yml
+├── go.mod
+└── .env.example
+```
+
+---
+
+## Rust - Minimalist
+
+```
+project/
+├── src/
+│   ├── main.rs           # Entry point
+│   ├── core.rs           # Core logic
+│   └── utils.rs          # Shared utilities
+├── tests/
+│   └── integration_test.rs
+├── .github/workflows/ci.yml
+├── Cargo.toml
+├── .env.example
+├── RESEARCH.md
+├── PITFALLS.md
+└── ROADMAP.md
+```
+
+**Core template (core.rs):**
+```rust
+// Architecture note: pure functions only - no I/O side effects.
+// Inspired by ecosystem research - avoids tight coupling (see PITFALLS.md #1)
+
+pub fn run() -> Result<(), Box<dyn std::error::Error>> {
+    // TODO: implement core logic
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_run_succeeds() {
+        assert!(run().is_ok());
+    }
+}
+```
+
+---
+
+## Rust - Scalable
+
+```
+project/
+├── src/
+│   ├── main.rs
+│   ├── domain/           # Business entities (mod.rs + types)
+│   │   └── mod.rs
+│   ├── services/         # Use cases
+│   │   └── mod.rs
+│   ├── infrastructure/   # External: DB, APIs, filesystem
+│   │   └── mod.rs
+│   └── config.rs
+├── tests/
+│   └── integration_test.rs
+├── .github/workflows/ci.yml
+├── Cargo.toml
+└── .env.example
+```

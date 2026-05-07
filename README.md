@@ -1,110 +1,143 @@
 # Genesis Architect
 
-A Claude skill for **strategic project scaffolding with pre-build market research**.
+**Research first. Build once.**
 
-Before writing a single line of code, Genesis Architect scans GitHub and the web for 15–20 existing solutions, analyzes their architectures, identifies real pitfalls from GitHub Issues — then builds a battle-tested functional scaffold.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)](CHANGELOG.md)
+[![Claude Code](https://img.shields.io/badge/Claude%20Code-skill-orange.svg)](https://github.com/anthropics/claude-code)
 
-> The 10 minutes spent on research save 10 hours of refactoring.
+A Claude Code skill that scans 15-20 real GitHub repos, extracts pitfalls from actual Issues,
+and builds a battle-tested scaffold — before writing a single line of code.
 
----
-
-## What it does
-
-1. **Vision Alignment** — asks 2–3 focused questions to understand scope and scale
-2. **Deep Discovery** — scans 15–20 GitHub repos, reads issues, extracts pitfalls
-3. **Architecture Analysis** — synthesizes the "wise average" across the ecosystem
-4. **Pitfall Identification** — documents 3–7 real issues with mitigations
-5. **Interactive Choice** — presents Minimalist vs. Scalable architecture options
-6. **Genesis Build** — creates a complete, working scaffold with tests and CI/CD
+After scaffolding, enters **Development Companion Mode**: keeps searching and suggesting as you build.
 
 ---
 
-## Deliverables
-
-Every project gets:
-
-- `RESEARCH.md` — full market research report with analyzed repos and sources
-- `PITFALLS.md` — real pitfalls from GitHub Issues with mitigations built into the scaffold
-- `ROADMAP.md` — 5–10 phase development roadmap
-- Functional boilerplate (not empty stubs) with engineering decision comments
-- Passing unit tests
-- GitHub Actions CI/CD workflow
-
----
-
-## Installation
-
-### In Claude Code (VS Code)
+## Install
 
 ```bash
-npx skills add https://github.com/maio-eshet/genesis-architect
+npx skills add https://github.com/maioio/genesis-architect
 ```
-
-### Manual
-
-Copy the `genesis-architect/` folder into your `~/.claude/skills/` directory.
 
 ---
 
 ## Usage
 
-### Explicit invocation
-
+**Explicit invocation:**
 ```
-genesis init [vision description]
-```
-
-Example:
-```
-genesis init a Chrome extension that downloads Hebrew subtitles for anime
+genesis init a REST API in TypeScript
+genesis init a Chrome extension that does X
+genesis init a Python CLI for batch image processing
 ```
 
-### Natural language triggers
-
-Genesis Architect also activates on phrases like:
-- "I want to build X"
-- "scaffold a new project"
-- "create a tool that..."
-- "start building..."
-- "set up a project for..."
+**Natural triggers:**
+```
+I want to build a Telegram bot
+scaffold a new project for web scraping
+start building a VS Code extension
+```
 
 ---
 
-## Tool support
+## What you get
 
-Genesis Architect uses MCP tools in priority order:
+Every project receives:
 
-| Priority | Tool | Purpose |
-|----------|------|---------|
-| 1 | GitHub MCP | Deep repo analysis, issue scanning |
-| 2 | Exa MCP | Broad web search (Reddit, HN, StackOverflow) |
-| 3 | Firecrawl MCP | Scrape specific pages |
-| 4 | Web search | General fallback |
-
-All tools are optional — the skill degrades gracefully if any are unavailable.
+| File | Contents |
+|------|----------|
+| `RESEARCH.md` | Market analysis of 15-20 real repos, sources linked |
+| `PITFALLS.md` | 3-7 real pitfalls from GitHub Issues with mitigations |
+| `ROADMAP.md` | 5-10 phase development roadmap |
+| `src/` | Functional boilerplate (not empty stubs) |
+| `tests/` | Passing unit tests for core logic |
+| `.github/workflows/ci.yml` | GitHub Actions CI/CD |
 
 ---
 
-## File structure
+## The 7 phases
+
+| Phase | What happens |
+|-------|-------------|
+| 1. Vision Alignment | 2-3 focused questions about scope and scale |
+| 2. Deep Discovery | Scans 15-20 repos, reads last 50 issues each |
+| 3. Architecture Analysis | Synthesizes the "wise average" across the ecosystem |
+| 4. Pitfall Identification | Extracts recurring failures with root causes |
+| 5. Interactive Choice | Minimalist vs. Scalable architecture options |
+| 6. Genesis Build | Creates scaffold with tests and CI/CD |
+| 7. Development Companion | Keeps searching and suggesting as you build |
+
+---
+
+## Development Companion Mode
+
+After scaffolding, Genesis Architect stays active. Tell it what you're working on:
 
 ```
-genesis-architect/
-├── SKILL.md                        # Main skill definition (305 lines)
-└── references/
-    ├── mcp-strategy.md             # MCP usage and fallback logic
-    └── architecture-patterns.md   # Boilerplate templates per language
+genesis help I need to add authentication
+genesis research rate limiting patterns
 ```
+
+It searches the repos it already analyzed and returns grounded suggestions — not generic advice.
 
 ---
 
 ## Languages supported
 
-- JavaScript / TypeScript (Minimalist and Scalable tiers)
-- Python (Minimalist and Scalable tiers)
-- Auto-detect from ecosystem research
+Auto-detected from research. Built-in templates for:
+- TypeScript / JavaScript
+- Python
+- Go
+- Rust
 
 ---
 
+## MCP tool chain
+
+| Priority | Tool | Purpose |
+|----------|------|---------|
+| 1 | GitHub MCP | Repo analysis, issue scanning |
+| 2 | Exa MCP | Reddit, HN, StackOverflow |
+| 3 | Firecrawl MCP | Targeted page scraping |
+| 4 | Web search | Fallback |
+
+All tools optional — skill degrades gracefully.
+
+---
+
+## Project structure
+
+```
+genesis-architect/
+├── SKILL.md                        # Skill definition (344 lines)
+├── plugin.json                     # Manifest for skill marketplaces
+├── scripts/
+│   ├── scaffold_generator.py       # Creates project structure
+│   ├── research_validator.py       # Validates RESEARCH.md completeness
+│   └── eval_runner.py              # Measures trigger rate
+├── evals/
+│   ├── test_queries.json           # 31 trigger/no-trigger test cases
+│   └── README.md                   # How to run evals
+├── examples/
+│   └── typescript-cli/             # Real output example
+│       ├── RESEARCH.md
+│       ├── PITFALLS.md
+│       └── ROADMAP.md
+├── assets/
+│   ├── RESEARCH.template.md
+│   ├── PITFALLS.template.md
+│   └── ROADMAP.template.md
+├── references/
+│   ├── architecture-patterns.md    # Boilerplate per language/tier
+│   └── mcp-strategy.md             # MCP usage and fallback logic
+└── CLAUDE.md                       # Claude Code project instructions
+```
+
+---
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) to add language templates or improve the workflow.
+
 ## License
 
-MIT
+[MIT](LICENSE) - Maio Eshet

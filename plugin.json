@@ -1,0 +1,27 @@
+{
+  "name": "genesis-architect",
+  "version": "1.1.0",
+  "description": "Research first. Build once.",
+  "longDescription": "Before writing a single line of code, Genesis Architect scans 15-20 GitHub repos, identifies real pitfalls from Issues, then builds a battle-tested scaffold with tests and CI/CD. After scaffolding, enters Development Companion Mode and keeps helping as you build.",
+  "author": "Maio Eshet",
+  "email": "maio.eshet@gmail.com",
+  "homepage": "https://github.com/maioio/genesis-architect",
+  "repository": "https://github.com/maioio/genesis-architect",
+  "license": "MIT",
+  "skills": ["genesis-architect"],
+  "keywords": ["scaffold", "architecture", "research", "boilerplate", "project-setup", "market-research", "pitfalls", "ci-cd"],
+  "languages": ["all"],
+  "triggers": [
+    "genesis init",
+    "I want to build",
+    "scaffold",
+    "new project",
+    "set up project",
+    "start building",
+    "create a tool",
+    "make a CLI",
+    "bootstrap"
+  ],
+  "minClaudeCodeVersion": "1.0.0",
+  "tier": "POWERFUL"
+}

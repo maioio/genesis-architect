@@ -3,7 +3,7 @@
 **Research first. Build once.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-1.4.0-blue.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.5.0-blue.svg)](CHANGELOG.md)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-skill-orange.svg)](https://github.com/anthropics/claude-code)
 
 A Claude Code skill that scans 15-20 real GitHub repos, extracts pitfalls from actual Issues,
@@ -55,6 +55,9 @@ git clone https://github.com/maioio/genesis-architect ~/.claude/skills/genesis-a
 genesis init a REST API in TypeScript
 genesis init a Chrome extension that does X
 genesis init a Python CLI for batch image processing
+genesis init --from-prd PRD.md          # ← from a product spec
+genesis init --from-team-config          # ← restore teammate's research
+genesis audit ./my-existing-project      # ← audit existing code
 ```
 
 **Natural triggers:**

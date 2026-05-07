@@ -9,7 +9,25 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+
 ---
+
+## [1.2.0] - 2026-05-07
+
+### Added
+- **Phase 0 - Environment Probe**: before any research, detects OS, Python version, and
+  package manager. Context is used in Phase 3 (OS-specific pitfalls) and Phase 6 (build backend)
+- **Windows auto-pitfall check**: if OS is Windows, Unicode/encoding risks and path separator
+  issues are automatically added to the pitfall watchlist in Phase 3
+- **Mandatory smoke test (Phase 6 Step 5.5)**: entrypoint or test suite must exit 0 before
+  the skill declares "Genesis Architect complete"
+- **FEEDBACK.md**: field feedback from two real project runs (batch-rename, dev-log)
+
+### Changed
+- Phase 2 approval checkpoint and Phase 5 A/B choice merged into a single message - one
+  confirmation instead of two
+- Phase 0 runs even when `genesis init` skips Phase 1
+- Version bumped to 1.2.0 in SKILL.md, plugin.json
 
 ## [1.1.0] - 2026-05-07
 

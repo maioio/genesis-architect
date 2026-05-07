@@ -7,7 +7,7 @@ description: >
   suggesting as you build. Triggers on: "genesis init [vision]", "I want to build X",
   "scaffold", "new project", "set up project", "start building", "create a tool", "make a CLI",
   "bootstrap", "בנה פרויקט", "צור פרויקט", "התחל פרויקט".
-version: "1.1.0"
+version: "1.2.0"
 author: "Maio Eshet"
 license: "MIT"
 ---
@@ -30,10 +30,25 @@ phases. Default to English for unrecognized languages.
 ## Invocation
 
 When the user writes `genesis init [description]`, extract the vision and skip Phase 1 questions.
-For all other triggers, run Phase 1 normally.
+Phase 0 always runs regardless of invocation method.
 
 Read `references/architecture-patterns.md` for boilerplate templates.
 Read `references/mcp-strategy.md` for MCP usage and fallback logic.
+
+---
+
+## Phase 0: Environment Probe
+
+Before any research, silently detect the user's environment:
+- **OS**: Windows / macOS / Linux
+- **Python version** (if relevant): `python --version` or `python3 --version`
+- **Package manager**: detect `uv`, `pip`, `npm`, `pnpm`, or `yarn` based on project type
+
+Store these as context. Reference them in:
+- Phase 3: flag OS-specific pitfalls automatically
+- Phase 6: choose correct build backend and install commands
+
+If detection fails, ask once: "What OS and Python version are you on?"
 
 ---
 
@@ -101,22 +116,6 @@ For each of the top 3-5 repositories, scan the last 50 issues (open and closed).
 | API timeout | Report briefly, try web search fallback, continue |
 | MCP unavailable | Switch to next tool, mention the switch |
 
-### Research approval checkpoint
-
-After completing the search, present a summary before proceeding:
-
-> "Finished scanning the market. Found [N] relevant projects:
->
-> | Project | Stars | Key Insight |
-> |---------|-------|-------------|
-> | [repo 1] | [N] | [one sentence] |
-> | [repo 2] | [N] | [one sentence] |
-> | [repo 3] | [N] | [one sentence] |
->
-> Continue to deep analysis and architecture selection? (yes / no / change keywords)"
-
-Wait for confirmation before proceeding to Phase 3.
-
 ---
 
 ## Phase 3: Architecture Analysis
@@ -130,6 +129,11 @@ Wait for confirmation before proceeding to Phase 3.
 > A: Yes, [LANGUAGE]
 > B: Different language (specify)
 > C: You decide based on best fit"
+
+**Windows check**: If OS is Windows (from Phase 0), automatically add to the pitfall watchlist:
+- Unicode/encoding issues in CLI output tools (rich, click, curses)
+- Path separator differences (`\` vs `/`)
+- Filesystem-illegal characters more restrictive on Windows (`:`, `*`, `?`, `"`)
 
 ---
 
@@ -148,9 +152,16 @@ language/framework anti-patterns from best practices.
 
 ## Phase 5: Interactive Choice
 
-Always present exactly 2 architectural directions:
+Present the research summary and architectural options in a single message.
+The user confirms once and the build begins.
 
-> "Based on the research, I found two proven architectural approaches:
+> "Finished scanning the market. Found [N] relevant projects:
+>
+> | Project | Stars | Key Insight |
+> |---------|-------|-------------|
+> | [repo 1] | [N] | [one sentence] |
+>
+> Based on the research, two proven architectural approaches:
 >
 > **A: Minimalist/Fast**
 > [Show concrete folder structure - 8-12 lines]
@@ -166,7 +177,7 @@ Always present exactly 2 architectural directions:
 >
 > **D: Hybrid - describe what you want to change"
 
-Wait for the user's choice before building.
+Wait for the user's A/B/D choice before building.
 
 ---
 
@@ -213,6 +224,11 @@ Create `.github/workflows/ci.yml` that:
 - Runs linter if configured
 Keep it under 40 lines.
 
+### Step 5.5: Smoke test (mandatory)
+Before declaring complete, run `[entrypoint] --help` or `[test command]`.
+Confirm exit code 0. If it fails, fix the issue before proceeding.
+Never announce "Genesis Architect complete" on a broken scaffold.
+
 ### Step 6: Deliver summary
 > "Genesis Architect complete. Project ready:
 > [bullet list of created files and directories]
@@ -224,8 +240,7 @@ Keep it under 40 lines.
 
 ## Phase 7: Development Companion Mode
 
-After Phase 6, enter persistent companion mode. Remain active as a research partner
-throughout the project lifecycle.
+After Phase 6, enter companion mode. Remain active as a research partner.
 
 The user can invoke directly: `genesis help [problem]` or `genesis research [topic]`
 

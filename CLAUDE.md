@@ -64,4 +64,4 @@ Follow the existing JS/TS and Python patterns exactly.
 This project uses Semantic Versioning:
 - Patch (1.0.x): wording fixes, minor template corrections
 - Minor (1.x.0): new language templates, new MCP strategies
-- Major (x.0.0): changes to the 7-phase workflow structure
+- Major (x.0.0): changes to the 7-phase workflow structure (now 8 phases with Phase 0)

@@ -213,8 +213,7 @@ jobs:
         run: "TEST_COMMAND"  # e.g. npm test | pytest | cargo test
 
       - name: Lint
-        run: [LINT_COMMAND]
-        # npm run lint | ruff check . | cargo clippy
+        run: "LINT_COMMAND"  # e.g. npm run lint | ruff check . | cargo clippy
         continue-on-error: true
 ```
 

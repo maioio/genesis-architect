@@ -16,7 +16,7 @@ After scaffolding, enters **Development Companion Mode**: keeps searching and su
 ## Install
 
 ```bash
-npx skills add https://github.com/maioio/genesis-architect
+git clone https://github.com/maioio/genesis-architect ~/.claude/skills/genesis-architect
 ```
 
 ---

@@ -1,0 +1,37 @@
+name: Feature Request
+description: Suggest an improvement or new capability
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Got an idea for Genesis Architect? Describe it below.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      placeholder: "When building Go projects, there are no boilerplate templates so the skill falls back to generic output..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      placeholder: "Add a Go Minimalist and Scalable template to references/architecture-patterns.md..."
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Which area does this affect?
+      options:
+        - SKILL.md - workflow logic
+        - references/architecture-patterns.md - language templates
+        - references/mcp-strategy.md - tool strategy
+        - README / documentation
+        - New file / new concept
+    validations:
+      required: true

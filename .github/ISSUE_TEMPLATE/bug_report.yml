@@ -1,0 +1,60 @@
+name: Bug Report
+description: Something in the skill is not working correctly
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug. Please fill out the fields below.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did the skill do that was wrong?
+      placeholder: "The skill generated an empty RESEARCH.md even though GitHub MCP was available..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+      placeholder: "I expected to see a populated RESEARCH.md with at least 5 repos..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: invocation
+    attributes:
+      label: How did you invoke the skill?
+      placeholder: "genesis init a REST API in TypeScript"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: phase
+    attributes:
+      label: Which phase failed?
+      options:
+        - Phase 1 - Vision Alignment
+        - Phase 2 - Deep Discovery
+        - Phase 3 - Architecture Analysis
+        - Phase 4 - Pitfall Identification
+        - Phase 5 - Interactive Choice
+        - Phase 6 - Genesis Build
+        - Not sure
+    validations:
+      required: true
+
+  - type: dropdown
+    id: tools
+    attributes:
+      label: Which MCP tools were available?
+      multiple: true
+      options:
+        - GitHub MCP
+        - Exa MCP
+        - Firecrawl MCP
+        - Web search only
+        - None / not sure

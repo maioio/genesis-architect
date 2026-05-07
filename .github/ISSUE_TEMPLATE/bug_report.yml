@@ -43,6 +43,7 @@ body:
         - Phase 4 - Pitfall Identification
         - Phase 5 - Interactive Choice
         - Phase 6 - Genesis Build
+        - Phase 7 - Development Companion Mode
         - Not sure
     validations:
       required: true

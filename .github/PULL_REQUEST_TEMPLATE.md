@@ -19,7 +19,7 @@ genesis init [what you tested with]
 
 ## Checklist
 
-- [ ] All user-facing text is in Hebrew
+- [ ] User-facing text is language-agnostic (skill auto-detects and responds in the user's language)
 - [ ] All code, filenames, and comments are in English
 - [ ] No em dashes used (hyphens or colons only)
 - [ ] SKILL.md stays under 400 lines

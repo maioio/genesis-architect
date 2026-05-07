@@ -4,7 +4,7 @@ Thank you for helping improve Genesis Architect.
 
 ## What to contribute
 
-- **New language templates** — add boilerplate for Rust, Go, Java, etc. in `references/architecture-patterns.md`
+- **New language templates** — Go and Rust are already implemented; add boilerplate for Java, C#, Swift, or other languages in `references/architecture-patterns.md`
 - **Better MCP strategies** — improve tool usage in `references/mcp-strategy.md`
 - **Workflow improvements** — refine phases in `SKILL.md`
 - **Bug reports** — open an issue with the template
@@ -40,7 +40,7 @@ Verify that:
 
 ## Style guide
 
-- All user-facing text in the skill: Hebrew
+- All user-facing text in the skill: auto-detect the user's language and respond in kind (language-agnostic since v1.1.0)
 - All code, file names, variable names, comments: English
 - No em dashes — use hyphens or colons
 - Keep SKILL.md under 400 lines

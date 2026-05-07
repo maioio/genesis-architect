@@ -17,13 +17,14 @@ references/
 Genesis Architect triggers on natural language like "I want to build X" or via
 the explicit command `genesis init [vision]`.
 
-It runs 6 phases:
+It runs 7 phases:
 1. Vision Alignment - 2-3 focused questions
 2. Deep Discovery - scan 15-20 GitHub repos
 3. Architecture Analysis - synthesize the "wise average"
 4. Pitfall Identification - extract from GitHub Issues
 5. Interactive Choice - Minimalist vs Scalable
 6. Genesis Build - create scaffold with tests and CI/CD
+7. Development Companion Mode - stays active, keeps searching and suggesting
 
 ## Development workflow
 
@@ -37,7 +38,7 @@ When working on this skill:
 
 ## Key constraints (enforced in SKILL.md)
 
-- User-facing communication: Hebrew only
+- User-facing communication: Auto-detect user language and respond in kind (language-agnostic since v1.1.0)
 - Code, filenames, comments: English only
 - No em dashes anywhere
 - SKILL.md must stay under 400 lines
@@ -63,4 +64,4 @@ Follow the existing JS/TS and Python patterns exactly.
 This project uses Semantic Versioning:
 - Patch (1.0.x): wording fixes, minor template corrections
 - Minor (1.x.0): new language templates, new MCP strategies
-- Major (x.0.0): changes to the 6-phase workflow structure
+- Major (x.0.0): changes to the 7-phase workflow structure

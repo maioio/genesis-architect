@@ -81,7 +81,7 @@ STRUCTURES = {
             "cmd/main.go",
             "internal/core/core.go",
             "internal/utils/utils.go",
-            "tests/core_test.go",
+            "internal/core/core_test.go",
             ".github/workflows/ci.yml",
             ".env.example",
             "go.mod",

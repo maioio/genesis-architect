@@ -206,12 +206,11 @@ jobs:
         run: echo "Configure for your language above"
 
       - name: Install dependencies
-        run: [INSTALL_COMMAND]
+        run: "INSTALL_COMMAND"  # e.g. npm ci | pip install -r requirements.txt | go mod download
         # npm ci | pip install -e ".[dev]" | cargo build
 
       - name: Run tests
-        run: [TEST_COMMAND]
-        # npm test | pytest | cargo test
+        run: "TEST_COMMAND"  # e.g. npm test | pytest | cargo test
 
       - name: Lint
         run: [LINT_COMMAND]
@@ -264,7 +263,7 @@ project/
 │   └── utils/
 │       └── utils.go
 ├── tests/
-│   └── core_test.go
+│   └── core_test.go  # or internal/core/core_test.go for larger projects
 ├── .github/workflows/ci.yml
 ├── go.mod
 ├── .env.example

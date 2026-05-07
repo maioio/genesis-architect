@@ -7,6 +7,10 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [Unreleased]
+
+---
+
 ## [1.1.0] - 2026-05-07
 
 ### Added
@@ -31,6 +35,10 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 - Phase 2 search approval checkpoint improved with clearer table format
 - Phase 6 now references `scaffold_generator.py` when available
 - README completely restructured with phase table, file structure, and install one-liner
+
+---
+
+## [Unreleased]
 
 ---
 

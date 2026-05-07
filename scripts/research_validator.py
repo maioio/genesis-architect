@@ -3,6 +3,7 @@
 research_validator.py - Genesis Architect
 Validates that a generated RESEARCH.md is complete and well-formed.
 Exits with code 0 if valid, code 1 if issues found.
+Requires: Python 3.9+ (uses list[str] type hints)
 
 Usage:
   python scripts/research_validator.py RESEARCH.md

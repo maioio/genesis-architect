@@ -3,7 +3,7 @@
 **Research first. Build once.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-1.3.1-blue.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.4.0-blue.svg)](CHANGELOG.md)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-skill-orange.svg)](https://github.com/anthropics/claude-code)
 
 A Claude Code skill that scans 15-20 real GitHub repos, extracts pitfalls from actual Issues,
@@ -138,7 +138,7 @@ All tools optional — skill degrades gracefully.
 
 ```
 genesis-architect/
-├── SKILL.md                        # Skill definition (390 lines)
+├── SKILL.md                        # Skill definition (374 lines)
 ├── plugin.json                     # Manifest for skill marketplaces
 ├── scripts/
 │   ├── scaffold_generator.py       # Creates project structure

@@ -3,7 +3,7 @@
 **Research first. Build once.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-1.2.1-blue.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.3.0-blue.svg)](CHANGELOG.md)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-skill-orange.svg)](https://github.com/anthropics/claude-code)
 
 A Claude Code skill that scans 15-20 real GitHub repos, extracts pitfalls from actual Issues,
@@ -54,10 +54,11 @@ Every project receives:
 
 ---
 
-## The 7 phases
+## The 8 phases
 
 | Phase | What happens |
 |-------|-------------|
+| 0. Environment Probe | Detects OS, Python version, package manager, PATH |
 | 1. Vision Alignment | 2-3 focused questions about scope and scale |
 | 2. Deep Discovery | Scans 15-20 repos, reads last 50 issues each |
 | 3. Architecture Analysis | Synthesizes the "wise average" across the ecosystem |
@@ -108,7 +109,7 @@ All tools optional — skill degrades gracefully.
 
 ```
 genesis-architect/
-├── SKILL.md                        # Skill definition (374 lines)
+├── SKILL.md                        # Skill definition (390 lines)
 ├── plugin.json                     # Manifest for skill marketplaces
 ├── scripts/
 │   ├── scaffold_generator.py       # Creates project structure
@@ -129,6 +130,7 @@ genesis-architect/
 ├── references/
 │   ├── architecture-patterns.md    # Boilerplate per language/tier
 │   └── mcp-strategy.md             # MCP usage and fallback logic
+├── FEEDBACK.md                     # Field feedback from real project runs
 └── CLAUDE.md                       # Claude Code project instructions
 ```
 

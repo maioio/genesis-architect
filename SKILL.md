@@ -7,7 +7,7 @@ description: >
   suggesting as you build. Triggers on: "genesis init [vision]", "I want to build X",
   "scaffold", "new project", "set up project", "start building", "create a tool", "make a CLI",
   "bootstrap", "בנה פרויקט", "צור פרויקט", "התחל פרויקט".
-version: "1.2.1"
+version: "1.3.0"
 author: "Maio Eshet"
 license: "MIT"
 ---
@@ -49,9 +49,12 @@ Store these as context. Reference them in:
 - Phase 6: choose correct build backend and install commands
 
 **Windows PATH check**: On Windows, detect if the Python Scripts folder is on PATH.
-Run `python -m pip --version` - if `pip` alone fails but `python -m pip` works, note this.
-After any `pip install -e .`, verify the installed command is accessible by running it.
-If it fails with "not recognized", provide the exact `$env:PATH +=` fix command.
+Run `python -c "import sysconfig; print(sysconfig.get_path('scripts'))"` to get the exact Scripts path.
+Detect shell: if `$PSVersionTable` is accessible = PowerShell; otherwise = CMD.
+After any `pip install -e .`, run the installed command immediately to verify it works.
+If it fails with "not recognized", provide both:
+- Session fix: `$env:PATH += ";[Scripts path]"` (PowerShell) or `set PATH=%PATH%;[Scripts path]` (CMD)
+- Permanent fix: `[Environment]::SetEnvironmentVariable("PATH", $env:PATH + ";[Scripts path]", "User")`
 
 If detection fails, ask once: "What OS and Python version are you on?"
 
@@ -180,9 +183,14 @@ The user confirms once and the build begins.
 > Advantage: clear separation of concerns, easy to extend
 > Tradeoff: higher initial complexity
 >
-> **D: Hybrid - describe what you want to change"
+> **C: Let research decide** - I pick the language with the most star-weighted representation
+> **D: Hybrid** - describe what you want to change
 
-Wait for the user's A/B/D choice before building.
+If user picks D: ask "Which base (A or B) do you prefer? What would you change?"
+Present the modified structure and confirm before building.
+If user picks C on language: choose the language used by the highest-starred repos. State the reasoning.
+
+Wait for the user's A/B/C/D choice before building.
 
 ---
 
@@ -239,9 +247,13 @@ Create `.github/workflows/ci.yml` that:
 Keep it under 40 lines.
 
 ### Step 5.5: Smoke test (mandatory)
-Before declaring complete, run `[entrypoint] --help` or `[test command]`.
-Confirm exit code 0. If it fails, fix the issue before proceeding.
-Never announce "Genesis Architect complete" on a broken scaffold.
+Determine the entrypoint:
+- Python: read `[project.scripts]` in `pyproject.toml`
+- Node: read `bin` field in `package.json`
+- Go/Rust: the compiled binary name from the project name
+Run `[entrypoint] --help` or `[test command]` and confirm exit code 0.
+If no CLI entrypoint exists, run `pytest` / `npm test` / `cargo test` / `go test ./...`.
+If it fails, fix before proceeding. Never announce "Genesis Architect complete" on a broken scaffold.
 
 ### Step 6: Deliver summary
 > "Genesis Architect complete. Project ready:
@@ -277,6 +289,10 @@ The user can invoke directly: `genesis help [problem]` or `genesis research [top
 ### When user completes a feature
 1. Suggest updating ROADMAP.md to mark the phase complete
 2. Offer to research patterns for the next phase
+
+### When invoked without prior research context
+If no Phase 2 data exists in the current session, read `RESEARCH.md` from the working directory.
+If not found, ask: "I don't have the original research context. Want me to run a targeted scan, or describe the problem?"
 
 ### Companion boundaries
 - Never act without asking first

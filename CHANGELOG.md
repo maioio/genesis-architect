@@ -12,6 +12,26 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [1.3.0] - 2026-05-07
+
+### Added
+- Phase 5: option C (let research decide language by star-weighted repo count)
+- Phase 5: option D now has defined flow (ask base + changes, confirm before building)
+- Phase 7: RESEARCH.md fallback when companion mode invoked in new session without prior context
+- Phase 6 Step 5.5: entrypoint auto-detected from pyproject.toml / package.json / project name
+- Phase 0: Scripts path detected via sysconfig, shell detected (PowerShell vs CMD), both PATH fix commands provided
+- plugin.json: added Hebrew triggers to match SKILL.md
+
+### Fixed
+- CLAUDE.md: updated phase count from 7 to 8, removed stale "checkpoint between Phase 2 and 3" rule
+- README.md: updated phase table to include Phase 0, added FEEDBACK.md to project structure
+- CONTRIBUTING.md: added Phase 0 and smoke test to contributor verification checklist
+- research_validator.py: header row was counted as a data row (inflated repo count by 1)
+- research_validator.py: URL regex now strips trailing punctuation
+- scaffold_generator.py: tier preserved when falling back to default language
+- scaffold_generator.py: makedirs called before file loop as defensive measure
+- eval_runner.py: path resolution uses abspath to fix CWD-dependent failures
+
 ## [1.2.1] - 2026-05-07
 
 ### Fixed

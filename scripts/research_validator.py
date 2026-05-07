@@ -51,7 +51,7 @@ def validate(path: str) -> list[str]:
         )
 
     # Check for at least MIN_SOURCES links
-    links = re.findall(r"https?://\S+", content)
+    links = re.findall(r"https?://[^\s,)\]>"']+", content)
     if len(links) < MIN_SOURCES:
         issues.append(f"Too few source links: found {len(links)}, minimum is {MIN_SOURCES}")
 

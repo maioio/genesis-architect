@@ -16,7 +16,7 @@ import os
 import argparse
 
 
-EVAL_FILE = os.path.join(os.path.dirname(__file__), "..", "evals", "test_queries.json")
+EVAL_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "evals", "test_queries.json")
 
 
 def load_queries() -> dict:

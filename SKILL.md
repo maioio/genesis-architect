@@ -7,7 +7,7 @@ description: >
   suggesting as you build. Triggers on: "genesis init [vision]", "I want to build X",
   "scaffold", "new project", "set up project", "start building", "create a tool", "make a CLI",
   "bootstrap", "בנה פרויקט", "צור פרויקט", "התחל פרויקט".
-version: "1.2.0"
+version: "1.2.1"
 author: "Maio Eshet"
 license: "MIT"
 ---
@@ -47,6 +47,11 @@ Before any research, silently detect the user's environment:
 Store these as context. Reference them in:
 - Phase 3: flag OS-specific pitfalls automatically
 - Phase 6: choose correct build backend and install commands
+
+**Windows PATH check**: On Windows, detect if the Python Scripts folder is on PATH.
+Run `python -m pip --version` - if `pip` alone fails but `python -m pip` works, note this.
+After any `pip install -e .`, verify the installed command is accessible by running it.
+If it fails with "not recognized", provide the exact `$env:PATH +=` fix command.
 
 If detection fails, ask once: "What OS and Python version are you on?"
 
@@ -191,11 +196,20 @@ Announce: "Creating folder structure..."
 
 Use `scripts/scaffold_generator.py` if available to automate this step.
 
+**If project uses .env configuration**: after creating `.env.example`, ask:
+"Do you want to configure .env now? I'll ask for the key values."
+Fill `.env` interactively - never leave the user with only `.env.example`.
+
 ### Step 2: Approval gates (always ask before running)
 Show exactly what will happen, then wait for explicit yes/no:
 - `git init`: "Initialize Git repository in this folder?"
 - `npm install` / `pip install`: "Download project dependencies? ([X] packages)"
 - Any docker command: "Start Docker services?"
+
+**After install on Windows**: immediately run `[entrypoint] --version` or `[entrypoint] --help`.
+If the command is not found, provide the PATH fix:
+`$env:PATH += ";[Python Scripts path]"` for the session, and
+`[Environment]::SetEnvironmentVariable("PATH", ...)` for permanent fix.
 
 **Never perform**: git push, git remote add, or any remote repository operations.
 

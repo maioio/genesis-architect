@@ -1,6 +1,6 @@
 {
   "name": "genesis-architect",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Research first. Build once.",
   "longDescription": "Before writing a single line of code, Genesis Architect scans 15-20 GitHub repos, identifies real pitfalls from Issues, then builds a battle-tested scaffold with tests and CI/CD. After scaffolding, enters Development Companion Mode and keeps helping as you build.",
   "author": "Maio Eshet",

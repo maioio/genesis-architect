@@ -12,6 +12,16 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [1.2.1] - 2026-05-07
+
+### Fixed
+- Phase 0: explicit Windows PATH check - detects if Python Scripts folder is missing from PATH,
+  provides exact fix command after any pip install
+- Phase 6 Step 2: after install on Windows, immediately verify entrypoint is accessible;
+  if not, provides both session-level and permanent PATH fix commands
+- Phase 6 Step 1: .env configured interactively after scaffold - never leaves user with
+  only .env.example and no guidance
+
 ## [1.2.0] - 2026-05-07
 
 ### Added

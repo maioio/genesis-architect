@@ -15,11 +15,12 @@ After scaffolding, enters **Development Companion Mode**: keeps searching and su
 
 ## Demo
 
-<p align="center">
-  <img src="assets/demo.gif" alt="Genesis Architect demo — genesis init running" width="860" />
-</p>
+<table align="center"><tr>
+<td align="center"><b>macOS</b><br/><img src="assets/demo-mac.gif" alt="Genesis Architect demo — macOS" width="420" /></td>
+<td align="center"><b>Windows</b><br/><img src="assets/demo-win.gif" alt="Genesis Architect demo — Windows" width="420" /></td>
+</tr></table>
 
-> Full recording: `genesis init a Python CLI for log analysis` → 17 repos scanned → scaffold complete in under 3 minutes.
+> `genesis init a Python CLI for log analysis` → 18 repos scanned → scaffold complete in under 3 minutes.
 
 ---
 

@@ -1,5 +1,5 @@
 {
-  "version": "1.5.0",
+  "version": "1.6.0",
   "description": "Eval queries for Genesis Architect trigger rate testing",
   "target_accuracy": 0.9,
   "should_trigger": [

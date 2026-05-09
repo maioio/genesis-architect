@@ -9,6 +9,42 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+---
+
+## [1.6.0] - 2026-05-09
+
+### Added
+- **shields.io badge block** auto-generated in every project README (CI, version, license;
+  PyPI variant for Python projects, npm variant for Node projects)
+- **asciinema demo suggestion** in Phase 6 Step 7 - suggests recording workflow with exact
+  commands; explains GIF conversion via `agg` for GitHub (script tags blocked)
+- **Git setup** as structured Phase 6 steps: language-specific `.gitignore` in Step 1,
+  `git init` + initial commit in Step 7, optional `git remote add` with user confirmation;
+  `git push` never runs automatically
+- **README badge block template** in `references/architecture-patterns.md` per language
+
+### Fixed
+- `scripts/research_validator.py` line 54: broken regex (unterminated string literal causing
+  SyntaxError at runtime - all validation was silently failing)
+- `assets/ROADMAP.template.md` Phase 1 name: "Foundation (complete)" -> "Scaffold (generated
+  by Genesis Architect)" (declared fixed in v1.5.0 but was not actually updated)
+- `examples/typescript-cli/ROADMAP.md` Phase 1 name: same fix applied to live example
+- Phase 2 failure table: "0 repos found" row no longer contradicts Architect Mode section
+- `evals/test_queries.json`: 5 new cases for v1.5.0 invocation modes (genesis audit,
+  --from-prd, --from-team-config, genesis help, genesis research); version field synced
+- `references/architecture-patterns.md`: CI/CD template replaced with 4 language-specific
+  workflows (Node, Python, Go, Rust) - no more `INSTALL_COMMAND` placeholders
+- All Scalable folder structure templates: added missing RESEARCH.md, PITFALLS.md, ROADMAP.md
+- `pyproject.toml` template: added `pythonpath = ["src"]` to prevent pytest import failures
+- CONTRIBUTING.md: added Phase 0 detection and smoke test to contributor verification checklist
+- CLAUDE.md: Phase 0 note separated from phase list into its own paragraph
+- Privacy rule added to Mandatory Deliverables: Phase 0 paths must use placeholders in
+  deliverables, never literal values (prevents username leakage in public repos)
+- SKILL.md trimmed from 393 to 354 lines (Companion Mode condensed, deliverable templates
+  moved to assets/ as source of truth)
+
+### Changed
+- `plugin.json` and `evals/test_queries.json` version fields synced to 1.6.0
 
 ---
 

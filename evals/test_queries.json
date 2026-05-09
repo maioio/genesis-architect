@@ -1,5 +1,5 @@
 {
-  "version": "1.1.0",
+  "version": "1.5.0",
   "description": "Eval queries for Genesis Architect trigger rate testing",
   "target_accuracy": 0.9,
   "should_trigger": [
@@ -20,7 +20,12 @@
     "help me scaffold a React component library",
     "I need to build a data pipeline from scratch",
     "make me a project for a VS Code extension",
-    "start a new project: PDF to Markdown converter"
+    "start a new project: PDF to Markdown converter",
+    "genesis init --from-prd PRD.md",
+    "genesis init --from-team-config",
+    "genesis audit ./my-existing-project",
+    "genesis help I need to add authentication",
+    "genesis research rate limiting patterns"
   ],
   "should_not_trigger": [
     "how do I center a div in CSS",

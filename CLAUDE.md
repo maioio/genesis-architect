@@ -26,7 +26,8 @@ It runs 8 phases:
 5. Interactive Choice - Minimalist vs Scalable
 6. Genesis Build - create scaffold with tests and CI/CD
 7. Development Companion Mode - stays active, keeps searching and suggesting
-   (Phase 0 always runs, even when genesis init skips Phase 1)
+
+Note: Phase 0 always runs, even when `genesis init` skips Phase 1.
 
 ## Development workflow
 

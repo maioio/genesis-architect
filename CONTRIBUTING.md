@@ -34,9 +34,40 @@ genesis init a simple CLI tool in [your language]
 
 Verify that:
 1. The skill triggers correctly
-2. Research phase runs
-3. Architecture options are presented
-4. Generated scaffold matches the updated templates
+2. Phase 0 runs silently and detects OS, Python version, and package manager
+3. Research phase runs
+4. Architecture options are presented
+5. Generated scaffold matches the updated templates
+6. The smoke test (`[entrypoint] --help` or `pytest` / `npm test`) passes with exit code 0
+
+## Updating the README
+
+Three tools make README maintenance easier:
+
+**[readme.so](https://readme.so/editor)** - Visual drag-and-drop editor for README sections. Use it
+to draft new sections (Contributing, FAQ, Environment Variables, etc.) and download the markdown.
+Copy the output into README.md - no CLI or build step needed.
+
+**[shields.io](https://shields.io)** - Badge generator. All badges in README.md follow this format:
+```
+https://img.shields.io/badge/[label]-[message]-[color]
+```
+For live GitHub data use the endpoint badges:
+```
+# CI status:  https://img.shields.io/github/actions/workflow/status/{user}/{repo}/{workflow.yml}
+# Stars:      https://img.shields.io/github/stars/{user}/{repo}
+# Version:    https://img.shields.io/github/v/release/{user}/{repo}
+```
+Style options: `flat` (default), `flat-square`, `for-the-badge`.
+
+**[asciinema](https://asciinema.org)** - Terminal session recorder. To update the demo recording:
+```bash
+asciinema rec demo.cast          # record a session
+asciinema upload demo.cast       # get a shareable URL
+agg demo.cast assets/demo.gif   # convert to GIF for GitHub (needs agg installed)
+```
+GitHub markdown does not render `<script>` tags, so the GIF files in `assets/` are the primary
+demo format. The asciinema link in README.md is for the interactive player on asciinema.org.
 
 ## Style guide
 

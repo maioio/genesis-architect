@@ -5,6 +5,8 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Version](https://img.shields.io/badge/version-1.5.0-blue.svg)](CHANGELOG.md)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-skill-orange.svg)](https://github.com/anthropics/claude-code)
+[![CI](https://img.shields.io/github/actions/workflow/status/maioio/genesis-architect/ci.yml?branch=main&label=CI)](https://github.com/maioio/genesis-architect/actions)
+[![GitHub Stars](https://img.shields.io/github/stars/maioio/genesis-architect?style=flat)](https://github.com/maioio/genesis-architect)
 
 A Claude Code skill that scans 15-20 real GitHub repos, extracts pitfalls from actual Issues,
 and builds a battle-tested scaffold — before writing a single line of code.
@@ -21,6 +23,13 @@ After scaffolding, enters **Development Companion Mode**: keeps searching and su
 </tr></table>
 
 > `genesis init a Python CLI for log analysis` → 18 repos scanned → scaffold complete in under 3 minutes.
+
+**Full interactive recording** (pause, rewind, copy text from terminal):
+[![asciicast](https://asciinema.org/a/genesis-architect-demo.svg)](https://asciinema.org/a/genesis-architect-demo)
+
+> The GIFs above are for quick preview. The asciinema recording lets you pause, rewind, and copy
+> commands directly. Record your own session with `asciinema rec demo.cast` and convert to GIF
+> with `agg demo.cast demo.gif` if you need a static file for platforms that block scripts.
 
 ---
 
@@ -152,7 +161,7 @@ All tools optional — skill degrades gracefully.
 
 ```
 genesis-architect/
-├── SKILL.md                        # Skill definition (374 lines)
+├── SKILL.md                        # Skill definition (under 400 lines)
 ├── plugin.json                     # Manifest for skill marketplaces
 ├── scripts/
 │   ├── scaffold_generator.py       # Creates project structure

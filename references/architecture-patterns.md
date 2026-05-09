@@ -90,7 +90,10 @@ project/
 ├── .github/workflows/ci.yml
 ├── package.json
 ├── tsconfig.json
-└── .env.example
+├── .env.example
+├── RESEARCH.md
+├── PITFALLS.md
+└── ROADMAP.md
 ```
 
 ---
@@ -155,6 +158,7 @@ requires-python = ">=3.11"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["src"]
 ```
 
 ---
@@ -175,14 +179,19 @@ project/
 │   └── integration/
 ├── .github/workflows/ci.yml
 ├── pyproject.toml
-└── .env.example
+├── .env.example
+├── RESEARCH.md
+├── PITFALLS.md
+└── ROADMAP.md
 ```
 
 ---
 
 ## GitHub Actions CI/CD Template
 
-Works for all languages. Replace [COMMAND] with the appropriate test runner.
+Use the language-specific template directly. Never use the generic template verbatim.
+
+### Node.js / TypeScript
 
 ```yaml
 name: CI
@@ -200,22 +209,149 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up environment
-        # For Node: uses: actions/setup-node@v4 with node-version: '20'
-        # For Python: uses: actions/setup-python@v5 with python-version: '3.11'
-        run: echo "Configure for your language above"
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
 
       - name: Install dependencies
-        run: "INSTALL_COMMAND"  # e.g. npm ci | pip install -r requirements.txt | go mod download
-        # npm ci | pip install -e ".[dev]" | cargo build
+        run: npm ci
 
       - name: Run tests
-        run: "TEST_COMMAND"  # e.g. npm test | pytest | cargo test
+        run: npm test
 
       - name: Lint
-        run: "LINT_COMMAND"  # e.g. npm run lint | ruff check . | cargo clippy
+        run: npm run lint
         continue-on-error: true
 ```
+
+### Python
+
+```yaml
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -e ".[dev]"
+
+      - name: Run tests
+        run: pytest
+
+      - name: Lint
+        run: ruff check .
+        continue-on-error: true
+```
+
+### Go
+
+```yaml
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+
+      - name: Install dependencies
+        run: go mod download
+
+      - name: Run tests
+        run: go test ./...
+
+      - name: Lint
+        run: go vet ./...
+        continue-on-error: true
+```
+
+### Rust
+
+```yaml
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtactions/rust-toolchain@v1
+        with:
+          toolchain: stable
+
+      - name: Build
+        run: cargo build
+
+      - name: Run tests
+        run: cargo test
+
+      - name: Lint
+        run: cargo clippy
+        continue-on-error: true
+```
+
+---
+
+## README.md Badge Block
+
+Include at the top of every generated README.md, below the project title.
+Replace `{user}`, `{repo}`, `{workflow}`, and `{package}` with real values.
+
+```markdown
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![CI](https://img.shields.io/github/actions/workflow/status/{user}/{repo}/{workflow}.yml?branch=main&label=CI)](.github/workflows/ci.yml)
+[![Version](https://img.shields.io/github/v/release/{user}/{repo})](https://github.com/{user}/{repo}/releases)
+```
+
+For Python projects, add a PyPI downloads badge once published:
+```markdown
+[![PyPI Downloads](https://img.shields.io/pypi/dm/{package})](https://pypi.org/project/{package}/)
+```
+
+For Node.js projects, add an npm version badge:
+```markdown
+[![npm version](https://img.shields.io/npm/v/{package})](https://www.npmjs.com/package/{package})
+```
+
+Badge style: use `flat` (default) for consistency across all generated projects.
 
 ---
 
@@ -305,7 +441,10 @@ project/
 │   └── integration/
 ├── .github/workflows/ci.yml
 ├── go.mod
-└── .env.example
+├── .env.example
+├── RESEARCH.md
+├── PITFALLS.md
+└── ROADMAP.md
 ```
 
 ---
@@ -368,5 +507,8 @@ project/
 │   └── integration_test.rs
 ├── .github/workflows/ci.yml
 ├── Cargo.toml
-└── .env.example
+├── .env.example
+├── RESEARCH.md
+├── PITFALLS.md
+└── ROADMAP.md
 ```

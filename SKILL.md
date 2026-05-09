@@ -1,12 +1,13 @@
 ---
 name: genesis-architect
 description: >
-  Research-first project scaffolding. Before writing a single line of code, scans 15-20 GitHub
-  repos, identifies real pitfalls from GitHub Issues, then builds a battle-tested scaffold with
-  tests and CI/CD. After scaffolding, enters Development Companion Mode: keeps searching and
-  suggesting as you build. Triggers on: "genesis init [vision]", "I want to build X",
-  "scaffold", "new project", "set up project", "start building", "create a tool", "make a CLI",
-  "bootstrap", "בנה פרויקט", "צור פרויקט", "התחל פרויקט".
+  Use when the user is about to start a new project and wants to avoid reinventing the wheel,
+  hit known pitfalls, or commit to an architecture prematurely. Scans 15-20 real GitHub repos,
+  extracts pitfalls from actual Issues, then builds a working scaffold with tests and CI/CD -
+  before writing a single line of product code. After scaffolding, stays active as a research
+  companion. Triggers on: "genesis init [vision]", "I want to build X", "scaffold", "new
+  project", "set up project", "start building", "create a tool", "make a CLI", "bootstrap",
+  "בנה פרויקט", "צור פרויקט", "התחל פרויקט".
 version: "1.6.0"
 author: "Maio Eshet"
 license: "MIT"
@@ -77,14 +78,28 @@ Ask exactly 2-3 focused questions. Use A/B/C format with D as free-text escape h
 **Q1 - Core purpose:**
 "What does this project/feature do? (one sentence)"
 
-**Q2 - Scale expectation:**
+**Q2 - Archetype (ask only if not obvious from Q1):**
+"What kind of artifact are you building?
+A: CLI Tool - runs in a terminal, takes flags, exits
+B: Library/SDK - imported by other code, has a public API
+C: Web Service/API - HTTP server, handles requests
+D: Frontend App - browser UI (React, Next.js, SvelteKit, etc.)
+E: Other (describe)"
+
+The archetype determines the scaffold shape more than the tier does:
+- CLI: entrypoint + argparse/click/cobra, no server
+- Library: public API surface, docs, no main()
+- Web Service: router, healthcheck, Dockerfile, no bin
+- Frontend: component tree, routing, build pipeline, no pytest
+
+**Q3 - Scale:**
 "What is the planned scale?
 A: Personal/small (up to 100 users, solo developer)
 B: Team (multiple developers, medium scale)
 C: Production/enterprise (scale matters from day one)
 D: Other (describe)"
 
-**Q3 - Technology (ask only if not clear from context):**
+**Q4 - Technology (ask only if not clear from context):**
 "Which language/platform?
 A: JavaScript/TypeScript
 B: Python
@@ -130,7 +145,8 @@ For each of the top 3-5 repositories, scan the last 50 issues (open and closed).
 | Situation | Action |
 |-----------|--------|
 | 0 repos found | See Architect Mode section below |
-| 1-2 repos found | Continue with disclaimer: "Analysis based on limited data" |
+| 1-4 repos found | **Hard stop.** Report count, offer: A) broaden keywords B) switch to Architect Mode. Do not continue to Phase 3 with fewer than 5 repos. |
+| 5+ repos found | Continue normally |
 | API timeout | Report briefly, try web search fallback, continue |
 | MCP unavailable | Switch to next tool, mention the switch |
 
@@ -173,27 +189,35 @@ language/framework anti-patterns from best practices.
 Present the research summary and architectural options in a single message.
 The user confirms once and the build begins.
 
+Use the archetype from Phase 1 Q2 to shape the folder structures shown. Examples:
+
+- CLI: `src/cli.py` + `src/core.py`, entrypoint in `pyproject.toml [project.scripts]`
+- Library: `src/[name]/__init__.py` with public API, no `main()`, no CLI entrypoint
+- Web Service: `src/app.py` + `src/routes/`, `Dockerfile`, `healthcheck` route
+- Frontend: `src/app/`, `src/components/`, build config, no `pytest`
+
 > "Finished scanning the market. Found [N] relevant projects:
 >
 > | Project | Stars | Key Insight |
 > |---------|-------|-------------|
 > | [repo 1] | [N] | [one sentence] |
 >
-> Based on the research, two proven architectural approaches:
+> Archetype detected: **[CLI Tool / Library / Web Service / Frontend App]**
+> Based on the research, two proven structures for this archetype:
 >
-> **A: Minimalist/Fast**
-> [Show concrete folder structure - 8-12 lines]
+> **A: Minimalist**
+> [Show concrete folder structure - 8-12 lines, archetype-appropriate]
 > Best for: personal projects, prototypes, internal tools
 > Advantage: fast to understand and develop
 > Tradeoff: harder to extend later
 >
-> **B: Scalable/Enterprise**
-> [Show concrete folder structure - 12-18 lines]
+> **B: Scalable**
+> [Show concrete folder structure - 12-18 lines, archetype-appropriate]
 > Best for: team projects, long-term products
 > Advantage: clear separation of concerns, easy to extend
 > Tradeoff: higher initial complexity
 >
-> **C: Let research decide** - I pick the language with the most star-weighted representation
+> **C: Let research decide** - I pick the structure used by the highest-starred repos
 > **D: Hybrid** - describe what you want to change
 
 If user picks D: ask "Which base (A or B) do you prefer? What would you change?"
@@ -201,6 +225,10 @@ Present the modified structure and confirm before building.
 If user picks C on language: choose the language used by the highest-starred repos. State the reasoning.
 
 Wait for the user's A/B/C/D choice before building.
+
+**Hard gate**: If the user has not explicitly confirmed a choice (A, B, C, or D), do not
+start Phase 6 under any circumstances - not even if the user says "looks good" or "continue".
+Require a single-letter or explicit confirmation.
 
 ---
 
@@ -254,14 +282,28 @@ Create `.github/workflows/ci.yml` that:
 - Runs linter if configured
 Keep it under 40 lines.
 
-### Step 6: Smoke test (mandatory)
-Determine the entrypoint:
-- Python: read `[project.scripts]` in `pyproject.toml`
-- Node: read `bin` field in `package.json`
-- Go/Rust: the compiled binary name from the project name
-Run `[entrypoint] --help` or `[test command]` and confirm exit code 0.
-If no CLI entrypoint exists, run `pytest` / `npm test` / `cargo test` / `go test ./...`.
-If it fails, fix before proceeding. Never announce "Genesis Architect complete" on a broken scaffold.
+### Step 6: Self-validating smoke test (mandatory)
+
+Run the test suite. Fix failures. Repeat until green. Never skip.
+
+```
+1. Run: pytest / npm test / cargo test / go test ./...
+2. If exit code 0: proceed to Step 7
+3. If exit code non-zero:
+   a. Read the error output
+   b. Fix the specific failing file (imports, missing dep, syntax)
+   c. Run again - max 3 attempts
+   d. If still failing after 3 attempts: report exact error, ask user for input
+      before proceeding. Do NOT continue to git commit on a red scaffold.
+```
+
+Also verify the CLI entrypoint if one exists:
+- Python: read `[project.scripts]` in `pyproject.toml`, run `[entrypoint] --help`
+- Node: read `bin` in `package.json`, run `node [entrypoint] --help`
+- Go/Rust: build first, then run `./[binary] --help`
+
+**Hard gate**: Do not run `git commit` and do not announce "Genesis Architect complete"
+until the test suite exits 0.
 
 ### Step 7: README badges, demo, and git
 
@@ -269,10 +311,8 @@ If it fails, fix before proceeding. Never announce "Genesis Architect complete" 
 for the full badge block template). Replace `{user}/{repo}` with `[github-user]/[repo-name]`
 if no remote exists yet; tell the user to update them on first push.
 
-**Demo recording** - suggest after scaffold is working:
-> "Record a terminal demo: `asciinema rec demo.cast` then `asciinema upload demo.cast` for
-> a shareable link. Convert to GIF with `agg demo.cast assets/demo.gif` for GitHub embeds
-> (GitHub blocks script tags). Place GIF in `assets/` and link from README."
+**Demo recording** - suggest: `asciinema rec demo.cast`, upload for a shareable link,
+`agg demo.cast assets/demo.gif` to convert for GitHub (script tags blocked).
 
 **Git setup** - always ask before running each command:
 1. `git init` - "Initialize Git repository?" (`.gitignore` already created in Step 1)

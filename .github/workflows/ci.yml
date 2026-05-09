@@ -21,6 +21,9 @@ jobs:
       - name: Run research validator on example
         run: python scripts/research_validator.py examples/typescript-cli/RESEARCH.md
 
+      - name: Run research validator on template
+        run: python scripts/research_validator.py assets/RESEARCH.template.md
+
       - name: Run eval runner
         run: python scripts/eval_runner.py --mode report
 
@@ -36,5 +39,76 @@ jobs:
           lines=$(wc -l < SKILL.md)
           echo "SKILL.md lines: $lines"
           if [ "$lines" -gt 400 ]; then echo "FAIL: over 400 lines"; exit 1; fi
-          if grep -P "[—–]" SKILL.md; then echo "FAIL: em dashes found"; exit 1; fi
+          if grep -P "[—–]" SKILL.md; then echo "FAIL: em dashes found in SKILL.md"; exit 1; fi
           echo "SKILL.md constraints OK"
+
+      - name: Validate Python code blocks in architecture-patterns.md
+        run: |
+          python - <<'PYEOF'
+          import re, sys, tempfile, os, subprocess
+
+          with open("references/architecture-patterns.md", encoding="utf-8") as f:
+              content = f.read()
+
+          blocks = re.findall(r"```python\n(.*?)```", content, re.DOTALL)
+          errors = []
+          for i, block in enumerate(blocks):
+              with tempfile.NamedTemporaryFile(suffix=".py", mode="w", delete=False) as tmp:
+                  tmp.write(block)
+                  tmp_path = tmp.name
+              result = subprocess.run(
+                  ["python", "-m", "py_compile", tmp_path],
+                  capture_output=True, text=True
+              )
+              os.unlink(tmp_path)
+              if result.returncode != 0:
+                  errors.append(f"Block {i+1}: {result.stderr}")
+
+          if errors:
+              print(f"FAIL: {len(errors)} invalid Python block(s):")
+              for e in errors: print(e)
+              sys.exit(1)
+          print(f"OK: {len(blocks)} Python block(s) validated")
+          PYEOF
+
+      - name: Validate TOML blocks in architecture-patterns.md
+        run: |
+          python - <<'PYEOF'
+          import re, sys, tempfile, os
+          try:
+              import tomllib
+          except ImportError:
+              import tomli as tomllib
+
+          with open("references/architecture-patterns.md", encoding="utf-8") as f:
+              content = f.read()
+
+          blocks = re.findall(r"```toml\n(.*?)```", content, re.DOTALL)
+          errors = []
+          for i, block in enumerate(blocks):
+              # Skip blocks with template placeholders
+              if "[project-name]" in block or "{{" in block:
+                  continue
+              try:
+                  tomllib.loads(block)
+              except Exception as e:
+                  errors.append(f"Block {i+1}: {e}")
+
+          if errors:
+              print(f"FAIL: {len(errors)} invalid TOML block(s):")
+              for e in errors: print(e)
+              sys.exit(1)
+          print(f"OK: {len(blocks)} TOML block(s) checked")
+          PYEOF
+
+      - name: Check no em dashes in any file
+        run: |
+          found=$(grep -rP "[—–]" --include="*.md" --include="*.py" --include="*.json" \
+            --exclude-dir=".git" \
+            --exclude="ci.yml" . || true)
+          if [ -n "$found" ]; then
+            echo "FAIL: em dashes found:"
+            echo "$found"
+            exit 1
+          fi
+          echo "OK: no em dashes"

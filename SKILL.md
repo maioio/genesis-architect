@@ -209,8 +209,8 @@ Wait for the user's A/B/C/D choice before building.
 Build in this exact order. Announce each step.
 
 ### Step 1: File structure (automatic)
-Create all directories and files. Non-destructive - no approval needed.
-Announce: "Creating folder structure..."
+Create all directories and files including `.gitignore` for the project language.
+Non-destructive - no approval needed. Announce: "Creating folder structure..."
 
 **If project uses .env configuration**: after creating `.env.example`, ask:
 "Do you want to configure .env now? I'll ask for the key values."
@@ -218,7 +218,6 @@ Fill `.env` interactively - never leave the user with only `.env.example`.
 
 ### Step 2: Approval gates (always ask before running)
 Show exactly what will happen, then wait for explicit yes/no:
-- `git init`: "Initialize Git repository in this folder?"
 - `npm install` / `pip install`: "Download project dependencies? ([X] packages)"
 - Any docker command: "Start Docker services?"
 
@@ -227,7 +226,8 @@ If the command is not found, provide the PATH fix:
 `$env:PATH += ";[Python Scripts path]"` for the session, and
 `[Environment]::SetEnvironmentVariable("PATH", ...)` for permanent fix.
 
-**Never perform**: git push, git remote add, or any remote repository operations.
+**Never perform**: git push or any action that sends code to a remote without explicit user approval.
+`git remote add` is allowed only when the user provides a URL and confirms.
 
 ### Step 3: Functional boilerplate
 Every file must contain working code, not empty stubs. Requirements:

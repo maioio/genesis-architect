@@ -140,9 +140,8 @@ def create_structure(base_path: str, language: str, tier: str, name: str) -> lis
     """Create project folder structure. Returns list of created paths."""
     lang = language.lower()
     if lang not in STRUCTURES:
-        print(f"Warning: no template for '{language}'. Using python minimalist as fallback.")
+        print(f"Warning: no template for '{language}'. Using python as fallback (keeping requested tier).")
         lang = "python"
-        tier = "minimalist"
 
     tier = tier.lower()
     if tier not in STRUCTURES[lang]:

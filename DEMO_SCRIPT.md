@@ -1,7 +1,7 @@
 # Demo Recording Script
 
 **Goal:** Show `genesis init` from start to scaffold in one clean take.
-**Target length:** 2–3 minutes → GIF of ~30–60 seconds (sped up 3–4x).
+**Target length:** 2-3 minutes → GIF of ~30-60 seconds (sped up 3-4x).
 **Output file:** `assets/demo.gif`
 
 ---
@@ -35,7 +35,7 @@
 
 ## The Script (type exactly this)
 
-### Step 1 — Trigger Genesis
+### Step 1 - Trigger Genesis
 
 Type slowly so each word is readable:
 ```
@@ -43,32 +43,32 @@ genesis init a Python CLI for analyzing log files
 ```
 Press Enter. Pause 1 second.
 
-### Step 2 — Phase 0 (silent, ~2 seconds)
+### Step 2 - Phase 0 (silent, ~2 seconds)
 
 Claude silently detects env. Nothing to type. Let it run.
 
-### Step 3 — Phase 1 answers (Vision Alignment)
+### Step 3 - Phase 1 answers (Vision Alignment)
 
-Claude asks 2–3 questions. Answer:
+Claude asks 2-3 questions. Answer:
 - Scale question → type **A** (personal/small)
 - Language question → type **B** (Python)
 
-### Step 4 — Phase 2 (Deep Discovery, ~30–60 seconds)
+### Step 4 - Phase 2 (Deep Discovery, ~30-60 seconds)
 
 Claude says "Starting engineering market research…"
-Let it run. This is the dramatic part — repos scrolling.
+Let it run. This is the dramatic part - repos scrolling.
 **Do not skip this.** It's the core differentiator.
 
-### Step 5 — Phase 5 (Architecture Choice)
+### Step 5 - Phase 5 (Architecture Choice)
 
 Claude shows the repo table + A/B options.
 Type **A** (Minimalist) and press Enter.
 
-### Step 6 — Phase 6 (Genesis Build, ~20 seconds)
+### Step 6 - Phase 6 (Genesis Build, ~20 seconds)
 
 Watch files being created. CI/CD being written. Tests passing.
 
-### Step 7 — Done
+### Step 7 - Done
 
 Claude says "Genesis Architect complete."
 Pause 3 seconds on the final output so it's readable.

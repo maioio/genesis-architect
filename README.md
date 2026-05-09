@@ -9,7 +9,7 @@
 [![GitHub Stars](https://img.shields.io/github/stars/maioio/genesis-architect?style=flat)](https://github.com/maioio/genesis-architect)
 
 A Claude Code skill that scans 15-20 real GitHub repos, extracts pitfalls from actual Issues,
-and builds a battle-tested scaffold — before writing a single line of code.
+and builds a battle-tested scaffold - before writing a single line of code.
 
 After scaffolding, enters **Development Companion Mode**: keeps searching and suggesting as you build.
 
@@ -18,8 +18,8 @@ After scaffolding, enters **Development Companion Mode**: keeps searching and su
 ## Demo
 
 <table align="center"><tr>
-<td align="center"><b>macOS</b><br/><img src="assets/demo-mac.gif" alt="Genesis Architect demo — macOS" width="420" /></td>
-<td align="center"><b>Windows</b><br/><img src="assets/demo-win.gif" alt="Genesis Architect demo — Windows" width="420" /></td>
+<td align="center"><b>macOS</b><br/><img src="assets/demo-mac.gif" alt="Genesis Architect demo - macOS" width="420" /></td>
+<td align="center"><b>Windows</b><br/><img src="assets/demo-win.gif" alt="Genesis Architect demo - Windows" width="420" /></td>
 </tr></table>
 
 > `genesis init a Python CLI for log analysis` → 18 repos scanned → scaffold complete in under 3 minutes.
@@ -35,11 +35,11 @@ After scaffolding, enters **Development Companion Mode**: keeps searching and su
 
 ## See it in action
 
-Real output from a TypeScript CLI project — not fabricated:
+Real output from a TypeScript CLI project - not fabricated:
 
-- [`examples/typescript-cli/RESEARCH.md`](examples/typescript-cli/RESEARCH.md) — 17 repos analyzed, sources linked
-- [`examples/typescript-cli/PITFALLS.md`](examples/typescript-cli/PITFALLS.md) — 4 real pitfalls from GitHub Issues
-- [`examples/typescript-cli/ROADMAP.md`](examples/typescript-cli/ROADMAP.md) — 5-phase development plan
+- [`examples/typescript-cli/RESEARCH.md`](examples/typescript-cli/RESEARCH.md) - 17 repos analyzed, sources linked
+- [`examples/typescript-cli/PITFALLS.md`](examples/typescript-cli/PITFALLS.md) - 4 real pitfalls from GitHub Issues
+- [`examples/typescript-cli/ROADMAP.md`](examples/typescript-cli/ROADMAP.md) - 5-phase development plan
 
 This is what you get. If the quality here looks useful, the skill is worth trying.
 
@@ -128,9 +128,9 @@ genesis help I need to add authentication
 genesis research rate limiting patterns
 ```
 
-It searches the repos it already analyzed and returns grounded suggestions — not generic advice.
+It searches the repos it already analyzed and returns grounded suggestions - not generic advice.
 
-**Session scope**: The companion remembers the research from Phases 2-4 within the current Claude Code session. In a new session, it reads `RESEARCH.md` from your project folder to restore context — this is why that file is a mandatory deliverable.
+**Session scope**: The companion remembers the research from Phases 2-4 within the current Claude Code session. In a new session, it reads `RESEARCH.md` from your project folder to restore context - this is why that file is a mandatory deliverable.
 
 ---
 
@@ -153,7 +153,7 @@ Auto-detected from research. Built-in templates for:
 | 3 | Firecrawl MCP | Targeted page scraping |
 | 4 | Web search | Fallback |
 
-All tools optional — skill degrades gracefully.
+All tools optional - skill degrades gracefully.
 
 ---
 

@@ -63,6 +63,6 @@ All MCPs unavailable?
 ## Reporting Tool Failures
 
 When a tool fails, report briefly and continue:
-> "[In the user's language] GitHub MCP unavailable — falling back to web search..."
+> "[In the user's language] GitHub MCP unavailable - falling back to web search..."
 
 Never stop the workflow for a tool failure. Always degrade gracefully.

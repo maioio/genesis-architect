@@ -14,7 +14,7 @@ Our scaffold is designed to avoid them.
 **Frequency**: Found in 4 of 5 analyzed repos (common anti-pattern)
 **Root cause**: Developers write transformation logic directly in the `action()` callback,
 making it impossible to test without spawning a process
-**Our mitigation**: `src/index.ts` only parses args and calls `core.transform()` — all
+**Our mitigation**: `src/index.ts` only parses args and calls `core.transform()` - all
 logic lives in `src/core.ts` which is imported directly in tests
 
 ## Pitfall 3: Missing --output flag causes silent data loss

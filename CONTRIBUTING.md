@@ -4,10 +4,10 @@ Thank you for helping improve Genesis Architect.
 
 ## What to contribute
 
-- **New language templates** — Go and Rust are already implemented; add boilerplate for Java, C#, Swift, or other languages in `references/architecture-patterns.md`
-- **Better MCP strategies** — improve tool usage in `references/mcp-strategy.md`
-- **Workflow improvements** — refine phases in `SKILL.md`
-- **Bug reports** — open an issue with the template
+- **New language templates** - Go and Rust are already implemented; add boilerplate for Java, C#, Swift, or other languages in `references/architecture-patterns.md`
+- **Better MCP strategies** - improve tool usage in `references/mcp-strategy.md`
+- **Workflow improvements** - refine phases in `SKILL.md`
+- **Bug reports** - open an issue with the template
 
 ## How to contribute
 
@@ -18,11 +18,11 @@ Thank you for helping improve Genesis Architect.
 
 ## Editing the skill
 
-The skill is plain Markdown — no build step required.
+The skill is plain Markdown - no build step required.
 
-- `SKILL.md` — main skill logic and phase definitions
-- `references/architecture-patterns.md` — language boilerplate templates
-- `references/mcp-strategy.md` — MCP tool strategy and fallback logic
+- `SKILL.md` - main skill logic and phase definitions
+- `references/architecture-patterns.md` - language boilerplate templates
+- `references/mcp-strategy.md` - MCP tool strategy and fallback logic
 
 ## Testing changes
 
@@ -73,5 +73,5 @@ demo format. The asciinema link in README.md is for the interactive player on as
 
 - All user-facing text in the skill: auto-detect the user's language and respond in kind (language-agnostic since v1.1.0)
 - All code, file names, variable names, comments: English
-- No em dashes — use hyphens or colons
+- No em dashes - use hyphens or colons
 - Keep SKILL.md under 400 lines

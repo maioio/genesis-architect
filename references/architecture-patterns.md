@@ -155,6 +155,10 @@ build-backend = "hatchling.build"
 name = "[project-name]"
 version = "0.1.0"
 requires-python = ">=3.11"
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=7", "ruff>=0.4"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -313,9 +317,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install Rust
-        uses: dtactions/rust-toolchain@v1
-        with:
-          toolchain: stable
+        uses: dtolnay/rust-toolchain@stable
 
       - name: Build
         run: cargo build

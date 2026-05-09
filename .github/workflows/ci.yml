@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run research validator on example
+        run: python scripts/research_validator.py examples/typescript-cli/RESEARCH.md
+
+      - name: Run eval runner
+        run: python scripts/eval_runner.py --mode report
+
+      - name: Run scaffold generator smoke test
+        run: |
+          python scripts/scaffold_generator.py --language python --tier minimalist --name test-project --output /tmp/test-scaffold
+          test -f /tmp/test-scaffold/pyproject.toml
+          test -f /tmp/test-scaffold/src/test_project/__init__.py
+          echo "Scaffold smoke test passed"
+
+      - name: Check SKILL.md constraints
+        run: |
+          lines=$(wc -l < SKILL.md)
+          echo "SKILL.md lines: $lines"
+          if [ "$lines" -gt 400 ]; then echo "FAIL: over 400 lines"; exit 1; fi
+          if grep -P "[—–]" SKILL.md; then echo "FAIL: em dashes found"; exit 1; fi
+          echo "SKILL.md constraints OK"

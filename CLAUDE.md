@@ -1,6 +1,6 @@
 # Genesis Architect - Claude Code Instructions
 
-This is a **Claude skill** project. The primary deliverable is `SKILL.md` — a Markdown file
+This is a **Claude skill** project. The primary deliverable is `SKILL.md` - a Markdown file
 that defines how Claude behaves when invoked.
 
 ## Project structure

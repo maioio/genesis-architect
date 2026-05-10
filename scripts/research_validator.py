@@ -152,9 +152,12 @@ def verify_github_repos(content: str) -> list[str]:
             issues.append(f"Repo not found (404): {canonical}")
             continue
 
-        # data == {} means a non-404 network/API error - skip star check
+        # data == {} means a non-404 network/API error - skip checks
         if not data:
             continue
+
+        if data.get("archived"):
+            issues.append(f"Repo is archived (cited as active): {canonical}")
 
         actual_stars: int = data.get("stargazers_count", 0)
         reported_stars = _parse_star_count(raw_stars)

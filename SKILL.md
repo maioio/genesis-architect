@@ -75,18 +75,21 @@ If detection fails, ask once: "What OS and Python version are you on?"
 
 ---
 
-## Phase 0.5: Intent Check
+## Phase 0.5: Pre-flight Check
 
-**Skip if the user invoked `genesis init` explicitly** - they already know what they want.
+**Skip if the user invoked `genesis init` explicitly** - they already opted in.
 
 Run only when triggered by natural language ("I want to build X", "scaffold a project", etc.).
 
-Ask in one line:
-> "Serious project (I'll run a full 15-20 repo research + scaffold) or quick experiment?
-> A: Serious - research + scaffold  B: Quick - skip research, minimal scaffold"
+Present:
+> "Genesis Architect runs a 5-10 minute research process and generates 8+ files.
+> For quick experiments this is overkill.
+>
+> A: Full Genesis (recommended for projects you'll maintain)
+> B: Quick scaffold (skip research, just give me boilerplate)"
 
 - **A**: continue normally from Phase 1.
-- **B**: skip Phases 1-5, go straight to Phase 6 with minimal Minimalist scaffold, no RESEARCH.md or PITFALLS.md. Announce: "Quick mode - scaffold only, no research."
+- **B**: skip Phases 1-5, go straight to Phase 6 with minimal Minimalist scaffold. No RESEARCH.md or PITFALLS.md. Announce: "Quick mode - scaffold only, no research."
 
 ---
 
@@ -370,13 +373,7 @@ All files go inside the project directory. Everything must be Git-portable.
 
 **Privacy:** Environment-specific values from Phase 0 (Scripts paths, home directory paths, usernames embedded in paths) must appear as placeholders in deliverables: use `[Scripts path]`, `[home]`, etc. Never write the literal measured path into RESEARCH.md, PITFALLS.md, or ROADMAP.md - these files get committed to public repos.
 
-Use the templates in `assets/RESEARCH.template.md`, `assets/PITFALLS.template.md`, and
-`assets/ROADMAP.template.md`. These are the source of truth - the validator in
-`scripts/research_validator.py` checks against them.
-
-Required sections in RESEARCH.md: Executive Summary, Search Scope, Analyzed Repositories
-(min 5 rows), Market Landscape, Architecture Decision Rationale, Sources (min 3 links).
-Must contain the string "Genesis Architect" in the header.
+Use templates in `assets/RESEARCH.template.md`, `assets/PITFALLS.template.md`, `assets/ROADMAP.template.md`. Required RESEARCH.md sections: Executive Summary, Search Scope, Analyzed Repositories (min 5 rows), Market Landscape, Architecture Decision Rationale, Sources (min 3 links). Must contain "Genesis Architect" in header.
 
 ---
 

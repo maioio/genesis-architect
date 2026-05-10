@@ -15,6 +15,10 @@ import sys
 import os
 import argparse
 
+# Ensure UTF-8 output on all platforms (handles Hebrew and other non-ASCII chars)
+if sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8":
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
 
 EVAL_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "evals", "test_queries.json")
 
@@ -24,35 +28,48 @@ def load_queries() -> dict:
         return json.load(f)
 
 
+def _split_queries(queries: dict):
+    """Return (trigger_list, silent_list) supporting both old and new schema."""
+    # New schema: list of {input, should_trigger, expected_flow}
+    if "test_cases" in queries:
+        cases = queries["test_cases"]
+        trigger = [c["input"] for c in cases if c.get("should_trigger")]
+        silent = [c["input"] for c in cases if not c.get("should_trigger")]
+        return trigger, silent
+    # Legacy schema: flat lists
+    return queries["should_trigger"], queries["should_not_trigger"]
+
+
 def print_queries(queries: dict) -> None:
+    trigger, silent = _split_queries(queries)
     print("=== Genesis Architect Eval Queries ===\n")
     print("SHOULD TRIGGER (expected: skill activates):")
-    for i, q in enumerate(queries["should_trigger"], 1):
+    for i, q in enumerate(trigger, 1):
         print(f"  {i:2}. {q}")
 
     print("\nSHOULD NOT TRIGGER (expected: skill stays silent):")
-    for i, q in enumerate(queries["should_not_trigger"], 1):
+    for i, q in enumerate(silent, 1):
         print(f"  {i:2}. {q}")
 
-    total = len(queries["should_trigger"]) + len(queries["should_not_trigger"])
-    print(f"\nTotal: {total} queries ({len(queries['should_trigger'])} positive, "
-          f"{len(queries['should_not_trigger'])} negative)")
+    total = len(trigger) + len(silent)
+    print(f"\nTotal: {total} queries ({len(trigger)} positive, {len(silent)} negative)")
 
 
 def print_report(queries: dict) -> None:
+    trigger, silent = _split_queries(queries)
     print("=== Eval Report Template ===\n")
     print("Run each query in Claude Code and mark whether the skill triggered.\n")
     print(f"{'#':<4} {'Expected':<12} {'Query':<60} {'Result'}")
     print("-" * 95)
 
-    for i, q in enumerate(queries["should_trigger"], 1):
+    for i, q in enumerate(trigger, 1):
         print(f"{i:<4} {'TRIGGER':<12} {q[:58]:<60} [ ]")
 
-    offset = len(queries["should_trigger"])
-    for i, q in enumerate(queries["should_not_trigger"], 1):
+    offset = len(trigger)
+    for i, q in enumerate(silent, 1):
         print(f"{i+offset:<4} {'SILENT':<12} {q[:58]:<60} [ ]")
 
-    total = len(queries["should_trigger"]) + len(queries["should_not_trigger"])
+    total = len(trigger) + len(silent)
     print(f"\nTarget: >90% accuracy ({int(total * 0.9)}/{total} correct)")
 
 

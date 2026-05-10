@@ -157,6 +157,10 @@ jobs:
           blocks = re.findall(r"```python\n(.*?)```", content, re.DOTALL)
           errors = []
           for i, block in enumerate(blocks):
+              # Skip template blocks that use placeholder syntax like [project_name]
+              if "[project_name]" in block or "[project-name]" in block or "{{" in block:
+                  print(f"  Block {i+1}: skipped (template placeholder)")
+                  continue
               with tempfile.NamedTemporaryFile(suffix=".py", mode="w", delete=False) as tmp:
                   tmp.write(block)
                   tmp_path = tmp.name

@@ -270,3 +270,11 @@ New language templates, improved MCP strategies, and workflow refinements are we
 ## License
 
 [MIT](LICENSE) — Maio Eshet
+
+---
+
+<div align="center">
+
+If Genesis Architect saved you from a bad architecture decision, a ⭐ helps others find it.
+
+</div>

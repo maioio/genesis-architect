@@ -9,6 +9,20 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+## [1.11.0] - 2026-05-10
+
+### Added
+- **Research Quality Signal (Phase 4 output)**: before Phase 5, displays one-line label - `FULL`, `PARTIAL`, or `THIN` with a brief reason (e.g. "GitHub MCP unavailable - web search only"). Users see research confidence before making architecture decisions.
+- **`--verify-repos` flag in research_validator.py**: calls `https://api.github.com/repos/{owner}/{repo}` for every repo in the RESEARCH.md table. Flags repos that don't exist (404) and star counts outside +-50% of actual. Uses `GITHUB_TOKEN` env var if set.
+- **CI runs `--verify-issues` on example PITFALLS.md**: `examples/typescript-cli/PITFALLS.md` is now HTTP-checked on every push.
+
+### Fixed
+- **`genesis init` archetype confirmation gap**: when Phase 1 is skipped, Phase 5 now opens with "Detected: [Archetype] / [Scale] / [Language]. Correct?" before A/B/C/D. Never silently assumes architecture. Closes the contradiction with "never guess on architecture decisions."
+- **Phase 2 hard-gate on 1-4 repos**: replaced hard stop with graceful degradation - warn + offer to broaden/continue-thin/Architect Mode. Hard stop only on 0 repos. Aligns with mcp-strategy.md "never block on tool failure."
+- SKILL.md at exactly 400 lines.
+
+---
+
 ## [1.10.0] - 2026-05-10
 
 ### Added

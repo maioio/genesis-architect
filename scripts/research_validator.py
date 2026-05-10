@@ -8,11 +8,18 @@ Requires: Python 3.9+ (uses list[str] type hints)
 Usage:
   python scripts/research_validator.py RESEARCH.md
   python scripts/research_validator.py path/to/project/RESEARCH.md
-  python scripts/research_validator.py RESEARCH.md --verify-issues   # also HTTP-check GitHub issue URLs
+  python scripts/research_validator.py RESEARCH.md --verify-issues   # HTTP-check GitHub issue URLs
+  python scripts/research_validator.py RESEARCH.md --verify-repos    # HTTP-check repos + star counts
+  python scripts/research_validator.py RESEARCH.md --verify-issues --verify-repos
+
+Environment:
+  GITHUB_TOKEN  Optional. If set, used as Bearer token to avoid rate limits (60 req/hr unauthenticated).
 """
 
 import sys
 import re
+import os
+import json
 import urllib.request
 import urllib.error
 
@@ -31,6 +38,59 @@ MIN_SOURCES = 3
 GITHUB_ISSUE_RE = re.compile(
     r"https://github\.com/[^/]+/[^/]+/issues/(\d+)"
 )
+
+# Matches https://github.com/{owner}/{repo} - stops before any trailing slash+path
+GITHUB_REPO_RE = re.compile(
+    r"https://github\.com/([A-Za-z0-9_.-]+)/([A-Za-z0-9_.-]+)(?:/[^\s,)\]>\"']*)?"
+)
+
+# Table row format: | [repo-name](url) | 3.4k | ...
+# Captures the URL and the stars cell (second column after the repo link column)
+TABLE_ROW_RE = re.compile(
+    r"\|\s*\[.*?\]\((https://github\.com/[^)]+)\)\s*\|([^|]*)\|"
+)
+
+
+def _parse_star_count(raw: str) -> int | None:
+    """
+    Parse a star count string like '3.4k', '12k', '3400', '1.2m' into an int.
+    Returns None if the string cannot be parsed.
+    """
+    raw = raw.strip().lower().replace(",", "")
+    if not raw:
+        return None
+    try:
+        if raw.endswith("k"):
+            return int(float(raw[:-1]) * 1_000)
+        if raw.endswith("m"):
+            return int(float(raw[:-1]) * 1_000_000)
+        return int(float(raw))
+    except ValueError:
+        return None
+
+
+def _github_api_request(url: str) -> dict | None:
+    """
+    Make a GET request to the GitHub API. Returns parsed JSON dict or None on error.
+    Uses GITHUB_TOKEN env var if available.
+    """
+    token = os.environ.get("GITHUB_TOKEN", "")
+    req = urllib.request.Request(url)
+    req.add_header("User-Agent", "genesis-architect-validator/1.0")
+    req.add_header("Accept", "application/vnd.github+json")
+    if token:
+        req.add_header("Authorization", f"token {token}")
+    try:
+        with urllib.request.urlopen(req, timeout=8) as resp:
+            return json.loads(resp.read().decode("utf-8"))
+    except urllib.error.HTTPError as e:
+        if e.code == 404:
+            return None  # Caller checks for None = repo missing
+        # Other HTTP errors (403 rate limit, etc.) - treat as non-fatal
+        return {}
+    except Exception:
+        # Network errors are non-fatal
+        return {}
 
 
 def verify_github_issues(urls: list[str]) -> list[str]:
@@ -52,7 +112,82 @@ def verify_github_issues(urls: list[str]) -> list[str]:
     return dead
 
 
-def validate(path: str, verify_issues: bool = False) -> list[str]:
+def verify_github_repos(content: str) -> list[str]:
+    """
+    For each GitHub repo URL found in a RESEARCH.md table row, call the GitHub API
+    and verify:
+      1. The repo exists (not 404).
+      2. The star count reported in the table is within +-50% of actual.
+
+    Returns a list of issue strings. Empty = all good.
+    """
+    issues = []
+
+    # Extract (url, raw_stars) from table rows
+    table_entries: list[tuple[str, str]] = TABLE_ROW_RE.findall(content)
+
+    if not table_entries:
+        # No table entries found - nothing to verify
+        return issues
+
+    checked: set[str] = set()
+
+    for raw_url, raw_stars in table_entries:
+        # Normalise URL: strip trailing slashes and sub-paths to get owner/repo
+        match = re.match(r"https://github\.com/([A-Za-z0-9_.-]+)/([A-Za-z0-9_.-]+)", raw_url)
+        if not match:
+            continue
+        owner, repo = match.group(1), match.group(2)
+        canonical = f"https://github.com/{owner}/{repo}"
+
+        if canonical in checked:
+            continue
+        checked.add(canonical)
+
+        api_url = f"https://api.github.com/repos/{owner}/{repo}"
+        print(f"  Checking repo: {canonical} ...", flush=True)
+        data = _github_api_request(api_url)
+
+        if data is None:
+            issues.append(f"Repo not found (404): {canonical}")
+            continue
+
+        # data == {} means a non-404 network/API error - skip star check
+        if not data:
+            continue
+
+        actual_stars: int = data.get("stargazers_count", 0)
+        reported_stars = _parse_star_count(raw_stars)
+
+        if reported_stars is None:
+            # Cannot parse the reported count - skip comparison
+            continue
+
+        # Allow +-50% tolerance (stars change over time, k-rounding adds noise)
+        if actual_stars == 0 and reported_stars == 0:
+            continue
+
+        # Avoid division by zero when actual is 0 but reported is not
+        if actual_stars == 0:
+            ratio = float("inf")
+        else:
+            ratio = reported_stars / actual_stars
+
+        if ratio < 0.5 or ratio > 1.5:
+            issues.append(
+                f"Star count mismatch for {canonical}: "
+                f"RESEARCH.md says ~{reported_stars:,}, actual is {actual_stars:,} "
+                f"(ratio {ratio:.2f}, tolerance +-50%)"
+            )
+
+    return issues
+
+
+def validate(
+    path: str,
+    verify_issues: bool = False,
+    verify_repos: bool = False,
+) -> list[str]:
     """Returns a list of issues. Empty list = valid."""
     issues = []
 
@@ -82,8 +217,6 @@ def validate(path: str, verify_issues: bool = False) -> list[str]:
         issues.append(f"Too few source links: found {len(links)}, minimum is {MIN_SOURCES}")
 
     # Check GitHub issue URLs have valid format (owner/repo/issues/number)
-    issue_urls = GITHUB_ISSUE_RE.findall(content)
-    raw_issue_urls = GITHUB_ISSUE_RE.findall(content)
     all_issue_urls = [m for m in re.findall(r"https://github\.com/[^\s,)\]>\"']+", content)
                      if "/issues/" in m]
     malformed = [u for u in all_issue_urls if not GITHUB_ISSUE_RE.match(u)]
@@ -98,6 +231,13 @@ def validate(path: str, verify_issues: bool = False) -> list[str]:
         for url in dead:
             issues.append(f"GitHub issue URL returns 404 (fabricated?): {url}")
 
+    # Optional: API-verify each repo exists and star count is plausible
+    if verify_repos:
+        token_status = "authenticated" if os.environ.get("GITHUB_TOKEN") else "unauthenticated (60 req/hr limit)"
+        print(f"  Verifying GitHub repos via API ({token_status})...", flush=True)
+        repo_issues = verify_github_repos(content)
+        issues.extend(repo_issues)
+
     # Check it was generated by Genesis Architect
     if "Genesis Architect" not in content:
         issues.append("Missing 'Genesis Architect' header - was this generated by the skill?")
@@ -106,14 +246,26 @@ def validate(path: str, verify_issues: bool = False) -> list[str]:
 
 
 def main():
-    if len(sys.argv) < 2:
-        print("Usage: python research_validator.py <path-to-RESEARCH.md> [--verify-issues]")
+    if len(sys.argv) < 2 or sys.argv[1] in ("-h", "--help"):
+        print(
+            "Usage: python research_validator.py <path-to-RESEARCH.md> [--verify-issues] [--verify-repos]\n"
+            "\n"
+            "Flags:\n"
+            "  --verify-issues   HTTP HEAD-check each cited GitHub issue URL (checks for 404)\n"
+            "  --verify-repos    Call GitHub API for each repo in the table:\n"
+            "                      - confirms repo exists\n"
+            "                      - checks reported star count is within +-50% of actual\n"
+            "\n"
+            "Environment:\n"
+            "  GITHUB_TOKEN      Optional. Raises GitHub API rate limit from 60 to 5000 req/hr.\n"
+        )
         sys.exit(1)
 
     path = sys.argv[1]
     verify_issues = "--verify-issues" in sys.argv
+    verify_repos = "--verify-repos" in sys.argv
 
-    issues = validate(path, verify_issues=verify_issues)
+    issues = validate(path, verify_issues=verify_issues, verify_repos=verify_repos)
 
     if not issues:
         print("RESEARCH.md is valid.")

@@ -8,7 +8,7 @@ description: >
   stays active as a research companion. Triggers on: "genesis init [vision]", "I want to build
   X", "scaffold", "new project", "set up project", "start building", "create a tool", "make a
   CLI", "bootstrap", "בנה פרויקט", "צור פרויקט", "התחל פרויקט".
-version: "1.10.0"
+version: "1.11.0"
 author: "Maio Eshet"
 license: "MIT"
 ---
@@ -29,6 +29,8 @@ phases. Default to English for unrecognized languages.
 ## Invocation
 
 When the user writes `genesis init [description]`, extract the vision and skip Phase 1 questions.
+Auto-detect archetype and scale from the description. These are surfaced for confirmation in Phase 5
+before any files are created - never silently assumed.
 Phase 0 always runs regardless of invocation method.
 
 `genesis init --from-prd [file]` - read a PRD file (e.g., from idea-os or similar product planning tools).
@@ -58,10 +60,7 @@ Before any research, silently detect the user's environment:
 **Convention scan** - silently check nearby existing projects for HTTP client, test
 framework, DB, and formatter. Present once in Phase 5: "Your projects use [X]. Match? [Y/n]"
 
-Store for:
-- Phase 3: flag OS-specific pitfalls automatically
-- Phase 5: match existing conventions if confirmed
-- Phase 6: choose correct build backend and install commands
+Store for Phase 3 (OS pitfalls), Phase 5 (convention match), Phase 6 (install commands).
 
 **Windows PATH check**: On Windows, detect if the Python Scripts folder is on PATH.
 Run `python -c "import sysconfig; print(sysconfig.get_path('scripts'))"` to get the exact Scripts path.
@@ -164,7 +163,7 @@ Informational only - flag, never block.
 | Situation | Action |
 |-----------|--------|
 | 0 repos found | See Architect Mode section below |
-| 1-4 repos found | **Hard stop.** Report count, offer: A) broaden keywords B) switch to Architect Mode. Do not continue to Phase 3 with fewer than 5 repos. |
+| 1-4 repos found | Warn: "Only [N] repos found - research will be thin. Recommend broadening search." Offer: A) Broaden keywords and retry  B) Continue with what we have (research quality: THIN)  C) Switch to Architect Mode. Never hard-stop unless 0 repos. |
 | 5+ repos found | Continue normally |
 | API timeout | Report briefly, try web search fallback, continue |
 | MCP unavailable | Switch to next tool, mention the switch |
@@ -202,9 +201,26 @@ Aim for 3-7 pitfalls. If fewer than 3 found from issues, supplement with known
 language/framework anti-patterns from best practices.
 Never write shorthand like "repo#142" - always the full URL.
 
+Before proceeding to Phase 5, compute and display a one-line **Research Quality Signal**:
+
+| Condition | Label |
+|-----------|-------|
+| GitHub MCP available, 8+ repos deep-analyzed, 5+ issues found | `FULL` |
+| GitHub MCP unavailable OR 5-7 repos analyzed OR 2-4 issues found | `PARTIAL` |
+| Web search only, fewer than 5 repos, or 0-1 issues found | `THIN` |
+
+Display as: `Research quality: [LABEL] ([brief reason, e.g. "GitHub MCP unavailable - web search only"])`
+
+THIN research should not block - the user sees it and decides.
+
 ---
 
 ## Phase 5: Interactive Choice
+
+**Archetype confirmation** (run only when Phase 1 was skipped, i.e., invoked via `genesis init`):
+> "Detected: [Archetype] / [Scale] / [Language]. Correct? [Y / correct me]"
+Wait for reply. If the user corrects any field, update and proceed. If Y, continue.
+Skip this sub-check when Phase 1 ran normally - archetype was already confirmed there.
 
 Present the research summary and architectural options in a single message.
 The user confirms once and the build begins.
@@ -242,19 +258,15 @@ Build in this exact order. Announce each step.
 Create all directories and files including `.gitignore` for the project language.
 Non-destructive - no approval needed. Announce: "Creating folder structure..."
 
-**If project uses .env configuration**: after creating `.env.example`, ask:
-"Do you want to configure .env now? I'll ask for the key values."
-Fill `.env` interactively - never leave the user with only `.env.example`.
+**If project uses .env configuration**: after creating `.env.example`, ask: "Configure .env now? I'll ask for key values." Fill interactively - never leave the user with only `.env.example`.
 
 ### Step 2: Approval gates (always ask before running)
 Show exactly what will happen, then wait for explicit yes/no:
 - `npm install` / `pip install`: "Download project dependencies? ([X] packages)"
 - Any docker command: "Start Docker services?"
 
-**After install on Windows**: immediately run `[entrypoint] --version` or `[entrypoint] --help`.
-If the command is not found, provide the PATH fix:
-`$env:PATH += ";[Python Scripts path]"` for the session, and
-`[Environment]::SetEnvironmentVariable("PATH", ...)` for permanent fix.
+**After install on Windows**: run `[entrypoint] --help`. If not found, provide:
+`$env:PATH += ";[Python Scripts path]"` (session) and `[Environment]::SetEnvironmentVariable("PATH", ...)` (permanent).
 
 **Never perform**: git push or any action that sends code to a remote without explicit user approval.
 `git remote add` is allowed only when the user provides a URL and confirms.
@@ -299,17 +311,9 @@ Keep it under 40 lines.
 ### Step 6: Self-validating smoke test (mandatory)
 
 Run the test suite. Fix failures. Repeat until green. Never skip.
-
-```
-1. Run: pytest / npm test / cargo test / go test ./...
-2. If exit code 0: proceed to Step 7
-3. If exit code non-zero:
-   a. Read the error output
-   b. Fix the specific failing file (imports, missing dep, syntax)
-   c. Run again - max 3 attempts
-   d. If still failing after 3 attempts: report exact error, ask user for input
-      before proceeding. Do NOT continue to git commit on a red scaffold.
-```
+Run `pytest` / `npm test` / `cargo test` / `go test ./...`. If exit 0: proceed.
+If non-zero: read error, fix the failing file, retry - max 3 attempts.
+After 3 failures: report exact error, ask user before proceeding. Never commit on red.
 
 Also verify the CLI entrypoint if one exists:
 - Python: read `[project.scripts]` in `pyproject.toml`, run `[entrypoint] --help`
@@ -347,10 +351,7 @@ Never commit `.env`. Always commit `.env.example`.
 
 ## Phase 7: Development Companion Mode
 
-After Phase 6, enter companion mode. Remain active as a research partner.
-
-The user can invoke directly: `genesis help [problem]`, `genesis research [topic]`,
-or `genesis check` to run a freshness audit on the scaffold.
+After Phase 6, enter companion mode. Direct invocations: `genesis help [problem]`, `genesis research [topic]`, `genesis check` (freshness audit).
 
 **`genesis check`** - freshness audit (run 30+ days after scaffold): check deps for CVEs + CI action versions. Report: CRITICAL / WARNING / INFO. Never auto-apply - show upgrade commands only.
 

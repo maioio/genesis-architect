@@ -21,6 +21,11 @@ jobs:
       - name: Run research validator on example
         run: python scripts/research_validator.py examples/typescript-cli/RESEARCH.md
 
+      - name: Verify GitHub issue URLs in example PITFALLS.md
+        run: python scripts/research_validator.py examples/typescript-cli/PITFALLS.md --verify-issues
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Run research validator on template
         run: python scripts/research_validator.py assets/RESEARCH.template.md
 

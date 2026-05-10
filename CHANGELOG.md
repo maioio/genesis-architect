@@ -9,6 +9,23 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-05-10
+
+### Added
+- **`genesis harden` command**: security and quality upgrade for existing projects. Gap-scans for missing secret-scanning workflow, SAST workflow, quality-gate config, and strict `.gitignore`; injects missing files; scans src/ for common security gaps; outputs a status table (auto-injected vs. manual action required)
+- **Step 7b: Security and Quality Hardening** - automatic on every `genesis init`: creates `genesis_quality.yml` (secret scanning + SAST), `sonar-project.properties`, strict `.gitignore` additions, and ROADMAP phase for activating quality gates
+- **`references/security-templates.md`**: production-ready CI templates for secret scanning, SAST, code quality gate, pre-commit hook, and language selection guide; includes `genesis harden` status table format
+- **README**: `genesis harden` added to explicit commands, Companion Mode, deliverables table, and project structure tree; three new production-readiness defaults (secret scanning CI, SAST CI, code quality gate)
+
+### Changed
+- Version bumped from 2.0.0 to 2.1.0 across SKILL.md, README.md, CHANGELOG.md
+
+### Fixed
+- `examples/typescript-cli/RESEARCH.md`: replaced non-existent `nicolo-ribaudo/csv-parser` repo with `mafintosh/csv-parser` (1.5k stars, verified live)
+- `examples/typescript-cli/PITFALLS.md`: updated issue URL from fabricated `nicolo-ribaudo/csv-parser/issues/142` to verified `mafintosh/csv-parser/issues/152`
+- `research_validator.py` now returns exit 0 on the typescript-cli example
+- Quality Score updated to 78/100 (measured) from previously reported 72/100
+
 ## [2.0.0] - 2026-05-10
 
 ### Breaking Changes
@@ -20,8 +37,8 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 - **Go/Rust/Frontend production parity**: non-root Dockerfiles, structured logging (slog/tracing), env validation (`mustEnv`/`require_env`) for all Go and Rust tiers; VITE_ env guard for Frontend
 - **Phase 2: engagement-density issue ranking** - scans 100 issues/repo, surfaces top 10 by comments+reactions; priority labels (bug, regression, security)
 - **Phase 7: structured context restoration** - extracts repos, pitfalls, architecture decision, language/tier from RESEARCH.md; announces "N repos, M pitfalls loaded"
-- **Snyk + SonarCloud badges** in README
-- **"Verified by" section** in README with 4-tool verification table
+- **Security and quality badges** in README
+- **"Quality Shield" section** in README with 4-job verification table
 - **Portfolio note** callout before License
 - **.gitignore hardened**: `__pycache__/`, `*.pyc`, `.env`, `.env.*` (with `!.env.example` exception)
 

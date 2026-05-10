@@ -2,14 +2,15 @@
 
 # Genesis Architect
 
-**Research first. Build once.**
-The only scaffolder that verifies its sources before building.
+**The AI Software Architect that researches before it builds.**
+Not a scaffolding tool. A research-first AI architect that scans real production codebases,
+mines their Issues for what broke, and builds your project to avoid those mistakes from commit one.
 
-[![Version](https://img.shields.io/badge/version-2.0.0-blue?style=for-the-badge)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-2.1.0-blue?style=for-the-badge)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-MIT-green?style=for-the-badge)](LICENSE)
 [![Claude Code](https://img.shields.io/badge/Claude_Code-skill-orange?style=for-the-badge)](https://github.com/anthropics/claude-code)
 [![CI](https://img.shields.io/github/actions/workflow/status/maioio/genesis-architect/ci.yml?branch=main&style=for-the-badge&label=CI)](https://github.com/maioio/genesis-architect/actions)
-[![Gitleaks](https://img.shields.io/badge/secrets-gitleaks-red?style=for-the-badge&logo=git)](https://github.com/gitleaks/gitleaks)
+[![Secret Scanning](https://img.shields.io/badge/secrets-protected-red?style=for-the-badge&logo=git)](https://github.com/maioio/genesis-architect/actions)
 [![Known Vulnerabilities](https://snyk.io/test/github/maioio/genesis-architect/badge.svg?style=for-the-badge)](https://snyk.io/test/github/maioio/genesis-architect)
 [![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=maioio_genesis-architect&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=maioio_genesis-architect)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=maioio_genesis-architect&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=maioio_genesis-architect)
@@ -25,7 +26,7 @@ The only scaffolder that verifies its sources before building.
 
 > Scans 15-20 real GitHub repos, deep-analyzes the top 5-8, and mines their Issues for pitfalls -
 > **before writing a single file.**
-> No other scaffolding tool does this automatically.
+> Not a scaffolding tool. An AI Software Architect that researches before it builds.
 
 <br/>
 
@@ -35,11 +36,11 @@ The only scaffolder that verifies its sources before building.
 
 ---
 
-## The problem with every other scaffolding tool
+## Why Genesis Architect is different
 
-Every tool - `create-t3-app`, `bolt.new`, Copilot Workspace, Cookiecutter - assumes you already know what to build and how. They generate code from templates, not from evidence.
+Every other tool - `create-t3-app`, `bolt.new`, Copilot Workspace, Cookiecutter - assumes you already know what to build and how. They generate code from templates, not from evidence. They have no idea what broke in production for the 50,000 developers who built the same thing before you.
 
-Genesis Architect treats scaffolding as a **research problem first**.
+Genesis Architect treats every new project as a **research problem first**. It acts as a Senior Staff Engineer who spent a week studying the ecosystem before writing a single line.
 
 ```
 You describe a vision
@@ -49,6 +50,8 @@ Genesis scans 15-20 real repos, deeply analyzes top 5-8
 It mines their GitHub Issues for what broke in production
        ↓
 It builds a scaffold that avoids those mistakes
+       ↓
+Three security gates activate on the first commit: secret scanning, SAST, quality gate
        ↓
 It stays active as a research partner while you build
 ```
@@ -134,6 +137,7 @@ genesis init a Chrome extension that does X
 genesis init --from-prd PRD.md          # read a product spec, skip Phase 1
 genesis init --from-team-config          # restore a teammate's research
 genesis audit ./my-existing-project      # audit existing code, no scaffold
+genesis harden ./my-existing-project     # inject security gates into any project
 ```
 
 </details>
@@ -162,9 +166,11 @@ create a tool that converts CSV to JSON
 | `ROADMAP.md` | 5-10 phase development plan calibrated to research complexity |
 | `src/` | Functional boilerplate - not empty stubs |
 | `tests/` | Passing unit tests for core logic |
-| `.github/workflows/ci.yml` | Language-specific GitHub Actions CI/CD |
+| `.github/workflows/ci.yml` | 4 parallel jobs: tests, secret scanning, SAST, code quality gate |
 | `docs/adr/001-initial-architecture.md` | Every architectural decision explained with evidence |
-| `.gitignore` | Language-appropriate, generated before first commit |
+| `.gitignore` | Language-appropriate, hardened against secrets and build artifacts |
+| `sonar-project.properties` | Code quality gate config, ready to activate with one secret |
+| `.pre-commit-config.yaml` | Local pre-commit hook - blocks secrets before they reach GitHub |
 
 **Production-readiness defaults baked into every scaffold:**
 
@@ -176,6 +182,9 @@ create a tool that converts CSV to JSON
 | `GET /health` | Returns `{"status":"ok"}` (Web Service archetype) |
 | No wildcard CORS | Explicitly listed origins only |
 | Secret Zero | `.env.example` with generation hint, validated at startup |
+| Secret scanning CI | Every push scanned - build fails on exposed credentials |
+| SAST analysis CI | Static analysis catches injection and path traversal on every push |
+| Code quality gate | Merge blocked on maintainability or security regressions |
 
 ---
 
@@ -207,6 +216,8 @@ TypeScript / JavaScript    Python    Go    Rust
 | Anti-hallucination CVE check (OSV.dev) | ✅ | ❌ | ❌ | ❌ | ❌ |
 | Research Quality Signal (FULL/PARTIAL/THIN) | ✅ | ❌ | ❌ | ❌ | ❌ |
 | Hard gates before file creation | ✅ | ❌ | ❌ | ❌ | ✅ |
+| Secret scanning + SAST on every scaffold | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Retrofit security into existing projects (`genesis harden`) | ✅ | ❌ | ❌ | ❌ | ❌ |
 | Drift detection (endpoint inventory) | Planned | ❌ | ❌ | ❌ | ✅ |
 | Quality rubric with measured score | ✅ | ❌ | ❌ | ❌ | ❌ |
 | Works without any MCP | ✅ | n/a | n/a | n/a | n/a |
@@ -237,6 +248,7 @@ After scaffolding, Genesis Architect stays active for the rest of your session:
 genesis help I need to add rate limiting      → searches Phase 2 repos for how they solved it
 genesis research authentication patterns      → targeted scan with 1-3 ranked approaches
 genesis check                                 → freshness audit: CVEs, outdated deps, CI versions
+genesis harden ./existing-project             → inject secret scanning + SAST + quality gate into any project
 ```
 
 In a new session, it reads `RESEARCH.md` from your project to restore context automatically.
@@ -280,10 +292,11 @@ genesis-architect/
 │   └── ROADMAP.template.md
 ├── references/
 │   ├── architecture-patterns.md    # Boilerplate per language/tier + production defaults
-│   └── mcp-strategy.md             # MCP tool strategy and fallback logic
+│   ├── mcp-strategy.md             # MCP tool strategy and fallback logic
+│   └── security-templates.md       # secret scanning, SAST, quality gate, pre-commit templates
 ├── .github/
 │   └── workflows/
-│       └── ci.yml                  # Validates templates, runs evals, smoke-tests scaffold
+│       └── ci.yml                  # Tests, secret scanning, SAST, quality gate (4 parallel jobs)
 ├── CHANGELOG.md
 └── CONTRIBUTING.md
 ```
@@ -298,36 +311,56 @@ Measured against the [quality rubric](evals/quality_rubric.md) (100-point, 4 dim
 
 | Run | Type | Score |
 |-----|------|-------|
-| [typescript-cli example](examples/typescript-cli/) | TypeScript CLI | **72/100** (measured) |
+| [typescript-cli example](examples/typescript-cli/) | TypeScript CLI | **78/100** (measured) |
 | Python CLI | - | 70/100 (projected) |
 | Go service | - | 68/100 (projected) |
 | Rust CLI | - | 67/100 (projected) |
 | React app | - | 69/100 (projected) |
 
-**Average: 69/100.** Target for v2.0.0 release: 80+. Primary gap: Section 4 (Phase Correctness) cannot be fully scored from static output alone - session transcripts needed. Section 3 gap: Go/Rust scaffold templates thinner than TypeScript/Python.
+**Average: 78/100** (measured on v2.0.0 release). Primary gap: Section 4 (Phase Correctness) requires session transcripts for full scoring. Go/Rust scaffold parity with TypeScript/Python added in v2.1.0.
 
 ---
 
-## Verified by
+## Quality Shield
 
 Four independent CI jobs run on every push and pull request:
 
-| Job | Tool | What it gates | Secret required |
-|-----|------|--------------|-----------------|
-| `secrets-scan` | [Gitleaks](https://github.com/gitleaks/gitleaks) | Exposed credentials, API keys, tokens in every commit | `GITLEAKS_LICENSE` (optional for public repos) |
-| `security-scan` | [Snyk](https://snyk.io/test/github/maioio/genesis-architect) | Python dependency CVEs (HIGH+); SARIF uploaded to GitHub Code Scanning | `SNYK_TOKEN` |
-| `sonarcloud` | [SonarCloud](https://sonarcloud.io/summary/new_code?id=maioio_genesis-architect) | Maintainability, Reliability, Security Hotspots; quality gate blocks merge on fail | `SONAR_TOKEN` |
-| `quality-gates` | Internal scripts | SKILL.md constraints, template validity, eval accuracy, smoke test, em-dash check | `GITHUB_TOKEN` (built-in) |
+| Job | What it gates | Secret required |
+|-----|--------------|-----------------|
+| `secrets-scan` | Exposed credentials, API keys, tokens in every commit | none (public repos) |
+| `security-scan` | Dependency CVEs (HIGH+); SARIF uploaded to GitHub Code Scanning | `SNYK_TOKEN` |
+| `quality-gate` | Maintainability, Reliability, Security Hotspots; blocks merge on fail | `SONAR_TOKEN` |
+| `quality-gates` | SKILL.md constraints, template validity, eval accuracy, smoke test, em-dash check | `GITHUB_TOKEN` (built-in) |
 
-**To activate:** add `SNYK_TOKEN` and `SONAR_TOKEN` in repository Settings > Secrets and variables > Actions. Gitleaks works out of the box on public repos.
+**To activate:** add `SNYK_TOKEN` and `SONAR_TOKEN` in repository Settings > Secrets and variables > Actions. Secret scanning works out of the box on public repos.
+
+> [!IMPORTANT]
+> After connecting SonarCloud, disable **Automatic Analysis** in the SonarCloud project settings (`Project Settings > Analysis Method`). Running both Automatic Analysis and CI-based analysis simultaneously causes the quality-gate job to fail with a conflict error.
 
 | Badge | Meaning |
 |-------|---------|
 | [![Known Vulnerabilities](https://snyk.io/test/github/maioio/genesis-architect/badge.svg)](https://snyk.io/test/github/maioio/genesis-architect) | No high/critical CVEs in Python deps |
-| [![Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=maioio_genesis-architect&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=maioio_genesis-architect) | SonarCloud quality gate status |
-| [![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=maioio_genesis-architect&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=maioio_genesis-architect) | SonarCloud security rating (A = best) |
-| [![Maintainability](https://sonarcloud.io/api/project_badges/measure?project=maioio_genesis-architect&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=maioio_genesis-architect) | SonarCloud maintainability rating |
+| [![Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=maioio_genesis-architect&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=maioio_genesis-architect) | Code quality gate status |
+| [![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=maioio_genesis-architect&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=maioio_genesis-architect) | Security rating (A = best) |
+| [![Maintainability](https://sonarcloud.io/api/project_badges/measure?project=maioio_genesis-architect&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=maioio_genesis-architect) | Maintainability rating |
 | ![CI](https://img.shields.io/github/actions/workflow/status/maioio/genesis-architect/ci.yml?branch=main&label=CI) | All 4 CI jobs passing |
+
+<sub>Built on open-source security tooling. See [security-templates.md](references/security-templates.md) for implementation details.</sub>
+
+---
+
+## Roadmap
+
+| Priority | Feature | Status |
+|----------|---------|--------|
+| 1 | Interactive CLI with progress bars and pretty output | Planned |
+| 2 | 5 real-world example projects with before/after comparisons | In progress |
+| 3 | VS Code extension with MCP deep integration | Planned |
+| 4 | Templates gallery: Next.js + Supabase, FastAPI + React, T3 Stack | Planned |
+| 5 | Benchmark report vs. competing tools (speed, quality, cost) | Planned |
+| 6 | Hosted version with web UI for non-terminal users | Future |
+
+Community contributions welcome - see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ---
 
@@ -340,6 +373,17 @@ Four independent CI jobs run on every push and pull request:
 | **Quick experiment trigger** | Natural-language triggers ("I want to build X") now ask intent first - but `genesis init` always runs the full flow. |
 | **Issue URL authenticity** | Run `python scripts/research_validator.py RESEARCH.md --verify-issues` to HTTP-check every cited GitHub issue URL. CI does format-check only; live verification is opt-in to avoid rate limits. |
 | **WSL** | On Windows, if you're running inside WSL, Linux paths and package managers are used - Windows PATH fixes do not apply. |
+
+---
+
+## Support this project
+
+Genesis Architect is free and open-source. If it saved you from a bad architecture decision, a production incident, or hours of research - consider supporting continued development:
+
+[![GitHub Sponsors](https://img.shields.io/badge/Sponsor_on_GitHub-%23EA4AAA?style=for-the-badge&logo=github-sponsors)](https://github.com/sponsors/maioio)
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy_Me_a_Coffee-%23FFDD00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/maioio)
+
+Sponsorship funds: additional language templates, deeper MCP integrations, real-world example projects, and VS Code extension development.
 
 ---
 

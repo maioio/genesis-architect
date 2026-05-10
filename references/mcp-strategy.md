@@ -46,7 +46,7 @@ Target domains: reddit.com, news.ycombinator.com, stackoverflow.com, dev.to, med
 
 ## Firecrawl MCP Usage
 
-### scrape — always use these options to avoid token overflow
+### scrape: always use these options to avoid token overflow
 ```json
 {
   "url": "<target>",
@@ -58,7 +58,7 @@ Target domains: reddit.com, news.ycombinator.com, stackoverflow.com, dev.to, med
 Without `onlyMainContent: true`, pages like npm registry return 200K+ chars and exceed limits.
 With it, the same page returns ~2K chars of relevant content.
 
-### search — use for competitive landscape scans
+### search: use for competitive landscape scans
 ```json
 {
   "query": "<terms>",
@@ -67,7 +67,7 @@ With it, the same page returns ~2K chars of relevant content.
 }
 ```
 
-### batch_scrape — use when scraping 3+ URLs from Phase 2 repo list
+### batch_scrape: use when scraping 3+ URLs from Phase 2 repo list
 ```json
 {
   "urls": ["https://...", "https://...", "https://..."],

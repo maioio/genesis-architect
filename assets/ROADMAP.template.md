@@ -19,5 +19,23 @@ Estimated effort: {{PHASE_4_EFFORT}}
 {{PHASE_5_DESCRIPTION}}
 Estimated effort: {{PHASE_5_EFFORT}}
 
+## Activate Quality Gates
+
+Security and quality CI is already wired into `.github/workflows/genesis_quality.yml`.
+Three steps to make it fully active:
+
+1. **Add SONAR_TOKEN**: Go to [sonarcloud.io](https://sonarcloud.io), create a project, copy the token.
+   Add it in: GitHub repo Settings > Secrets and variables > Actions > New repository secret.
+   Name: `SONAR_TOKEN`. After the next push, the code quality badge in README becomes live.
+
+2. **Add SNYK_TOKEN** (optional, for deeper dependency CVE scanning):
+   Sign up at the dependency scanning platform, connect your GitHub account, copy the API token.
+   Add as `SNYK_TOKEN` in the same Secrets page.
+
+3. **Verify first green run**: Push any commit. Check the Actions tab. All four jobs
+   (test, secrets-scan, sast, quality-gate) should be green within 5 minutes.
+
+The `secrets-scan` and `sast` jobs require no additional secrets - they run immediately on first push using `GITHUB_TOKEN` (built-in to GitHub Actions).
+
 ## Success Criteria
 {{SUCCESS_CRITERIA}}

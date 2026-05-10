@@ -1,10 +1,11 @@
 # Engineering Pitfalls Report
+<!-- Genesis Architect -->
 
 These issues were found in 5 real-world TypeScript CLI projects.
 Our scaffold is designed to avoid them.
 
 ## Pitfall 1: Synchronous file reading on large inputs
-**Seen in**: [csv-parser#142](https://github.com/nicolo-ribaudo/csv-parser/issues/142)
+**Seen in**: [csv-parser#152](https://github.com/mafintosh/csv-parser/issues/152)
 **Frequency**: Found in 3 of 5 analyzed repos
 **Root cause**: Using `fs.readFileSync` blocks the event loop and causes OOM on files >100MB
 **Our mitigation**: `src/core.ts` uses Node.js streams by default, not `readFileSync`

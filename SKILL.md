@@ -8,7 +8,7 @@ description: >
   stays active as a research companion. Triggers on: "genesis init [vision]", "I want to build
   X", "scaffold", "new project", "set up project", "start building", "create a tool", "make a
   CLI", "bootstrap", "בנה פרויקט", "צור פרויקט", "התחל פרויקט".
-version: "2.0.0"
+version: "2.1.0"
 author: "Maio Eshet"
 license: "MIT"
 optional_mcps: [github-mcp, exa, firecrawl]
@@ -47,6 +47,14 @@ If any required field is missing, abort with: "`.genesis.json` is missing field:
 `genesis audit [path]` - run Phases 2-4 on an existing codebase. Delivers PITFALLS.md and RESEARCH.md.
 No scaffold generated. Pre-flight Check (Phase 0.5) does not apply to `genesis audit` - it is an explicit command. Run Phases 2-4 directly.
 
+`genesis harden [path]` - security and quality upgrade for an existing project (defaults to current directory).
+Runs a gap scan and injects missing standards:
+1. Check for: secret-scanning workflow, SAST workflow, quality-gate config, strict .gitignore
+2. Inject any missing files using templates from references/security-templates.md
+3. Scan src/ for common security gaps: missing input sanitization, hardcoded strings resembling secrets (regex: [A-Za-z0-9]{32,}), unsafe file opens without path validation
+4. Output a status table: what was injected (auto) vs what needs manual action (tokens, org name)
+Pre-flight Check (Phase 0.5) does not apply - this is an explicit command.
+
 Read `references/architecture-patterns.md` for boilerplate templates.
 Read `references/mcp-strategy.md` for MCP usage and fallback logic.
 
@@ -72,7 +80,7 @@ If detection fails, ask once: "What OS and Python version are you on?"
 
 ## Phase 0.5: Pre-flight Check
 
-**Skip if the user invoked `genesis init` explicitly** - they already opted in.
+**Skip for any explicit command** (`genesis init`, `genesis audit`, `genesis harden`, `genesis init --from-prd`, `genesis init --from-team-config`) - the user already opted in.
 
 Run only when triggered by natural language ("I want to build X", "scaffold a project", etc.).
 
@@ -253,6 +261,10 @@ Non-retrofittable defaults for every scaffold (details in `references/architectu
 - **Secret Zero**: `.env.example` with `SECRET_KEY=change-me-generate-with-openssl-rand-hex-32`
 - **Health endpoint** (Web Service only): `GET /health` returning `{"status":"ok"}`
 - **ADR stub**: `docs/adr/001-initial-architecture.md` - key decisions, links to RESEARCH.md
+- **Secret leak protection**: secret-scanning CI job in `genesis_quality.yml` (Step 7b) - fails build on exposed credentials
+- **Dependency and SAST scan**: static analysis CI job in `genesis_quality.yml` - catches injection and path traversal vulnerabilities
+- **Quality gate**: `sonar-project.properties` ready; add `SONAR_TOKEN` to GitHub Secrets to activate the quality badge and merge gate
+- **Path traversal guard**: inject `_safe_path` (from `references/architecture-patterns.md`) when the project handles user-supplied file paths (CLI tools, file processors, upload endpoints); skip for pure API services or frontends
 
 **Web Service archetype only**: create `endpoint-inventory.json` with `[{"method":"GET","path":"/health","added_in":"scaffold"}]`. `genesis check` uses this to detect API surface drift after 30+ days.
 
@@ -260,7 +272,10 @@ Non-retrofittable defaults for every scaffold (details in `references/architectu
 Create `tests/` with: minimum 1 unit test that actually passes (not `assert True`), test config file (jest.config.js, pytest.ini, pyproject.toml, etc.), tested function must be the core function of the project.
 
 ### Step 5: GitHub Actions CI/CD
-Create `.github/workflows/ci.yml`: triggers on push to main and pull requests, installs dependencies, runs test suite, runs linter if configured. Keep under 40 lines.
+Create `.github/workflows/ci.yml` using the language-specific template from `references/architecture-patterns.md`.
+The template includes four parallel jobs: `test`, `secrets-scan`, `sast`, `quality-gate`.
+The `quality-gate` job activates automatically once `SONAR_TOKEN` is added to GitHub Secrets.
+Note: after creating the project in SonarCloud, disable "Automatic Analysis" in the SonarCloud project settings - CI-based analysis and Automatic Analysis conflict.
 
 ### Step 6: Self-validating smoke test (mandatory)
 
@@ -291,6 +306,33 @@ Do not block on this - it is a warning, not a gate. Announce the check result.
    push command but **never run it automatically**
 
 Never commit `.env` - always commit `.env.example`.
+
+### Step 7b: Security and Quality Hardening (automatic on every genesis init)
+
+The four-job `ci.yml` created in Step 5 already includes secret scanning and SAST.
+Additionally create `sonar-project.properties` (use template from `references/security-templates.md`):
+```
+sonar.projectKey=[github-username]_[project-name]
+sonar.organization=[github-username]
+sonar.sources=src
+sonar.qualitygate.wait=true
+```
+Announce: 'Quality gate ready. To activate: (1) add SONAR_TOKEN to GitHub Settings > Secrets, (2) disable Automatic Analysis in SonarCloud project settings.'
+
+Create strict `.gitignore` additions (append to existing):
+```
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+venv/
+node_modules/
+__pycache__/
+```
+
+Add to ROADMAP.md a Phase titled 'Activate Quality Gates' with steps: (1) Add SONAR_TOKEN secret to GitHub Settings > Secrets, (2) Add SNYK_TOKEN secret to enable dependency CVE scanning, (3) Verify first green CI run.
 
 ### Step 8: Deliver summary
 Announce: "Genesis Architect complete. [bullet list of created files]. Next: [first ROADMAP phase]. Entering companion mode."

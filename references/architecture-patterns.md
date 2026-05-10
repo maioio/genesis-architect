@@ -12,12 +12,15 @@ project/
 ├── src/
 │   ├── index.ts          # Entry point
 │   ├── core.ts           # Core logic
-│   └── utils.ts          # Shared utilities
+│   ├── utils.ts          # Shared utilities
+│   └── utils/
+│       └── security.ts   # Path safety and input validation
 ├── tests/
 │   └── core.test.ts      # Unit tests
 ├── .github/
 │   └── workflows/
 │       └── ci.yml
+├── sonar-project.properties
 ├── package.json
 ├── tsconfig.json
 ├── .env.example
@@ -90,12 +93,15 @@ project/
 │   │   └── [entity]Service.ts
 │   ├── infrastructure/   # External: DB, APIs, filesystem
 │   │   └── [adapter].ts
+│   ├── utils/
+│   │   └── security.ts   # Path safety and input validation
 │   └── config/
 │       └── index.ts
 ├── tests/
 │   ├── unit/
 │   └── integration/
 ├── .github/workflows/ci.yml
+├── sonar-project.properties
 ├── package.json
 ├── tsconfig.json
 ├── .env.example
@@ -115,11 +121,14 @@ project/
 │       ├── __init__.py
 │       ├── main.py       # Entry point
 │       ├── core.py       # Core logic
-│       └── utils.py
+│       ├── utils.py
+│       └── utils/
+│           └── security.py  # Path safety and input validation
 ├── tests/
 │   ├── __init__.py
 │   └── test_core.py
 ├── .github/workflows/ci.yml
+├── sonar-project.properties
 ├── pyproject.toml
 ├── .env.example
 ├── RESEARCH.md
@@ -194,11 +203,14 @@ project/
 │       ├── domain/       # Business entities and rules
 │       ├── services/     # Use cases
 │       ├── adapters/     # External integrations
+│       ├── utils/
+│       │   └── security.py  # Path safety and input validation
 │       └── config.py
 ├── tests/
 │   ├── unit/
 │   └── integration/
 ├── .github/workflows/ci.yml
+├── sonar-project.properties
 ├── pyproject.toml
 ├── .env.example
 ├── RESEARCH.md
@@ -211,6 +223,9 @@ project/
 ## GitHub Actions CI/CD Template
 
 Use the language-specific template directly. Never use the generic template verbatim.
+
+All templates include four parallel jobs: tests, secret scanning, SAST, and quality gate.
+Secret scanning and SAST run without any secrets. Quality gate activates after SONAR_TOKEN is added.
 
 ### Node.js / TypeScript
 
@@ -225,25 +240,65 @@ on:
 
 jobs:
   test:
+    name: Tests
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
-
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
-
       - name: Install dependencies
         run: npm ci
-
       - name: Run tests
         run: npm test
-
       - name: Lint
         run: npm run lint
+        continue-on-error: true
+
+  secrets-scan:
+    name: Secret Scanning
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Scan for exposed credentials
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  sast:
+    name: Static Analysis
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Initialize static analysis
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript
+          queries: security-and-quality
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
+      - name: Perform static analysis
+        uses: github/codeql-action/analyze@v3
+
+  quality-gate:
+    name: Code Quality Gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Run quality gate scan
+        uses: SonarSource/sonarqube-scan-action@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        # Remove this line once SONAR_TOKEN is added to GitHub Secrets
         continue-on-error: true
 ```
 
@@ -260,24 +315,64 @@ on:
 
 jobs:
   test:
+    name: Tests
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
-
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-
       - name: Install dependencies
         run: pip install -e ".[dev]"
-
       - name: Run tests
         run: pytest
-
       - name: Lint
         run: ruff check .
+        continue-on-error: true
+
+  secrets-scan:
+    name: Secret Scanning
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Scan for exposed credentials
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  sast:
+    name: Static Analysis
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Initialize static analysis
+        uses: github/codeql-action/init@v3
+        with:
+          languages: python
+          queries: security-and-quality
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
+      - name: Perform static analysis
+        uses: github/codeql-action/analyze@v3
+
+  quality-gate:
+    name: Code Quality Gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Run quality gate scan
+        uses: SonarSource/sonarqube-scan-action@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        # Remove this line once SONAR_TOKEN is added to GitHub Secrets
         continue-on-error: true
 ```
 
@@ -294,24 +389,64 @@ on:
 
 jobs:
   test:
+    name: Tests
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
-
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
           go-version: '1.22'
-
       - name: Install dependencies
         run: go mod download
-
       - name: Run tests
         run: go test ./...
-
       - name: Lint
         run: go vet ./...
+        continue-on-error: true
+
+  secrets-scan:
+    name: Secret Scanning
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Scan for exposed credentials
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  sast:
+    name: Static Analysis
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Initialize static analysis
+        uses: github/codeql-action/init@v3
+        with:
+          languages: go
+          queries: security-and-quality
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
+      - name: Perform static analysis
+        uses: github/codeql-action/analyze@v3
+
+  quality-gate:
+    name: Code Quality Gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Run quality gate scan
+        uses: SonarSource/sonarqube-scan-action@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        # Remove this line once SONAR_TOKEN is added to GitHub Secrets
         continue-on-error: true
 ```
 
@@ -328,22 +463,57 @@ on:
 
 jobs:
   test:
+    name: Tests
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
-
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
-
       - name: Build
         run: cargo build
-
       - name: Run tests
         run: cargo test
-
       - name: Lint
         run: cargo clippy
+        continue-on-error: true
+
+  secrets-scan:
+    name: Secret Scanning
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Scan for exposed credentials
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  sast:
+    name: Dependency Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: Install cargo-audit
+        run: cargo install cargo-audit
+      - name: Audit dependencies for known vulnerabilities
+        run: cargo audit
+
+  quality-gate:
+    name: Code Quality Gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Run quality gate scan
+        uses: SonarSource/sonarqube-scan-action@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        # Remove this line once SONAR_TOKEN is added to GitHub Secrets
         continue-on-error: true
 ```
 
@@ -358,7 +528,12 @@ Replace `{user}`, `{repo}`, `{workflow}`, and `{package}` with real values.
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![CI](https://img.shields.io/github/actions/workflow/status/{user}/{repo}/{workflow}.yml?branch=main&label=CI)](.github/workflows/ci.yml)
 [![Version](https://img.shields.io/github/v/release/{user}/{repo})](https://github.com/{user}/{repo}/releases)
+[![Secret Scanning](https://img.shields.io/badge/secrets-protected-red?logo=git)](.github/workflows/genesis_quality.yml)
+[![Security Rating](https://sonarcloud.io/api/project_badges/measure?project={user}_{repo}&metric=security_rating)](https://sonarcloud.io/summary/new_code?id={user}_{repo})
+[![Quality Gate](https://sonarcloud.io/api/project_badges/measure?project={user}_{repo}&metric=alert_status)](https://sonarcloud.io/summary/new_code?id={user}_{repo})
 ```
+
+Note: the Security Rating and Quality Gate badges require `SONAR_TOKEN` in GitHub Settings > Secrets. They show "not found" until the first scan completes. Tell the user to add the secret and push - badges become live automatically.
 
 For Python projects, add a PyPI downloads badge once published:
 ```markdown
@@ -469,6 +644,128 @@ Researched [N] repositories. See RESEARCH.md for full analysis.
 ## Consequences
 See PITFALLS.md for known risks and mitigations.
 ```
+
+### Secure by Default: security module
+
+Create `utils/security.py` (Python) or `src/utils/security.ts` (TypeScript) in every
+scaffold that handles user-supplied input. Import and use `get_safe_path` for all file I/O.
+Skip for pure API services or frontends with no filesystem access.
+
+**Python: `src/[project_name]/utils/security.py`**
+```python
+"""
+Security utilities: input validation and safe file access.
+All file I/O that uses user-supplied paths must go through get_safe_path.
+"""
+from pathlib import Path
+
+
+class PathTraversalError(ValueError):
+    """Raised when a path escapes the allowed base directory."""
+
+
+def get_safe_path(base: Path, user_input: str) -> Path:
+    """
+    Resolve a user-supplied path and verify it stays inside base.
+
+    Usage:
+        safe = get_safe_path(Path("data"), request.filename)
+        content = safe.read_text()
+    """
+    if not user_input:
+        raise ValueError("Path must not be empty")
+    if "\x00" in user_input:
+        raise PathTraversalError("Null byte detected in path")
+    resolved = (base / user_input).resolve()
+    if not resolved.is_relative_to(base.resolve()):
+        raise PathTraversalError(
+            f"Path traversal blocked: {user_input!r} escapes {base}"
+        )
+    return resolved
+```
+
+**TypeScript: `src/utils/security.ts`**
+```typescript
+/**
+ * Security utilities: input validation and safe file access.
+ * All file I/O that uses user-supplied paths must go through getSafePath.
+ */
+import path from "path";
+
+export class PathTraversalError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "PathTraversalError";
+  }
+}
+
+/**
+ * Resolve a user-supplied path and verify it stays inside base.
+ *
+ * Usage:
+ *   const safe = getSafePath("data", req.query.filename);
+ *   const content = fs.readFileSync(safe, "utf8");
+ */
+export function getSafePath(base: string, userInput: string): string {
+  if (!userInput) throw new Error("Path must not be empty");
+  if (userInput.includes("\0")) {
+    throw new PathTraversalError("Null byte detected in path");
+  }
+  const resolvedBase = path.resolve(base);
+  const resolved = path.resolve(base, userInput);
+  if (!resolved.startsWith(resolvedBase + path.sep) && resolved !== resolvedBase) {
+    throw new PathTraversalError(
+      `Path traversal blocked: "${userInput}" escapes "${base}"`
+    );
+  }
+  return resolved;
+}
+```
+
+**Test coverage to include (`tests/test_security.py` or `security.test.ts`):**
+
+Python:
+```python
+from pathlib import Path
+import pytest
+from src.[project_name].utils.security import get_safe_path, PathTraversalError
+
+BASE = Path("data")
+
+def test_safe_path_within_base():
+    result = get_safe_path(BASE, "report.csv")
+    assert result == (BASE / "report.csv").resolve()
+
+def test_blocks_traversal():
+    with pytest.raises(PathTraversalError):
+        get_safe_path(BASE, "../etc/passwd")
+
+def test_blocks_null_byte():
+    with pytest.raises(PathTraversalError):
+        get_safe_path(BASE, "file\x00.txt")
+```
+
+TypeScript:
+```typescript
+import { getSafePath, PathTraversalError } from "../src/utils/security";
+
+describe("getSafePath", () => {
+  it("returns a resolved path within base", () => {
+    const result = getSafePath("data", "report.csv");
+    expect(result).toContain("data");
+  });
+
+  it("blocks traversal", () => {
+    expect(() => getSafePath("data", "../etc/passwd")).toThrow(PathTraversalError);
+  });
+
+  it("blocks null bytes", () => {
+    expect(() => getSafePath("data", "file\x00.txt")).toThrow(PathTraversalError);
+  });
+});
+```
+
+---
 
 ### Dockerfile security (non-root user)
 
@@ -614,6 +911,7 @@ project/
 ├── tests/
 │   └── core_test.go  # or internal/core/core_test.go for larger projects
 ├── .github/workflows/ci.yml
+├── sonar-project.properties
 ├── go.mod
 ├── .env.example
 ├── RESEARCH.md
@@ -697,6 +995,7 @@ project/
 │   ├── unit/
 │   └── integration/
 ├── .github/workflows/ci.yml
+├── sonar-project.properties
 ├── go.mod
 ├── .env.example
 ├── RESEARCH.md
@@ -704,48 +1003,7 @@ project/
 └── ROADMAP.md
 ```
 
-**go.mod template:**
-```
-module github.com/[user]/[project]
-
-go 1.22
-
-require ()
-```
-
-**Dockerfile (non-root, multi-stage):**
-```dockerfile
-FROM golang:1.22-alpine AS builder
-WORKDIR /app
-COPY go.mod go.sum ./
-RUN go mod download
-COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build -o /app/server ./cmd/main.go
-
-FROM scratch
-COPY --from=builder /app/server /server
-USER 65534:65534
-ENTRYPOINT ["/server"]
-```
-
-**Structured logging (Go 1.21+ slog):**
-```go
-import "log/slog"
-logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
-slog.SetDefault(logger)
-```
-
-**Env validation at startup:**
-```go
-func mustEnv(key string) string {
-    v := os.Getenv(key)
-    if v == "" {
-        slog.Error("missing required env var", "key", key)
-        os.Exit(1)
-    }
-    return v
-}
-```
+Use the same Dockerfile, structured logging, and env validation snippets as Go - Minimalist above.
 
 ---
 
@@ -760,6 +1018,7 @@ project/
 ├── tests/
 │   └── integration_test.rs
 ├── .github/workflows/ci.yml
+├── sonar-project.properties
 ├── Cargo.toml
 ├── .env.example
 ├── RESEARCH.md
@@ -788,52 +1047,6 @@ mod tests {
 }
 ```
 
-**Cargo.toml template:**
-```toml
-[package]
-name = "[project-name]"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
-tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
-
-[dev-dependencies]
-```
-
-**Dockerfile (non-root, multi-stage):**
-```dockerfile
-FROM rust:1.77-slim AS builder
-WORKDIR /app
-COPY Cargo.toml Cargo.lock ./
-RUN mkdir src && echo "fn main(){}" > src/main.rs && cargo build --release
-COPY src ./src
-RUN touch src/main.rs && cargo build --release
-
-FROM debian:bookworm-slim
-RUN useradd -r -s /bin/false appuser
-COPY --from=builder /app/target/release/[project-name] /usr/local/bin/app
-USER appuser
-ENTRYPOINT ["app"]
-```
-
-**Structured logging with tracing:**
-```rust
-tracing_subscriber::fmt().json().init();
-tracing::info!(version = env!("CARGO_PKG_VERSION"), "service started");
-```
-
-**Env validation at startup:**
-```rust
-fn require_env(key: &str) -> String {
-    std::env::var(key).unwrap_or_else(|_| {
-        tracing::error!(key, "missing required env var");
-        std::process::exit(1);
-    })
-}
-```
-
 ---
 
 ## Rust - Scalable
@@ -852,6 +1065,7 @@ project/
 ├── tests/
 │   └── integration_test.rs
 ├── .github/workflows/ci.yml
+├── sonar-project.properties
 ├── Cargo.toml
 ├── .env.example
 ├── RESEARCH.md
@@ -859,48 +1073,4 @@ project/
 └── ROADMAP.md
 ```
 
-**Cargo.toml template:**
-```toml
-[package]
-name = "[project-name]"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
-tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
-
-[dev-dependencies]
-```
-
-**Dockerfile (non-root, multi-stage):**
-```dockerfile
-FROM rust:1.77-slim AS builder
-WORKDIR /app
-COPY Cargo.toml Cargo.lock ./
-RUN mkdir src && echo "fn main(){}" > src/main.rs && cargo build --release
-COPY src ./src
-RUN touch src/main.rs && cargo build --release
-
-FROM debian:bookworm-slim
-RUN useradd -r -s /bin/false appuser
-COPY --from=builder /app/target/release/[project-name] /usr/local/bin/app
-USER appuser
-ENTRYPOINT ["app"]
-```
-
-**Structured logging with tracing:**
-```rust
-tracing_subscriber::fmt().json().init();
-tracing::info!(version = env!("CARGO_PKG_VERSION"), "service started");
-```
-
-**Env validation at startup:**
-```rust
-fn require_env(key: &str) -> String {
-    std::env::var(key).unwrap_or_else(|_| {
-        tracing::error!(key, "missing required env var");
-        std::process::exit(1);
-    })
-}
-```
+Use the same Cargo.toml, Dockerfile, structured logging, and env validation snippets as Rust - Minimalist above.

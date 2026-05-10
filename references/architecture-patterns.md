@@ -31,11 +31,11 @@ project/
 // Genesis Architect scaffold
 // Architecture: Minimalist single-process (see RESEARCH.md)
 
-import { run } from './core';
+import { transform } from './core';
 
 async function main(): Promise<void> {
   try {
-    await run();
+    await transform(process.argv[2] ?? '');
   } catch (error) {
     console.error('Fatal error:', error);
     process.exit(1);
@@ -51,19 +51,27 @@ main();
 // Architecture note: all domain logic lives here, no framework coupling
 // Inspired by [repo from research] - avoids the "fat entry point" pitfall (see PITFALLS.md #1)
 
-export async function run(): Promise<void> {
-  // TODO: implement core logic
-  console.log('Genesis scaffold running');
+export async function transform(input: string): Promise<string> {
+  if (!input) throw new Error('Input required');
+  // TODO: implement transformation
+  return input;
 }
 ```
 
 **Test template (core.test.ts):**
 ```typescript
-import { run } from '../src/core';
+import { transform } from '../src/core';
 
 describe('core', () => {
-  it('runs without throwing', async () => {
-    await expect(run()).resolves.not.toThrow();
+  it('returns a non-empty result for valid input', async () => {
+    const result = await transform('test input');
+    expect(result).toBeDefined();
+    expect(typeof result).toBe('string');
+    expect(result.length).toBeGreaterThan(0);
+  });
+
+  it('throws on empty input', async () => {
+    await expect(transform('')).rejects.toThrow();
   });
 });
 ```
@@ -128,21 +136,30 @@ Inspired by [repo from research] - avoids tight coupling pitfall (see PITFALLS.m
 """
 
 
-def run() -> None:
-    """Main entry point for core logic."""
-    # TODO: implement
-    print("Genesis scaffold running")
+def transform(input_data: str) -> str:
+    """Transform input and return result."""
+    if not input_data:
+        raise ValueError("Input required")
+    # TODO: implement transformation
+    return input_data
 ```
 
 **Test template (test_core.py):**
 ```python
 """Unit tests for core module."""
-from src.[project_name].core import run
+from src.[project_name].core import transform
 
 
-def test_run_does_not_raise():
-    """Verify core function executes without errors."""
-    run()  # Should not raise
+def test_transform_returns_non_empty_string():
+    result = transform('test input')
+    assert isinstance(result, str)
+    assert len(result) > 0
+
+
+def test_transform_raises_on_empty_input():
+    import pytest
+    with pytest.raises((ValueError, TypeError)):
+        transform('')
 ```
 
 **pyproject.toml:**

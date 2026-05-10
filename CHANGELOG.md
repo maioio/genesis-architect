@@ -9,6 +9,20 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+## [1.12.0] - 2026-05-10
+
+### Added
+- **Validator self-check wired into Phase 4**: after writing PITFALLS.md, the skill now runs `python scripts/research_validator.py PITFALLS.md --verify-issues`. Any 404 URL must be replaced with a real issue before Phase 5. The skill validates its own output, not just produces it.
+- **QUICK_SCAFFOLD.md in quick mode**: Phase 0.5 option B now creates a `QUICK_SCAFFOLD.md` noting no research was performed and pointing to `genesis audit .` for post-hoc analysis.
+- **Quality eval rubric** (`evals/quality_rubric.md`): 100-point human-review rubric across 4 dimensions (Research Authenticity, Pitfall Relevance, Scaffold Quality, Phase Correctness). Intended for 5-run review before major releases.
+
+### Fixed
+- **Unit test templates are no longer trivial**: TypeScript `core.ts` exports `transform(input)` with empty-input guard; test checks return value AND rejects on empty. Python `core.py` exports `transform` with `ValueError` on empty; test uses `pytest.raises`. Smoke test now catches real logic errors.
+- **`genesis audit` pre-flight clarification**: explicitly stated that Phase 0.5 does not apply to `genesis audit` - it is an explicit invocation, run Phases 2-4 directly.
+- SKILL.md: 399 lines.
+
+---
+
 ## [1.11.0] - 2026-05-10
 
 ### Added

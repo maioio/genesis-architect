@@ -8,7 +8,7 @@ description: >
   stays active as a research companion. Triggers on: "genesis init [vision]", "I want to build
   X", "scaffold", "new project", "set up project", "start building", "create a tool", "make a
   CLI", "bootstrap", "בנה פרויקט", "צור פרויקט", "התחל פרויקט".
-version: "1.11.0"
+version: "1.12.0"
 author: "Maio Eshet"
 license: "MIT"
 ---
@@ -43,7 +43,7 @@ Required fields in `.genesis.json`: `language`, `tier` (minimalist|scalable), `v
 If any required field is missing, abort with: "`.genesis.json` is missing field: [field]. Run `genesis init` to generate it."
 
 `genesis audit [path]` - run Phases 2-4 on an existing codebase. Delivers PITFALLS.md and RESEARCH.md.
-No scaffold generated.
+No scaffold generated. Pre-flight Check (Phase 0.5) does not apply to `genesis audit` - it is an explicit command. Run Phases 2-4 directly.
 
 Read `references/architecture-patterns.md` for boilerplate templates.
 Read `references/mcp-strategy.md` for MCP usage and fallback logic.
@@ -60,7 +60,7 @@ Before any research, silently detect the user's environment:
 **Convention scan** - silently check nearby existing projects for HTTP client, test
 framework, DB, and formatter. Present once in Phase 5: "Your projects use [X]. Match? [Y/n]"
 
-Store for Phase 3 (OS pitfalls), Phase 5 (convention match), Phase 6 (install commands).
+Store results for use in Phases 3, 5, and 6.
 
 **Windows PATH check**: On Windows, detect if the Python Scripts folder is on PATH.
 Run `python -c "import sysconfig; print(sysconfig.get_path('scripts'))"` to get the exact Scripts path.
@@ -89,7 +89,7 @@ Present:
 > B: Quick scaffold (skip research, just give me boilerplate)"
 
 - **A**: continue normally from Phase 1.
-- **B**: skip Phases 1-5, go straight to Phase 6 with minimal Minimalist scaffold. No RESEARCH.md or PITFALLS.md. Announce: "Quick mode - scaffold only, no research."
+- **B**: skip Phases 1-5, go straight to Phase 6 with minimal Minimalist scaffold. No RESEARCH.md or PITFALLS.md. Announce: "Quick mode - scaffold only, no research." Also create `QUICK_SCAFFOLD.md` with: "Quick scaffold - no research performed. Run `genesis audit .` for pitfall analysis."
 
 ---
 
@@ -204,6 +204,10 @@ Aim for 3-7 pitfalls. If fewer than 3 found from issues, supplement with known
 language/framework anti-patterns from best practices.
 Never write shorthand like "repo#142" - always the full URL.
 
+After writing PITFALLS.md, run a self-check:
+`python scripts/research_validator.py PITFALLS.md --verify-issues`
+If any URL returns 404: replace that pitfall with one from a real, verified issue. Do not proceed to Phase 5 with a fabricated citation. If the validator script is not available (not a Genesis project directory), skip this step.
+
 Before proceeding to Phase 5, compute and display a one-line **Research Quality Signal**:
 
 | Condition | Label |
@@ -268,8 +272,7 @@ Show exactly what will happen, then wait for explicit yes/no:
 - `npm install` / `pip install`: "Download project dependencies? ([X] packages)"
 - Any docker command: "Start Docker services?"
 
-**After install on Windows**: run `[entrypoint] --help`. If not found, provide:
-`$env:PATH += ";[Python Scripts path]"` (session) and `[Environment]::SetEnvironmentVariable("PATH", ...)` (permanent).
+**After install on Windows**: run `[entrypoint] --help`. If not found, provide the session fix (`$env:PATH += ";[Scripts path]"`) and permanent fix (`[Environment]::SetEnvironmentVariable(...)`).
 
 **Never perform**: git push or any action that sends code to a remote without explicit user approval.
 `git remote add` is allowed only when the user provides a URL and confirms.
@@ -332,8 +335,7 @@ until the test suite exits 0.
 for the full badge block template). Replace `{user}/{repo}` with `[github-user]/[repo-name]`
 if no remote exists yet; tell the user to update them on first push.
 
-**Demo recording** - suggest: `asciinema rec demo.cast`, upload for a shareable link,
-`agg demo.cast assets/demo.gif` to convert for GitHub (script tags blocked).
+**Demo recording** - suggest: `asciinema rec demo.cast`; `agg demo.cast assets/demo.gif` for GitHub (script tags blocked).
 
 **Git setup** - always ask before running each command:
 1. `git init` - "Initialize Git repository?" (`.gitignore` already created in Step 1)

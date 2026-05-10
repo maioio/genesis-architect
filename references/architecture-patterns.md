@@ -543,9 +543,29 @@ export default defineConfig({
     "dev": "vite",
     "build": "tsc && vite build",
     "test": "vitest run",
-    "lint": "eslint src --ext .ts,.tsx"
+    "lint": "eslint src --ext .ts,.tsx",
+    "type-check": "tsc --noEmit",
+    "preview": "vite preview"
   }
 }
+```
+
+**.env.example (frontend):**
+```bash
+# VITE_ prefix required for Vite to expose vars to the browser
+# Never put secrets in VITE_ vars - they are bundled into the client
+VITE_API_URL=http://localhost:3000
+VITE_APP_ENV=development
+```
+
+**Runtime env check in main.tsx:**
+```typescript
+const REQUIRED_ENV = ['VITE_API_URL'] as const;
+REQUIRED_ENV.forEach(key => {
+  if (!import.meta.env[key]) {
+    throw new Error(`Missing env var: ${key}`);
+  }
+});
 ```
 
 ---
@@ -624,6 +644,40 @@ go 1.22
 require ()
 ```
 
+**Dockerfile (non-root, multi-stage):**
+```dockerfile
+FROM golang:1.22-alpine AS builder
+WORKDIR /app
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+RUN CGO_ENABLED=0 GOOS=linux go build -o /app/server ./cmd/main.go
+
+FROM scratch
+COPY --from=builder /app/server /server
+USER 65534:65534
+ENTRYPOINT ["/server"]
+```
+
+**Structured logging (Go 1.21+ slog):**
+```go
+import "log/slog"
+logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+slog.SetDefault(logger)
+```
+
+**Env validation at startup:**
+```go
+func mustEnv(key string) string {
+    v := os.Getenv(key)
+    if v == "" {
+        slog.Error("missing required env var", "key", key)
+        os.Exit(1)
+    }
+    return v
+}
+```
+
 ---
 
 ## Go - Scalable
@@ -657,6 +711,40 @@ module github.com/[user]/[project]
 go 1.22
 
 require ()
+```
+
+**Dockerfile (non-root, multi-stage):**
+```dockerfile
+FROM golang:1.22-alpine AS builder
+WORKDIR /app
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+RUN CGO_ENABLED=0 GOOS=linux go build -o /app/server ./cmd/main.go
+
+FROM scratch
+COPY --from=builder /app/server /server
+USER 65534:65534
+ENTRYPOINT ["/server"]
+```
+
+**Structured logging (Go 1.21+ slog):**
+```go
+import "log/slog"
+logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+slog.SetDefault(logger)
+```
+
+**Env validation at startup:**
+```go
+func mustEnv(key string) string {
+    v := os.Getenv(key)
+    if v == "" {
+        slog.Error("missing required env var", "key", key)
+        os.Exit(1)
+    }
+    return v
+}
 ```
 
 ---
@@ -708,8 +796,42 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
 
 [dev-dependencies]
+```
+
+**Dockerfile (non-root, multi-stage):**
+```dockerfile
+FROM rust:1.77-slim AS builder
+WORKDIR /app
+COPY Cargo.toml Cargo.lock ./
+RUN mkdir src && echo "fn main(){}" > src/main.rs && cargo build --release
+COPY src ./src
+RUN touch src/main.rs && cargo build --release
+
+FROM debian:bookworm-slim
+RUN useradd -r -s /bin/false appuser
+COPY --from=builder /app/target/release/[project-name] /usr/local/bin/app
+USER appuser
+ENTRYPOINT ["app"]
+```
+
+**Structured logging with tracing:**
+```rust
+tracing_subscriber::fmt().json().init();
+tracing::info!(version = env!("CARGO_PKG_VERSION"), "service started");
+```
+
+**Env validation at startup:**
+```rust
+fn require_env(key: &str) -> String {
+    std::env::var(key).unwrap_or_else(|_| {
+        tracing::error!(key, "missing required env var");
+        std::process::exit(1);
+    })
+}
 ```
 
 ---
@@ -745,6 +867,40 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
 
 [dev-dependencies]
+```
+
+**Dockerfile (non-root, multi-stage):**
+```dockerfile
+FROM rust:1.77-slim AS builder
+WORKDIR /app
+COPY Cargo.toml Cargo.lock ./
+RUN mkdir src && echo "fn main(){}" > src/main.rs && cargo build --release
+COPY src ./src
+RUN touch src/main.rs && cargo build --release
+
+FROM debian:bookworm-slim
+RUN useradd -r -s /bin/false appuser
+COPY --from=builder /app/target/release/[project-name] /usr/local/bin/app
+USER appuser
+ENTRYPOINT ["app"]
+```
+
+**Structured logging with tracing:**
+```rust
+tracing_subscriber::fmt().json().init();
+tracing::info!(version = env!("CARGO_PKG_VERSION"), "service started");
+```
+
+**Env validation at startup:**
+```rust
+fn require_env(key: &str) -> String {
+    std::env::var(key).unwrap_or_else(|_| {
+        tracing::error!(key, "missing required env var");
+        std::process::exit(1);
+    })
+}
 ```

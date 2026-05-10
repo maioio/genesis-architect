@@ -8,7 +8,7 @@ description: >
   stays active as a research companion. Triggers on: "genesis init [vision]", "I want to build
   X", "scaffold", "new project", "set up project", "start building", "create a tool", "make a
   CLI", "bootstrap", "בנה פרויקט", "צור פרויקט", "התחל פרויקט".
-version: "1.14.0"
+version: "2.0.0"
 author: "Maio Eshet"
 license: "MIT"
 optional_mcps: [github-mcp, exa, firecrawl]
@@ -54,13 +54,9 @@ Read `references/mcp-strategy.md` for MCP usage and fallback logic.
 
 ## Phase 0: Environment Probe
 
-Before any research, silently detect the user's environment:
-- **OS**: Windows / macOS / Linux
-- **Python version** (if relevant): `python --version` or `python3 --version`
-- **Package manager**: detect `uv`, `pip`, `npm`, `pnpm`, or `yarn` based on project type
+Silently detect: OS (Windows/macOS/Linux), Python version (`python --version` or `python3 --version`), package manager (`uv`, `pip`, `npm`, `pnpm`, `yarn`).
 
-**Convention scan** - silently check nearby existing projects for HTTP client, test
-framework, DB, and formatter. Present once in Phase 5: "Your projects use [X]. Match? [Y/n]"
+**Convention scan**: silently check nearby projects for HTTP client, test framework, DB, formatter. Present once in Phase 5: "Your projects use [X]. Match? [Y/n]"
 
 Store results for use in Phases 3, 5, and 6.
 
@@ -88,7 +84,7 @@ Present:
 > B: Quick scaffold (skip research, just give me boilerplate)"
 
 - **A**: continue normally from Phase 1.
-- **B**: skip Phases 1-5, go straight to Phase 6 with minimal Minimalist scaffold. No RESEARCH.md or PITFALLS.md. Announce: "Quick mode - scaffold only, no research." Also create `QUICK_SCAFFOLD.md` with: "Quick scaffold - no research performed. Run `genesis audit .` for pitfall analysis."
+- **B**: skip Phases 1-5, go straight to Phase 6 with minimal Minimalist scaffold. No RESEARCH.md or PITFALLS.md. Create `QUICK_SCAFFOLD.md`: "Quick scaffold - no research. Run `genesis audit .` for pitfall analysis."
 
 ---
 
@@ -122,8 +118,7 @@ D: Other (specify)"
 
 **Critical rule**: Wait for answers. Never guess on architecture decisions.
 
-After receiving answers, announce:
-> "Starting engineering market research - scanning 15-20 repos, deep-analyzing top 5-8..."
+After receiving answers, announce: "Starting research - scanning 15-20 repos, deep-analyzing top 5-8..."
 
 ---
 
@@ -144,9 +139,7 @@ Select the top 5-8 by stars + recency for deep analysis in Streams B/C.
 "[vision] mistakes hacker news", "[vision] architecture regrets stackoverflow".
 Target: reddit.com, news.ycombinator.com, stackoverflow.com.
 
-**Stream C - Issue mining**: For the top 5-8 repos from Stream A, scan last 50 issues
-(open and closed). Extract: recurring errors (3+ reports), architecture regrets
-("should have used X"), performance problems at scale, patched security issues.
+**Stream C - Issue mining**: for top 5-8 repos from Stream A, scan up to 100 issues per repo. Rank by engagement density (comments + reactions). Prioritize: issues with 5+ comments or 10+ reactions, labels 'bug'/'regression'/'breaking-change'/'security', closed issues with 'fixed in X.Y.Z'. Surface top 10 per repo. Extract: recurring errors (3+ reports), architecture regrets, performance problems at scale, patched security issues.
 
 Merge results from all three streams before proceeding to Phase 3.
 If an MCP fails, report briefly, switch to web search fallback, and continue.
@@ -174,15 +167,10 @@ Informational only - flag, never block.
 
 ## Phase 3: Architecture Analysis
 
-**The Wise Average**: Do not copy one project. Synthesize:
-- The most common folder structure (ecosystem convergence = proven stability)
-- The highest-rated project's structural decisions (quality signal)
+**The Wise Average**: do not copy one project. Synthesize: most common folder structure (ecosystem convergence) + highest-rated project's structural decisions (quality signal).
 
 **Language confirmation**: Present auto-detected language before proceeding:
-> "Detected that similar projects use [LANGUAGE]. Continue?
-> A: Yes, [LANGUAGE]
-> B: Different language (specify)
-> C: You decide based on best fit"
+"Detected: [LANGUAGE]. Continue? A: Yes  B: Different language  C: You decide"
 
 **Windows check**: If OS is Windows (from Phase 0), automatically add to the pitfall watchlist:
 - Unicode/encoding issues in CLI output tools (rich, click, curses)
@@ -193,20 +181,9 @@ Informational only - flag, never block.
 
 ## Phase 4: Pitfall Identification
 
-Compile the top pitfalls from the issue scan. For each pitfall:
-- **What**: The problem developers hit
-- **Where**: Full clickable URL to the GitHub issue (format: `https://github.com/[owner]/[repo]/issues/[number]`)
-- **Why**: Root cause (architectural or implementation)
-- **Mitigation**: What we build differently to avoid it
+Compile top pitfalls from the issue scan. For each pitfall: **What** (problem), **Where** (full URL `https://github.com/[owner]/[repo]/issues/[number]` - never shorthand like "repo#142"), **Why** (root cause), **Mitigation** (what we build differently). Aim for 3-7; if fewer than 3 from issues, supplement with known language/framework anti-patterns.
 
-Aim for 3-7 pitfalls. If fewer than 3 found from issues, supplement with known
-language/framework anti-patterns from best practices.
-Never write shorthand like "repo#142" - always the full URL.
-
-After writing PITFALLS.md, run a self-check:
-- If `GITHUB_TOKEN` is set: `python scripts/research_validator.py PITFALLS.md --verify-issues`
-- If not set: verify only the first 3 issue URLs manually via web fetch to avoid rate limits. Add a note to PITFALLS.md: "X of Y issue URLs live-verified (no GITHUB_TOKEN - set it for full verification)."
-If any URL returns 404: replace that pitfall. Do not proceed to Phase 5 with a fabricated citation.
+After writing PITFALLS.md, run self-check: if `GITHUB_TOKEN` set run `python scripts/research_validator.py PITFALLS.md --verify-issues`; otherwise verify first 3 URLs via web fetch and add note: "X of Y issue URLs live-verified (no GITHUB_TOKEN - set it for full verification)." If any URL returns 404: replace that pitfall. Do not proceed to Phase 5 with a fabricated citation.
 
 Before proceeding to Phase 5, compute and display a one-line **Research Quality Signal**:
 
@@ -216,24 +193,17 @@ Before proceeding to Phase 5, compute and display a one-line **Research Quality 
 | GitHub MCP unavailable OR 5-7 repos analyzed OR 2-4 issues found | `PARTIAL` |
 | Web search only, fewer than 5 repos, or 0-1 issues found | `THIN` |
 
-Display as: `Research quality: [LABEL] ([brief reason, e.g. "GitHub MCP unavailable - web search only"])`
-
-THIN research should not block - the user sees it and decides.
+Display as: `Research quality: [LABEL] ([brief reason])`. THIN does not block - the user sees it and decides.
 
 ---
 
 ## Phase 5: Interactive Choice
 
-**Archetype confirmation** (run only when Phase 1 was skipped, i.e., invoked via `genesis init`):
+**Archetype confirmation** (run only when Phase 1 was skipped via `genesis init`):
 > "Detected: [Archetype] / [Scale] / [Language]. Correct? [Y / correct me]"
-Wait for reply. If the user corrects any field, update and proceed. If Y, continue.
-Skip this sub-check when Phase 1 ran normally - archetype was already confirmed there.
+Wait for reply. If user corrects any field, update and proceed. Skip when Phase 1 ran normally.
 
-Present the research summary and architectural options in a single message.
-The user confirms once and the build begins.
-
-Show: repo table (project, stars, key insight), Ecosystem Velocity signals, convention
-match question (from Phase 0), then the two structures.
+Present research summary and architectural options in a single message. Show: repo table (project, stars, key insight), Ecosystem Velocity signals, convention match question (from Phase 0), then the two structures.
 
 Shape folder structures using the archetype (Phase 1 Q2):
 - CLI: entrypoint + core, no server; Library: public API, no main(); Web Service: router + Dockerfile + /health; Frontend: component tree + build config
@@ -249,11 +219,7 @@ Best for team/long-term. Clear separation, higher initial complexity.
 **C: Let research decide** - highest-starred repo structure, state reasoning.
 **D: Hybrid** - ask base (A or B) then what to change, confirm before building.
 
-Wait for the user's A/B/C/D choice before building.
-
-**Hard gate**: If the user has not explicitly confirmed a choice (A, B, C, or D), do not
-start Phase 6 under any circumstances - not even if the user says "looks good" or "continue".
-Require a single-letter or explicit confirmation.
+**Hard gate**: if the user has not explicitly confirmed A, B, C, or D, do not start Phase 6 under any circumstances - not even if the user says "looks good" or "continue". Require a single-letter or explicit confirmation.
 
 ---
 
@@ -262,25 +228,16 @@ Require a single-letter or explicit confirmation.
 Build in this exact order. Announce each step.
 
 ### Step 1: File structure (automatic)
-Create all directories and files including `.gitignore` for the project language.
-Non-destructive - no approval needed. Announce: "Creating folder structure..."
-
-**If project uses .env configuration**: after creating `.env.example`, ask: "Configure .env now? I'll ask for key values." Fill interactively - never leave the user with only `.env.example`.
+Create all directories and files including `.gitignore`. Non-destructive - no approval needed. Announce: "Creating folder structure..."
+If project uses .env: after creating `.env.example`, ask: "Configure .env now? I'll ask for key values." Fill interactively - never leave the user with only `.env.example`.
 
 ### Step 2: Approval gates (always ask before running)
-Show exactly what will happen, then wait for explicit yes/no:
-- `npm install` / `pip install`: "Download project dependencies? ([X] packages)"
-- Any docker command: "Start Docker services?"
-
-**After install on Windows**: run `[entrypoint] --help`. If not found, provide the session fix (`$env:PATH += ";[Scripts path]"`) and permanent fix (`[Environment]::SetEnvironmentVariable(...)`).
-
-**Never perform**: git push or any action that sends code to a remote without explicit user approval.
-`git remote add` is allowed only when the user provides a URL and confirms.
+Show what will happen, wait for explicit yes/no: `npm install`/`pip install` ("Download project dependencies? ([X] packages)"), any docker command ("Start Docker services?").
+After install on Windows: run `[entrypoint] --help`. If not found, provide session fix (`$env:PATH += ";[Scripts path]"`) and permanent fix (`[Environment]::SetEnvironmentVariable(...)`).
+Never run `git push` or send code to a remote without explicit user approval. `git remote add` only when user provides URL and confirms.
 
 ### Step 3: Functional boilerplate
-Every file must contain working code, not empty stubs. Requirements:
-- At least one function or class with real basic logic
-- Engineering decision comment on any non-obvious structure choice
+Every file must contain working code, not empty stubs. Requirements: at least one function or class with real basic logic, engineering decision comment on any non-obvious structure choice.
 
 Comment format:
 ```
@@ -289,9 +246,7 @@ Comment format:
 ```
 
 ### Step 3b: Production-readiness defaults (always included)
-
 Non-retrofittable defaults for every scaffold (details in `references/architecture-patterns.md` under "Production-Readiness Defaults"):
-
 - **Structured logging**: pino/winston (Node), stdlib logging (Python), slog (Go)
 - **Security**: non-root Dockerfile user, no wildcard CORS, Secure+HttpOnly cookies
 - **Env validation**: fail at startup if required env vars are missing - never silently
@@ -302,18 +257,10 @@ Non-retrofittable defaults for every scaffold (details in `references/architectu
 **Web Service archetype only**: create `endpoint-inventory.json` with `[{"method":"GET","path":"/health","added_in":"scaffold"}]`. `genesis check` uses this to detect API surface drift after 30+ days.
 
 ### Step 4: Tests
-Create `tests/` with:
-- Minimum 1 unit test that actually passes (not a trivial `assert True`)
-- Test configuration file (jest.config.js, pytest.ini, pyproject.toml, etc.)
-- The tested function must be the core function of the project
+Create `tests/` with: minimum 1 unit test that actually passes (not `assert True`), test config file (jest.config.js, pytest.ini, pyproject.toml, etc.), tested function must be the core function of the project.
 
 ### Step 5: GitHub Actions CI/CD
-Create `.github/workflows/ci.yml` that:
-- Triggers on push to main and on pull requests
-- Installs dependencies
-- Runs the test suite
-- Runs linter if configured
-Keep it under 40 lines.
+Create `.github/workflows/ci.yml`: triggers on push to main and pull requests, installs dependencies, runs test suite, runs linter if configured. Keep under 40 lines.
 
 ### Step 6: Self-validating smoke test (mandatory)
 
@@ -326,8 +273,7 @@ Also verify the CLI entrypoint if one exists:
 - Python: read `[project.scripts]` in `pyproject.toml`, run `[entrypoint] --help`
 - Node/Go/Rust: read `bin`/build first, then run `[entrypoint] --help`
 
-**Hard gate**: Do not run `git commit` and do not announce "Genesis Architect complete"
-until the test suite exits 0.
+**Hard gate**: do not run `git commit` and do not announce "Genesis Architect complete" until the test suite exits 0.
 
 ### Step 6.5: Mitigation coverage check
 For each pitfall in PITFALLS.md, extract the mitigation keyword (the main noun/pattern in the Mitigation field). Run a case-insensitive grep over `src/` for that keyword.
@@ -336,25 +282,18 @@ Do not block on this - it is a warning, not a gate. Announce the check result.
 
 ### Step 7: README badges, demo, and git
 
-**Badges** - add to README.md using shields.io (see `references/architecture-patterns.md`
-for the full badge block template). Replace `{user}/{repo}` with `[github-user]/[repo-name]`
-if no remote exists yet; tell the user to update them on first push.
-
-**Demo recording** - suggest: `asciinema rec demo.cast`; `agg demo.cast assets/demo.gif` for GitHub (script tags blocked).
-
-**Git setup** - always ask before running each command:
+**Badges**: add to README.md using shields.io (see `references/architecture-patterns.md` for badge block template). Replace `{user}/{repo}` with `[github-user]/[repo-name]` if no remote exists; tell user to update on first push.
+**Demo recording**: suggest `asciinema rec demo.cast` then `agg demo.cast assets/demo.gif`.
+**Git setup** - always ask before each command:
 1. `git init` - "Initialize Git repository?" (`.gitignore` already created in Step 1)
 2. `git add . && git commit -m "feat: initial scaffold generated by Genesis Architect"`
 3. Ask: "Add a GitHub remote?" - if yes: `git remote add origin [url]`, then show the
    push command but **never run it automatically**
 
-Never commit `.env`. Always commit `.env.example`.
+Never commit `.env` - always commit `.env.example`.
 
 ### Step 8: Deliver summary
-> "Genesis Architect complete. Project ready:
-> [bullet list of created files and directories]
-> Entering Development Companion Mode - I'll keep helping as you build.
-> Next recommended step: [first ROADMAP phase]"
+Announce: "Genesis Architect complete. [bullet list of created files]. Next: [first ROADMAP phase]. Entering companion mode."
 
 ---
 
@@ -366,7 +305,14 @@ After Phase 6, enter companion mode. Direct invocations: `genesis help [problem]
 **Dependency question**: check last commit date, open issues trend, flag better-maintained alternatives.
 **New sub-problem**: ask "Want me to search the ecosystem for how others solved this?" before scanning.
 **Feature complete**: suggest updating ROADMAP.md, offer to research the next phase.
-**No research context**: read `RESEARCH.md` from working directory. If missing: "RESEARCH.md not found. Run fresh scan?"
+**No research context / new session**: read `RESEARCH.md` from working directory.
+Extract and restore:
+- Repos analyzed (Analyzed Repositories table)
+- Pitfalls found (link to PITFALLS.md mitigation patterns)
+- Architecture decision (Architecture Decision Rationale section)
+- Language and tier chosen
+Announce: 'Research context restored from RESEARCH.md - [N] repos, [M] pitfalls loaded.'
+If RESEARCH.md missing: 'RESEARCH.md not found. Run genesis audit . or describe the current project.'
 **Boundaries**: never act without asking first - max 3 options - stay grounded in analyzed repos, not general advice.
 
 ---
@@ -382,11 +328,7 @@ Use templates in `assets/RESEARCH.template.md`, `assets/PITFALLS.template.md`, `
 
 ## Architect Mode
 
-When 0 comparable projects exist, switch to first-principles mode.
-
-Announce:
-> "No similar projects found. Switching to Architect Mode - building from first principles."
-
+When 0 comparable projects exist, switch to first-principles mode. Announce: "No similar projects found. Switching to Architect Mode."
 Apply: SOLID, Clean Architecture, Twelve-Factor App (for services). Note in RESEARCH.md: "First-principles design - no direct ecosystem precedent found."
 
 ---

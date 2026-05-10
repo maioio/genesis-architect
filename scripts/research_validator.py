@@ -22,6 +22,18 @@ import os
 import json
 import urllib.request
 import urllib.error
+from pathlib import Path
+
+
+def _safe_path(requested: str) -> Path:
+    """Resolve path and ensure it stays within the project root."""
+    root = Path(__file__).parent.parent.resolve()
+    target = Path(requested).resolve()
+    if not target.is_relative_to(root):
+        raise PermissionError(
+            f"Security: path '{target}' is outside project root '{root}'"
+        )
+    return target
 
 REQUIRED_SECTIONS = [
     "Executive Summary",
@@ -195,8 +207,10 @@ def validate(
     issues = []
 
     try:
-        with open(path, "r", encoding="utf-8") as f:
+        with open(_safe_path(path), "r", encoding="utf-8") as f:
             content = f.read()
+    except PermissionError as e:
+        return [str(e)]
     except FileNotFoundError:
         return [f"File not found: {path}"]
 
@@ -265,6 +279,9 @@ def main():
         sys.exit(1)
 
     path = sys.argv[1]
+    if any(c in path for c in ['\x00', ';', '|', '&', '`', '$']):
+        print("Error: invalid characters in path argument")
+        sys.exit(1)
     verify_issues = "--verify-issues" in sys.argv
     verify_repos = "--verify-repos" in sys.argv
 

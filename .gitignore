@@ -9,3 +9,10 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Python
+scripts/__pycache__/
+*.pyc
+.env
+.env.*
+!.env.example

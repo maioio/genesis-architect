@@ -1,10 +1,14 @@
 {
   "name": "genesis-architect",
-  "version": "1.14.0",
+  "version": "2.0.0",
   "description": "The only scaffolder that verifies its sources before building. Scans 15-20 real GitHub repos, mines their Issues for pitfalls, and generates a research-backed scaffold with validated citations.",
   "author": "Maio Eshet",
   "license": "MIT",
-  "categories": ["scaffolding", "research", "architecture"],
+  "categories": [
+    "scaffolding",
+    "research",
+    "architecture"
+  ],
   "triggers": [
     "genesis init",
     "I want to build",
@@ -16,7 +20,11 @@
     "bootstrap"
   ],
   "tools_required": [],
-  "optional_mcps": ["github-mcp", "exa", "firecrawl"],
+  "optional_mcps": [
+    "github-mcp",
+    "exa",
+    "firecrawl"
+  ],
   "fallback": "web-search",
   "install": {
     "claude_code": "git clone https://github.com/maioio/genesis-architect ~/.claude/skills/genesis-architect",

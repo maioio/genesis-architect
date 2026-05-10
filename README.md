@@ -5,10 +5,13 @@
 **Research first. Build once.**
 The only scaffolder that verifies its sources before building.
 
-[![Version](https://img.shields.io/badge/version-1.9.0-blue?style=for-the-badge)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-2.0.0-blue?style=for-the-badge)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-MIT-green?style=for-the-badge)](LICENSE)
 [![Claude Code](https://img.shields.io/badge/Claude_Code-skill-orange?style=for-the-badge)](https://github.com/anthropics/claude-code)
 [![CI](https://img.shields.io/github/actions/workflow/status/maioio/genesis-architect/ci.yml?branch=main&style=for-the-badge&label=CI)](https://github.com/maioio/genesis-architect/actions)
+[![Known Vulnerabilities](https://snyk.io/test/github/maioio/genesis-architect/badge.svg)](https://snyk.io/test/github/maioio/genesis-architect)
+[![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=maioio_genesis-architect&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=maioio_genesis-architect)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=maioio_genesis-architect&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=maioio_genesis-architect)
 
 [![Phases](https://img.shields.io/badge/phases-9-blueviolet?style=flat-square)](SKILL.md)
 [![Languages](https://img.shields.io/badge/languages-4-informational?style=flat-square)](references/architecture-patterns.md)
@@ -302,6 +305,17 @@ Measured against the [quality rubric](evals/quality_rubric.md) (100-point, 4 dim
 
 ---
 
+## Verified by
+
+| Tool | What it checks | Status |
+|------|---------------|--------|
+| [Snyk](https://snyk.io/test/github/maioio/genesis-architect) | Dependency vulnerabilities | [![Known Vulnerabilities](https://snyk.io/test/github/maioio/genesis-architect/badge.svg)](https://snyk.io/test/github/maioio/genesis-architect) |
+| [SonarCloud](https://sonarcloud.io/summary/new_code?id=maioio_genesis-architect) | Code quality + security | [![Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=maioio_genesis-architect&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=maioio_genesis-architect) |
+| [GitHub Actions CI](/.github/workflows/ci.yml) | Templates, evals, smoke test | ![CI](https://img.shields.io/github/actions/workflow/status/maioio/genesis-architect/ci.yml?branch=main&label=CI) |
+| [research_validator.py](scripts/research_validator.py) | Citation authenticity | Runs in Phase 4 |
+
+---
+
 ## Honest Limitations
 
 | Limitation | Details |
@@ -322,6 +336,9 @@ New language templates, improved MCP strategies, and workflow refinements are we
 
 > [!IMPORTANT]
 > Keep SKILL.md under 400 lines. No em dashes anywhere. All code, filenames, and comments in English.
+
+> [!NOTE]
+> This project is part of a portfolio demonstrating production-grade AI skill engineering: research-driven scaffolding, self-validating output, multi-layer quality gates, and measurable outcome quality. [View all projects](https://github.com/maioio)
 
 ## License
 

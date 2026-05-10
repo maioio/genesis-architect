@@ -9,6 +9,29 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-05-10
+
+### Breaking Changes
+- SKILL.md refactored to 343 lines (was 400) - higher logic density, same behavior
+- Phase 2 Stream C now ranks by engagement density (comments + reactions), not recency
+
+### Added
+- **Security: path traversal protection** in research_validator.py - `_safe_path()` guard + null-byte/metachar sanitization
+- **Go/Rust/Frontend production parity**: non-root Dockerfiles, structured logging (slog/tracing), env validation (`mustEnv`/`require_env`) for all Go and Rust tiers; VITE_ env guard for Frontend
+- **Phase 2: engagement-density issue ranking** - scans 100 issues/repo, surfaces top 10 by comments+reactions; priority labels (bug, regression, security)
+- **Phase 7: structured context restoration** - extracts repos, pitfalls, architecture decision, language/tier from RESEARCH.md; announces "N repos, M pitfalls loaded"
+- **Snyk + SonarCloud badges** in README
+- **"Verified by" section** in README with 4-tool verification table
+- **Portfolio note** callout before License
+- **.gitignore hardened**: `__pycache__/`, `*.pyc`, `.env`, `.env.*` (with `!.env.example` exception)
+
+### Fixed
+- Version consistency: SKILL.md, manifest.json, README.md all at 2.0.0
+- PITFALLS.md Pitfall 3: replaced "Multiple repos" citation with traceable GitHub issue URL
+- Quality score updated: 78/100 (was 72/100)
+
+---
+
 ## [1.14.0] - 2026-05-10
 
 ### Added

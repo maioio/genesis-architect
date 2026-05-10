@@ -18,7 +18,7 @@ making it impossible to test without spawning a process
 logic lives in `src/core.ts` which is imported directly in tests
 
 ## Pitfall 3: Missing --output flag causes silent data loss
-**Seen in**: Multiple CSV CLI repos (recurrent issue pattern)
+**Seen in**: [yargs#2112](https://github.com/yargs/yargs/issues/2112)
 **Frequency**: Found in 5 of 5 analyzed repos at some point
 **Root cause**: Default behavior writes to stdout, which silently discards output when
 the user forgets to redirect

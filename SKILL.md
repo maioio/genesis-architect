@@ -39,6 +39,8 @@ additional search signals in Phase 2. Skip Phase 1 questions entirely.
 
 `genesis init --from-team-config` - read `.genesis.json` from the current directory.
 Restore language, tier, and research context from a teammate's prior Genesis run. Skip Phases 1-5.
+Required fields in `.genesis.json`: `language`, `tier` (minimalist|scalable), `vision`.
+If any required field is missing, abort with: "`.genesis.json` is missing field: [field]. Run `genesis init` to generate it."
 
 `genesis audit [path]` - run Phases 2-4 on an existing codebase. Delivers PITFALLS.md and RESEARCH.md.
 No scaffold generated.

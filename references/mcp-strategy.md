@@ -67,6 +67,19 @@ With it, the same page returns ~2K chars of relevant content.
 }
 ```
 
+### batch_scrape — use when scraping 3+ URLs from Phase 2 repo list
+```json
+{
+  "urls": ["https://...", "https://...", "https://..."],
+  "options": {
+    "onlyMainContent": true,
+    "formats": ["markdown"],
+    "excludeTags": ["nav", "footer", "header", "aside", "script", "style"]
+  }
+}
+```
+More efficient than sequential scrape calls. Use when you have a known list of repo README or docs URLs to process in Phase 2.
+
 ### When to use Firecrawl vs Exa
 | Goal | Use |
 |------|-----|

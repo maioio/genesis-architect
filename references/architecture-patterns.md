@@ -486,6 +486,83 @@ Use these patterns when writing boilerplate comments:
 
 ---
 
+## Frontend App - Minimalist (React/Vite)
+
+```
+project/
+├── src/
+│   ├── main.tsx          # Entry point
+│   ├── App.tsx           # Root component
+│   ├── components/       # Reusable UI components
+│   └── hooks/            # Custom React hooks
+├── public/
+├── tests/
+│   └── App.test.tsx
+├── .github/workflows/ci.yml
+├── package.json
+├── tsconfig.json
+├── vite.config.ts
+├── .env.example
+├── RESEARCH.md
+├── PITFALLS.md
+└── ROADMAP.md
+```
+
+**vite.config.ts template:**
+```typescript
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+
+export default defineConfig({
+  plugins: [react()],
+  test: { environment: 'jsdom', globals: true },
+});
+```
+
+**package.json scripts (frontend):**
+```json
+{
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "test": "vitest run",
+    "lint": "eslint src --ext .ts,.tsx"
+  }
+}
+```
+
+---
+
+## Frontend App - Scalable (React/Vite + feature folders)
+
+```
+project/
+├── src/
+│   ├── main.tsx
+│   ├── app/              # App-wide config (router, store, providers)
+│   ├── features/         # Feature-sliced: each folder owns its UI + logic
+│   │   └── [feature]/
+│   │       ├── index.ts
+│   │       ├── components/
+│   │       └── hooks/
+│   ├── shared/           # Cross-feature utilities and UI primitives
+│   └── types/
+├── public/
+├── tests/
+│   ├── unit/
+│   └── e2e/
+├── .github/workflows/ci.yml
+├── package.json
+├── tsconfig.json
+├── vite.config.ts
+├── .env.example
+├── RESEARCH.md
+├── PITFALLS.md
+└── ROADMAP.md
+```
+
+---
+
 ## Go - Minimalist
 
 ```
@@ -521,6 +598,15 @@ func Run() error {
 }
 ```
 
+**go.mod template:**
+```
+module github.com/[user]/[project]
+
+go 1.22
+
+require ()
+```
+
 ---
 
 ## Go - Scalable
@@ -545,6 +631,15 @@ project/
 ├── RESEARCH.md
 ├── PITFALLS.md
 └── ROADMAP.md
+```
+
+**go.mod template:**
+```
+module github.com/[user]/[project]
+
+go 1.22
+
+require ()
 ```
 
 ---
@@ -588,6 +683,18 @@ mod tests {
 }
 ```
 
+**Cargo.toml template:**
+```toml
+[package]
+name = "[project-name]"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+
+[dev-dependencies]
+```
+
 ---
 
 ## Rust - Scalable
@@ -611,4 +718,16 @@ project/
 ├── RESEARCH.md
 ├── PITFALLS.md
 └── ROADMAP.md
+```
+
+**Cargo.toml template:**
+```toml
+[package]
+name = "[project-name]"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+
+[dev-dependencies]
 ```

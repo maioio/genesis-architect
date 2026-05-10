@@ -11,6 +11,20 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [1.9.0] - 2026-05-10
+
+### Added
+- **Parallel research (Phase 2)**: three simultaneous streams instead of sequential search.
+  Stream A: GitHub repos. Stream B: Exa ecosystem context (Reddit/HN/SO). Stream C: Issue
+  mining on top repos. Merged before Phase 3. Estimated 3-5x faster research phase.
+
+### Changed
+- Phase 2 restructured from tool-priority-list to three named parallel streams with explicit
+  merge step. Fallback behavior unchanged (fail one stream, continue with others).
+- SKILL.md: 397 lines (was 400, 3 lines reclaimed from parallel restructuring)
+
+---
+
 ## [1.8.0] - 2026-05-10
 
 ### Added

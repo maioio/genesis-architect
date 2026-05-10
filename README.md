@@ -168,30 +168,4 @@ genesis-architect/
 │   ├── research_validator.py       # Validates RESEARCH.md completeness
 │   └── eval_runner.py              # Measures trigger rate
 ├── evals/
-│   ├── test_queries.json           # 31 trigger/no-trigger test cases
-│   └── README.md                   # How to run evals
-├── examples/
-│   └── typescript-cli/             # Real output example
-│       ├── RESEARCH.md
-│       ├── PITFALLS.md
-│       └── ROADMAP.md
-├── assets/
-│   ├── RESEARCH.template.md
-│   ├── PITFALLS.template.md
-│   └── ROADMAP.template.md
-├── references/
-│   ├── architecture-patterns.md    # Boilerplate per language/tier
-│   └── mcp-strategy.md             # MCP usage and fallback logic
-├── FEEDBACK.md                     # Field feedback from real project runs
-└── CLAUDE.md                       # Claude Code project instructions
-```
-
----
-
-## Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) to add language templates or improve the workflow.
-
-## License
-
-[MIT](LICENSE) - Maio Eshet
+│   

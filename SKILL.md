@@ -8,7 +8,7 @@ description: >
   stays active as a research companion. Triggers on: "genesis init [vision]", "I want to build
   X", "scaffold", "new project", "set up project", "start building", "create a tool", "make a
   CLI", "bootstrap", "בנה פרויקט", "צור פרויקט", "התחל פרויקט".
-version: "1.8.0"
+version: "1.9.0"
 author: "Maio Eshet"
 license: "MIT"
 ---
@@ -114,28 +114,25 @@ After receiving answers, announce:
 
 Use available MCP tools. Run searches in parallel where possible.
 
-### Tool priority
-1. GitHub MCP - deep repo analysis, code structure, issue scanning
-2. Exa MCP - broad web search (Reddit, StackOverflow, Hacker News, dev blogs)
-3. Firecrawl MCP - scrape specific pages when needed
-4. Web search - fallback if MCPs unavailable
+### Parallel research (run all three simultaneously)
 
-If an MCP fails, report briefly and switch to the next option.
-Never block the workflow on a tool failure.
+Launch three searches in parallel - do not wait for one to finish before starting the next:
 
-### Search targets
+**Stream A - GitHub repos**: Search for 15-20 repositories matching the vision.
+Filter: stars >100 (niche) or >1,000 (infrastructure), last commit within 12 months,
+language matching user preference or auto-detected.
 
-Find 15-20 repositories matching the user's vision. Filter by:
-- Stars: minimum 100 for niche projects, minimum 1,000 for general infrastructure
-- Activity: last commit within 12 months
-- Language: match user preference, or auto-detect from top results
+**Stream B - Ecosystem context**: Exa search for "[vision] pitfalls reddit",
+"[vision] mistakes hacker news", "[vision] architecture regrets stackoverflow".
+Target: reddit.com, news.ycombinator.com, stackoverflow.com.
 
-### Issue scanning
-For each of the top 3-5 repositories, scan the last 50 issues (open and closed). Extract:
-- Recurring errors (same problem reported 3+ times)
-- Architecture regrets ("we should have used X instead")
-- Performance issues that emerged at scale
-- Security vulnerabilities that were patched
+**Stream C - Issue mining**: For the top 3-5 repos from Stream A, scan last 50 issues
+(open and closed). Extract: recurring errors (3+ reports), architecture regrets
+("should have used X"), performance problems at scale, patched security issues.
+
+Merge results from all three streams before proceeding to Phase 3.
+If an MCP fails, report briefly, switch to web search fallback, and continue.
+Never block on a tool failure.
 
 ### Ecosystem Velocity Scoring
 For key dependencies found in 3+ repos, check: commits in last 90 days, open CVEs.

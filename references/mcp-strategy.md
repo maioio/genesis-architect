@@ -44,6 +44,37 @@ Search queries to run in parallel:
 
 Target domains: reddit.com, news.ycombinator.com, stackoverflow.com, dev.to, medium.com
 
+## Firecrawl MCP Usage
+
+### scrape — always use these options to avoid token overflow
+```json
+{
+  "url": "<target>",
+  "onlyMainContent": true,
+  "formats": ["markdown"],
+  "excludeTags": ["nav", "footer", "header", "aside", "script", "style"]
+}
+```
+Without `onlyMainContent: true`, pages like npm registry return 200K+ chars and exceed limits.
+With it, the same page returns ~2K chars of relevant content.
+
+### search — use for competitive landscape scans
+```json
+{
+  "query": "<terms>",
+  "limit": 10,
+  "scrapeOptions": { "onlyMainContent": true, "formats": ["markdown"] }
+}
+```
+
+### When to use Firecrawl vs Exa
+| Goal | Use |
+|------|-----|
+| Find repos by category | Exa (`category: "github"`) |
+| Read a specific doc page | Firecrawl scrape |
+| Broad ecosystem news/blogs | Exa search |
+| Scrape multiple pages in batch | Firecrawl batch_scrape |
+
 ## Fallback Logic
 
 ```

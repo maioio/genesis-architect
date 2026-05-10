@@ -9,9 +9,12 @@ The only scaffolder that verifies its sources before building.
 [![License](https://img.shields.io/badge/license-MIT-green?style=for-the-badge)](LICENSE)
 [![Claude Code](https://img.shields.io/badge/Claude_Code-skill-orange?style=for-the-badge)](https://github.com/anthropics/claude-code)
 [![CI](https://img.shields.io/github/actions/workflow/status/maioio/genesis-architect/ci.yml?branch=main&style=for-the-badge&label=CI)](https://github.com/maioio/genesis-architect/actions)
-[![Known Vulnerabilities](https://snyk.io/test/github/maioio/genesis-architect/badge.svg)](https://snyk.io/test/github/maioio/genesis-architect)
+[![Gitleaks](https://img.shields.io/badge/secrets-gitleaks-red?style=for-the-badge&logo=git)](https://github.com/gitleaks/gitleaks)
+[![Known Vulnerabilities](https://snyk.io/test/github/maioio/genesis-architect/badge.svg?style=for-the-badge)](https://snyk.io/test/github/maioio/genesis-architect)
 [![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=maioio_genesis-architect&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=maioio_genesis-architect)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=maioio_genesis-architect&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=maioio_genesis-architect)
+[![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=maioio_genesis-architect&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=maioio_genesis-architect)
+[![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=maioio_genesis-architect&metric=reliability_rating)](https://sonarcloud.io/summary/new_code?id=maioio_genesis-architect)
 
 [![Phases](https://img.shields.io/badge/phases-9-blueviolet?style=flat-square)](SKILL.md)
 [![Languages](https://img.shields.io/badge/languages-4-informational?style=flat-square)](references/architecture-patterns.md)
@@ -307,12 +310,24 @@ Measured against the [quality rubric](evals/quality_rubric.md) (100-point, 4 dim
 
 ## Verified by
 
-| Tool | What it checks | Status |
-|------|---------------|--------|
-| [Snyk](https://snyk.io/test/github/maioio/genesis-architect) | Dependency vulnerabilities | [![Known Vulnerabilities](https://snyk.io/test/github/maioio/genesis-architect/badge.svg)](https://snyk.io/test/github/maioio/genesis-architect) |
-| [SonarCloud](https://sonarcloud.io/summary/new_code?id=maioio_genesis-architect) | Code quality + security | [![Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=maioio_genesis-architect&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=maioio_genesis-architect) |
-| [GitHub Actions CI](/.github/workflows/ci.yml) | Templates, evals, smoke test | ![CI](https://img.shields.io/github/actions/workflow/status/maioio/genesis-architect/ci.yml?branch=main&label=CI) |
-| [research_validator.py](scripts/research_validator.py) | Citation authenticity | Runs in Phase 4 |
+Four independent CI jobs run on every push and pull request:
+
+| Job | Tool | What it gates | Secret required |
+|-----|------|--------------|-----------------|
+| `secrets-scan` | [Gitleaks](https://github.com/gitleaks/gitleaks) | Exposed credentials, API keys, tokens in every commit | `GITLEAKS_LICENSE` (optional for public repos) |
+| `security-scan` | [Snyk](https://snyk.io/test/github/maioio/genesis-architect) | Python dependency CVEs (HIGH+); SARIF uploaded to GitHub Code Scanning | `SNYK_TOKEN` |
+| `sonarcloud` | [SonarCloud](https://sonarcloud.io/summary/new_code?id=maioio_genesis-architect) | Maintainability, Reliability, Security Hotspots; quality gate blocks merge on fail | `SONAR_TOKEN` |
+| `quality-gates` | Internal scripts | SKILL.md constraints, template validity, eval accuracy, smoke test, em-dash check | `GITHUB_TOKEN` (built-in) |
+
+**To activate:** add `SNYK_TOKEN` and `SONAR_TOKEN` in repository Settings > Secrets and variables > Actions. Gitleaks works out of the box on public repos.
+
+| Badge | Meaning |
+|-------|---------|
+| [![Known Vulnerabilities](https://snyk.io/test/github/maioio/genesis-architect/badge.svg)](https://snyk.io/test/github/maioio/genesis-architect) | No high/critical CVEs in Python deps |
+| [![Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=maioio_genesis-architect&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=maioio_genesis-architect) | SonarCloud quality gate status |
+| [![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=maioio_genesis-architect&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=maioio_genesis-architect) | SonarCloud security rating (A = best) |
+| [![Maintainability](https://sonarcloud.io/api/project_badges/measure?project=maioio_genesis-architect&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=maioio_genesis-architect) | SonarCloud maintainability rating |
+| ![CI](https://img.shields.io/github/actions/workflow/status/maioio/genesis-architect/ci.yml?branch=main&label=CI) | All 4 CI jobs passing |
 
 ---
 

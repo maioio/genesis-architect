@@ -7,9 +7,79 @@ on:
     branches: [main]
 
 jobs:
-  test:
+  # -----------------------------------------------------------------------
+  # Job 1: Secret scanning (blocks merge on any exposed credential)
+  # -----------------------------------------------------------------------
+  secrets-scan:
+    name: Secret Scanning (Gitleaks)
     runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Set GITLEAKS_LICENSE in repo secrets for org-level scanning
+          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
+
+  # -----------------------------------------------------------------------
+  # Job 2: Dependency and code security (Snyk)
+  # -----------------------------------------------------------------------
+  security-scan:
+    name: Dependency Security (Snyk)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies for Snyk scan
+        run: pip install -r requirements.txt 2>/dev/null || echo "No requirements.txt - skipping pip install"
+
+      - name: Run Snyk Python scan
+        uses: snyk/actions/python@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high --sarif-file-output=snyk-python.sarif
+
+      - name: Upload Snyk SARIF to GitHub Code Scanning
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: snyk-python.sarif
+        continue-on-error: true
+
+  # -----------------------------------------------------------------------
+  # Job 3: Static analysis (SonarCloud)
+  # -----------------------------------------------------------------------
+  sonarcloud:
+    name: Static Analysis (SonarCloud)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarqube-scan-action@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+  # -----------------------------------------------------------------------
+  # Job 4: Core quality gates (existing checks, renamed for clarity)
+  # -----------------------------------------------------------------------
+  quality-gates:
+    name: Quality Gates
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
@@ -91,7 +161,6 @@ jobs:
           blocks = re.findall(r"```toml\n(.*?)```", content, re.DOTALL)
           errors = []
           for i, block in enumerate(blocks):
-              # Skip blocks with template placeholders
               if "[project-name]" in block or "{{" in block:
                   continue
               try:

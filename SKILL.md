@@ -8,16 +8,14 @@ description: >
   stays active as a research companion. Triggers on: "genesis init [vision]", "I want to build
   X", "scaffold", "new project", "set up project", "start building", "create a tool", "make a
   CLI", "bootstrap", "בנה פרויקט", "צור פרויקט", "התחל פרויקט".
-version: "1.9.0"
+version: "1.10.0"
 author: "Maio Eshet"
 license: "MIT"
 ---
 
 # Genesis Architect
 
-> Research first. Build once.
-
-The 10 minutes spent on research save 10 hours of refactoring.
+> Research first. Build once. The 10 minutes spent on research save 10 hours of refactoring.
 
 ---
 
@@ -73,7 +71,23 @@ If it fails with "not recognized", provide both:
 - Session fix: `$env:PATH += ";[Scripts path]"` (PowerShell) or `set PATH=%PATH%;[Scripts path]` (CMD)
 - Permanent fix: `[Environment]::SetEnvironmentVariable("PATH", $env:PATH + ";[Scripts path]", "User")`
 
+**WSL note**: If on Windows but inside WSL, treat as Linux - skip Windows PATH fixes entirely.
 If detection fails, ask once: "What OS and Python version are you on?"
+
+---
+
+## Phase 0.5: Intent Check
+
+**Skip if the user invoked `genesis init` explicitly** - they already know what they want.
+
+Run only when triggered by natural language ("I want to build X", "scaffold a project", etc.).
+
+Ask in one line:
+> "Serious project (I'll run a full 15-20 repo research + scaffold) or quick experiment?
+> A: Serious - research + scaffold  B: Quick - skip research, minimal scaffold"
+
+- **A**: continue normally from Phase 1.
+- **B**: skip Phases 1-5, go straight to Phase 6 with minimal Minimalist scaffold, no RESEARCH.md or PITFALLS.md. Announce: "Quick mode - scaffold only, no research."
 
 ---
 
@@ -108,7 +122,7 @@ D: Other (specify)"
 **Critical rule**: Wait for answers. Never guess on architecture decisions.
 
 After receiving answers, announce:
-> "Starting engineering market research - scanning 15-20 projects..."
+> "Starting engineering market research - scanning 15-20 repos, deep-analyzing top 5-8..."
 
 ---
 
@@ -120,15 +134,16 @@ Use available MCP tools. Run searches in parallel where possible.
 
 Launch three searches in parallel - do not wait for one to finish before starting the next:
 
-**Stream A - GitHub repos**: Search for 15-20 repositories matching the vision.
+**Stream A - GitHub repos**: Search for 15-20 repositories matching the vision (broad scan).
 Filter: stars >100 (niche) or >1,000 (infrastructure), last commit within 12 months,
 language matching user preference or auto-detected.
+Select the top 5-8 by stars + recency for deep analysis in Streams B/C.
 
 **Stream B - Ecosystem context**: Exa search for "[vision] pitfalls reddit",
 "[vision] mistakes hacker news", "[vision] architecture regrets stackoverflow".
 Target: reddit.com, news.ycombinator.com, stackoverflow.com.
 
-**Stream C - Issue mining**: For the top 3-5 repos from Stream A, scan last 50 issues
+**Stream C - Issue mining**: For the top 5-8 repos from Stream A, scan last 50 issues
 (open and closed). Extract: recurring errors (3+ reports), architecture regrets
 ("should have used X"), performance problems at scale, patched security issues.
 
@@ -179,12 +194,13 @@ Informational only - flag, never block.
 
 Compile the top pitfalls from the issue scan. For each pitfall:
 - **What**: The problem developers hit
-- **Where**: Link to the GitHub issue or discussion
+- **Where**: Full clickable URL to the GitHub issue (format: `https://github.com/[owner]/[repo]/issues/[number]`)
 - **Why**: Root cause (architectural or implementation)
 - **Mitigation**: What we build differently to avoid it
 
 Aim for 3-7 pitfalls. If fewer than 3 found from issues, supplement with known
 language/framework anti-patterns from best practices.
+Never write shorthand like "repo#142" - always the full URL.
 
 ---
 
@@ -336,28 +352,14 @@ After Phase 6, enter companion mode. Remain active as a research partner.
 The user can invoke directly: `genesis help [problem]`, `genesis research [topic]`,
 or `genesis check` to run a freshness audit on the scaffold.
 
-**`genesis check`** - freshness audit, run 30+ days after scaffold:
-1. Check key dependencies for CVEs and commit activity (reuse Phase 2 tools)
-2. Check CI action versions and language runtime updates
-3. Report prioritized: CRITICAL (CVE) / WARNING (version behind) / INFO (minor updates)
-4. Never auto-apply - show upgrade commands, let the user run them
+**`genesis check`** - freshness audit (run 30+ days after scaffold): check deps for CVEs + CI action versions. Report: CRITICAL / WARNING / INFO. Never auto-apply - show upgrade commands only.
 
-**Stuck on a problem**: search the Phase 2 repos first, then competing projects. Present 1-3
-approaches ranked by ecosystem adoption. Always cite the source repo.
-
-**Dependency question**: check last commit date, open issues trend, flag better-maintained
-alternatives.
-
-**New sub-problem**: ask "Want me to search the ecosystem for how others solved this?" before
-running a targeted scan.
-
+**Stuck on a problem**: search Phase 2 repos first, then competing projects. Present 1-3 approaches ranked by ecosystem adoption. Cite source repo.
+**Dependency question**: check last commit date, open issues trend, flag better-maintained alternatives.
+**New sub-problem**: ask "Want me to search the ecosystem for how others solved this?" before scanning.
 **Feature complete**: suggest updating ROADMAP.md, offer to research the next phase.
-
-**No research context**: read `RESEARCH.md` from the working directory. If missing, ask:
-"Want me to run a targeted scan, or describe the problem?"
-
-**Boundaries**: never act without asking first - max 3 options per result - stay grounded in
-analyzed repos, not general advice.
+**No research context**: read `RESEARCH.md` from working directory. If missing: "RESEARCH.md not found. Run fresh scan?"
+**Boundaries**: never act without asking first - max 3 options - stay grounded in analyzed repos, not general advice.
 
 ---
 
@@ -384,9 +386,7 @@ When 0 comparable projects exist, switch to first-principles mode.
 Announce:
 > "No similar projects found. Switching to Architect Mode - building from first principles."
 
-Apply: SOLID, Clean Architecture, Twelve-Factor App (for services).
-
-Document in RESEARCH.md: "First-principles design - no direct ecosystem precedent found."
+Apply: SOLID, Clean Architecture, Twelve-Factor App (for services). Note in RESEARCH.md: "First-principles design - no direct ecosystem precedent found."
 
 ---
 

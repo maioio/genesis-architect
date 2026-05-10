@@ -9,6 +9,32 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+## [1.10.0] - 2026-05-10
+
+### Added
+- **Phase 0.5 intent check**: natural-language triggers now ask "serious project or quick experiment?" before launching full 8-phase flow. `genesis init` always skips this gate.
+- **Quick scaffold mode**: Phase 0.5 option B runs Phase 6 directly with minimal Minimalist scaffold - no research, no waiting.
+- **WSL detection in Phase 0**: if user is on Windows but inside WSL, Linux paths and package managers are used; Windows PATH fixes are skipped.
+- **Honest Limitations section in README**: documents issue-mining depth, web-search-only quality regression, and opt-in issue URL verification.
+
+### Changed
+- **Research claim corrected**: "15-20 repos scanned, top 5-8 deeply analyzed" - Phase 2 Stream C now explicitly targets 5-8 repos for issue mining (was "top 3-5").
+- **Phase 2 announcement**: now says "scanning 15-20 repos, deep-analyzing top 5-8" for accuracy.
+- **research_validator.py**: added `--verify-issues` flag that HTTP HEAD-checks every GitHub issue URL cited in PITFALLS.md for 404s. Format validation (regex) runs by default; live verification is opt-in.
+
+### Fixed
+- SKILL.md at exactly 399 lines (was 401 after v1.9.1 patches).
+
+---
+
+## [1.9.1] - 2026-05-10
+
+### Fixed
+- **Phase 4 deep linking**: pitfall "Where" field now requires full GitHub issue URL
+  (`https://github.com/owner/repo/issues/N`), not shorthand like `repo#142`.
+- **Phase 7 resilience**: when RESEARCH.md is missing, companion mode now surfaces a
+  clear message instead of silently failing.
+
 ---
 
 ## [1.9.0] - 2026-05-10

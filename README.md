@@ -16,7 +16,7 @@
 
 <br/>
 
-> Scans 15-20 real GitHub repos and mines their Issues for pitfalls -
+> Scans 15-20 real GitHub repos, deep-analyzes the top 5-8, and mines their Issues for pitfalls -
 > **before writing a single file.**
 > No other scaffolding tool does this automatically.
 
@@ -37,7 +37,7 @@ Genesis Architect treats scaffolding as a **research problem first**.
 ```
 You describe a vision
        ↓
-Genesis scans 15-20 real repos that built something similar
+Genesis scans 15-20 real repos, deeply analyzes top 5-8
        ↓
 It mines their GitHub Issues for what broke in production
        ↓
@@ -140,7 +140,7 @@ create a tool that converts CSV to JSON
 
 | Deliverable | Contents |
 |-------------|----------|
-| `RESEARCH.md` | 15-20 repos analyzed, sources linked, ecosystem velocity signals |
+| `RESEARCH.md` | 15-20 repos scanned, top 5-8 deeply analyzed, sources linked, ecosystem velocity signals |
 | `PITFALLS.md` | 3-7 real pitfalls from GitHub Issues with root causes and mitigations |
 | `ROADMAP.md` | 5-10 phase development plan calibrated to research complexity |
 | `src/` | Functional boilerplate - not empty stubs |
@@ -255,6 +255,18 @@ genesis-architect/
 ```
 
 </details>
+
+---
+
+## Honest Limitations
+
+| Limitation | Details |
+|-----------|---------|
+| **Issue mining depth** | Scans 50 most-recent issues across 5-8 repos. Low-traffic projects or issues closed years ago may not surface. |
+| **Web-search-only mode** | Without GitHub MCP, issue extraction is shallow. RESEARCH.md will note this automatically. |
+| **Quick experiment trigger** | Natural-language triggers ("I want to build X") now ask intent first - but `genesis init` always runs the full flow. |
+| **Issue URL authenticity** | Run `python scripts/research_validator.py RESEARCH.md --verify-issues` to HTTP-check every cited GitHub issue URL. CI does format-check only; live verification is opt-in to avoid rate limits. |
+| **WSL** | On Windows, if you're running inside WSL, Linux paths and package managers are used - Windows PATH fixes do not apply. |
 
 ---
 

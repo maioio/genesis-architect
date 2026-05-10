@@ -3,60 +3,45 @@
 **Research first. Build once.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-1.5.0-blue.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.9.0-blue.svg)](CHANGELOG.md)
 [![Claude Code](https://img.shields.io/badge/Claude%20Code-skill-orange.svg)](https://github.com/anthropics/claude-code)
 [![CI](https://img.shields.io/github/actions/workflow/status/maioio/genesis-architect/ci.yml?branch=main&label=CI)](https://github.com/maioio/genesis-architect/actions)
 [![GitHub Stars](https://img.shields.io/github/stars/maioio/genesis-architect?style=flat)](https://github.com/maioio/genesis-architect)
 
-A Claude Code skill that scans 15-20 real GitHub repos, extracts pitfalls from actual Issues,
-and builds a battle-tested scaffold - before writing a single line of code.
+> Scans 15-20 real GitHub repos and mines their Issues for pitfalls — before writing a single file.
+> No other scaffolding tool does this automatically.
 
-After scaffolding, enters **Development Companion Mode**: keeps searching and suggesting as you build.
+---
+
+## The problem with every other scaffolding tool
+
+Every tool — create-t3-app, bolt.new, Copilot Workspace, Cookiecutter — assumes you already know what to build and how. They generate code from templates, not from evidence.
+
+Genesis Architect treats scaffolding as a **research problem first**.
+
+Before creating a single directory, it:
+- Scans 15-20 real GitHub repos matching your vision
+- Mines their Issues for recurring failures, architecture regrets, and security patches
+- Synthesizes the "wise average" of what successful projects actually look like
+- Builds a scaffold that avoids the mistakes others already made
 
 ---
 
 ## Demo
 
-<table align="center"><tr>
-<td align="center"><b>macOS</b><br/><img src="assets/demo-mac.gif" alt="Genesis Architect demo - macOS" width="420" /></td>
-<td align="center"><b>Windows</b><br/><img src="assets/demo-win.gif" alt="Genesis Architect demo - Windows" width="420" /></td>
-</tr></table>
+<p align="center"><img src="assets/demo.gif" alt="Genesis Architect demo" width="860" /></p>
 
-> `genesis init a Python CLI for log analysis` → 18 repos scanned → scaffold complete in under 3 minutes.
-
-**Full interactive recording** (pause, rewind, copy text from terminal):
-[![asciicast](https://asciinema.org/a/genesis-architect-demo.svg)](https://asciinema.org/a/genesis-architect-demo)
-
-> The GIFs above are for quick preview. The asciinema recording lets you pause, rewind, and copy
-> commands directly. Record your own session with `asciinema rec demo.cast` and convert to GIF
-> with `agg demo.cast demo.gif` if you need a static file for platforms that block scripts.
+> `genesis init a Python CLI for log analysis` - 18 repos scanned, scaffold complete in under 3 minutes.
 
 ---
 
-## See it in action
+## Real output — not fabricated
 
-Real output from a TypeScript CLI project - not fabricated:
+From an actual TypeScript CLI project:
 
-- [`examples/typescript-cli/RESEARCH.md`](examples/typescript-cli/RESEARCH.md) - 17 repos analyzed, sources linked
-- [`examples/typescript-cli/PITFALLS.md`](examples/typescript-cli/PITFALLS.md) - 4 real pitfalls from GitHub Issues
-- [`examples/typescript-cli/ROADMAP.md`](examples/typescript-cli/ROADMAP.md) - 5-phase development plan
-
-This is what you get. If the quality here looks useful, the skill is worth trying.
-
----
-
-## Without MCPs
-
-Genesis Architect works at three levels depending on your setup:
-
-| Setup | What you get |
-|-------|-------------|
-| No MCPs (default) | Web search only - finds public repos, shallower issue analysis |
-| GitHub MCP | Deep repo scan + real issue extraction (recommended) |
-| GitHub + Exa | Full research: repos + Reddit/HN/StackOverflow ecosystem context |
-
-The skill never blocks on a missing tool - it reports what it's using and continues.
-Web search alone still finds real repos and real pitfalls; it's slower and less deep.
+- [`examples/typescript-cli/RESEARCH.md`](examples/typescript-cli/RESEARCH.md) - 17 repos analyzed, every source linked
+- [`examples/typescript-cli/PITFALLS.md`](examples/typescript-cli/PITFALLS.md) - 4 real pitfalls from GitHub Issues, with mitigations built into the scaffold
+- [`examples/typescript-cli/ROADMAP.md`](examples/typescript-cli/ROADMAP.md) - 5-phase development plan calibrated to what the research found
 
 ---
 
@@ -66,94 +51,114 @@ Web search alone still finds real repos and real pitfalls; it's slower and less 
 git clone https://github.com/maioio/genesis-architect ~/.claude/skills/genesis-architect
 ```
 
+That's it. No build step, no dependencies.
+
 ---
 
 ## Usage
 
-**Explicit invocation:**
+**Explicit:**
 ```
 genesis init a REST API in TypeScript
-genesis init a Chrome extension that does X
 genesis init a Python CLI for batch image processing
-genesis init --from-prd PRD.md          # ← from a product spec
-genesis init --from-team-config          # ← restore teammate's research
-genesis audit ./my-existing-project      # ← audit existing code
+genesis init --from-prd PRD.md          # read a product spec
+genesis init --from-team-config          # restore a teammate's research
+genesis audit ./my-existing-project      # audit existing code, no scaffold
 ```
 
-**Natural triggers:**
+**Natural — just describe what you want to build:**
 ```
 I want to build a Telegram bot
 scaffold a new project for web scraping
 start building a VS Code extension
+I need to build a data pipeline from scratch
 ```
 
 ---
 
-## What you get
+## What every project gets
 
-Every project receives:
-
-| File | Contents |
-|------|----------|
-| `RESEARCH.md` | Market analysis of 15-20 real repos, sources linked |
-| `PITFALLS.md` | 3-7 real pitfalls from GitHub Issues with mitigations |
-| `ROADMAP.md` | 5-10 phase development roadmap |
-| `src/` | Functional boilerplate (not empty stubs) |
+| Deliverable | Contents |
+|-------------|----------|
+| `RESEARCH.md` | 15-20 repos analyzed, sources linked, ecosystem velocity signals |
+| `PITFALLS.md` | 3-7 real pitfalls from GitHub Issues with root causes and mitigations |
+| `ROADMAP.md` | 5-10 phase development plan calibrated to research complexity |
+| `src/` | Functional boilerplate — not empty stubs |
 | `tests/` | Passing unit tests for core logic |
-| `.github/workflows/ci.yml` | GitHub Actions CI/CD |
+| `.github/workflows/ci.yml` | Language-specific GitHub Actions CI/CD |
+| `docs/adr/001-initial-architecture.md` | Every architectural decision explained with evidence |
+| `.gitignore` | Language-appropriate, generated before first commit |
+
+**Production-readiness defaults** included in every scaffold:
+- Structured logging (pino/winston/slog) from the first line
+- Non-root Dockerfile user
+- Startup validation of required env vars — fails loudly if missing
+- `GET /health` endpoint (Web Service archetype)
+- No wildcard CORS, Secure+HttpOnly cookies
 
 ---
 
-## The 8 phases
+## The 9 phases
 
 | Phase | What happens |
 |-------|-------------|
-| 0. Environment Probe | Detects OS, Python version, package manager, PATH |
-| 1. Vision Alignment | 2-3 focused questions about scope and scale |
-| 2. Deep Discovery | Scans 15-20 repos, reads last 50 issues each |
-| 3. Architecture Analysis | Synthesizes the "wise average" across the ecosystem |
+| 0. Environment Probe | Detects OS, package manager, PATH; scans nearby projects for conventions |
+| 1. Vision Alignment | Archetype (CLI/Library/API/Frontend) + scale + language — 3 focused questions |
+| 2. Deep Discovery | **3 parallel streams**: GitHub repos + Exa ecosystem context + Issue mining |
+| 3. Architecture Analysis | Synthesizes the "wise average" across analyzed repos |
 | 4. Pitfall Identification | Extracts recurring failures with root causes |
-| 5. Interactive Choice | Minimalist vs. Scalable architecture options |
-| 6. Genesis Build | Creates scaffold with tests and CI/CD |
-| 7. Development Companion | Keeps searching and suggesting as you build |
+| 5. Interactive Choice | Archetype-appropriate Minimalist vs. Scalable structures + ecosystem velocity signals |
+| 6. Genesis Build | Scaffold + tests + CI/CD + production defaults + ADR + self-validating smoke test |
+| 7. Development Companion | Stays active — `genesis help`, `genesis research`, `genesis check` |
+
+**Hard gates that protect you:**
+- Phase 2: fewer than 5 repos found = stops, offers broader search or Architect Mode
+- Phase 5: requires explicit A/B/C/D before any files are created
+- Phase 6: smoke test must pass before `git commit` — auto-fixes up to 3 times
 
 ---
 
 ## Development Companion Mode
 
-After scaffolding, Genesis Architect stays active within the session. Tell it what you're working on:
+After scaffolding, Genesis Architect stays active for the rest of your session:
 
 ```
-genesis help I need to add authentication
-genesis research rate limiting patterns
+genesis help I need to add rate limiting
+genesis research authentication patterns
+genesis check                            # freshness audit — CVEs, outdated deps, CI versions
 ```
 
-It searches the repos it already analyzed and returns grounded suggestions - not generic advice.
+Suggestions are grounded in the repos analyzed in Phase 2 — not generic advice.
 
-**Session scope**: The companion remembers the research from Phases 2-4 within the current Claude Code session. In a new session, it reads `RESEARCH.md` from your project folder to restore context - this is why that file is a mandatory deliverable.
+In a new session, it reads `RESEARCH.md` from your project to restore context.
 
 ---
 
-## Languages supported
+## Works at every level of MCP setup
 
-Auto-detected from research. Built-in templates for:
-- TypeScript / JavaScript
-- Python
-- Go
-- Rust
+| Setup | What you get |
+|-------|-------------|
+| No MCPs | Web search only — finds real repos, shallower issue analysis |
+| GitHub MCP | Deep repo scan + real Issue extraction (recommended) |
+| GitHub + Exa | Full parallel research: repos + Reddit/HN/StackOverflow context |
+
+The skill never blocks on a missing tool — it reports what it's using and continues.
 
 ---
 
-## MCP tool chain
+## Languages and archetypes
 
-| Priority | Tool | Purpose |
-|----------|------|---------|
-| 1 | GitHub MCP | Repo analysis, issue scanning |
-| 2 | Exa MCP | Reddit, HN, StackOverflow |
-| 3 | Firecrawl MCP | Targeted page scraping |
-| 4 | Web search | Fallback |
+Languages auto-detected from research. Built-in templates for:
+**TypeScript / JavaScript, Python, Go, Rust**
 
-All tools optional - skill degrades gracefully.
+Archetypes — each shapes the scaffold differently:
+
+| Archetype | What changes |
+|-----------|-------------|
+| CLI Tool | Entrypoint + argparse/click/cobra, no server |
+| Library/SDK | Public API surface, no `main()`, no CLI |
+| Web Service/API | Router + Dockerfile + `/health` endpoint |
+| Frontend App | Component tree + build pipeline, no pytest |
 
 ---
 
@@ -162,10 +167,33 @@ All tools optional - skill degrades gracefully.
 ```
 genesis-architect/
 ├── SKILL.md                        # Skill definition (under 400 lines)
-├── plugin.json                     # Manifest for skill marketplaces
 ├── scripts/
 │   ├── scaffold_generator.py       # Creates project structure
 │   ├── research_validator.py       # Validates RESEARCH.md completeness
 │   └── eval_runner.py              # Measures trigger rate
 ├── evals/
-│   
+│   ├── test_queries.json           # 36 trigger/no-trigger test cases
+│   └── README.md
+├── examples/
+│   └── typescript-cli/             # Real output — not fabricated
+├── assets/
+│   ├── RESEARCH.template.md
+│   ├── PITFALLS.template.md
+│   └── ROADMAP.template.md
+├── references/
+│   ├── architecture-patterns.md    # Boilerplate per language/tier + production defaults
+│   └── mcp-strategy.md
+└── .github/workflows/ci.yml        # CI for this repo: validator + evals + scaffold smoke test
+```
+
+---
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md).
+
+New language templates, improved MCP strategies, and workflow refinements are welcome.
+
+## License
+
+[MIT](LICENSE) - Maio Eshet

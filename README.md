@@ -16,7 +16,7 @@
 
 <br/>
 
-> Scans 15-20 real GitHub repos and mines their Issues for pitfalls —
+> Scans 15-20 real GitHub repos and mines their Issues for pitfalls -
 > **before writing a single file.**
 > No other scaffolding tool does this automatically.
 
@@ -30,7 +30,7 @@
 
 ## The problem with every other scaffolding tool
 
-Every tool — `create-t3-app`, `bolt.new`, Copilot Workspace, Cookiecutter — assumes you already know what to build and how. They generate code from templates, not from evidence.
+Every tool - `create-t3-app`, `bolt.new`, Copilot Workspace, Cookiecutter - assumes you already know what to build and how. They generate code from templates, not from evidence.
 
 Genesis Architect treats scaffolding as a **research problem first**.
 
@@ -54,28 +54,28 @@ It stays active as a research partner while you build
 flowchart TD
     A([You describe a vision]) --> B
 
-    subgraph P0["Phase 0 — Probe"]
+    subgraph P0["Phase 0 - Probe"]
         B[Detect OS, package manager\nScan nearby projects for conventions]
     end
 
-    subgraph P1["Phase 1 — Align"]
+    subgraph P1["Phase 1 - Align"]
         C[Archetype · Scale · Language\n3 focused questions]
     end
 
-    subgraph P2["Phase 2 — Research ×3 parallel"]
+    subgraph P2["Phase 2 - Research ×3 parallel"]
         D1[Stream A\nGitHub repos]
         D2[Stream B\nExa ecosystem]
         D3[Stream C\nIssue mining]
         D1 & D2 & D3 --> E[Merge results]
     end
 
-    subgraph P3456["Phases 3-6 — Build"]
+    subgraph P3456["Phases 3-6 - Build"]
         F[Architecture synthesis] --> G[Pitfall identification]
         G --> H[A/B architecture choice]
         H --> I[Scaffold + tests + CI\nProduction defaults + ADR\nSelf-validating smoke test]
     end
 
-    subgraph P7["Phase 7 — Companion"]
+    subgraph P7["Phase 7 - Companion"]
         J[genesis help · genesis research · genesis check]
     end
 
@@ -122,7 +122,7 @@ genesis audit ./my-existing-project      # audit existing code, no scaffold
 </details>
 
 <details>
-<summary><b>Natural triggers — just describe what you want</b></summary>
+<summary><b>Natural triggers - just describe what you want</b></summary>
 
 ```
 I want to build a Telegram bot
@@ -143,7 +143,7 @@ create a tool that converts CSV to JSON
 | `RESEARCH.md` | 15-20 repos analyzed, sources linked, ecosystem velocity signals |
 | `PITFALLS.md` | 3-7 real pitfalls from GitHub Issues with root causes and mitigations |
 | `ROADMAP.md` | 5-10 phase development plan calibrated to research complexity |
-| `src/` | Functional boilerplate — not empty stubs |
+| `src/` | Functional boilerplate - not empty stubs |
 | `tests/` | Passing unit tests for core logic |
 | `.github/workflows/ci.yml` | Language-specific GitHub Actions CI/CD |
 | `docs/adr/001-initial-architecture.md` | Every architectural decision explained with evidence |
@@ -153,8 +153,8 @@ create a tool that converts CSV to JSON
 
 | Default | What it does |
 |---------|-------------|
-| Structured logging | `pino`/`winston`/`slog` from line 1 — no `console.log` in production |
-| Non-root Dockerfile | `USER 1001` — never runs as root |
+| Structured logging | `pino`/`winston`/`slog` from line 1 - no `console.log` in production |
+| Non-root Dockerfile | `USER 1001` - never runs as root |
 | Env validation | Fails loudly at startup if required vars are missing |
 | `GET /health` | Returns `{"status":"ok"}` (Web Service archetype) |
 | No wildcard CORS | Explicitly listed origins only |
@@ -170,7 +170,7 @@ create a tool that converts CSV to JSON
 TypeScript / JavaScript    Python    Go    Rust
 ```
 
-**Archetypes** — each shapes the entire scaffold differently:
+**Archetypes** - each shapes the entire scaffold differently:
 
 | Archetype | Entrypoint | Has server | Has Dockerfile | Test runner |
 |-----------|-----------|-----------|----------------|-------------|
@@ -185,7 +185,7 @@ TypeScript / JavaScript    Python    Go    Rust
 
 | Setup | Research quality | Speed |
 |-------|-----------------|-------|
-| No MCPs | Web search — real repos, shallower issue data | Normal |
+| No MCPs | Web search - real repos, shallower issue data | Normal |
 | GitHub MCP | Deep repo scan + real Issue extraction | Normal |
 | GitHub + Exa | Full parallel: repos + Reddit/HN/SO context | **~3x faster** |
 | GitHub + Exa + Firecrawl | Full parallel + targeted page scraping | **~3x faster** |
@@ -209,13 +209,13 @@ In a new session, it reads `RESEARCH.md` from your project to restore context au
 
 ---
 
-## Real output — not fabricated
+## Real output - not fabricated
 
 From an actual TypeScript CLI project:
 
-- [`examples/typescript-cli/RESEARCH.md`](examples/typescript-cli/RESEARCH.md) — 17 repos analyzed, every source linked
-- [`examples/typescript-cli/PITFALLS.md`](examples/typescript-cli/PITFALLS.md) — 4 real pitfalls from GitHub Issues, mitigations built into the scaffold
-- [`examples/typescript-cli/ROADMAP.md`](examples/typescript-cli/ROADMAP.md) — 5-phase plan calibrated to what the research found
+- [`examples/typescript-cli/RESEARCH.md`](examples/typescript-cli/RESEARCH.md) - 17 repos analyzed, every source linked
+- [`examples/typescript-cli/PITFALLS.md`](examples/typescript-cli/PITFALLS.md) - 4 real pitfalls from GitHub Issues, mitigations built into the scaffold
+- [`examples/typescript-cli/ROADMAP.md`](examples/typescript-cli/ROADMAP.md) - 5-phase plan calibrated to what the research found
 
 ---
 
@@ -269,7 +269,7 @@ New language templates, improved MCP strategies, and workflow refinements are we
 
 ## License
 
-[MIT](LICENSE) — Maio Eshet
+[MIT](LICENSE) - Maio Eshet
 
 ---
 

@@ -2,44 +2,194 @@
   "version": "1.9.0",
   "description": "Eval queries for Genesis Architect trigger rate testing",
   "target_accuracy": 0.9,
-  "should_trigger": [
-    "genesis init a REST API in TypeScript",
-    "I want to build a CLI tool that converts CSV to JSON",
-    "scaffold a new Python project for web scraping",
-    "set up a project for a Telegram bot",
-    "start building a Chrome extension",
-    "create a tool that monitors GitHub repos for new releases",
-    "make a CLI for managing dotfiles",
-    "bootstrap a new Node.js microservice",
-    "I want to build a browser extension that blocks ads",
-    "new project: a Discord bot that plays music",
-    "בנה פרויקט לאוטומציה של אימיילים",
-    "צור פרויקט ל-CLI שמנהל קבצי config",
-    "התחל פרויקט חדש לשרת FastAPI",
-    "I want to create a tool for batch image processing",
-    "help me scaffold a React component library",
-    "I need to build a data pipeline from scratch",
-    "make me a project for a VS Code extension",
-    "start a new project: PDF to Markdown converter",
-    "genesis init --from-prd PRD.md",
-    "genesis init --from-team-config",
-    "genesis audit ./my-existing-project",
-    "genesis help I need to add authentication",
-    "genesis research rate limiting patterns"
-  ],
-  "should_not_trigger": [
-    "how do I center a div in CSS",
-    "what is the difference between async and await",
-    "fix this bug in my Python code",
-    "explain what a closure is",
-    "review my pull request",
-    "help me write a commit message",
-    "what does this error mean: TypeError cannot read property",
-    "refactor this function to be more readable",
-    "add a test for this existing function",
-    "how do I deploy to Vercel",
-    "translate this code from Python to TypeScript",
-    "what is the time complexity of this algorithm",
-    "help me understand this regex pattern"
+  "flow_coverage": {
+    "full": 20,
+    "preflight_skip": 1,
+    "audit": 1,
+    "from_prd": 1,
+    "from_team_config": 1,
+    "null": 13
+  },
+  "test_cases": [
+    {
+      "input": "genesis init a REST API in TypeScript",
+      "should_trigger": true,
+      "expected_flow": "preflight_skip"
+    },
+    {
+      "input": "I want to build a CLI tool that converts CSV to JSON",
+      "should_trigger": true,
+      "expected_flow": "full"
+    },
+    {
+      "input": "scaffold a new Python project for web scraping",
+      "should_trigger": true,
+      "expected_flow": "full"
+    },
+    {
+      "input": "set up a project for a Telegram bot",
+      "should_trigger": true,
+      "expected_flow": "full"
+    },
+    {
+      "input": "start building a Chrome extension",
+      "should_trigger": true,
+      "expected_flow": "full"
+    },
+    {
+      "input": "create a tool that monitors GitHub repos for new releases",
+      "should_trigger": true,
+      "expected_flow": "full"
+    },
+    {
+      "input": "make a CLI for managing dotfiles",
+      "should_trigger": true,
+      "expected_flow": "full"
+    },
+    {
+      "input": "bootstrap a new Node.js microservice",
+      "should_trigger": true,
+      "expected_flow": "full"
+    },
+    {
+      "input": "I want to build a browser extension that blocks ads",
+      "should_trigger": true,
+      "expected_flow": "full"
+    },
+    {
+      "input": "new project: a Discord bot that plays music",
+      "should_trigger": true,
+      "expected_flow": "full"
+    },
+    {
+      "input": "בנה פרויקט לאוטומציה של אימיילים",
+      "should_trigger": true,
+      "expected_flow": "full"
+    },
+    {
+      "input": "צור פרויקט ל-CLI שמנהל קבצי config",
+      "should_trigger": true,
+      "expected_flow": "full"
+    },
+    {
+      "input": "התחל פרויקט חדש לשרת FastAPI",
+      "should_trigger": true,
+      "expected_flow": "full"
+    },
+    {
+      "input": "I want to create a tool for batch image processing",
+      "should_trigger": true,
+      "expected_flow": "full"
+    },
+    {
+      "input": "help me scaffold a React component library",
+      "should_trigger": true,
+      "expected_flow": "full"
+    },
+    {
+      "input": "I need to build a data pipeline from scratch",
+      "should_trigger": true,
+      "expected_flow": "full"
+    },
+    {
+      "input": "make me a project for a VS Code extension",
+      "should_trigger": true,
+      "expected_flow": "full"
+    },
+    {
+      "input": "start a new project: PDF to Markdown converter",
+      "should_trigger": true,
+      "expected_flow": "full"
+    },
+    {
+      "input": "genesis init --from-prd PRD.md",
+      "should_trigger": true,
+      "expected_flow": "from_prd"
+    },
+    {
+      "input": "genesis init --from-team-config",
+      "should_trigger": true,
+      "expected_flow": "from_team_config"
+    },
+    {
+      "input": "genesis audit ./my-existing-project",
+      "should_trigger": true,
+      "expected_flow": "audit"
+    },
+    {
+      "input": "genesis help I need to add authentication",
+      "should_trigger": true,
+      "expected_flow": "full"
+    },
+    {
+      "input": "genesis research rate limiting patterns",
+      "should_trigger": true,
+      "expected_flow": "full"
+    },
+    {
+      "input": "how do I center a div in CSS",
+      "should_trigger": false,
+      "expected_flow": null
+    },
+    {
+      "input": "what is the difference between async and await",
+      "should_trigger": false,
+      "expected_flow": null
+    },
+    {
+      "input": "fix this bug in my Python code",
+      "should_trigger": false,
+      "expected_flow": null
+    },
+    {
+      "input": "explain what a closure is",
+      "should_trigger": false,
+      "expected_flow": null
+    },
+    {
+      "input": "review my pull request",
+      "should_trigger": false,
+      "expected_flow": null
+    },
+    {
+      "input": "help me write a commit message",
+      "should_trigger": false,
+      "expected_flow": null
+    },
+    {
+      "input": "what does this error mean: TypeError cannot read property",
+      "should_trigger": false,
+      "expected_flow": null
+    },
+    {
+      "input": "refactor this function to be more readable",
+      "should_trigger": false,
+      "expected_flow": null
+    },
+    {
+      "input": "add a test for this existing function",
+      "should_trigger": false,
+      "expected_flow": null
+    },
+    {
+      "input": "how do I deploy to Vercel",
+      "should_trigger": false,
+      "expected_flow": null
+    },
+    {
+      "input": "translate this code from Python to TypeScript",
+      "should_trigger": false,
+      "expected_flow": null
+    },
+    {
+      "input": "what is the time complexity of this algorithm",
+      "should_trigger": false,
+      "expected_flow": null
+    },
+    {
+      "input": "help me understand this regex pattern",
+      "should_trigger": false,
+      "expected_flow": null
+    }
   ]
 }

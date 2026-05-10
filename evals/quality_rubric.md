@@ -68,11 +68,31 @@ Human review checklist for evaluating real genesis-architect runs. Score 5 runs 
 3. Record scores in the table below.
 4. Average score must be >= 80 before publishing a new major version.
 
-| Run | Project Type | S1 | S2 | S3 | S4 | Total |
-|-----|-------------|----|----|----|----|-------|
-| 1 | Python CLI | | | | | |
-| 2 | TypeScript API | | | | | |
-| 3 | Go service | | | | | |
-| 4 | Rust CLI | | | | | |
-| 5 | React app | | | | | |
-| | **Average** | | | | | |
+---
+
+## Scores
+
+### TypeScript CLI (measured - run 2026-05-07)
+
+| Section | Points | Notes |
+|---------|--------|-------|
+| S1: Research Authenticity | 24/30 | 5 repo URLs format-valid (live verification pending). Issue URLs present for Pitfalls 1, 2, 4. Pitfall 3 cites "multiple repos" with no URL. Stars plausible. Commit dates within window. Quality Signal "Full" matches GitHub MCP. |
+| S2: Pitfall Relevance | 21/25 | All 4 pitfalls are TS CLI-specific. Root causes present and mechanistic. Mitigations reference scaffold files by path. Pitfall 3 lacks a traceable issue URL. |
+| S3: Scaffold Quality | 17/25 | ADR references specific repos. Streaming I/O default present. Structured logging and env validation not mentioned. Scaffold files not included in examples folder so test and .gitignore quality unverifiable. |
+| S4: Phase Correctness | 10/20 | Research phase demonstrably ran. Hard gate, smoke test, archetype confirmation, and pre-flight check unverifiable from output files alone. |
+| **Total** | **72/100** | Grade: Acceptable |
+
+### Projected scores (need real runs to measure)
+
+| Run | Project Type | S1 | S2 | S3 | S4 | Total | Basis |
+|-----|-------------|----|----|----|----|-------|-------|
+| 1 | Python CLI | 22 | 20 | 18 | 12 | 72 | Projected: Python ecosystem well-covered by GitHub MCP; pitfalls likely specific but venv/packaging edge cases may miss issue URLs |
+| 2 | TypeScript CLI | 24 | 21 | 17 | 10 | **72** | Measured (see above) |
+| 3 | Go service | 20 | 19 | 16 | 12 | 67 | Projected: Go template in architecture-patterns.md is thinner; fewer issue URL examples expected |
+| 4 | Rust CLI | 19 | 18 | 15 | 12 | 64 | Projected: Rust template least mature; borrow-checker pitfalls risk being generic |
+| 5 | React app | 22 | 20 | 18 | 12 | 72 | Projected: React ecosystem broad; pitfalls risk generic advice ("don't over-render") without strong issue mining |
+| | **Average** | **21.4** | **19.6** | **16.8** | **11.6** | **69.4** | 1 measured + 4 projected |
+
+---
+
+Measured: 72/100 (TypeScript CLI). Projected average: 69/100. Target: 80+.

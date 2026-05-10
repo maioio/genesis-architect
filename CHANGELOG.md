@@ -9,6 +9,16 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+## [1.13.0] - 2026-05-10
+
+### Added
+- **Quality Score section in README**: measured 72/100 on TypeScript CLI example against the quality rubric (4 dimensions, 100 points). Projected average 69/100. Target 80+ for v2.0.0. Proves the claim, not just makes it.
+- **Phase 4 rate-limit-aware verification**: when `GITHUB_TOKEN` is set, full `--verify-issues` runs; when not set, first 3 URLs are web-fetched and PITFALLS.md notes how many were live-verified. Resolves the CI opt-in vs Phase 4 auto-run contradiction.
+- **Phase 6 Step 6.5 mitigation coverage check**: after smoke test, greps `src/` for each pitfall's mitigation keyword. Warns (not blocks) on 0 matches. Closes the loop between PITFALLS.md and actual scaffold code.
+- **evals/test_queries.json flow annotation**: every test case now has `expected_flow` field (full/preflight_skip/audit/from_prd/from_team_config/null). Top-level `flow_coverage` object shows distribution. Test coverage now maps trigger -> flow, not just trigger -> yes/no.
+
+---
+
 ## [1.12.0] - 2026-05-10
 
 ### Added

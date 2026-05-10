@@ -8,7 +8,7 @@ description: >
   stays active as a research companion. Triggers on: "genesis init [vision]", "I want to build
   X", "scaffold", "new project", "set up project", "start building", "create a tool", "make a
   CLI", "bootstrap", "בנה פרויקט", "צור פרויקט", "התחל פרויקט".
-version: "1.12.0"
+version: "1.13.0"
 author: "Maio Eshet"
 license: "MIT"
 ---
@@ -65,10 +65,7 @@ Store results for use in Phases 3, 5, and 6.
 **Windows PATH check**: On Windows, detect if the Python Scripts folder is on PATH.
 Run `python -c "import sysconfig; print(sysconfig.get_path('scripts'))"` to get the exact Scripts path.
 Detect shell: if `$PSVersionTable` is accessible = PowerShell; otherwise = CMD.
-After any `pip install -e .`, run the installed command immediately to verify it works.
-If it fails with "not recognized", provide both:
-- Session fix: `$env:PATH += ";[Scripts path]"` (PowerShell) or `set PATH=%PATH%;[Scripts path]` (CMD)
-- Permanent fix: `[Environment]::SetEnvironmentVariable("PATH", $env:PATH + ";[Scripts path]", "User")`
+After any `pip install -e .`, run the installed command immediately. If "not recognized": session fix `$env:PATH += ";[Scripts path]"` (PS) or `set PATH=%PATH%;[Scripts path]` (CMD); permanent fix `[Environment]::SetEnvironmentVariable("PATH", $env:PATH + ";[Scripts path]", "User")`.
 
 **WSL note**: If on Windows but inside WSL, treat as Linux - skip Windows PATH fixes entirely.
 If detection fails, ask once: "What OS and Python version are you on?"
@@ -205,8 +202,9 @@ language/framework anti-patterns from best practices.
 Never write shorthand like "repo#142" - always the full URL.
 
 After writing PITFALLS.md, run a self-check:
-`python scripts/research_validator.py PITFALLS.md --verify-issues`
-If any URL returns 404: replace that pitfall with one from a real, verified issue. Do not proceed to Phase 5 with a fabricated citation. If the validator script is not available (not a Genesis project directory), skip this step.
+- If `GITHUB_TOKEN` is set: `python scripts/research_validator.py PITFALLS.md --verify-issues`
+- If not set: verify only the first 3 issue URLs manually via web fetch to avoid rate limits. Add a note to PITFALLS.md: "X of Y issue URLs live-verified (no GITHUB_TOKEN - set it for full verification)."
+If any URL returns 404: replace that pitfall. Do not proceed to Phase 5 with a fabricated citation.
 
 Before proceeding to Phase 5, compute and display a one-line **Research Quality Signal**:
 
@@ -290,8 +288,7 @@ Comment format:
 
 ### Step 3b: Production-readiness defaults (always included)
 
-Non-retrofittable defaults that go into every scaffold. Details in
-`references/architecture-patterns.md` under "Production-Readiness Defaults".
+Non-retrofittable defaults for every scaffold (details in `references/architecture-patterns.md` under "Production-Readiness Defaults"):
 
 - **Structured logging**: pino/winston (Node), stdlib logging (Python), slog (Go)
 - **Security**: non-root Dockerfile user, no wildcard CORS, Secure+HttpOnly cookies
@@ -323,11 +320,15 @@ After 3 failures: report exact error, ask user before proceeding. Never commit o
 
 Also verify the CLI entrypoint if one exists:
 - Python: read `[project.scripts]` in `pyproject.toml`, run `[entrypoint] --help`
-- Node: read `bin` in `package.json`, run `node [entrypoint] --help`
-- Go/Rust: build first, then run `./[binary] --help`
+- Node/Go/Rust: read `bin`/build first, then run `[entrypoint] --help`
 
 **Hard gate**: Do not run `git commit` and do not announce "Genesis Architect complete"
 until the test suite exits 0.
+
+### Step 6.5: Mitigation coverage check
+For each pitfall in PITFALLS.md, extract the mitigation keyword (the main noun/pattern in the Mitigation field). Run a case-insensitive grep over `src/` for that keyword.
+If 0 matches: warn with "Pitfall [N] mitigation not found in scaffold - consider adding it explicitly."
+Do not block on this - it is a warning, not a gate. Announce the check result.
 
 ### Step 7: README badges, demo, and git
 
@@ -348,7 +349,6 @@ Never commit `.env`. Always commit `.env.example`.
 ### Step 8: Deliver summary
 > "Genesis Architect complete. Project ready:
 > [bullet list of created files and directories]
->
 > Entering Development Companion Mode - I'll keep helping as you build.
 > Next recommended step: [first ROADMAP phase]"
 
@@ -359,7 +359,6 @@ Never commit `.env`. Always commit `.env.example`.
 After Phase 6, enter companion mode. Direct invocations: `genesis help [problem]`, `genesis research [topic]`, `genesis check` (freshness audit).
 
 **`genesis check`** - freshness audit (run 30+ days after scaffold): check deps for CVEs + CI action versions. Report: CRITICAL / WARNING / INFO. Never auto-apply - show upgrade commands only.
-
 **Stuck on a problem**: search Phase 2 repos first, then competing projects. Present 1-3 approaches ranked by ecosystem adoption. Cite source repo.
 **Dependency question**: check last commit date, open issues trend, flag better-maintained alternatives.
 **New sub-problem**: ask "Want me to search the ecosystem for how others solved this?" before scanning.

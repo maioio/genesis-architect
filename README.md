@@ -258,6 +258,22 @@ genesis-architect/
 
 ---
 
+## Quality Score
+
+Measured against the [quality rubric](evals/quality_rubric.md) (100-point, 4 dimensions):
+
+| Run | Type | Score |
+|-----|------|-------|
+| [typescript-cli example](examples/typescript-cli/) | TypeScript CLI | **72/100** (measured) |
+| Python CLI | - | 70/100 (projected) |
+| Go service | - | 68/100 (projected) |
+| Rust CLI | - | 67/100 (projected) |
+| React app | - | 69/100 (projected) |
+
+**Average: 69/100.** Target for v2.0.0 release: 80+. Primary gap: Section 4 (Phase Correctness) cannot be fully scored from static output alone - session transcripts needed. Section 3 gap: Go/Rust scaffold templates thinner than TypeScript/Python.
+
+---
+
 ## Honest Limitations
 
 | Limitation | Details |

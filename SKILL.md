@@ -1,14 +1,14 @@
 ---
 name: genesis-architect
 description: >
-  Use when the user is about to start a new project and wants to avoid reinventing the wheel,
-  hit known pitfalls, or commit to an architecture prematurely. Scans 15-20 real GitHub repos,
-  extracts pitfalls from actual Issues, then builds a working scaffold with tests and CI/CD -
-  before writing a single line of product code. After scaffolding, stays active as a research
-  companion. Triggers on: "genesis init [vision]", "I want to build X", "scaffold", "new
-  project", "set up project", "start building", "create a tool", "make a CLI", "bootstrap",
-  "בנה פרויקט", "צור פרויקט", "התחל פרויקט".
-version: "1.6.0"
+  Use when starting a new project - scans 15-20 real GitHub repos and mines their Issues for
+  pitfalls before writing a single file. No other scaffolding tool does this automatically.
+  Identifies real architecture regrets from production codebases, then builds a working scaffold
+  with tests, CI/CD, security defaults, and an ADR explaining every decision. After scaffolding,
+  stays active as a research companion. Triggers on: "genesis init [vision]", "I want to build
+  X", "scaffold", "new project", "set up project", "start building", "create a tool", "make a
+  CLI", "bootstrap", "בנה פרויקט", "צור פרויקט", "התחל פרויקט".
+version: "1.8.0"
 author: "Maio Eshet"
 license: "MIT"
 ---
@@ -55,8 +55,12 @@ Before any research, silently detect the user's environment:
 - **Python version** (if relevant): `python --version` or `python3 --version`
 - **Package manager**: detect `uv`, `pip`, `npm`, `pnpm`, or `yarn` based on project type
 
-Store these as context. Reference them in:
+**Convention scan** - silently check nearby existing projects for HTTP client, test
+framework, DB, and formatter. Present once in Phase 5: "Your projects use [X]. Match? [Y/n]"
+
+Store for:
 - Phase 3: flag OS-specific pitfalls automatically
+- Phase 5: match existing conventions if confirmed
 - Phase 6: choose correct build backend and install commands
 
 **Windows PATH check**: On Windows, detect if the Python Scripts folder is on PATH.
@@ -79,18 +83,11 @@ Ask exactly 2-3 focused questions. Use A/B/C format with D as free-text escape h
 "What does this project/feature do? (one sentence)"
 
 **Q2 - Archetype (ask only if not obvious from Q1):**
-"What kind of artifact are you building?
-A: CLI Tool - runs in a terminal, takes flags, exits
-B: Library/SDK - imported by other code, has a public API
-C: Web Service/API - HTTP server, handles requests
-D: Frontend App - browser UI (React, Next.js, SvelteKit, etc.)
-E: Other (describe)"
+"What kind of artifact?
+A: CLI Tool  B: Library/SDK  C: Web Service/API  D: Frontend App  E: Other"
 
-The archetype determines the scaffold shape more than the tier does:
-- CLI: entrypoint + argparse/click/cobra, no server
-- Library: public API surface, docs, no main()
-- Web Service: router, healthcheck, Dockerfile, no bin
-- Frontend: component tree, routing, build pipeline, no pytest
+The archetype shapes the scaffold more than tier: CLI gets no server, Library gets no
+main(), Web Service gets Dockerfile + /health, Frontend gets build pipeline + no pytest.
 
 **Q3 - Scale:**
 "What is the planned scale?
@@ -139,6 +136,14 @@ For each of the top 3-5 repositories, scan the last 50 issues (open and closed).
 - Architecture regrets ("we should have used X instead")
 - Performance issues that emerged at scale
 - Security vulnerabilities that were patched
+
+### Ecosystem Velocity Scoring
+For key dependencies found in 3+ repos, check: commits in last 90 days, open CVEs.
+Show in Phase 5 as one-line signals before the A/B choice:
+```
+⚠  better-auth: 0 commits in 90 days   ✅  Prisma: actively maintained
+```
+Informational only - flag, never block.
 
 ### Failure handling
 
@@ -189,40 +194,22 @@ language/framework anti-patterns from best practices.
 Present the research summary and architectural options in a single message.
 The user confirms once and the build begins.
 
-Use the archetype from Phase 1 Q2 to shape the folder structures shown. Examples:
+Show: repo table (project, stars, key insight), Ecosystem Velocity signals, convention
+match question (from Phase 0), then the two structures.
 
-- CLI: `src/cli.py` + `src/core.py`, entrypoint in `pyproject.toml [project.scripts]`
-- Library: `src/[name]/__init__.py` with public API, no `main()`, no CLI entrypoint
-- Web Service: `src/app.py` + `src/routes/`, `Dockerfile`, `healthcheck` route
-- Frontend: `src/app/`, `src/components/`, build config, no `pytest`
+Shape folder structures using the archetype (Phase 1 Q2):
+- CLI: entrypoint + core, no server; Library: public API, no main(); Web Service: router + Dockerfile + /health; Frontend: component tree + build config
 
-> "Finished scanning the market. Found [N] relevant projects:
->
-> | Project | Stars | Key Insight |
-> |---------|-------|-------------|
-> | [repo 1] | [N] | [one sentence] |
->
-> Archetype detected: **[CLI Tool / Library / Web Service / Frontend App]**
-> Based on the research, two proven structures for this archetype:
->
-> **A: Minimalist**
-> [Show concrete folder structure - 8-12 lines, archetype-appropriate]
-> Best for: personal projects, prototypes, internal tools
-> Advantage: fast to understand and develop
-> Tradeoff: harder to extend later
->
-> **B: Scalable**
-> [Show concrete folder structure - 12-18 lines, archetype-appropriate]
-> Best for: team projects, long-term products
-> Advantage: clear separation of concerns, easy to extend
-> Tradeoff: higher initial complexity
->
-> **C: Let research decide** - I pick the structure used by the highest-starred repos
-> **D: Hybrid** - describe what you want to change
+Present as: "Archetype: [X]. Two proven structures:"
 
-If user picks D: ask "Which base (A or B) do you prefer? What would you change?"
-Present the modified structure and confirm before building.
-If user picks C on language: choose the language used by the highest-starred repos. State the reasoning.
+**A: Minimalist** - [8-12 line folder structure, archetype-appropriate]
+Best for personal/prototype. Fast start, harder to extend.
+
+**B: Scalable** - [12-18 line folder structure, archetype-appropriate]
+Best for team/long-term. Clear separation, higher initial complexity.
+
+**C: Let research decide** - highest-starred repo structure, state reasoning.
+**D: Hybrid** - ask base (A or B) then what to change, confirm before building.
 
 Wait for the user's A/B/C/D choice before building.
 
@@ -267,6 +254,18 @@ Comment format:
 # Architecture note: [decision] (inspired by [repo-url])
 # Avoids: [specific pitfall from PITFALLS.md #N]
 ```
+
+### Step 3b: Production-readiness defaults (always included)
+
+Non-retrofittable defaults that go into every scaffold. Details in
+`references/architecture-patterns.md` under "Production-Readiness Defaults".
+
+- **Structured logging**: pino/winston (Node), stdlib logging (Python), slog (Go)
+- **Security**: non-root Dockerfile user, no wildcard CORS, Secure+HttpOnly cookies
+- **Env validation**: fail at startup if required env vars are missing - never silently
+- **Secret Zero**: `.env.example` with `SECRET_KEY=change-me-generate-with-openssl-rand-hex-32`
+- **Health endpoint** (Web Service only): `GET /health` returning `{"status":"ok"}`
+- **ADR stub**: `docs/adr/001-initial-architecture.md` - key decisions, links to RESEARCH.md
 
 ### Step 4: Tests
 Create `tests/` with:
@@ -335,7 +334,14 @@ Never commit `.env`. Always commit `.env.example`.
 
 After Phase 6, enter companion mode. Remain active as a research partner.
 
-The user can invoke directly: `genesis help [problem]` or `genesis research [topic]`
+The user can invoke directly: `genesis help [problem]`, `genesis research [topic]`,
+or `genesis check` to run a freshness audit on the scaffold.
+
+**`genesis check`** - freshness audit, run 30+ days after scaffold:
+1. Check key dependencies for CVEs and commit activity (reuse Phase 2 tools)
+2. Check CI action versions and language runtime updates
+3. Report prioritized: CRITICAL (CVE) / WARNING (version behind) / INFO (minor updates)
+4. Never auto-apply - show upgrade commands, let the user run them
 
 **Stuck on a problem**: search the Phase 2 repos first, then competing projects. Present 1-3
 approaches ranked by ecosystem adoption. Always cite the source repo.

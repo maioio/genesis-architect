@@ -11,6 +11,63 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [1.8.0] - 2026-05-10
+
+### Added
+- **Cross-org convention scan** (Phase 0): silently detects HTTP client, test framework,
+  DB, and formatter from existing nearby projects; offers to match conventions in Phase 5
+- **Ecosystem Velocity Scoring** (Phase 2): for key deps appearing in 3+ repos, checks
+  commits in last 90 days and open CVEs; surfaces as one-line signals before Phase 5 A/B choice
+- **Archetype axis** (Phase 1 Q2): CLI Tool / Library/SDK / Web Service/API / Frontend App;
+  shapes every scaffold decision - CLI gets no server, Library gets no main(), Web Service
+  gets Dockerfile + /health, Frontend gets build pipeline
+- **Production-readiness defaults** (Phase 6 Step 3b): structured logging, non-root
+  Dockerfile, CORS allowlist, startup env validation, Secret Zero pattern, health endpoint
+  for Web Service archetype, ADR stub at docs/adr/001-initial-architecture.md
+- **`genesis check`** (Phase 7): freshness audit command - checks deps for CVEs, CI action
+  versions, runtime updates; reports CRITICAL/WARNING/INFO; never auto-applies changes
+- **Production-Readiness Defaults section** in references/architecture-patterns.md: full
+  code templates for env validation, health endpoints, structured logging, ADR stub,
+  non-root Dockerfile for Python/Node/Go
+
+### Changed
+- **Trigger description** rewritten to lead with the differentiator: "scans 15-20 real
+  GitHub repos and mines their Issues for pitfalls before writing a single file. No other
+  scaffolding tool does this automatically."
+- **Hard gate Phase 2**: fewer than 5 repos = hard stop (was: 1-2 repos = disclaimer only)
+- **Hard gate Phase 5**: explicit A/B/C/D required before Phase 6 (was: recommendation only)
+- **Hard gate Phase 6**: git commit blocked until tests pass; self-validating loop with
+  max 3 auto-fix attempts before reporting to user
+- **Phase 5 format**: now shows Ecosystem Velocity signals and convention match before A/B
+- SKILL.md: 400 lines (at limit - future additions require trimming elsewhere)
+
+### Fixed
+- Rust CI action: `dtactions/rust-toolchain@v1` -> `dtolnay/rust-toolchain@stable`
+- Python pyproject template: added `[project.optional-dependencies] dev` section
+- scaffold_generator.py: unknown language no longer resets tier to minimalist
+- RESEARCH.template.md: now has 5 repo rows and 3 source links (passes its own validator)
+- All 40 em dashes removed across 7 files (CONTRIBUTING, README, DEMO_SCRIPT, FEEDBACK,
+  CLAUDE.md, PITFALLS example, mcp-strategy)
+- Git tags added for v1.3.0, v1.4.0, v1.5.0, v1.6.0, v1.7.0
+
+---
+
+## [1.7.0] - 2026-05-10
+
+### Added
+- **Hard gates** (3): Phase 2 <5 repos = stop; Phase 5 requires explicit letter; Phase 6
+  blocks git commit until tests pass
+- **Self-validating smoke test** (Phase 6 Step 6): run tests, read error, fix, retry up to
+  3 times; hard gate on git commit
+- **Archetype axis** in Phase 1 Q2 and Phase 5 folder structures
+- **.github/workflows/ci.yml**: CI for this repo - validator, eval runner, scaffold smoke
+  test, SKILL.md constraints, Python block validation, TOML validation, em dash scan
+
+### Fixed
+- Rust CI typo, Python dev deps, scaffold_generator tier bug, RESEARCH.template.md rows
+
+---
+
 ## [1.6.0] - 2026-05-09
 
 ### Added

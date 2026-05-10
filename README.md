@@ -3,6 +3,7 @@
 # Genesis Architect
 
 **Research first. Build once.**
+The only scaffolder that verifies its sources before building.
 
 [![Version](https://img.shields.io/badge/version-1.9.0-blue?style=for-the-badge)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-MIT-green?style=for-the-badge)](LICENSE)
@@ -98,7 +99,17 @@ flowchart TD
 ## Install
 
 ```bash
+# Claude Code (recommended)
 git clone https://github.com/maioio/genesis-architect ~/.claude/skills/genesis-architect
+
+# Via skills.sh (any agent)
+npx skills add maioio/genesis-architect
+
+# Cursor
+# Copy SKILL.md to .cursor/rules/genesis-architect.md
+
+# Codex CLI
+git clone https://github.com/maioio/genesis-architect ~/.codex/skills/genesis-architect
 ```
 
 No build step, no dependencies.
@@ -178,6 +189,23 @@ TypeScript / JavaScript    Python    Go    Rust
 | 📦 Library/SDK | Public API, no `main()` | No | No | pytest / jest |
 | 🌐 Web Service/API | Router | Yes | Yes + `/health` | pytest / jest |
 | 🖥️ Frontend App | Component tree | No (SSR optional) | Optional | vitest / jest |
+
+---
+
+## Why not just use X?
+
+| Capability | Genesis Architect | create-t3-app | bolt.new | Cursor Rules | madison/scaffolding |
+|-----------|:-----------------:|:-------------:|:--------:|:------------:|:-------------------:|
+| Research from real GitHub Issues | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Validates citations (no hallucinated repos) | ✅ | n/a | ❌ | n/a | ❌ |
+| Anti-hallucination CVE check (OSV.dev) | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Research Quality Signal (FULL/PARTIAL/THIN) | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Hard gates before file creation | ✅ | ❌ | ❌ | ❌ | ✅ |
+| Drift detection (endpoint inventory) | Planned | ❌ | ❌ | ❌ | ✅ |
+| Quality rubric with measured score | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Works without any MCP | ✅ | n/a | n/a | n/a | n/a |
+| PRD-driven flow (`--from-prd`) | ✅ | ❌ | ❌ | ❌ | ❌ |
+| WSL detection | ✅ | ❌ | ❌ | ❌ | ❌ |
 
 ---
 

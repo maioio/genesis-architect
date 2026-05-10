@@ -9,6 +9,22 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+## [1.14.0] - 2026-05-10
+
+### Added
+- **manifest.json**: skills.sh/agentskills.io compatible manifest with categories, triggers, optional_mcps, install paths for Claude Code/skills.sh/Cursor/Codex CLI.
+- **optional_mcps + fallback in SKILL.md frontmatter**: machine-readable MCP declarations.
+- **OSV.dev CVE integration**: Phase 2 Ecosystem Velocity and Phase 7 `genesis check` now use OSV.dev API (no key, no rate limit) for deterministic CVE detection. See mcp-strategy.md.
+- **Endpoint drift detection**: Web Service archetype Phase 6 creates `endpoint-inventory.json` for `genesis check` to detect API surface drift after 30+ days.
+- **README comparison table**: "Why not just use X?" section with 10-row capability comparison vs create-t3-app, bolt.new, Cursor Rules, madison/scaffolding.
+- **Cross-platform install**: README now shows Claude Code, skills.sh, Cursor, and Codex CLI install options.
+
+### Changed
+- Tagline: added subtitle "The only scaffolder that verifies its sources before building."
+- Version badge updated to 1.14.0.
+
+---
+
 ## [1.13.0] - 2026-05-10
 
 ### Added

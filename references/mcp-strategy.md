@@ -110,3 +110,33 @@ When a tool fails, report briefly and continue:
 > "[In the user's language] GitHub MCP unavailable - falling back to web search..."
 
 Never stop the workflow for a tool failure. Always degrade gracefully.
+
+## OSV.dev CVE Check
+
+Use for deterministic CVE detection in Phase 2 Ecosystem Velocity Scoring and Phase 7 `genesis check`.
+
+### API - no key required, no rate limit for basic queries
+```json
+POST https://api.osv.dev/v1/query
+{
+  "package": {
+    "name": "[package-name]",
+    "ecosystem": "[PyPI|npm|Go|crates.io|RubyGems]"
+  }
+}
+```
+
+Returns: list of vulnerabilities with CVE IDs, severity, affected versions, and fixed versions.
+
+### When to use
+| Phase | Use |
+|-------|-----|
+| Phase 2 Ecosystem Velocity Scoring | Query top 3 dependencies found in analyzed repos |
+| Phase 7 `genesis check` | Query all dependencies in generated scaffold |
+
+### Output format
+Show as one-line signals alongside Ecosystem Velocity:
+```
+🔴 requests==2.28.0: CVE-2024-35195 (HIGH) - fix: upgrade to 2.32.0
+✅ fastapi: no known CVEs
+```

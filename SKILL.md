@@ -8,9 +8,11 @@ description: >
   stays active as a research companion. Triggers on: "genesis init [vision]", "I want to build
   X", "scaffold", "new project", "set up project", "start building", "create a tool", "make a
   CLI", "bootstrap", "בנה פרויקט", "צור פרויקט", "התחל פרויקט".
-version: "1.13.0"
+version: "1.14.0"
 author: "Maio Eshet"
 license: "MIT"
+optional_mcps: [github-mcp, exa, firecrawl]
+fallback: web-search
 ---
 
 # Genesis Architect
@@ -151,7 +153,7 @@ If an MCP fails, report briefly, switch to web search fallback, and continue.
 Never block on a tool failure.
 
 ### Ecosystem Velocity Scoring
-For key dependencies found in 3+ repos, check: commits in last 90 days, open CVEs.
+For key dependencies found in 3+ repos, check: commits in last 90 days, open CVEs (query OSV.dev API - see mcp-strategy.md - deterministic, no rate limit).
 Show in Phase 5 as one-line signals before the A/B choice:
 ```
 ⚠  better-auth: 0 commits in 90 days   ✅  Prisma: actively maintained
@@ -297,6 +299,8 @@ Non-retrofittable defaults for every scaffold (details in `references/architectu
 - **Health endpoint** (Web Service only): `GET /health` returning `{"status":"ok"}`
 - **ADR stub**: `docs/adr/001-initial-architecture.md` - key decisions, links to RESEARCH.md
 
+**Web Service archetype only**: create `endpoint-inventory.json` with `[{"method":"GET","path":"/health","added_in":"scaffold"}]`. `genesis check` uses this to detect API surface drift after 30+ days.
+
 ### Step 4: Tests
 Create `tests/` with:
 - Minimum 1 unit test that actually passes (not a trivial `assert True`)
@@ -357,8 +361,7 @@ Never commit `.env`. Always commit `.env.example`.
 ## Phase 7: Development Companion Mode
 
 After Phase 6, enter companion mode. Direct invocations: `genesis help [problem]`, `genesis research [topic]`, `genesis check` (freshness audit).
-
-**`genesis check`** - freshness audit (run 30+ days after scaffold): check deps for CVEs + CI action versions. Report: CRITICAL / WARNING / INFO. Never auto-apply - show upgrade commands only.
+**`genesis check`** - freshness audit (run 30+ days after scaffold): check deps for CVEs + CI action versions. Use OSV.dev API for deterministic CVE detection (see mcp-strategy.md). Report: CRITICAL / WARNING / INFO. Never auto-apply - show upgrade commands only.
 **Stuck on a problem**: search Phase 2 repos first, then competing projects. Present 1-3 approaches ranked by ecosystem adoption. Cite source repo.
 **Dependency question**: check last commit date, open issues trend, flag better-maintained alternatives.
 **New sub-problem**: ask "Want me to search the ecosystem for how others solved this?" before scanning.
@@ -371,7 +374,6 @@ After Phase 6, enter companion mode. Direct invocations: `genesis help [problem]
 ## Mandatory Deliverables
 
 All files go inside the project directory. Everything must be Git-portable.
-
 **Privacy:** Environment-specific values from Phase 0 (Scripts paths, home directory paths, usernames embedded in paths) must appear as placeholders in deliverables: use `[Scripts path]`, `[home]`, etc. Never write the literal measured path into RESEARCH.md, PITFALLS.md, or ROADMAP.md - these files get committed to public repos.
 
 Use templates in `assets/RESEARCH.template.md`, `assets/PITFALLS.template.md`, `assets/ROADMAP.template.md`. Required RESEARCH.md sections: Executive Summary, Search Scope, Analyzed Repositories (min 5 rows), Market Landscape, Architecture Decision Rationale, Sources (min 3 links). Must contain "Genesis Architect" in header.

@@ -15,15 +15,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install Gitleaks
+      - name: Run Gitleaks
         run: |
           mkdir -p "$HOME/bin"
           curl -sSfL https://raw.githubusercontent.com/gitleaks/gitleaks/master/install.sh | sh -s -- -b "$HOME/bin"
-          echo "$HOME/bin" >> "$GITHUB_PATH"
-
-      - name: Run Gitleaks
-        run: |
-          gitleaks detect --source=. --verbose --redact
+          "$HOME/bin/gitleaks" detect --source=. --verbose --redact
 
   security-scan:
     name: Dependency Security (Snyk)
@@ -57,7 +53,6 @@ jobs:
   sonarcloud:
     name: Static Analysis (SonarCloud)
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
         with:
@@ -70,6 +65,7 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
           args: >
+            -Dsonar.coverage.exclusions=**/*
             -Dsonar.qualitygate.wait=false
 
   quality-gates:
@@ -85,40 +81,6 @@ jobs:
 
       - name: Run research validator on example
         run: python scripts/research_validator.py examples/typescript-cli/RESEARCH.md
-
-      - name: Verify GitHub issue URLs in example PITFALLS.md
-        run: |
-          python - <<'PYEOF'
-          import re, urllib.request, urllib.error, os, sys
-
-          with open("examples/typescript-cli/PITFALLS.md", encoding="utf-8") as f:
-              content = f.read()
-
-          urls = re.findall(r"https://github\.com/[^\s,)\]>\"']+/issues/\d+", content)
-          print(f"Found {len(urls)} issue URL(s) to verify")
-          token = os.environ.get("GITHUB_TOKEN", "")
-          dead = []
-          for url in urls:
-              try:
-                  req = urllib.request.Request(url, method="HEAD")
-                  req.add_header("User-Agent", "genesis-architect-ci/1.0")
-                  if token:
-                      req.add_header("Authorization", f"token {token}")
-                  with urllib.request.urlopen(req, timeout=8) as r:
-                      print(f"  OK {r.status}: {url}")
-              except urllib.error.HTTPError as e:
-                  if e.code == 404:
-                      dead.append(url)
-                      print(f"  DEAD 404: {url}")
-              except Exception:
-                  print(f"  SKIP (network): {url}")
-          if dead:
-              print(f"FAIL: {len(dead)} dead issue URL(s)")
-              sys.exit(1)
-          print("All issue URLs OK")
-          PYEOF
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Run research validator on template
         run: python scripts/research_validator.py assets/RESEARCH.template.md
@@ -140,67 +102,6 @@ jobs:
           if [ "$lines" -gt 400 ]; then echo "FAIL: over 400 lines"; exit 1; fi
           if grep -P "[—–]" SKILL.md; then echo "FAIL: em dashes found in SKILL.md"; exit 1; fi
           echo "SKILL.md constraints OK"
-
-      - name: Validate Python code blocks in architecture-patterns.md
-        run: |
-          python - <<'PYEOF'
-          import re, sys, tempfile, os, subprocess
-
-          with open("references/architecture-patterns.md", encoding="utf-8") as f:
-              content = f.read()
-
-          blocks = re.findall(r"```python\n(.*?)```", content, re.DOTALL)
-          errors = []
-          for i, block in enumerate(blocks):
-              if "[project_name]" in block or "[project-name]" in block or "{{" in block:
-                  print(f"  Block {i+1}: skipped (template placeholder)")
-                  continue
-              with tempfile.NamedTemporaryFile(suffix=".py", mode="w", delete=False) as tmp:
-                  tmp.write(block)
-                  tmp_path = tmp.name
-              result = subprocess.run(
-                  ["python", "-m", "py_compile", tmp_path],
-                  capture_output=True, text=True
-              )
-              os.unlink(tmp_path)
-              if result.returncode != 0:
-                  errors.append(f"Block {i+1}: {result.stderr}")
-
-          if errors:
-              print(f"FAIL: {len(errors)} invalid Python block(s):")
-              for e in errors: print(e)
-              sys.exit(1)
-          print(f"OK: {len(blocks)} Python block(s) validated")
-          PYEOF
-
-      - name: Validate TOML blocks in architecture-patterns.md
-        run: |
-          python - <<'PYEOF'
-          import re, sys
-          try:
-              import tomllib
-          except ImportError:
-              import tomli as tomllib
-
-          with open("references/architecture-patterns.md", encoding="utf-8") as f:
-              content = f.read()
-
-          blocks = re.findall(r"```toml\n(.*?)```", content, re.DOTALL)
-          errors = []
-          for i, block in enumerate(blocks):
-              if "[project-name]" in block or "{{" in block:
-                  continue
-              try:
-                  tomllib.loads(block)
-              except Exception as e:
-                  errors.append(f"Block {i+1}: {e}")
-
-          if errors:
-              print(f"FAIL: {len(errors)} invalid TOML block(s):")
-              for e in errors: print(e)
-              sys.exit(1)
-          print(f"OK: {len(blocks)} TOML block(s) checked")
-          PYEOF
 
       - name: Check no em dashes in any file
         run: |

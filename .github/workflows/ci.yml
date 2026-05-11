@@ -7,9 +7,6 @@ on:
     branches: [main]
 
 jobs:
-  # -----------------------------------------------------------------------
-  # Job 1: Secret scanning (blocks merge on any exposed credential)
-  # -----------------------------------------------------------------------
   secrets-scan:
     name: Secret Scanning (Gitleaks)
     runs-on: ubuntu-latest
@@ -18,16 +15,14 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Run Gitleaks
-        uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Set GITLEAKS_LICENSE in repo secrets for org-level scanning
-          GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
+      - name: Install Gitleaks
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/gitleaks/gitleaks/master/install.sh | sh -s -- -b /usr/local/bin
 
-  # -----------------------------------------------------------------------
-  # Job 2: Dependency and code security (Snyk)
-  # -----------------------------------------------------------------------
+      - name: Run Gitleaks
+        run: |
+          gitleaks detect --source=. --verbose --redact
+
   security-scan:
     name: Dependency Security (Snyk)
     runs-on: ubuntu-latest
@@ -57,9 +52,6 @@ jobs:
           sarif_file: snyk-python.sarif
         continue-on-error: true
 
-  # -----------------------------------------------------------------------
-  # Job 3: Static analysis (SonarCloud)
-  # -----------------------------------------------------------------------
   sonarcloud:
     name: Static Analysis (SonarCloud)
     runs-on: ubuntu-latest
@@ -74,9 +66,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
-  # -----------------------------------------------------------------------
-  # Job 4: Core quality gates (existing checks, renamed for clarity)
-  # -----------------------------------------------------------------------
   quality-gates:
     name: Quality Gates
     runs-on: ubuntu-latest
@@ -115,7 +104,7 @@ jobs:
                   if e.code == 404:
                       dead.append(url)
                       print(f"  DEAD 404: {url}")
-              except Exception as e:
+              except Exception:
                   print(f"  SKIP (network): {url}")
           if dead:
               print(f"FAIL: {len(dead)} dead issue URL(s)")
@@ -157,7 +146,6 @@ jobs:
           blocks = re.findall(r"```python\n(.*?)```", content, re.DOTALL)
           errors = []
           for i, block in enumerate(blocks):
-              # Skip template blocks that use placeholder syntax like [project_name]
               if "[project_name]" in block or "[project-name]" in block or "{{" in block:
                   print(f"  Block {i+1}: skipped (template placeholder)")
                   continue
@@ -182,7 +170,7 @@ jobs:
       - name: Validate TOML blocks in architecture-patterns.md
         run: |
           python - <<'PYEOF'
-          import re, sys, tempfile, os
+          import re, sys
           try:
               import tomllib
           except ImportError:

@@ -8,12 +8,15 @@ description: >
   stays active as a research companion. Triggers on: "genesis init [vision]", "I want to build
   X", "scaffold", "new project", "set up project", "start building", "create a tool", "make a
   CLI", "bootstrap", "בנה פרויקט", "צור פרויקט", "התחל פרויקט".
-version: "2.1.0"
-author: "Maio Eshet"
-license: "MIT"
-optional_mcps: [github-mcp, exa, firecrawl]
-fallback: web-search
 ---
+
+<!--
+Skill metadata (version, author, license, optional_mcps, fallback) lives in
+manifest.json and plugin.json. Claude Code only reads `name` and `description`
+from this frontmatter; extra keys are silently ignored, so they belong with
+the rest of the package metadata, not here.
+-->
+
 
 # Genesis Architect
 

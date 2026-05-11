@@ -26,14 +26,21 @@ from pathlib import Path
 
 
 def _safe_path(requested: str) -> Path:
-    """Resolve path and ensure it stays within the project root."""
-    root = Path(__file__).parent.parent.resolve()
+    """
+    Resolve `requested` and ensure it stays under either the current working
+    directory or this script's repo root. Either is fine - this validator is
+    designed to be invoked against a user's project (cwd) or against the
+    bundled examples/templates (repo root). Anything else is rejected to
+    block traversal tricks like passing '/etc/passwd'.
+    """
+    cwd = Path.cwd().resolve()
+    repo_root = Path(__file__).parent.parent.resolve()
     target = Path(requested).resolve()
-    if not target.is_relative_to(root):
-        raise PermissionError(
-            f"Security: path '{target}' is outside project root '{root}'"
-        )
-    return target
+    if target.is_relative_to(cwd) or target.is_relative_to(repo_root):
+        return target
+    raise PermissionError(
+        f"Security: path '{target}' is outside cwd ('{cwd}') and repo root ('{repo_root}')"
+    )
 
 REQUIRED_SECTIONS = [
     "Executive Summary",

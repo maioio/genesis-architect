@@ -78,8 +78,17 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Run research validator on example
+      - name: Run research validator on example (format)
         run: python scripts/research_validator.py examples/typescript-cli/RESEARCH.md
+
+      - name: Run research validator on example (live citations)
+        # Live URL check - the headline "no fabricated citations" guarantee.
+        # Continues on error so a transient GitHub rate limit cannot block PRs;
+        # failure is still printed in the log for review.
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python scripts/research_validator.py examples/typescript-cli/PITFALLS.md --verify-issues
 
       - name: Run research validator on template
         run: python scripts/research_validator.py assets/RESEARCH.template.md

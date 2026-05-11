@@ -9,18 +9,18 @@ mines their Issues for what broke, and builds your project to avoid those mistak
 [![Version](https://img.shields.io/badge/version-2.1.0-blue?style=for-the-badge)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-MIT-green?style=for-the-badge)](LICENSE)
 [![Claude Code](https://img.shields.io/badge/Claude_Code-skill-orange?style=for-the-badge)](https://github.com/anthropics/claude-code)
-[![CI](https://img.shields.io/github/actions/workflow/status/maioio-projects/genesis-architect/ci.yml?branch=main&style=for-the-badge&label=CI)](https://github.com/maioio-projects/genesis-architect/actions)
-[![Secret Scanning](https://img.shields.io/badge/secrets-protected-red?style=for-the-badge&logo=git)](https://github.com/maioio-projects/genesis-architect/actions)
-[![Known Vulnerabilities](https://snyk.io/test/github/maioio-projects/genesis-architect/badge.svg?style=for-the-badge)](https://snyk.io/test/github/maioio-projects/genesis-architect)
-[![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=maioio-projects_genesis-architect&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=maioio_genesis-architect)
-[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=maioio-projects_genesis-architect&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=maioio_genesis-architect)
-[![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=maioio-projects_genesis-architect&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=maioio_genesis-architect)
-[![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=maioio-projects_genesis-architect&metric=reliability_rating)](https://sonarcloud.io/summary/new_code?id=maioio_genesis-architect)
+[![CI](https://img.shields.io/github/actions/workflow/status/maioio/genesis-architect/ci.yml?branch=main&style=for-the-badge&label=CI)](https://github.com/maioio/genesis-architect/actions)
+[![Secret Scanning](https://img.shields.io/badge/secrets-protected-red?style=for-the-badge&logo=git)](https://github.com/maioio/genesis-architect/actions)
+[![Known Vulnerabilities](https://snyk.io/test/github/maioio/genesis-architect/badge.svg?style=for-the-badge)](https://snyk.io/test/github/maioio/genesis-architect)
+[![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=maioio_genesis-architect&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=maioio_genesis-architect)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=maioio_genesis-architect&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=maioio_genesis-architect)
+[![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=maioio_genesis-architect&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=maioio_genesis-architect)
+[![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=maioio_genesis-architect&metric=reliability_rating)](https://sonarcloud.io/summary/new_code?id=maioio_genesis-architect)
 
 [![Phases](https://img.shields.io/badge/phases-9-blueviolet?style=flat-square)](SKILL.md)
 [![Languages](https://img.shields.io/badge/languages-4-informational?style=flat-square)](references/architecture-patterns.md)
 [![Archetypes](https://img.shields.io/badge/archetypes-4-success?style=flat-square)](SKILL.md)
-[![Eval accuracy](https://img.shields.io/badge/eval_accuracy-100%25-brightgreen?style=flat-square)](evals/test_queries.json)
+[![Eval suite](https://img.shields.io/badge/eval_suite-36_queries_(manual)-yellow?style=flat-square)](evals/test_queries.json)
 
 <br/>
 
@@ -109,16 +109,16 @@ flowchart TD
 
 ```bash
 # Claude Code (recommended)
-git clone https://github.com/maioio-projects/genesis-architect ~/.claude/skills/genesis-architect
+git clone https://github.com/maioio/genesis-architect ~/.claude/skills/genesis-architect
 
 # Via skills.sh (any agent)
-npx skills add maioio-projects/genesis-architect
+npx skills add maioio/genesis-architect
 
 # Cursor
 # Copy SKILL.md to .cursor/rules/genesis-architect.md
 
 # Codex CLI
-git clone https://github.com/maioio-projects/genesis-architect ~/.codex/skills/genesis-architect
+git clone https://github.com/maioio/genesis-architect ~/.codex/skills/genesis-architect
 ```
 
 No build step, no dependencies.
@@ -309,15 +309,11 @@ genesis-architect/
 
 Measured against the [quality rubric](evals/quality_rubric.md) (100-point, 4 dimensions):
 
-| Run | Type | Score |
-|-----|------|-------|
-| [typescript-cli example](examples/typescript-cli/) | TypeScript CLI | **78/100** (measured) |
-| Python CLI | - | 70/100 (projected) |
-| Go service | - | 68/100 (projected) |
-| Rust CLI | - | 67/100 (projected) |
-| React app | - | 69/100 (projected) |
+| Run | Type | Score | Status |
+|-----|------|-------|--------|
+| [typescript-cli example](examples/typescript-cli/) | TypeScript CLI | **72/100** | Measured |
 
-**Average: 78/100** (measured on v2.0.0 release). Primary gap: Section 4 (Phase Correctness) requires session transcripts for full scoring. Go/Rust scaffold parity with TypeScript/Python added in v2.1.0.
+**Measured: 72/100** (TypeScript CLI). Primary gap: Section 4 (Phase Correctness) requires session transcripts for full scoring. Additional language runs (Python, Go, Rust, React) are pending — see [`evals/quality_rubric.md`](evals/quality_rubric.md) for projected estimates and target average of 80+ before publishing the next major version.
 
 ---
 
@@ -339,11 +335,11 @@ Four independent CI jobs run on every push and pull request:
 
 | Badge | Meaning |
 |-------|---------|
-| [![Known Vulnerabilities](https://snyk.io/test/github/maioio-projects/genesis-architect/badge.svg)](https://snyk.io/test/github/maioio-projects/genesis-architect) | No high/critical CVEs in Python deps |
-| [![Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=maioio-projects_genesis-architect&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=maioio_genesis-architect) | Code quality gate status |
-| [![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=maioio-projects_genesis-architect&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=maioio_genesis-architect) | Security rating (A = best) |
-| [![Maintainability](https://sonarcloud.io/api/project_badges/measure?project=maioio-projects_genesis-architect&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=maioio_genesis-architect) | Maintainability rating |
-| ![CI](https://img.shields.io/github/actions/workflow/status/maioio-projects/genesis-architect/ci.yml?branch=main&label=CI) | All 4 CI jobs passing |
+| [![Known Vulnerabilities](https://snyk.io/test/github/maioio/genesis-architect/badge.svg)](https://snyk.io/test/github/maioio/genesis-architect) | No high/critical CVEs in Python deps |
+| [![Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=maioio_genesis-architect&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=maioio_genesis-architect) | Code quality gate status |
+| [![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=maioio_genesis-architect&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=maioio_genesis-architect) | Security rating (A = best) |
+| [![Maintainability](https://sonarcloud.io/api/project_badges/measure?project=maioio_genesis-architect&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=maioio_genesis-architect) | Maintainability rating |
+| ![CI](https://img.shields.io/github/actions/workflow/status/maioio/genesis-architect/ci.yml?branch=main&label=CI) | All 4 CI jobs passing |
 
 <sub>Built on open-source security tooling. See [security-templates.md](references/security-templates.md) for implementation details.</sub>
 

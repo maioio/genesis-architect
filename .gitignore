@@ -16,3 +16,9 @@ scripts/__pycache__/
 .env
 .env.*
 !.env.example
+
+# Binaries (use Docker / system installs, never commit)
+*.exe
+*.dll
+*.so
+*.dylib

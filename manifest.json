@@ -1,6 +1,6 @@
 {
   "name": "genesis-architect",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "The only scaffolder that verifies its sources before building. Scans 15-20 real GitHub repos, mines their Issues for pitfalls, and generates a research-backed scaffold with validated citations.",
   "author": "Maio Eshet",
   "license": "MIT",

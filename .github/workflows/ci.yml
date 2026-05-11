@@ -16,10 +16,9 @@ jobs:
           fetch-depth: 0
 
       - name: Run Gitleaks
-        run: |
-          mkdir -p "$HOME/bin"
-          curl -sSfL https://raw.githubusercontent.com/gitleaks/gitleaks/master/install.sh | sh -s -- -b "$HOME/bin"
-          "$HOME/bin/gitleaks" detect --source=. --verbose --redact
+        uses: docker://zricethezav/gitleaks:latest
+        with:
+          args: detect --source=. --verbose --redact
 
   security-scan:
     name: Dependency Security (Snyk)

@@ -313,7 +313,7 @@ Measured against the [quality rubric](evals/quality_rubric.md) (100-point, 4 dim
 |-----|------|-------|--------|
 | [typescript-cli example](examples/typescript-cli/) | TypeScript CLI | **72/100** | Measured |
 
-**Measured: 72/100** (TypeScript CLI). Primary gap: Section 4 (Phase Correctness) requires session transcripts for full scoring. Additional language runs (Python, Go, Rust, React) are pending — see [`evals/quality_rubric.md`](evals/quality_rubric.md) for projected estimates and target average of 80+ before publishing the next major version.
+**Measured: 72/100** (TypeScript CLI). Primary gap: Section 4 (Phase Correctness) requires session transcripts for full scoring. Additional language runs (Python, Go, Rust, React) are pending - see [`evals/quality_rubric.md`](evals/quality_rubric.md) for projected estimates and target average of 80+ before publishing the next major version.
 
 ---
 

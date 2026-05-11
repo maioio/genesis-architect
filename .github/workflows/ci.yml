@@ -82,13 +82,14 @@ jobs:
         run: python scripts/research_validator.py examples/typescript-cli/RESEARCH.md
 
       - name: Run research validator on example (live citations)
-        # Live URL check - the headline "no fabricated citations" guarantee.
-        # Continues on error so a transient GitHub rate limit cannot block PRs;
-        # failure is still printed in the log for review.
-        continue-on-error: true
+        # Live URL check - this enforces the headline "no fabricated citations"
+        # guarantee. --issues-only skips the RESEARCH.md-shaped section checks
+        # (which don't apply to PITFALLS.md). The validator already returns
+        # success on transient network errors / rate limits, so a flake won't
+        # block the PR; only an actual 404 will fail this step.
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: python scripts/research_validator.py examples/typescript-cli/PITFALLS.md --verify-issues
+        run: python scripts/research_validator.py examples/typescript-cli/PITFALLS.md --verify-issues --issues-only
 
       - name: Run research validator on template
         run: python scripts/research_validator.py assets/RESEARCH.template.md
@@ -96,12 +97,24 @@ jobs:
       - name: Run eval runner
         run: python scripts/eval_runner.py --mode report
 
-      - name: Run scaffold generator smoke test
+      - name: Run scaffold generator smoke test (all language/tier combos)
+        # Cover every (language, tier) so a missing _starter_content case is
+        # caught here rather than shipping invalid stubs to a real scaffold.
+        # The generator now raises NotImplementedError on unhandled filenames,
+        # so any miss makes this step fail loudly.
         run: |
-          python scripts/scaffold_generator.py --language python --tier minimalist --name test-project --output /tmp/test-scaffold
-          test -f /tmp/test-scaffold/pyproject.toml
-          test -f /tmp/test-scaffold/src/test_project/__init__.py
-          echo "Scaffold smoke test passed"
+          set -e
+          for lang in python typescript go rust; do
+            for tier in minimalist scalable; do
+              out="/tmp/scaffold-$lang-$tier"
+              python scripts/scaffold_generator.py --language "$lang" --tier "$tier" --name "smoke" --output "$out"
+            done
+          done
+          test -f /tmp/scaffold-python-minimalist/pyproject.toml
+          test -f /tmp/scaffold-python-minimalist/src/smoke/__init__.py
+          test -f /tmp/scaffold-typescript-minimalist/.github/workflows/ci.yml
+          test -f /tmp/scaffold-rust-scalable/src/config.rs
+          echo "Scaffold smoke test passed for all 8 combos"
 
       - name: Check SKILL.md constraints
         run: |

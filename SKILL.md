@@ -62,19 +62,14 @@ Read `references/mcp-strategy.md` for MCP usage and fallback logic.
 
 ## Phase 0: Environment Probe
 
-Silently detect: OS (Windows/macOS/Linux), Python version (`python --version` or `python3 --version`), package manager (`uv`, `pip`, `npm`, `pnpm`, `yarn`).
+Run `python scripts/env_probe.py` and parse the JSON. Fields: `os`, `wsl`, `python_version`, `package_managers.{python,node}`, `windows_scripts_path`. Store the result for use in Phases 3, 5, and 6. If the script fails (e.g. Python missing), ask once: "What OS and Python version are you on?"
 
 **Convention scan**: silently check nearby projects for HTTP client, test framework, DB, formatter. Present once in Phase 5: "Your projects use [X]. Match? [Y/n]"
 
-Store results for use in Phases 3, 5, and 6.
-
-**Windows PATH check**: On Windows, detect if the Python Scripts folder is on PATH.
-Run `python -c "import sysconfig; print(sysconfig.get_path('scripts'))"` to get the exact Scripts path.
-Detect shell: if `$PSVersionTable` is accessible = PowerShell; otherwise = CMD.
+**Windows PATH check**: when `os == "windows"` and `wsl == false`, use `windows_scripts_path` from the probe. Detect shell: if `$PSVersionTable` is accessible = PowerShell; otherwise = CMD.
 After any `pip install -e .`, run the installed command immediately. If "not recognized": session fix `$env:PATH += ";[Scripts path]"` (PS) or `set PATH=%PATH%;[Scripts path]` (CMD); permanent fix `[Environment]::SetEnvironmentVariable("PATH", $env:PATH + ";[Scripts path]", "User")`.
 
-**WSL note**: If on Windows but inside WSL, treat as Linux - skip Windows PATH fixes entirely.
-If detection fails, ask once: "What OS and Python version are you on?"
+**WSL note**: when `wsl == true`, treat as Linux - skip Windows PATH fixes entirely.
 
 ---
 

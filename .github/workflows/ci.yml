@@ -78,6 +78,9 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Phase 0 env probe (self-check)
+        run: python scripts/env_probe.py --self-check
+
       - name: Run research validator on example
         run: python scripts/research_validator.py examples/typescript-cli/RESEARCH.md
 

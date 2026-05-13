@@ -51,16 +51,25 @@ class Question:
     tags: list[str]
     answers: list[Answer]
 
+    def _answer_weight(self, a: "Answer") -> int:
+        score = 0
+        if a.is_accepted:
+            score += 50
+        score += min(a.score, 30)
+        if a.is_recent:
+            score += 20
+        if "```" in a.body_markdown or "<code>" in a.body_markdown:
+            score += 10
+        return score
+
     @property
     def best_answer(self) -> Answer | None:
-        accepted = [a for a in self.answers if a.is_accepted]
-        if accepted:
-            return accepted[0]
-        high_score = sorted(self.answers, key=lambda a: a.score, reverse=True)
-        return high_score[0] if high_score else None
+        if not self.answers:
+            return None
+        return max(self.answers, key=self._answer_weight)
 
 
-def _api_get(path: str, params: dict) -> dict | None:
+def _api_get(path: str, params: dict, _retries: int = 3) -> dict | None:
     key = os.environ.get("STACKOVERFLOW_KEY", "")
     if key:
         params["key"] = key
@@ -69,16 +78,31 @@ def _api_get(path: str, params: dict) -> dict | None:
     req = urllib.request.Request(url)
     req.add_header("User-Agent", "genesis-architect-resolve/1.0")
     req.add_header("Accept-Encoding", "identity")
-    try:
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            return json.loads(resp.read().decode("utf-8"))
-    except urllib.error.HTTPError as e:
-        if e.code == 400:
-            print(f"  API quota exceeded. Set STACKOVERFLOW_KEY for higher limits.")
-        return None
-    except Exception as e:
-        print(f"  Network error: {e}")
-        return None
+    import time
+    for attempt in range(_retries):
+        try:
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                return json.loads(resp.read().decode("utf-8"))
+        except urllib.error.HTTPError as e:
+            if e.code in (429, 502, 503):
+                wait = 2 ** attempt
+                print(f"  Rate limited ({e.code}). Retrying in {wait}s...")
+                time.sleep(wait)
+                continue
+            if e.code == 400:
+                print("  Bad request - check query parameters.")
+            elif e.code == 401:
+                print("  Auth error - check STACKOVERFLOW_KEY.")
+            elif e.code == 403:
+                print("  Quota exceeded. Set STACKOVERFLOW_KEY for higher limits.")
+            return None
+        except Exception as e:
+            if attempt < _retries - 1:
+                time.sleep(1)
+                continue
+            print(f"  Network error: {e}")
+            return None
+    return None
 
 
 def search_questions(query: str, limit: int = 3) -> list[Question]:

@@ -90,21 +90,36 @@ def search(topic: str, language: str = "", project_root: Path | None = None) -> 
     vault = _vault_dir(root)
     index = _load_index(vault)
 
+    _STOP_WORDS = {"the", "a", "an", "in", "on", "at", "to", "for", "of", "and", "or", "is", "it"}
+
     topic_lower = topic.lower()
     lang_lower = language.lower()
-    results = []
 
+    query_words = [w for w in topic_lower.split() if w not in _STOP_WORDS and len(w) > 2]
+
+    scored: list[tuple[int, dict]] = []
     for entry in index["entries"]:
-        topic_match = (
-            topic_lower in entry["topic"].lower()
-            or any(w in entry["topic"].lower() for w in topic_lower.split())
-        )
+        entry_topic = entry["topic"].lower()
         lang_match = not lang_lower or lang_lower in entry["language"]
-        if topic_match and lang_match:
-            results.append(entry)
+        if not lang_match:
+            continue
 
-    results.sort(key=lambda e: e["use_count"], reverse=True)
-    return results
+        score = 0
+        # Exact phrase match scores highest
+        if topic_lower in entry_topic:
+            score += 10
+        # Each meaningful word match adds 1
+        for w in query_words:
+            if w in entry_topic:
+                score += 1
+        # Popularity boost
+        score += min(entry.get("use_count", 0), 5)
+
+        if score > 0:
+            scored.append((score, entry))
+
+    scored.sort(key=lambda x: x[0], reverse=True)
+    return [e for _, e in scored]
 
 
 def list_all(project_root: Path | None = None) -> list[dict]:

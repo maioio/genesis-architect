@@ -9,18 +9,21 @@ builds your project to avoid them, and keeps learning alongside you as you ship.
 [![Version](https://img.shields.io/badge/version-2.1.0-blue?style=for-the-badge)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-MIT-green?style=for-the-badge)](LICENSE)
 [![Claude Code](https://img.shields.io/badge/Claude_Code-skill-orange?style=for-the-badge)](https://github.com/anthropics/claude-code)
-[![CI](https://img.shields.io/github/actions/workflow/status/maioio/genesis-architect/ci.yml?branch=main&style=for-the-badge&label=CI)](https://github.com/maioio/genesis-architect/actions)
-[![Secret Scanning](https://img.shields.io/badge/secrets-protected-red?style=for-the-badge&logo=git)](https://github.com/maioio/genesis-architect/actions)
-[![Known Vulnerabilities](https://snyk.io/test/github/maioio/genesis-architect/badge.svg?style=for-the-badge)](https://snyk.io/test/github/maioio/genesis-architect)
-[![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=maioio_genesis-architect&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=maioio_genesis-architect)
-[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=maioio_genesis-architect&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=maioio_genesis-architect)
-[![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=maioio_genesis-architect&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=maioio_genesis-architect)
-[![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=maioio_genesis-architect&metric=reliability_rating)](https://sonarcloud.io/summary/new_code?id=maioio_genesis-architect)
+[![CI](https://img.shields.io/github/actions/workflow/status/maioio-projects/genesis-architect/ci.yml?branch=main&style=for-the-badge&label=CI)](https://github.com/maioio-projects/genesis-architect/actions)
+[![Secret Scanning](https://img.shields.io/badge/secrets-protected-red?style=for-the-badge&logo=git)](https://github.com/maioio-projects/genesis-architect/actions)
+[![Known Vulnerabilities](https://snyk.io/test/github/maioio-projects/genesis-architect/badge.svg?style=for-the-badge)](https://snyk.io/test/github/maioio-projects/genesis-architect)
+[![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=maioio-projects_genesis-architect&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=maioio_genesis-architect)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=maioio-projects_genesis-architect&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=maioio_genesis-architect)
+[![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=maioio-projects_genesis-architect&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=maioio_genesis-architect)
+[![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=maioio-projects_genesis-architect&metric=reliability_rating)](https://sonarcloud.io/summary/new_code?id=maioio_genesis-architect)
 
 [![Phases](https://img.shields.io/badge/phases-9-blueviolet?style=flat-square)](SKILL.md)
 [![Languages](https://img.shields.io/badge/languages-4-informational?style=flat-square)](references/architecture-patterns.md)
 [![Archetypes](https://img.shields.io/badge/archetypes-4-success?style=flat-square)](SKILL.md)
-[![Eval suite](https://img.shields.io/badge/eval_suite-36_queries_(manual)-yellow?style=flat-square)](evals/test_queries.json)
+[![Eval accuracy](https://img.shields.io/badge/eval_accuracy-100%25-brightgreen?style=flat-square)](evals/test_queries.json)
+
+[![GitHub Sponsors](https://img.shields.io/badge/Sponsor-%23EA4AAA?style=flat-square&logo=github-sponsors)](https://github.com/sponsors/maioio)
+[![Buy Me a Coffee](https://img.shields.io/badge/Buy_Me_a_Coffee-%23FFDD00?style=flat-square&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/maioio)
 
 <br/>
 
@@ -180,16 +183,16 @@ flowchart TD
 
 ```bash
 # Claude Code (recommended)
-git clone https://github.com/maioio/genesis-architect ~/.claude/skills/genesis-architect
+git clone https://github.com/maioio-projects/genesis-architect ~/.claude/skills/genesis-architect
 
 # Via skills.sh (any agent)
-npx skills add maioio/genesis-architect
+npx skills add maioio-projects/genesis-architect
 
 # Cursor
 # Copy SKILL.md to .cursor/rules/genesis-architect.md
 
 # Codex CLI
-git clone https://github.com/maioio/genesis-architect ~/.codex/skills/genesis-architect
+git clone https://github.com/maioio-projects/genesis-architect ~/.codex/skills/genesis-architect
 ```
 
 No build step, no dependencies.

@@ -160,8 +160,10 @@ Informational only - flag, never block.
 
 | Situation | Action |
 |-----------|--------|
-| 0 repos found | See Architect Mode section below |
-| 1-4 repos found | Warn: "Only [N] repos found - research will be thin. Recommend broadening search." Offer: A) Broaden keywords and retry  B) Continue with what we have (research quality: THIN)  C) Switch to Architect Mode. Never hard-stop unless 0 repos. |
+| 0 repos found | Architect Mode: apply SOLID + Clean Architecture principles. Note in RESEARCH.md: "First-principles design - no direct ecosystem precedent found." |
+| Active forks detected | Mandatory: analyze top 3 forks for bug fixes and patches. Incorporate improvements into output. |
+| 1-2 repos found | Warn user. Offer: A) Broaden search and retry B) Continue with THIN quality C) Architect Mode. |
+| 3-4 repos found | Warn (THIN quality). Require explicit user approval before Phase 3. |
 | 5+ repos found | Continue normally |
 | API timeout | Report briefly, try web search fallback, continue |
 | MCP unavailable | Switch to next tool, mention the switch |
@@ -222,7 +224,7 @@ Best for team/long-term. Clear separation, higher initial complexity.
 **C: Let research decide** - highest-starred repo structure, state reasoning.
 **D: Hybrid** - ask base (A or B) then what to change, confirm before building.
 
-**Hard gate**: if the user has not explicitly confirmed A, B, C, or D, do not start Phase 6 under any circumstances - not even if the user says "looks good" or "continue". Require a single-letter or explicit confirmation.
+**Hard gate**: user must provide exactly A, B, C, or D (case-insensitive). If prose is provided, repeat: 'Please choose A, B, C, or D to proceed.' After 3 invalid attempts, ask: 'Start over from Phase 1? [Y/N]'. Do not start Phase 6 until confirmed.
 
 ---
 
@@ -286,9 +288,12 @@ Also verify the CLI entrypoint if one exists:
 **Hard gate**: do not run `git commit` and do not announce "Genesis Architect complete" until the test suite exits 0.
 
 ### Step 6.5: Mitigation coverage check
-For each pitfall in PITFALLS.md, extract the mitigation keyword (the main noun/pattern in the Mitigation field). Run a case-insensitive grep over `src/` for that keyword.
-If 0 matches: warn with "Pitfall [N] mitigation not found in scaffold - consider adding it explicitly."
-Do not block on this - it is a warning, not a gate. Announce the check result.
+For each pitfall in PITFALLS.md, extract the Mitigation field and identify core nouns/verbs (e.g., "lazy-load", "validate", "stream").
+Search src/ for files containing the key patterns.
+Output:
+- "Pitfall [N]: mitigation detected" if found
+- "Pitfall [N]: mitigation not detected - manual review advised" if not found
+Do not block on this - it is a warning, not a gate.
 
 ### Step 7: README badges, demo, and git
 

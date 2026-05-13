@@ -373,6 +373,20 @@ Community contributions welcome - see [CONTRIBUTING.md](CONTRIBUTING.md).
 | **Quick experiment trigger** | Natural-language triggers ("I want to build X") now ask intent first - but `genesis init` always runs the full flow. |
 | **Issue URL authenticity** | Run `python scripts/research_validator.py RESEARCH.md --verify-issues` to HTTP-check every cited GitHub issue URL. CI does format-check only; live verification is opt-in to avoid rate limits. |
 | **WSL** | On Windows, if you're running inside WSL, Linux paths and package managers are used - Windows PATH fixes do not apply. |
+| **Fork intelligence** | Scanning active forks for upstream patches requires GitHub MCP. Without it, fork analysis is skipped. |
+
+---
+
+## Community
+
+Genesis Architect improves through real-world use.
+
+- **Share your output**: open a PR adding your `RESEARCH.md` and `PITFALLS.md` to `examples/`
+- **Report missed pitfalls**: if something slipped past the research phase, open an issue - it becomes a future mitigation
+- **Good first issues**: check the [`good first issue`](https://github.com/maioio-projects/genesis-architect/issues?q=label%3A%22good+first+issue%22) label to start contributing
+- **Fork intelligence**: Genesis Architect scans forks of researched repos for patches not yet merged upstream - your fork improvements may automatically flow back into future scaffolds
+
+[Open an issue](https://github.com/maioio-projects/genesis-architect/issues) | [Submit a PR](https://github.com/maioio-projects/genesis-architect/pulls) | [Discussions](https://github.com/maioio-projects/genesis-architect/discussions)
 
 ---
 

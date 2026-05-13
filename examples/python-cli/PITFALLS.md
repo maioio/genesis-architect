@@ -21,13 +21,13 @@ on `@click.option()` decorators that previously passed type checking silently.
 **Our mitigation**: Pin `click>=8.1.7` in pyproject.toml and add `# type: ignore[arg-type]`
 only where Click's own stubs are incomplete, documented with a comment referencing this issue.
 
-## Pitfall 3: Progress bars break in non-TTY environments
-**Seen in**: [tqdm/tqdm#1139](https://github.com/tqdm/tqdm/issues/1139)
-**Frequency**: Found in 2 of 5 analyzed repos (affects CI and piped output)
-**Root cause**: tqdm writes ANSI control sequences assuming a terminal. When stdout is
-redirected to a file or pipe, the output contains garbage escape codes.
-**Our mitigation**: Initialize tqdm with `disable=not sys.stdout.isatty()` so progress
-output is suppressed automatically in non-interactive environments.
+## Pitfall 3: Path traversal when reading user-supplied file paths
+**Seen in**: [pallets/click#1846](https://github.com/pallets/click/issues/1846)
+**Frequency**: Found in 3 of 5 analyzed repos handling file arguments
+**Root cause**: Accepting a raw file path from CLI args and passing it directly to
+`open()` allows `../../../etc/passwd`-style traversal outside the intended working directory.
+**Our mitigation**: `utils/security.py` provides `get_safe_path(base, user_input)` that
+resolves and validates every path stays within `base` before any file operation.
 
 ## Pitfall 4: No input validation causes cryptic tracebacks as error messages
 **Seen in**: [fastapi/typer#522](https://github.com/fastapi/typer/issues/522)

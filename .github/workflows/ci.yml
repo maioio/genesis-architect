@@ -102,6 +102,9 @@ jobs:
       - name: Run research validator on template
         run: python scripts/research_validator.py assets/RESEARCH.template.md
 
+      - name: Validate eval schema
+        run: python scripts/eval_runner.py --mode validate
+
       - name: Run eval runner
         run: python scripts/eval_runner.py --mode report
 

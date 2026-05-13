@@ -15,127 +15,36 @@ import sys
 import argparse
 from pathlib import Path
 
-STRUCTURES = {
-    "typescript": {
-        "minimalist": [
-            "src/index.ts",
-            "src/core.ts",
-            "src/utils.ts",
-            "tests/core.test.ts",
-            ".github/workflows/ci.yml",
-            ".env.example",
-            "package.json",
-            "tsconfig.json",
-            "RESEARCH.md",
-            "PITFALLS.md",
-            "ROADMAP.md",
-        ],
-        "scalable": [
-            "src/index.ts",
-            "src/domain/.gitkeep",
-            "src/services/.gitkeep",
-            "src/infrastructure/.gitkeep",
-            "src/config/index.ts",
-            "tests/unit/.gitkeep",
-            "tests/integration/.gitkeep",
-            ".github/workflows/ci.yml",
-            ".env.example",
-            "package.json",
-            "tsconfig.json",
-            "RESEARCH.md",
-            "PITFALLS.md",
-            "ROADMAP.md",
-        ],
-    },
-    "python": {
-        "minimalist": [
-            "src/{name}/__init__.py",
-            "src/{name}/main.py",
-            "src/{name}/core.py",
-            "src/{name}/utils.py",
-            "tests/__init__.py",
-            "tests/test_core.py",
-            ".github/workflows/ci.yml",
-            ".env.example",
-            "pyproject.toml",
-            "RESEARCH.md",
-            "PITFALLS.md",
-            "ROADMAP.md",
-        ],
-        "scalable": [
-            "src/{name}/__init__.py",
-            "src/{name}/domain/.gitkeep",
-            "src/{name}/services/.gitkeep",
-            "src/{name}/adapters/.gitkeep",
-            "src/{name}/config.py",
-            "tests/unit/.gitkeep",
-            "tests/integration/.gitkeep",
-            ".github/workflows/ci.yml",
-            ".env.example",
-            "pyproject.toml",
-            "RESEARCH.md",
-            "PITFALLS.md",
-            "ROADMAP.md",
-        ],
-    },
-    "go": {
-        "minimalist": [
-            "cmd/main.go",
-            "internal/core/core.go",
-            "internal/utils/utils.go",
-            "internal/core/core_test.go",
-            ".github/workflows/ci.yml",
-            ".env.example",
-            "go.mod",
-            "RESEARCH.md",
-            "PITFALLS.md",
-            "ROADMAP.md",
-        ],
-        "scalable": [
-            "cmd/main.go",
-            "internal/domain/.gitkeep",
-            "internal/service/.gitkeep",
-            "internal/repository/.gitkeep",
-            "pkg/config/config.go",
-            "tests/unit/.gitkeep",
-            "tests/integration/.gitkeep",
-            ".github/workflows/ci.yml",
-            ".env.example",
-            "go.mod",
-            "RESEARCH.md",
-            "PITFALLS.md",
-            "ROADMAP.md",
-        ],
-    },
-    "rust": {
-        "minimalist": [
-            "src/main.rs",
-            "src/core.rs",
-            "src/utils.rs",
-            "tests/integration_test.rs",
-            ".github/workflows/ci.yml",
-            ".env.example",
-            "Cargo.toml",
-            "RESEARCH.md",
-            "PITFALLS.md",
-            "ROADMAP.md",
-        ],
-        "scalable": [
-            "src/main.rs",
-            "src/domain/mod.rs",
-            "src/services/mod.rs",
-            "src/infrastructure/mod.rs",
-            "src/config.rs",
-            "tests/integration_test.rs",
-            ".github/workflows/ci.yml",
-            ".env.example",
-            "Cargo.toml",
-            "RESEARCH.md",
-            "PITFALLS.md",
-            "ROADMAP.md",
-        ],
-    },
-}
+# Single source of truth: references/folder-structures.toml
+# Loaded once at import time via tomllib (Python 3.11+ stdlib).
+_TOML_PATH = Path(__file__).parent.parent / "references" / "folder-structures.toml"
+
+
+def _load_structures() -> dict:
+    """Load STRUCTURES from references/folder-structures.toml using stdlib tomllib."""
+    try:
+        import tomllib  # Python 3.11+
+    except ImportError:
+        try:
+            import tomli as tomllib  # popular backport, optional
+        except ImportError:
+            raise ImportError(
+                "tomllib is required (stdlib in Python 3.11+). "
+                "On Python 3.10 or earlier, install 'tomli': pip install tomli"
+            )
+    with open(_TOML_PATH, "rb") as f:
+        raw = tomllib.load(f)
+    # raw shape: {language: {tier: {files: [...]}}}
+    # Normalise to {language: {tier: [files]}}
+    result = {}
+    for lang, tiers in raw.items():
+        result[lang] = {}
+        for tier, data in tiers.items():
+            result[lang][tier] = data["files"]
+    return result
+
+
+STRUCTURES = _load_structures()
 
 
 _WINDOWS_RESERVED = {"con", "prn", "aux", "nul", "com1", "com2", "com3", "com4",
@@ -204,7 +113,14 @@ def main():
     parser.add_argument("--tier", default="minimalist", help="Architecture tier (minimalist, scalable)")
     parser.add_argument("--name", default="my-project", help="Project name")
     parser.add_argument("--output", default=".", help="Output directory")
+    parser.add_argument("--validate", action="store_true", help="Validate the TOML structure file and exit")
     args = parser.parse_args()
+
+    if args.validate:
+        langs = len(STRUCTURES)
+        tiers = sum(len(t) for t in STRUCTURES.values())
+        print(f"Structure valid: {langs} languages, {tiers} tiers")
+        sys.exit(0)
 
     try:
         safe = _validate_name(args.name)

@@ -129,67 +129,67 @@
     {
       "input": "how do I center a div in CSS",
       "should_trigger": false,
-      "expected_flow": null
+      "expected_flow": "no_trigger"
     },
     {
       "input": "what is the difference between async and await",
       "should_trigger": false,
-      "expected_flow": null
+      "expected_flow": "no_trigger"
     },
     {
       "input": "fix this bug in my Python code",
       "should_trigger": false,
-      "expected_flow": null
+      "expected_flow": "no_trigger"
     },
     {
       "input": "explain what a closure is",
       "should_trigger": false,
-      "expected_flow": null
+      "expected_flow": "no_trigger"
     },
     {
       "input": "review my pull request",
       "should_trigger": false,
-      "expected_flow": null
+      "expected_flow": "no_trigger"
     },
     {
       "input": "help me write a commit message",
       "should_trigger": false,
-      "expected_flow": null
+      "expected_flow": "no_trigger"
     },
     {
       "input": "what does this error mean: TypeError cannot read property",
       "should_trigger": false,
-      "expected_flow": null
+      "expected_flow": "no_trigger"
     },
     {
       "input": "refactor this function to be more readable",
       "should_trigger": false,
-      "expected_flow": null
+      "expected_flow": "no_trigger"
     },
     {
       "input": "add a test for this existing function",
       "should_trigger": false,
-      "expected_flow": null
+      "expected_flow": "no_trigger"
     },
     {
       "input": "how do I deploy to Vercel",
       "should_trigger": false,
-      "expected_flow": null
+      "expected_flow": "no_trigger"
     },
     {
       "input": "translate this code from Python to TypeScript",
       "should_trigger": false,
-      "expected_flow": null
+      "expected_flow": "no_trigger"
     },
     {
       "input": "what is the time complexity of this algorithm",
       "should_trigger": false,
-      "expected_flow": null
+      "expected_flow": "no_trigger"
     },
     {
       "input": "help me understand this regex pattern",
       "should_trigger": false,
-      "expected_flow": null
+      "expected_flow": "no_trigger"
     },
     {
       "input": "genesis audit ./my-existing-project",
@@ -204,12 +204,12 @@
     {
       "input": "what is the difference between REST and GraphQL",
       "should_trigger": false,
-      "expected_flow": null
+      "expected_flow": "no_trigger"
     },
     {
       "input": "how do I fix a merge conflict",
       "should_trigger": false,
-      "expected_flow": null
+      "expected_flow": "no_trigger"
     }
   ]
 }

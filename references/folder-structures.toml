@@ -1,0 +1,131 @@
+# folder-structures.toml
+# Single source of truth for all scaffold folder structures.
+# Used by scripts/scaffold_generator.py
+# Loaded via tomllib (Python 3.11+ stdlib). No external dependencies.
+
+[typescript.minimalist]
+files = [
+    "src/index.ts",
+    "src/core.ts",
+    "src/utils.ts",
+    "tests/core.test.ts",
+    ".github/workflows/ci.yml",
+    ".env.example",
+    "package.json",
+    "tsconfig.json",
+    "RESEARCH.md",
+    "PITFALLS.md",
+    "ROADMAP.md",
+]
+
+[typescript.scalable]
+files = [
+    "src/index.ts",
+    "src/domain/.gitkeep",
+    "src/services/.gitkeep",
+    "src/infrastructure/.gitkeep",
+    "src/config/index.ts",
+    "tests/unit/.gitkeep",
+    "tests/integration/.gitkeep",
+    ".github/workflows/ci.yml",
+    ".env.example",
+    "package.json",
+    "tsconfig.json",
+    "RESEARCH.md",
+    "PITFALLS.md",
+    "ROADMAP.md",
+]
+
+[python.minimalist]
+files = [
+    "src/{name}/__init__.py",
+    "src/{name}/main.py",
+    "src/{name}/core.py",
+    "src/{name}/utils.py",
+    "tests/__init__.py",
+    "tests/test_core.py",
+    ".github/workflows/ci.yml",
+    ".env.example",
+    "pyproject.toml",
+    "RESEARCH.md",
+    "PITFALLS.md",
+    "ROADMAP.md",
+]
+
+[python.scalable]
+files = [
+    "src/{name}/__init__.py",
+    "src/{name}/domain/.gitkeep",
+    "src/{name}/services/.gitkeep",
+    "src/{name}/adapters/.gitkeep",
+    "src/{name}/config.py",
+    "tests/unit/.gitkeep",
+    "tests/integration/.gitkeep",
+    ".github/workflows/ci.yml",
+    ".env.example",
+    "pyproject.toml",
+    "RESEARCH.md",
+    "PITFALLS.md",
+    "ROADMAP.md",
+]
+
+[go.minimalist]
+files = [
+    "cmd/main.go",
+    "internal/core/core.go",
+    "internal/utils/utils.go",
+    "internal/core/core_test.go",
+    ".github/workflows/ci.yml",
+    ".env.example",
+    "go.mod",
+    "RESEARCH.md",
+    "PITFALLS.md",
+    "ROADMAP.md",
+]
+
+[go.scalable]
+files = [
+    "cmd/main.go",
+    "internal/domain/.gitkeep",
+    "internal/service/.gitkeep",
+    "internal/repository/.gitkeep",
+    "pkg/config/config.go",
+    "tests/unit/.gitkeep",
+    "tests/integration/.gitkeep",
+    ".github/workflows/ci.yml",
+    ".env.example",
+    "go.mod",
+    "RESEARCH.md",
+    "PITFALLS.md",
+    "ROADMAP.md",
+]
+
+[rust.minimalist]
+files = [
+    "src/main.rs",
+    "src/core.rs",
+    "src/utils.rs",
+    "tests/integration_test.rs",
+    ".github/workflows/ci.yml",
+    ".env.example",
+    "Cargo.toml",
+    "RESEARCH.md",
+    "PITFALLS.md",
+    "ROADMAP.md",
+]
+
+[rust.scalable]
+files = [
+    "src/main.rs",
+    "src/domain/mod.rs",
+    "src/services/mod.rs",
+    "src/infrastructure/mod.rs",
+    "src/config.rs",
+    "tests/integration_test.rs",
+    ".github/workflows/ci.yml",
+    ".env.example",
+    "Cargo.toml",
+    "RESEARCH.md",
+    "PITFALLS.md",
+    "ROADMAP.md",
+]

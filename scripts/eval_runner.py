@@ -73,9 +73,52 @@ def print_report(queries: dict) -> None:
     print(f"\nTarget: >90% accuracy ({int(total * 0.9)}/{total} correct)")
 
 
+def validate_schema(queries: dict) -> int:
+    """Validate the schema of the loaded queries. Returns exit code (0 or 1)."""
+    errors = []
+
+    if "test_cases" in queries:
+        cases = queries["test_cases"]
+        if not isinstance(cases, list):
+            print("Schema error: 'test_cases' must be a list")
+            return 1
+        for i, case in enumerate(cases):
+            if not isinstance(case.get("input"), str) or not case["input"].strip():
+                errors.append(f"  [{i}] 'input' must be a non-empty string")
+            if not isinstance(case.get("should_trigger"), bool):
+                errors.append(f"  [{i}] 'should_trigger' must be a bool")
+            if not isinstance(case.get("expected_flow"), str) or not case["expected_flow"].strip():
+                errors.append(f"  [{i}] 'expected_flow' must be a non-empty string")
+        if errors:
+            print("Schema errors found:")
+            for e in errors:
+                print(e)
+            return 1
+        print(f"Schema valid: {len(cases)} test cases")
+        return 0
+
+    # Legacy schema
+    for key in ("should_trigger", "should_not_trigger"):
+        entries = queries.get(key, [])
+        if not isinstance(entries, list):
+            errors.append(f"  '{key}' must be a list")
+            continue
+        for i, entry in enumerate(entries):
+            if not isinstance(entry, str) or not entry.strip():
+                errors.append(f"  '{key}[{i}]' must be a non-empty string")
+    if errors:
+        print("Schema errors found:")
+        for e in errors:
+            print(e)
+        return 1
+    total = len(queries.get("should_trigger", [])) + len(queries.get("should_not_trigger", []))
+    print(f"Schema valid: {total} test cases")
+    return 0
+
+
 def main():
     parser = argparse.ArgumentParser(description="Genesis Architect - Eval Runner")
-    parser.add_argument("--mode", choices=["print", "report"], default="print")
+    parser.add_argument("--mode", choices=["print", "report", "validate"], default="print")
     args = parser.parse_args()
 
     try:
@@ -88,6 +131,8 @@ def main():
         print_queries(queries)
     elif args.mode == "report":
         print_report(queries)
+    elif args.mode == "validate":
+        sys.exit(validate_schema(queries))
 
 
 if __name__ == "__main__":

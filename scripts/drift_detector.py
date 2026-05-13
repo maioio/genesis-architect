@@ -35,30 +35,47 @@ def _safe_path(base: Path, target: Path) -> Path:
     return target
 
 
-def _parse_adr_structure(adr_content: str) -> list[str]:
-    """Extract expected top-level directory names from ADR."""
+def _parse_code_block_dirs(lines: list[str]) -> list[str]:
+    """Extract directory names from the first fenced code block that follows a structure header."""
     dirs = []
-    in_structure = False
-    for line in adr_content.splitlines():
-        if "Expected Structure" in line or "Folder Structure" in line or "```" in line:
-            in_structure = "```" in line and in_structure is False or in_structure
-            if "```" in line and in_structure:
-                in_structure = not in_structure
-                continue
-        if in_structure:
+    in_block = False
+    for line in lines:
+        is_fence = "```" in line
+        is_header = "Expected Structure" in line or "Folder Structure" in line
+        if is_header and not in_block:
+            continue
+        if is_fence:
+            in_block = not in_block
+            continue
+        if in_block:
             match = re.match(r"^[├└│]\s+(\w[\w.-]*)/", line.strip())
             if match:
                 dirs.append(match.group(1))
-    # Also look for decisions table
-    for line in adr_content.splitlines():
+    return dirs
+
+
+def _parse_table_dirs(lines: list[str]) -> list[str]:
+    dirs = []
+    for line in lines:
         match = re.search(r"\|\s*Directory[^|]*\|\s*`?([a-z][a-z0-9_-]+/?)` ", line)
         if match:
             dirs.append(match.group(1).rstrip("/"))
-    # Also look for bullet list: `- \`dirname/\`` or `- dirname/`
-    for line in adr_content.splitlines():
+    return dirs
+
+
+def _parse_bullet_dirs(lines: list[str]) -> list[str]:
+    dirs = []
+    for line in lines:
         match = re.match(r"^\s*[-*]\s+`?([a-z][a-z0-9_-]+)/`?", line)
         if match:
             dirs.append(match.group(1))
+    return dirs
+
+
+def _parse_adr_structure(adr_content: str) -> list[str]:
+    """Extract expected top-level directory names from ADR."""
+    lines = adr_content.splitlines()
+    dirs = _parse_code_block_dirs(lines) + _parse_table_dirs(lines) + _parse_bullet_dirs(lines)
     return list(set(dirs)) if dirs else ["src", "tests", "docs"]
 
 

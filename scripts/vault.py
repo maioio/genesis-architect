@@ -154,59 +154,70 @@ def _print_entry(entry: dict, index: int) -> None:
         print(f"      Source: {entry['source']}")
 
 
+def _cmd_save(argv: list) -> None:
+    if len(argv) < 5:
+        print('Usage: vault.py save "<topic>" <language> "<solution>" [--source <url>]')
+        sys.exit(1)
+    topic, language, solution = argv[2], argv[3], argv[4]
+    source = ""
+    if "--source" in argv:
+        idx = argv.index("--source")
+        source = argv[idx + 1] if idx + 1 < len(argv) else ""
+    entry_id = save(topic, language, solution, source)
+    print(f"Saved: {entry_id} ({topic} / {language})")
+
+
+def _cmd_search(argv: list) -> None:
+    if len(argv) < 3:
+        print('Usage: vault.py search "<topic>" [language]')
+        sys.exit(1)
+    topic = argv[2]
+    language = argv[3] if len(argv) > 3 else ""
+    results = search(topic, language)
+    if not results:
+        print(f"No vault entries for: {topic!r} {language!r}")
+        print("Try: genesis resolve [topic] to fetch from Stack Overflow")
+        sys.exit(0)
+    print(f"Vault: {len(results)} result(s) for {topic!r}")
+    for i, entry in enumerate(results, 1):
+        _print_entry(entry, i)
+
+
+def _cmd_list() -> None:
+    entries = list_all()
+    if not entries:
+        print("Vault is empty. Use 'vault.py save' to add entries.")
+        sys.exit(0)
+    print(f"Vault: {len(entries)} entries")
+    for i, entry in enumerate(entries, 1):
+        _print_entry(entry, i)
+
+
+def _cmd_stats() -> None:
+    s = stats()
+    print(f"Vault stats:")
+    print(f"  Total entries: {s['total_entries']}")
+    print(f"  Total uses:    {s['total_uses']}")
+    print(f"  By language:   {s['by_language']}")
+
+
 def main() -> None:
     if len(sys.argv) < 2:
         print("Usage: python vault.py <save|search|list|stats> [args]")
         sys.exit(1)
 
     command = sys.argv[1]
-
-    if command == "save":
-        if len(sys.argv) < 5:
-            print('Usage: vault.py save "<topic>" <language> "<solution>" [--source <url>]')
-            sys.exit(1)
-        topic, language, solution = sys.argv[2], sys.argv[3], sys.argv[4]
-        source = ""
-        if "--source" in sys.argv:
-            idx = sys.argv.index("--source")
-            source = sys.argv[idx + 1] if idx + 1 < len(sys.argv) else ""
-        entry_id = save(topic, language, solution, source)
-        print(f"Saved: {entry_id} ({topic} / {language})")
-
-    elif command == "search":
-        if len(sys.argv) < 3:
-            print('Usage: vault.py search "<topic>" [language]')
-            sys.exit(1)
-        topic = sys.argv[2]
-        language = sys.argv[3] if len(sys.argv) > 3 else ""
-        results = search(topic, language)
-        if not results:
-            print(f"No vault entries for: {topic!r} {language!r}")
-            print("Try: genesis resolve [topic] to fetch from Stack Overflow")
-            sys.exit(0)
-        print(f"Vault: {len(results)} result(s) for {topic!r}")
-        for i, entry in enumerate(results, 1):
-            _print_entry(entry, i)
-
-    elif command == "list":
-        entries = list_all()
-        if not entries:
-            print("Vault is empty. Use 'vault.py save' to add entries.")
-            sys.exit(0)
-        print(f"Vault: {len(entries)} entries")
-        for i, entry in enumerate(entries, 1):
-            _print_entry(entry, i)
-
-    elif command == "stats":
-        s = stats()
-        print(f"Vault stats:")
-        print(f"  Total entries: {s['total_entries']}")
-        print(f"  Total uses:    {s['total_uses']}")
-        print(f"  By language:   {s['by_language']}")
-
-    else:
+    dispatch = {
+        "save": lambda: _cmd_save(sys.argv),
+        "search": lambda: _cmd_search(sys.argv),
+        "list": _cmd_list,
+        "stats": _cmd_stats,
+    }
+    handler = dispatch.get(command)
+    if handler is None:
         print(f"Unknown command: {command}")
         sys.exit(1)
+    handler()
 
 
 if __name__ == "__main__":

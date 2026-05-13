@@ -64,7 +64,6 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
           args: >
-            -Dsonar.coverage.exclusions=**/*
             -Dsonar.qualitygate.wait=false
 
   quality-gates:

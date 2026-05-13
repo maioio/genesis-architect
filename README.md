@@ -6,7 +6,7 @@
 Not a one-time scaffolder. A research-first architect that mines real production failures,
 builds your project to avoid them, and keeps learning alongside you as you ship.
 
-[![Version](https://img.shields.io/badge/version-2.1.0-blue?style=for-the-badge)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-2.2.0-blue?style=for-the-badge)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-MIT-green?style=for-the-badge)](LICENSE)
 [![Claude Code](https://img.shields.io/badge/Claude_Code-skill-orange?style=for-the-badge)](https://github.com/anthropics/claude-code)
 [![CI](https://img.shields.io/github/actions/workflow/status/maioio-projects/genesis-architect/ci.yml?branch=main&style=for-the-badge&label=CI)](https://github.com/maioio-projects/genesis-architect/actions)
@@ -39,18 +39,18 @@ builds your project to avoid them, and keeps learning alongside you as you ship.
 
 ---
 
-## What's new in v2.1.0
+## What's new in v2.2.0
 
 > [!NOTE]
-> v2.1.0 transforms Genesis Architect from a one-time scaffolder into a persistent development companion.
+> v2.2.0 closes 5 community-requested issues with new scripts, hardens internals, and fixes the SonarCloud quality gate.
 
 | Feature | What it does |
 |---------|-------------|
-| **Smart Resolution Engine** | `genesis resolve [topic]` fetches the top community-verified Stack Overflow solutions for any problem you hit during development. Prioritizes accepted answers and recent results. |
-| **Automated Knowledge Vault** | Every resolved problem is cached in `.genesis/vault/`. The next time the same issue comes up - in any project - the answer is instant, local, and free (no API call needed). |
-| **Production-grade CI/CD** | Every scaffold ships with 4 parallel CI jobs: tests (pytest/jest), secret scanning, SAST static analysis, and code quality gate. Ruff linting config included. |
-| **Real Python CLI examples** | `examples/python-cli/` now contains genuine research output: 5 real repos analyzed, 4 verified pitfalls from live GitHub issues. |
-| **CodeQL + Dependabot** | This repository now has GitHub Code Scanning enabled and automated weekly dependency updates. |
+| **Hard gate state files** | `genesis_state.py` — Phase 5/6 gates are now machine-readable state files, not prose wishes |
+| **`genesis check` command** | Queries OSV.dev for CVEs in your deps, audits CI action versions — JSON output with critical/warnings/info |
+| **Mitigation coverage check** | `pitfall_coverage_check.py` — verifies each PITFALLS.md mitigation is present in source code |
+| **Single source of truth** | `references/folder-structures.toml` — all scaffold file lists in one place; `scaffold_generator.py` loads from it |
+| **Eval schema validation** | `eval_runner --mode validate` wired into CI — catches eval drift before it ships |
 
 ---
 
@@ -405,13 +405,18 @@ genesis-architect/
 ├── SKILL.md                        # Skill definition - the brain
 ├── plugin.json                     # Marketplace manifest
 ├── scripts/
-│   ├── scaffold_generator.py       # Creates project structure from language + tier
-│   ├── research_validator.py       # Validates RESEARCH.md has all required sections
-│   ├── resolve_engine.py           # Smart Resolution Engine (Stack Overflow API)
+│   ├── scaffold_generator.py       # Creates project structure (loads from folder-structures.toml)
+│   ├── research_validator.py       # Validates RESEARCH.md + live GitHub URL checks
+│   ├── resolve_engine.py           # Smart Resolution Engine (Stack Overflow API + vault)
 │   ├── vault.py                    # Knowledge Vault - local solution cache
-│   ├── validate_example_urls.py    # Checks example GitHub URLs for 404s
+│   ├── genesis_state.py            # Phase 5/6 hard gate state files
+│   ├── genesis_subcommands.py      # genesis check: CVE scan + CI action audit
+│   ├── pitfall_coverage_check.py   # Verifies PITFALLS.md mitigations exist in source
+│   ├── drift_detector.py           # Architecture drift detection vs ADR baseline
+│   ├── issue_miner.py              # GitHub Issue mining (GraphQL + REST)
+│   ├── feedback.py                 # Pitfall feedback recorder
 │   ├── env_probe.py                # Phase 0 environment detection
-│   └── eval_runner.py              # Measures trigger rate (target: 90%+)
+│   └── eval_runner.py              # Trigger rate eval + schema validation
 ├── tests/
 │   ├── test_research_validator.py  # 12 tests for validator logic
 │   └── test_resolve_engine.py      # 9 tests for resolution engine
@@ -454,15 +459,13 @@ genesis-architect/
 
 Measured against the [quality rubric](evals/quality_rubric.md) (100-point, 4 dimensions):
 
-| Run | Type | Score |
-|-----|------|-------|
-| [typescript-cli example](examples/typescript-cli/) | TypeScript CLI | **78/100** (measured) |
-| [python-cli example](examples/python-cli/) | Python CLI | 75/100 (projected) |
-| Go service | - | 68/100 (projected) |
-| Rust CLI | - | 67/100 (projected) |
-| React app | - | 69/100 (projected) |
+| Run | Type | Score | Method |
+|-----|------|-------|--------|
+| [typescript-cli example](examples/typescript-cli/) | TypeScript CLI | **78/100** | Measured against [rubric](evals/quality_rubric.md) |
+| [python-cli example](examples/python-cli/) | Python CLI | 75/100 | Projected (same rubric, not yet run) |
+| Go / Rust / React | - | 67-69/100 | Projected |
 
-**Average: 78/100** (measured on v2.0.0 release). Go/Rust scaffold parity with TypeScript/Python added in v2.1.0.
+Scores are self-reported against an internal rubric. No external benchmark yet — see [Roadmap](#roadmap) for planned third-party comparison.
 
 ---
 

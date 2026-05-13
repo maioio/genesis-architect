@@ -73,31 +73,34 @@ def print_report(queries: dict) -> None:
     print(f"\nTarget: >90% accuracy ({int(total * 0.9)}/{total} correct)")
 
 
-def validate_schema(queries: dict) -> int:
-    """Validate the schema of the loaded queries. Returns exit code (0 or 1)."""
-    errors = []
-
-    if "test_cases" in queries:
-        cases = queries["test_cases"]
-        if not isinstance(cases, list):
-            print("Schema error: 'test_cases' must be a list")
-            return 1
-        for i, case in enumerate(cases):
-            if not isinstance(case.get("input"), str) or not case["input"].strip():
-                errors.append(f"  [{i}] 'input' must be a non-empty string")
-            if not isinstance(case.get("should_trigger"), bool):
-                errors.append(f"  [{i}] 'should_trigger' must be a bool")
-            if not isinstance(case.get("expected_flow"), str) or not case["expected_flow"].strip():
-                errors.append(f"  [{i}] 'expected_flow' must be a non-empty string")
-        if errors:
-            print("Schema errors found:")
-            for e in errors:
-                print(e)
-            return 1
-        print(f"Schema valid: {len(cases)} test cases")
+def _report_errors(errors: list) -> int:
+    """Print errors and return exit code 1, or return 0 if no errors."""
+    if not errors:
         return 0
+    print("Schema errors found:")
+    for e in errors:
+        print(e)
+    return 1
 
-    # Legacy schema
+
+def _validate_new_schema(cases) -> tuple[list, int]:
+    """Validate new-schema test_cases list. Returns (errors, count)."""
+    if not isinstance(cases, list):
+        return ["'test_cases' must be a list"], 0
+    errors = []
+    for i, case in enumerate(cases):
+        if not isinstance(case.get("input"), str) or not case["input"].strip():
+            errors.append(f"  [{i}] 'input' must be a non-empty string")
+        if not isinstance(case.get("should_trigger"), bool):
+            errors.append(f"  [{i}] 'should_trigger' must be a bool")
+        if not isinstance(case.get("expected_flow"), str) or not case["expected_flow"].strip():
+            errors.append(f"  [{i}] 'expected_flow' must be a non-empty string")
+    return errors, len(cases)
+
+
+def _validate_legacy_schema(queries: dict) -> tuple[list, int]:
+    """Validate legacy flat-list schema. Returns (errors, total_count)."""
+    errors = []
     for key in ("should_trigger", "should_not_trigger"):
         entries = queries.get(key, [])
         if not isinstance(entries, list):
@@ -106,12 +109,23 @@ def validate_schema(queries: dict) -> int:
         for i, entry in enumerate(entries):
             if not isinstance(entry, str) or not entry.strip():
                 errors.append(f"  '{key}[{i}]' must be a non-empty string")
-    if errors:
-        print("Schema errors found:")
-        for e in errors:
-            print(e)
-        return 1
     total = len(queries.get("should_trigger", [])) + len(queries.get("should_not_trigger", []))
+    return errors, total
+
+
+def validate_schema(queries: dict) -> int:
+    """Validate the schema of the loaded queries. Returns exit code (0 or 1)."""
+    if "test_cases" in queries:
+        errors, count = _validate_new_schema(queries["test_cases"])
+        if _report_errors(errors):
+            return 1
+        print(f"Schema valid: {count} test cases")
+        return 0
+
+    # Legacy schema
+    errors, total = _validate_legacy_schema(queries)
+    if _report_errors(errors):
+        return 1
     print(f"Schema valid: {total} test cases")
     return 0
 

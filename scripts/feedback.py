@@ -76,6 +76,42 @@ def stats(project_root: Path | None = None) -> dict:
     }
 
 
+def _cmd_mark(command: str, args: list) -> None:
+    if len(args) < 2:
+        print(f"Usage: feedback.py {command} <topic> [language]")
+        sys.exit(1)
+    topic = args[1]
+    language = args[2] if len(args) > 2 else ""
+    rating = "helpful" if command == "mark-helpful" else "irrelevant"
+    record(topic, language, rating)
+
+
+def _cmd_stats() -> None:
+    s = stats()
+    print(f"Feedback stats:")
+    print(f"  Total entries: {s['total']}")
+    if s['by_rating']:
+        print(f"  Helpful:       {s['by_rating'].get('helpful', 0)}")
+        print(f"  Irrelevant:    {s['by_rating'].get('irrelevant', 0)}")
+    if s['by_language']:
+        print(f"  By language:   {s['by_language']}")
+    if s['by_topic']:
+        print(f"\nTop topics:")
+        for topic, counts in sorted(s['by_topic'].items(),
+                                    key=lambda x: x[1]['helpful'], reverse=True)[:10]:
+            print(f"  {topic}: {counts['helpful']} helpful, {counts['irrelevant']} irrelevant")
+
+
+def _cmd_list() -> None:
+    entries = _load()
+    if not entries:
+        print("No feedback recorded yet.")
+        sys.exit(0)
+    print(f"{len(entries)} feedback entries:")
+    for e in entries[-20:]:
+        print(f"  [{e['timestamp'][:10]}] {e['rating']:12} {e['topic']!r} ({e['language']})")
+
+
 def main() -> None:
     args = sys.argv[1:]
     if not args:
@@ -85,40 +121,11 @@ def main() -> None:
     command = args[0]
 
     if command in ("mark-helpful", "mark-irrelevant"):
-        if len(args) < 2:
-            print(f"Usage: feedback.py {command} <topic> [language]")
-            sys.exit(1)
-        topic = args[1]
-        language = args[2] if len(args) > 2 else ""
-        rating = "helpful" if command == "mark-helpful" else "irrelevant"
-        record(topic, language, rating)
-
+        _cmd_mark(command, args)
     elif command == "stats":
-        s = stats()
-        print(f"Feedback stats:")
-        print(f"  Total entries: {s['total']}")
-        if s['by_rating']:
-            helpful = s['by_rating'].get('helpful', 0)
-            irrelevant = s['by_rating'].get('irrelevant', 0)
-            print(f"  Helpful:       {helpful}")
-            print(f"  Irrelevant:    {irrelevant}")
-        if s['by_language']:
-            print(f"  By language:   {s['by_language']}")
-        if s['by_topic']:
-            print(f"\nTop topics:")
-            for topic, counts in sorted(s['by_topic'].items(),
-                                        key=lambda x: x[1]['helpful'], reverse=True)[:10]:
-                print(f"  {topic}: {counts['helpful']} helpful, {counts['irrelevant']} irrelevant")
-
+        _cmd_stats()
     elif command == "list":
-        entries = _load()
-        if not entries:
-            print("No feedback recorded yet.")
-            sys.exit(0)
-        print(f"{len(entries)} feedback entries:")
-        for e in entries[-20:]:
-            print(f"  [{e['timestamp'][:10]}] {e['rating']:12} {e['topic']!r} ({e['language']})")
-
+        _cmd_list()
     else:
         print(f"Unknown command: {command}")
         sys.exit(1)

@@ -1,5 +1,5 @@
 {
-  "version": "1.9.0",
+  "version": "2.1.0",
   "description": "Eval queries for Genesis Architect trigger rate testing",
   "target_accuracy": 0.9,
   "flow_coverage": {
@@ -188,6 +188,26 @@
     },
     {
       "input": "help me understand this regex pattern",
+      "should_trigger": false,
+      "expected_flow": null
+    },
+    {
+      "input": "genesis audit ./my-existing-project",
+      "should_trigger": true,
+      "expected_flow": "audit"
+    },
+    {
+      "input": "genesis harden ./my-project",
+      "should_trigger": true,
+      "expected_flow": "audit"
+    },
+    {
+      "input": "what is the difference between REST and GraphQL",
+      "should_trigger": false,
+      "expected_flow": null
+    },
+    {
+      "input": "how do I fix a merge conflict",
       "should_trigger": false,
       "expected_flow": null
     }

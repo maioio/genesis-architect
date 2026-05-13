@@ -65,19 +65,14 @@ Read `references/mcp-strategy.md` for MCP usage and fallback logic.
 
 ## Phase 0: Environment Probe
 
-Silently detect: OS (Windows/macOS/Linux), Python version (`python --version` or `python3 --version`), package manager (`uv`, `pip`, `npm`, `pnpm`, `yarn`).
+Run `python scripts/env_probe.py` and parse the JSON. Fields: `os`, `wsl`, `python_version`, `package_managers.{python,node}`, `windows_scripts_path`. Store the result for use in Phases 3, 5, and 6. If the script fails (e.g. Python missing), ask once: "What OS and Python version are you on?"
 
 **Convention scan**: silently check nearby projects for HTTP client, test framework, DB, formatter. Present once in Phase 5: "Your projects use [X]. Match? [Y/n]"
 
-Store results for use in Phases 3, 5, and 6.
-
-**Windows PATH check**: On Windows, detect if the Python Scripts folder is on PATH.
-Run `python -c "import sysconfig; print(sysconfig.get_path('scripts'))"` to get the exact Scripts path.
-Detect shell: if `$PSVersionTable` is accessible = PowerShell; otherwise = CMD.
+**Windows PATH check**: when `os == "windows"` and `wsl == false`, use `windows_scripts_path` from the probe. Detect shell: if `$PSVersionTable` is accessible = PowerShell; otherwise = CMD.
 After any `pip install -e .`, run the installed command immediately. If "not recognized": session fix `$env:PATH += ";[Scripts path]"` (PS) or `set PATH=%PATH%;[Scripts path]` (CMD); permanent fix `[Environment]::SetEnvironmentVariable("PATH", $env:PATH + ";[Scripts path]", "User")`.
 
-**WSL note**: If on Windows but inside WSL, treat as Linux - skip Windows PATH fixes entirely.
-If detection fails, ask once: "What OS and Python version are you on?"
+**WSL note**: when `wsl == true`, treat as Linux - skip Windows PATH fixes entirely.
 
 ---
 
@@ -168,8 +163,10 @@ Informational only - flag, never block.
 
 | Situation | Action |
 |-----------|--------|
-| 0 repos found | See Architect Mode section below |
-| 1-4 repos found | Warn: "Only [N] repos found - research will be thin. Recommend broadening search." Offer: A) Broaden keywords and retry  B) Continue with what we have (research quality: THIN)  C) Switch to Architect Mode. Never hard-stop unless 0 repos. |
+| 0 repos found | Architect Mode: apply SOLID + Clean Architecture principles. Note in RESEARCH.md: "First-principles design - no direct ecosystem precedent found." |
+| Active forks detected | Mandatory: analyze top 3 forks for bug fixes and patches. Incorporate improvements into output. |
+| 1-2 repos found | Warn user. Offer: A) Broaden search and retry B) Continue with THIN quality C) Architect Mode. |
+| 3-4 repos found | Warn (THIN quality). Require explicit user approval before Phase 3. |
 | 5+ repos found | Continue normally |
 | API timeout | Report briefly, try web search fallback, continue |
 | MCP unavailable | Switch to next tool, mention the switch |
@@ -230,7 +227,7 @@ Best for team/long-term. Clear separation, higher initial complexity.
 **C: Let research decide** - highest-starred repo structure, state reasoning.
 **D: Hybrid** - ask base (A or B) then what to change, confirm before building.
 
-**Hard gate**: if the user has not explicitly confirmed A, B, C, or D, do not start Phase 6 under any circumstances - not even if the user says "looks good" or "continue". Require a single-letter or explicit confirmation.
+**Hard gate**: user must provide exactly A, B, C, or D (case-insensitive). If prose is provided, repeat: 'Please choose A, B, C, or D to proceed.' After 3 invalid attempts, ask: 'Start over from Phase 1? [Y/N]'. Do not start Phase 6 until confirmed.
 
 ---
 
@@ -294,9 +291,12 @@ Also verify the CLI entrypoint if one exists:
 **Hard gate**: do not run `git commit` and do not announce "Genesis Architect complete" until the test suite exits 0.
 
 ### Step 6.5: Mitigation coverage check
-For each pitfall in PITFALLS.md, extract the mitigation keyword (the main noun/pattern in the Mitigation field). Run a case-insensitive grep over `src/` for that keyword.
-If 0 matches: warn with "Pitfall [N] mitigation not found in scaffold - consider adding it explicitly."
-Do not block on this - it is a warning, not a gate. Announce the check result.
+For each pitfall in PITFALLS.md, extract the Mitigation field and identify core nouns/verbs (e.g., "lazy-load", "validate", "stream").
+Search src/ for files containing the key patterns.
+Output:
+- "Pitfall [N]: mitigation detected" if found
+- "Pitfall [N]: mitigation not detected - manual review advised" if not found
+Do not block on this - it is a warning, not a gate.
 
 ### Step 7: README badges, demo, and git
 
@@ -346,6 +346,8 @@ Announce: "Genesis Architect complete. [bullet list of created files]. Next: [fi
 
 After Phase 6, enter companion mode. Direct invocations: `genesis help [problem]`, `genesis research [topic]`, `genesis check` (freshness audit).
 **`genesis check`** - freshness audit (run 30+ days after scaffold): check deps for CVEs + CI action versions. Use OSV.dev API for deterministic CVE detection (see mcp-strategy.md). Report: CRITICAL / WARNING / INFO. Never auto-apply - show upgrade commands only.
+**`genesis resolve [topic]`** - Smart Resolution Engine: checks local Knowledge Vault first, then fetches from Stack Overflow. Prioritizes accepted answers and high-score results. Includes recency classification (recent: last 24 months / classic). Always shows source URL. Never patches code without explicit user confirmation.
+**Knowledge Vault**: solutions are cached in `.genesis/vault/` by topic and language. Use `python scripts/vault.py search "[topic]" [language]` to query, `vault.py save` to add entries, `vault.py stats` to inspect. Vault hits avoid external API calls entirely.
 **Stuck on a problem**: search Phase 2 repos first, then competing projects. Present 1-3 approaches ranked by ecosystem adoption. Cite source repo.
 **Dependency question**: check last commit date, open issues trend, flag better-maintained alternatives.
 **New sub-problem**: ask "Want me to search the ecosystem for how others solved this?" before scanning.

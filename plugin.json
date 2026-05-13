@@ -1,12 +1,12 @@
 {
   "name": "genesis-architect",
   "version": "2.1.0",
-  "description": "Research first. Build once.",
-  "longDescription": "Before writing a single line of code, Genesis Architect scans 15-20 GitHub repos, identifies real pitfalls from Issues, then builds a battle-tested scaffold with tests and CI/CD. After scaffolding, enters Development Companion Mode and keeps helping as you build.",
+  "description": "The AI Software Architect that researches before it builds.",
+  "longDescription": "Before writing a single file, Genesis Architect scans 15-20 real GitHub repos, mines their Issues for production pitfalls, then builds a battle-tested scaffold with tests, CI/CD, and three security gates active from commit one. After scaffolding, enters Development Companion Mode.",
   "author": "Maio Eshet",
   "email": "maio.eshet@gmail.com",
-  "homepage": "https://github.com/maioio/genesis-architect",
-  "repository": "https://github.com/maioio/genesis-architect",
+  "homepage": "https://github.com/maioio-projects/genesis-architect",
+  "repository": "https://github.com/maioio-projects/genesis-architect",
   "license": "MIT",
   "skills": [
     "genesis-architect"

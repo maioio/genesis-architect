@@ -100,7 +100,7 @@ def _github_api_request(url: str) -> dict | None:
     if token:
         req.add_header("Authorization", f"token {token}")
     try:
-        with urllib.request.urlopen(req, timeout=8) as resp:
+        with urllib.request.urlopen(req, timeout=8) as resp:  # NOSONAR - GitHub API, URL from hardcoded constant
             return json.loads(resp.read().decode("utf-8"))
     except urllib.error.HTTPError as e:
         if e.code == 404:
@@ -119,7 +119,7 @@ def verify_github_issues(urls: list[str]) -> list[str]:
         try:
             req = urllib.request.Request(url, method="HEAD")
             req.add_header("User-Agent", "genesis-architect-validator/1.0")
-            with urllib.request.urlopen(req, timeout=5) as resp:
+            with urllib.request.urlopen(req, timeout=5) as resp:  # NOSONAR - HEAD check on user-supplied URLs from PITFALLS.md
                 if resp.status == 404:
                     dead.append(url)
         except urllib.error.HTTPError as e:

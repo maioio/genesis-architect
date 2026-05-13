@@ -22,3 +22,6 @@ scripts/__pycache__/
 *.dll
 *.so
 *.dylib
+
+# drift_detector baseline
+.genesis/

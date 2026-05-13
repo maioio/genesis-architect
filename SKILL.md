@@ -48,7 +48,9 @@ Required fields in `.genesis.json`: `language`, `tier` (minimalist|scalable), `v
 If any required field is missing, abort with: "`.genesis.json` is missing field: [field]. Run `genesis init` to generate it."
 
 `genesis audit [path]` - run Phases 2-4 on an existing codebase. Delivers PITFALLS.md and RESEARCH.md.
-No scaffold generated. Pre-flight Check (Phase 0.5) does not apply to `genesis audit` - it is an explicit command. Run Phases 2-4 directly.
+No scaffold generated. Pre-flight Check (Phase 0.5) does not apply to `genesis audit` - it is an explicit command.
+Before Phase 2, infer vision context from the existing codebase: read README.md if present, scan package.json/pyproject.toml/go.mod for name and description. Use these as Phase 1 substitutes. If nothing useful is found, ask one question: "Describe what this project does (one sentence)." Then run Phases 2-4 directly.
+Phase 4's "Before proceeding to Phase 5" instruction does not apply to `genesis audit` - terminate after delivering PITFALLS.md and RESEARCH.md.
 
 `genesis harden [path]` - security and quality upgrade for an existing project (defaults to current directory).
 Runs a gap scan and injects missing standards:
@@ -90,7 +92,7 @@ Present:
 > B: Quick scaffold (skip research, just give me boilerplate)"
 
 - **A**: continue normally from Phase 1.
-- **B**: skip Phases 1-5, go straight to Phase 6 with minimal Minimalist scaffold. No RESEARCH.md or PITFALLS.md. Create `QUICK_SCAFFOLD.md`: "Quick scaffold - no research. Run `genesis audit .` for pitfall analysis."
+- **B**: skip Phases 1-5, go straight to Phase 6 with minimal Minimalist scaffold. No RESEARCH.md or PITFALLS.md. Skip Phase 6 Step 6.5 (mitigation check) entirely. In Step 3 architecture comments, omit pitfall references. Create `QUICK_SCAFFOLD.md`: "Quick scaffold - no research. Run `genesis audit .` for pitfall analysis."
 
 ---
 
@@ -134,18 +136,19 @@ Use available MCP tools. Run searches in parallel where possible.
 
 ### Parallel research (run all three simultaneously)
 
-Launch three searches in parallel - do not wait for one to finish before starting the next:
+Launch searches in parallel where possible:
 
 **Stream A - GitHub repos**: Search for 15-20 repositories matching the vision (broad scan).
 Filter: stars >100 (niche) or >1,000 (infrastructure), last commit within 12 months,
 language matching user preference or auto-detected.
 Select the top 5-8 by stars + recency for deep analysis in Streams B/C.
+Wait for Stream A selection before starting Stream C.
 
-**Stream B - Ecosystem context**: Exa search for "[vision] pitfalls reddit",
+**Stream B - Ecosystem context** (run in parallel with Stream A): Exa search for "[vision] pitfalls reddit",
 "[vision] mistakes hacker news", "[vision] architecture regrets stackoverflow".
 Target: reddit.com, news.ycombinator.com, stackoverflow.com.
 
-**Stream C - Issue mining**: for top 5-8 repos from Stream A, scan up to 100 issues per repo. Rank by engagement density (comments + reactions). Prioritize: issues with 5+ comments or 10+ reactions, labels 'bug'/'regression'/'breaking-change'/'security', closed issues with 'fixed in X.Y.Z'. Surface top 10 per repo. Extract: recurring errors (3+ reports), architecture regrets, performance problems at scale, patched security issues.
+**Stream C - Issue mining** (start after Stream A repo selection): for top 5-8 repos from Stream A, scan up to 100 issues per repo. Rank by engagement density (comments + reactions). Prioritize: issues with 5+ comments or 10+ reactions, labels 'bug'/'regression'/'breaking-change'/'security', closed issues with 'fixed in X.Y.Z'. Surface top 10 per repo. Extract: recurring errors (3+ reports), architecture regrets, performance problems at scale, patched security issues.
 
 Merge results from all three streams before proceeding to Phase 3.
 If an MCP fails, report briefly, switch to web search fallback, and continue.
@@ -227,7 +230,7 @@ Best for team/long-term. Clear separation, higher initial complexity.
 **C: Let research decide** - highest-starred repo structure, state reasoning.
 **D: Hybrid** - ask base (A or B) then what to change, confirm before building.
 
-**Hard gate**: user must provide exactly A, B, C, or D (case-insensitive). If prose is provided, repeat: 'Please choose A, B, C, or D to proceed.' After 3 invalid attempts, ask: 'Start over from Phase 1? [Y/N]'. Do not start Phase 6 until confirmed.
+**Hard gate**: user must confirm one of A, B, C, or D. Accept single letters (case-insensitive) or clear prose that unambiguously maps to one choice (e.g., "scalable", "go with the research recommendation", "I want minimalist"). If the prose is ambiguous, confirm: "I'll take that as [X] - correct?" and proceed on yes. If a single response is truly uninterpretable, ask once more. After 3 unresolvable responses, ask: 'Start over from Phase 1? [Y/N]'. Do not start Phase 6 until confirmed.
 
 ---
 
@@ -289,6 +292,7 @@ Also verify the CLI entrypoint if one exists:
 - Node/Go/Rust: read `bin`/build first, then run `[entrypoint] --help`
 
 **Hard gate**: do not run `git commit` and do not announce "Genesis Architect complete" until the test suite exits 0.
+If the test runner is not installed or not on PATH: report "Test runner not found - run [install command] first, then re-run tests." Do not proceed to Step 7 without green tests. If dependency install was declined in Step 2, skip Steps 4 and 6 and note in summary: "Tests not run - dependencies not installed."
 
 ### Step 6.5: Mitigation coverage check
 For each pitfall in PITFALLS.md, extract the Mitigation field and identify core nouns/verbs (e.g., "lazy-load", "validate", "stream").
@@ -360,6 +364,7 @@ Extract and restore:
 Announce: 'Research context restored from RESEARCH.md - [N] repos, [M] pitfalls loaded.'
 If RESEARCH.md missing: 'RESEARCH.md not found. Run genesis audit . or describe the current project.'
 **Boundaries**: never act without asking first - max 3 options - stay grounded in analyzed repos, not general advice.
+**Exit**: companion mode ends when the user explicitly starts a new unrelated task, uses `genesis init` for a new project, or says "done" / "exit companion mode". After exit, do not apply Genesis behavior to requests that are not about the current project.
 
 ---
 

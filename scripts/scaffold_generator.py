@@ -10,8 +10,10 @@ Usage:
 """
 
 import os
+import re
 import sys
 import argparse
+from pathlib import Path
 
 STRUCTURES = {
     "typescript": {
@@ -136,6 +138,31 @@ STRUCTURES = {
 }
 
 
+_WINDOWS_RESERVED = {"con", "prn", "aux", "nul", "com1", "com2", "com3", "com4",
+                     "com5", "com6", "com7", "com8", "com9", "lpt1", "lpt2",
+                     "lpt3", "lpt4", "lpt5", "lpt6", "lpt7", "lpt8", "lpt9"}
+
+
+def _validate_name(name: str) -> str:
+    """Normalize and validate project name. Returns safe package name or raises ValueError."""
+    if not name or not name.strip():
+        raise ValueError("Project name cannot be empty.")
+    stripped = name.strip()
+    if any(c in stripped for c in ("/", "\\", "\x00")):
+        raise ValueError(f"Project name must not contain path separators: {name!r}")
+    safe = re.sub(r"[^a-zA-Z0-9_-]", "_", stripped).lower()
+    safe = re.sub(r"_+", "_", safe).strip("_-")
+    if not safe:
+        raise ValueError(f"Project name {name!r} contains no valid characters.")
+    if re.match(r"^\d", safe):
+        safe = "p_" + safe
+    if safe in _WINDOWS_RESERVED:
+        raise ValueError(f"Project name {name!r} is a reserved system name.")
+    if len(safe) > 64:
+        raise ValueError(f"Project name is too long (max 64 chars after normalization).")
+    return safe
+
+
 def create_structure(base_path: str, language: str, tier: str, name: str) -> list[str]:
     """Create project folder structure. Returns list of created paths."""
     lang = language.lower()
@@ -148,17 +175,25 @@ def create_structure(base_path: str, language: str, tier: str, name: str) -> lis
         print(f"Warning: tier '{tier}' not found. Using minimalist.")
         tier = "minimalist"
 
-    created = []
-    safe_name = name.replace("-", "_").replace(" ", "_").lower()
+    safe_name = _validate_name(name)
+    base = Path(base_path).resolve()
 
+    created = []
     for file_path in STRUCTURES[lang][tier]:
         resolved = file_path.replace("{name}", safe_name)
-        full_path = os.path.join(base_path, resolved)
-        os.makedirs(os.path.dirname(full_path), exist_ok=True)
-        if not os.path.exists(full_path):
-            with open(full_path, "w", encoding="utf-8") as f:
-                f.write("")
-            created.append(resolved)
+        full_path = (base / resolved).resolve()
+        # Safety: ensure every generated path stays inside base_path
+        try:
+            full_path.relative_to(base)
+        except ValueError:
+            raise PermissionError(f"Generated path escapes output directory: {full_path}")
+        try:
+            full_path.parent.mkdir(parents=True, exist_ok=True)
+            if not full_path.exists():
+                full_path.write_text("", encoding="utf-8")
+                created.append(resolved)
+        except OSError as e:
+            print(f"  Warning: could not create {resolved}: {e}")
 
     return created
 
@@ -171,7 +206,12 @@ def main():
     parser.add_argument("--output", default=".", help="Output directory")
     args = parser.parse_args()
 
-    print(f"Generating {args.tier} {args.language} scaffold for '{args.name}'...")
+    try:
+        safe = _validate_name(args.name)
+    except ValueError as e:
+        print(f"Error: {e}")
+        sys.exit(1)
+    print(f"Generating {args.tier} {args.language} scaffold for '{safe}'...")
     created = create_structure(args.output, args.language, args.tier, args.name)
 
     print(f"\nCreated {len(created)} files:")

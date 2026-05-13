@@ -54,6 +54,11 @@ def _parse_adr_structure(adr_content: str) -> list[str]:
         match = re.search(r"\|\s*Directory[^|]*\|\s*`?([a-z][a-z0-9_-]+/?)` ", line)
         if match:
             dirs.append(match.group(1).rstrip("/"))
+    # Also look for bullet list: `- \`dirname/\`` or `- dirname/`
+    for line in adr_content.splitlines():
+        match = re.match(r"^\s*[-*]\s+`?([a-z][a-z0-9_-]+)/`?", line)
+        if match:
+            dirs.append(match.group(1))
     return list(set(dirs)) if dirs else ["src", "tests", "docs"]
 
 
@@ -111,8 +116,10 @@ def detect_drift(project_path: str = ".") -> DriftReport:
                 prev = baseline.get(dirname, 0)
                 if prev > 0 and current_count >= prev * GROWTH_THRESHOLD:
                     grown_dirs.append((dirname, prev, current_count))
-        except Exception:
-            pass
+        except json.JSONDecodeError:
+            print(f"  Warning: .genesis/structure_baseline.json is corrupted - recreating baseline.")
+            baseline_file.parent.mkdir(exist_ok=True)
+            baseline_file.write_text(json.dumps(current_counts, indent=2), encoding="utf-8")
     else:
         # Save current as baseline
         import json
@@ -154,6 +161,11 @@ def print_report(report: DriftReport, project_path: str = ".") -> None:
 
 
 def main() -> None:
+    if len(sys.argv) > 1 and sys.argv[1] in ("-h", "--help"):
+        print("Usage: drift_detector.py [project_path]")
+        print("  Detects structural drift against docs/adr/001-initial-architecture.md.")
+        print("  Exits 0 if no drift, 1 if drift detected.")
+        sys.exit(0)
     project_path = sys.argv[1] if len(sys.argv) > 1 else "."
     report = detect_drift(project_path)
     print_report(report, project_path)

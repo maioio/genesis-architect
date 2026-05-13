@@ -99,7 +99,7 @@ def fetch_via_graphql(owner: str, repo: str, limit: int) -> list[Issue]:
     req = urllib.request.Request(GRAPHQL_URL, data=data, headers=_headers())
     req.add_header("Content-Type", "application/json")
     try:
-        with urllib.request.urlopen(req, timeout=15) as resp:
+        with urllib.request.urlopen(req, timeout=15) as resp:  # NOSONAR - external API, URL from hardcoded constants
             result = json.loads(resp.read())
         nodes = result.get("data", {}).get("repository", {}).get("issues", {}).get("nodes", [])
         issues = []
@@ -130,7 +130,7 @@ def fetch_via_rest(owner: str, repo: str, limit: int) -> list[Issue]:
                f"?state=closed&per_page=100&page={page}&sort=comments")
         req = urllib.request.Request(url, headers=_headers())
         try:
-            with urllib.request.urlopen(req, timeout=15) as resp:
+            with urllib.request.urlopen(req, timeout=15) as resp:  # NOSONAR - external API, URL from hardcoded constants
                 items = json.loads(resp.read())
         except urllib.error.HTTPError as e:
             if e.code == 403:

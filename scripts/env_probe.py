@@ -72,7 +72,7 @@ def detect_windows_scripts_path() -> str | None:
     if detect_os() != "windows":
         return None
     try:
-        result = subprocess.run(
+        result = subprocess.run(  # noqa: S603 - safe: hardcoded args, no shell, no user input  # NOSONAR
             [sys.executable, "-c", "import sysconfig; print(sysconfig.get_path('scripts'))"],
             capture_output=True,
             text=True,

@@ -32,22 +32,26 @@ def _safe_tag(text: str) -> str:
 
 def _entry_id(topic: str, language: str) -> str:
     key = f"{topic.lower().strip()}:{language.lower().strip()}"
-    return hashlib.sha1(key.encode()).hexdigest()[:12]
+    return hashlib.sha1(key.encode()).hexdigest()[:12]  # NOSONAR - non-cryptographic ID only
 
 
 def _load_index(vault: Path) -> dict:
     index_path = vault / "index.json"
     if not index_path.exists():
         return {"entries": []}
-    return json.loads(index_path.read_text(encoding="utf-8"))
+    try:
+        return json.loads(index_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        print(f"  Warning: vault index.json is corrupted. Starting fresh.")
+        return {"entries": []}
 
 
 def _save_index(vault: Path, index: dict) -> None:
     vault.mkdir(parents=True, exist_ok=True)
-    (vault / "index.json").write_text(
-        json.dumps(index, indent=2, ensure_ascii=False),
-        encoding="utf-8",
-    )
+    index_path = vault / "index.json"
+    tmp_path = vault / "index.json.tmp"
+    tmp_path.write_text(json.dumps(index, indent=2, ensure_ascii=False), encoding="utf-8")
+    tmp_path.replace(index_path)
 
 
 def save(

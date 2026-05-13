@@ -20,7 +20,6 @@ import urllib.error
 from dataclasses import dataclass
 from pathlib import Path
 from datetime import datetime, timezone
-from pathlib import Path
 
 API_BASE = "https://api.stackexchange.com/2.3"
 RECENCY_CUTOFF_YEARS = 2
@@ -81,7 +80,7 @@ def _api_get(path: str, params: dict, _retries: int = 3) -> dict | None:
     import time
     for attempt in range(_retries):
         try:
-            with urllib.request.urlopen(req, timeout=10) as resp:
+            with urllib.request.urlopen(req, timeout=10) as resp:  # NOSONAR - external API, URL is hardcoded constant
                 return json.loads(resp.read().decode("utf-8"))
         except urllib.error.HTTPError as e:
             if e.code in (429, 502, 503):

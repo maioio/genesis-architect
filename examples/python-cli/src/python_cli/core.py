@@ -7,9 +7,9 @@ from pathlib import Path
 from .utils.security import get_safe_path
 
 
-def process_file(input_path: str, output_path: str | None = None) -> dict:
+def process_file(input_path: str, output_path: str | None = None, base: Path | None = None) -> dict:
     """Process input file and return result summary."""
-    base = Path.cwd()
+    base = base or Path.cwd()
     safe_input = get_safe_path(base, input_path)
     if not safe_input.exists():
         raise FileNotFoundError(f"Input file not found: {input_path}")

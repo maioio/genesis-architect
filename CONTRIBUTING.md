@@ -1,77 +1,74 @@
 # Contributing to Genesis Architect
 
-Thank you for helping improve Genesis Architect.
+Thanks for your interest. This document covers everything you need to make a useful contribution.
 
-## What to contribute
+---
 
-- **New language templates** - Go and Rust are already implemented; add boilerplate for Java, C#, Swift, or other languages in `references/architecture-patterns.md`
-- **Better MCP strategies** - improve tool usage in `references/mcp-strategy.md`
-- **Workflow improvements** - refine phases in `SKILL.md`
-- **Bug reports** - open an issue with the template
+## What to work on
 
-## How to contribute
+Check [open issues](https://github.com/maioio/genesis-architect/issues) first.
+Issues labeled `good first issue` are scoped and ready to pick up.
 
-1. Fork the repository
-2. Create a branch: `git checkout -b improve/rust-templates`
-3. Make your changes
-4. Open a pull request with a clear description
+Good contribution types:
+- New language templates (Elixir, Java, Ruby, Swift)
+- New architecture archetypes (mobile, data pipeline, serverless)
+- Improvements to Phase 2 research quality
+- Bug fixes with a clear reproduction case
+- CI and quality improvements
 
-## Editing the skill
+Not useful without prior discussion:
+- Large SKILL.md restructures
+- New phases or workflow changes
+- Changing the 8-phase structure
 
-The skill is plain Markdown - no build step required.
+---
 
-- `SKILL.md` - main skill logic and phase definitions
-- `references/architecture-patterns.md` - language boilerplate templates
-- `references/mcp-strategy.md` - MCP tool strategy and fallback logic
+## Setup
 
-## Testing changes
-
-After editing, test by invoking the skill in Claude Code:
-
-```
-genesis init a simple CLI tool in [your language]
-```
-
-Verify that:
-1. The skill triggers correctly
-2. Phase 0 runs silently and detects OS, Python version, and package manager
-3. Research phase runs
-4. Architecture options are presented
-5. Generated scaffold matches the updated templates
-6. The smoke test (`[entrypoint] --help` or `pytest` / `npm test`) passes with exit code 0
-
-## Updating the README
-
-Three tools make README maintenance easier:
-
-**[readme.so](https://readme.so/editor)** - Visual drag-and-drop editor for README sections. Use it
-to draft new sections (Contributing, FAQ, Environment Variables, etc.) and download the markdown.
-Copy the output into README.md - no CLI or build step needed.
-
-**[shields.io](https://shields.io)** - Badge generator. All badges in README.md follow this format:
-```
-https://img.shields.io/badge/[label]-[message]-[color]
-```
-For live GitHub data use the endpoint badges:
-```
-# CI status:  https://img.shields.io/github/actions/workflow/status/{user}/{repo}/{workflow.yml}
-# Stars:      https://img.shields.io/github/stars/{user}/{repo}
-# Version:    https://img.shields.io/github/v/release/{user}/{repo}
-```
-Style options: `flat` (default), `flat-square`, `for-the-badge`.
-
-**[asciinema](https://asciinema.org)** - Terminal session recorder. To update the demo recording:
 ```bash
-asciinema rec demo.cast          # record a session
-asciinema upload demo.cast       # get a shareable URL
-agg demo.cast assets/demo.gif   # convert to GIF for GitHub (needs agg installed)
+git clone https://github.com/maioio/genesis-architect.git
+cd genesis-architect
+pip install pytest
+python -m pytest tests/ -q
 ```
-GitHub markdown does not render `<script>` tags, so the GIF files in `assets/` are the primary
-demo format. The asciinema link in README.md is for the interactive player on asciinema.org.
 
-## Style guide
+All tests should pass before you start.
 
-- All user-facing text in the skill: auto-detect the user's language and respond in kind (language-agnostic since v1.1.0)
-- All code, file names, variable names, comments: English
-- No em dashes - use hyphens or colons
-- Keep SKILL.md under 400 lines
+---
+
+## Key constraints (enforced in CI)
+
+| Constraint | Check |
+|---|---|
+| `SKILL.md` under 400 lines | `wc -l SKILL.md` |
+| No em dashes (`--` or `-`) | CI grep step |
+| All tests pass | `pytest tests/` |
+| Eval schema valid | `python scripts/eval_runner.py --mode validate` |
+| Scaffold smoke test | CI: all 8 language/tier combos |
+
+---
+
+## Adding a language template
+
+1. Add the file list to `references/folder-structures.toml`
+2. Add boilerplate to `references/architecture-patterns.md`
+3. Test: `python scripts/scaffold_generator.py --language yourlang --tier minimalist --name test --output /tmp/test`
+4. Add a CI smoke test line in `.github/workflows/ci.yml`
+
+Follow the existing Python and TypeScript patterns exactly.
+
+---
+
+## PR checklist
+
+- [ ] `python -m pytest tests/ -q` passes
+- [ ] `python scripts/eval_runner.py --mode validate` exits 0
+- [ ] SKILL.md under 400 lines (if modified)
+- [ ] No em dashes
+- [ ] `CHANGELOG.md` updated under `[Unreleased]`
+
+---
+
+## Questions
+
+Open an issue or start a GitHub Discussion.

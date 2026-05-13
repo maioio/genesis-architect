@@ -9,6 +9,33 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+## [2.2.0] - 2026-05-13
+
+### Added
+- **5 new scripts closing community issues #3-7**
+  - `genesis_state.py` - machine-readable Phase 5/6 hard gates via state files
+  - `genesis_subcommands.py check` - OSV.dev CVE scan + CI action version audit
+  - `pitfall_coverage_check.py` - mechanizes Phase 6 Step 6.5 mitigation coverage check
+  - `pitfall_coverage_check.py` - parses PITFALLS.md, walks src/, reports JSON coverage
+- **`eval_runner --mode validate`** - schema validation for test_queries.json, wired into CI
+- **`references/folder-structures.toml`** - single source of truth for all scaffold file lists; `scaffold_generator.py` now loads from TOML (removes 140-line hardcoded dict)
+- **`docs/adr/001-initial-architecture.md`** - ADR for repo structure, feeds drift_detector.py baseline
+- **Branch protection** on main: 5 required status checks
+
+### Fixed
+- `scaffold_generator.py`: path traversal via `--name` blocked; `_validate_name()` added with full validation
+- `vault.py`: atomic index write (tmp + replace) prevents partial corruption; JSONDecodeError handled
+- `drift_detector.py`: bullet-list ADR parser, baseline corruption recovery, `--help` guard
+- `resolve_engine.py`: duplicate `from pathlib import Path` removed
+- `python-cli` test isolation: `process_file()` accepts optional `base` param
+- SonarCloud hotspots: `NOSONAR` annotations on safe `urlopen`/`subprocess`/`sha1` usages
+- `evals/test_queries.json`: 15 missing `expected_flow` fields populated
+- `python-cli/PITFALLS.md` Pitfall 3: replaced tqdm (unused) with path traversal (actual code)
+
+### Infrastructure
+- Dependabot: actions/checkout@v6, setup-python@v6, codeql-action@v4, sonarqube-scan-action@v8
+- 12 GitHub topics (was 8)
+
 ## [2.1.0] - 2026-05-10
 
 ### Added

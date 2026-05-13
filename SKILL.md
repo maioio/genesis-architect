@@ -261,8 +261,8 @@ Non-retrofittable defaults for every scaffold (details in `references/architectu
 - **Secret Zero**: `.env.example` with `SECRET_KEY=change-me-generate-with-openssl-rand-hex-32`
 - **Health endpoint** (Web Service only): `GET /health` returning `{"status":"ok"}`
 - **ADR stub**: `docs/adr/001-initial-architecture.md` - key decisions, links to RESEARCH.md
-- **Secret leak protection**: secret-scanning CI job in `genesis_quality.yml` (Step 7b) - fails build on exposed credentials
-- **Dependency and SAST scan**: static analysis CI job in `genesis_quality.yml` - catches injection and path traversal vulnerabilities
+- **Secret leak protection**: secret-scanning CI job in `ci.yml` - fails build on exposed credentials
+- **Dependency and SAST scan**: static analysis CI job in `ci.yml` - catches injection and path traversal vulnerabilities
 - **Quality gate**: `sonar-project.properties` ready; add `SONAR_TOKEN` to GitHub Secrets to activate the quality badge and merge gate
 - **Path traversal guard**: inject `_safe_path` (from `references/architecture-patterns.md`) when the project handles user-supplied file paths (CLI tools, file processors, upload endpoints); skip for pure API services or frontends
 
@@ -312,8 +312,7 @@ Never commit `.env` - always commit `.env.example`.
 
 ### Step 7b: Security and Quality Hardening (automatic on every genesis init)
 
-The four-job `ci.yml` created in Step 5 already includes secret scanning and SAST.
-Additionally create `sonar-project.properties` (use template from `references/security-templates.md`):
+The four-job `ci.yml` created in Step 5 already includes secret scanning and SAST. Additionally create `sonar-project.properties` (use template from `references/security-templates.md`):
 ```
 sonar.projectKey=[github-username]_[project-name]
 sonar.organization=[github-username]

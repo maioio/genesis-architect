@@ -344,7 +344,7 @@ TypeScript / JavaScript    Python    Go    Rust
 
 ---
 
-## Why not just use X?
+## How Genesis Architect compares
 
 | Capability | Genesis Architect | create-t3-app | bolt.new | Cursor Rules | madison/scaffolding |
 |-----------|:-----------------:|:-------------:|:--------:|:------------:|:-------------------:|
@@ -360,6 +360,8 @@ TypeScript / JavaScript    Python    Go    Rust
 | Works without any MCP | Yes | n/a | n/a | n/a | n/a |
 | PRD-driven flow (`--from-prd`) | Yes | No | No | No | No |
 | Stays active for entire project lifecycle | Yes | No | No | No | No |
+
+> Assessments based on public documentation as of 2026. Some capabilities may vary by version or configuration.
 
 ---
 
@@ -389,6 +391,7 @@ From actual projects:
 **Python CLI:**
 - [`examples/python-cli/RESEARCH.md`](examples/python-cli/RESEARCH.md) - click, typer, python-fire, tqdm, prompt-toolkit analyzed
 - [`examples/python-cli/PITFALLS.md`](examples/python-cli/PITFALLS.md) - 4 pitfalls: click#2416, click#2558, tqdm#1139, typer#522 - all verified
+- [`examples/python-cli/src/`](examples/python-cli/src/) - working Python CLI with Click, get_safe_path, and full test suite
 
 ---
 
@@ -470,7 +473,7 @@ Four independent CI jobs run on every push and pull request:
 | Job | What it gates | Secret required |
 |-----|--------------|-----------------|
 | `secrets-scan` | Exposed credentials, API keys, tokens in every commit | none (public repos) |
-| `security-scan` | Dependency CVEs (HIGH+); SARIF uploaded to GitHub Code Scanning | `SNYK_TOKEN` |
+| `security-scan` | Dependency CVEs (HIGH+); SARIF uploaded to Code Scanning (informational if SNYK_TOKEN not set) | `SNYK_TOKEN` |
 | `quality-gate` | Maintainability, Reliability, Security Hotspots; blocks merge on fail | `SONAR_TOKEN` |
 | `quality-gates` | SKILL.md constraints, template validity, eval accuracy, 21 unit tests | `GITHUB_TOKEN` (built-in) |
 

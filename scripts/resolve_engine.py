@@ -18,6 +18,7 @@ import urllib.parse
 import urllib.request
 import urllib.error
 from dataclasses import dataclass
+from pathlib import Path
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -164,9 +165,40 @@ def _badge(label: str, value: str) -> str:
     return f"[{label}: {value}]"
 
 
+def _check_vault(query: str) -> list[dict]:
+    """Check local vault before hitting external APIs."""
+    try:
+        sys.path.insert(0, str(Path(__file__).parent))
+        from vault import search as vault_search
+        parts = query.split()
+        language = parts[-1] if parts[-1] in ("python", "typescript", "javascript", "go", "rust") else ""
+        topic = query if not language else " ".join(parts[:-1])
+        return vault_search(topic, language, project_root=Path.cwd())
+    except Exception:
+        return []
+
+
 def resolve(query: str, limit: int = 3) -> None:
     print(f"\nSmart Resolution Engine")
     print(f"Query: {query!r}")
+
+    vault_hits = _check_vault(query)
+    if vault_hits:
+        print(f"Source: Knowledge Vault ({len(vault_hits)} cached result(s))\n")
+        for i, entry in enumerate(vault_hits[:limit], 1):
+            print(f"{'=' * 60}")
+            print(f"Vault Result {i}: {entry['topic']} ({entry['language']})")
+            preview = entry["solution"][:400]
+            if len(entry["solution"]) > 400:
+                preview += " ..."
+            print(f"\n  {preview}")
+            if entry.get("source"):
+                print(f"\n  Source: {entry['source']}")
+        print(f"\n{'=' * 60}")
+        print("Vault hit - no external API call needed.")
+        print("Use 'python scripts/vault.py save' to add more entries.")
+        return
+
     print(f"Source: Stack Overflow community answers\n")
 
     questions = search_questions(query, limit)

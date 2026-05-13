@@ -343,7 +343,8 @@ Announce: "Genesis Architect complete. [bullet list of created files]. Next: [fi
 
 After Phase 6, enter companion mode. Direct invocations: `genesis help [problem]`, `genesis research [topic]`, `genesis check` (freshness audit).
 **`genesis check`** - freshness audit (run 30+ days after scaffold): check deps for CVEs + CI action versions. Use OSV.dev API for deterministic CVE detection (see mcp-strategy.md). Report: CRITICAL / WARNING / INFO. Never auto-apply - show upgrade commands only.
-**`genesis resolve [topic]`** - Smart Resolution Engine: run `python scripts/resolve_engine.py "[topic]"` to fetch the top 3 community-verified solutions from Stack Overflow. Prioritizes accepted answers and high-score results. Includes recency classification (recent: last 24 months / classic). Always shows source URL. Never patches code without explicit user confirmation.
+**`genesis resolve [topic]`** - Smart Resolution Engine: checks local Knowledge Vault first, then fetches from Stack Overflow. Prioritizes accepted answers and high-score results. Includes recency classification (recent: last 24 months / classic). Always shows source URL. Never patches code without explicit user confirmation.
+**Knowledge Vault**: solutions are cached in `.genesis/vault/` by topic and language. Use `python scripts/vault.py search "[topic]" [language]` to query, `vault.py save` to add entries, `vault.py stats` to inspect. Vault hits avoid external API calls entirely.
 **Stuck on a problem**: search Phase 2 repos first, then competing projects. Present 1-3 approaches ranked by ecosystem adoption. Cite source repo.
 **Dependency question**: check last commit date, open issues trend, flag better-maintained alternatives.
 **New sub-problem**: ask "Want me to search the ecosystem for how others solved this?" before scanning.

@@ -537,6 +537,14 @@ Genesis Architect improves through real-world use.
 
 [Open an issue](https://github.com/maioio-projects/genesis-architect/issues) | [Submit a PR](https://github.com/maioio-projects/genesis-architect/pulls) | [Discussions](https://github.com/maioio-projects/genesis-architect/discussions)
 
+### Looking for experienced reviewers
+
+If you have production experience with CLI tools, Python packaging, or AI skill engineering - feedback is welcome at any level:
+
+- **Code review**: open a Discussion or comment directly on a commit
+- **Architecture critique**: if something looks wrong or fragile, open an issue and explain why
+- **Language templates**: if you know Elixir, Java, Ruby, or Swift well enough to write idiomatic CI - a template PR would be high value
+
 ---
 
 ## Support this project

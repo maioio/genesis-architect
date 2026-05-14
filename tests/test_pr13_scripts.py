@@ -195,6 +195,56 @@ class TestPrintSummary:
         assert missing == []
 
 
+class TestMain:
+    def test_exit_0_when_all_mitigations_found(self, tmp_path, capsys):
+        from pitfall_coverage_check import main
+        src = tmp_path / "src"
+        src.mkdir()
+        # keywords from PITFALLS_REAL_FORMAT: "pin", "retry" (first 3 non-stop words)
+        (src / "core.py").write_text("pin_versions = True\nretry_backoff = 3\n")
+        pitfalls = tmp_path / "PITFALLS.md"
+        pitfalls.write_text(PITFALLS_REAL_FORMAT)
+        with mock.patch("sys.argv", ["pitfall_coverage_check.py", str(pitfalls), str(src)]):
+            with pytest.raises(SystemExit) as exc:
+                main()
+        assert exc.value.code == 0
+
+    def test_exit_1_when_mitigations_missing(self, tmp_path, capsys):
+        from pitfall_coverage_check import main
+        src = tmp_path / "src"
+        src.mkdir()
+        (src / "core.py").write_text("print('nothing relevant')\n")
+        pitfalls = tmp_path / "PITFALLS.md"
+        pitfalls.write_text(PITFALLS_REAL_FORMAT)
+        with mock.patch("sys.argv", ["pitfall_coverage_check.py", str(pitfalls), str(src)]):
+            with pytest.raises(SystemExit) as exc:
+                main()
+        assert exc.value.code == 1
+
+    def test_exit_2_on_missing_pitfalls_file(self, tmp_path):
+        from pitfall_coverage_check import main
+        with mock.patch("sys.argv", ["p.py", str(tmp_path / "PITFALLS.md"), str(tmp_path)]):
+            with pytest.raises(SystemExit) as exc:
+                main()
+        assert exc.value.code == 2
+
+    def test_exit_2_on_bad_src_dir(self, tmp_path):
+        from pitfall_coverage_check import main
+        pitfalls = tmp_path / "PITFALLS.md"
+        pitfalls.write_text("# empty\n")
+        with mock.patch("sys.argv", ["p.py", str(pitfalls), str(tmp_path / "nosuchdir")]):
+            with pytest.raises(SystemExit) as exc:
+                main()
+        assert exc.value.code == 2
+
+    def test_exit_2_on_wrong_arg_count(self, tmp_path):
+        from pitfall_coverage_check import main
+        with mock.patch("sys.argv", ["p.py"]):
+            with pytest.raises(SystemExit) as exc:
+                main()
+        assert exc.value.code == 2
+
+
 # ---------------------------------------------------------------------------
 # genesis_subcommands
 # ---------------------------------------------------------------------------
@@ -297,6 +347,30 @@ class TestCheckActions:
         from genesis_subcommands import check_actions
         warnings = check_actions(str(tmp_path))
         assert warnings == []
+
+
+class TestMainSubcommands:
+    def test_check_subcommand_runs(self, tmp_path, capsys):
+        from genesis_subcommands import main
+        with mock.patch("genesis_subcommands.query_osv", return_value=[]):
+            with mock.patch("sys.argv", ["genesis_subcommands.py", "check", str(tmp_path)]):
+                with pytest.raises(SystemExit) as exc:
+                    main()
+        assert exc.value.code == 0
+
+    def test_unknown_subcommand_exits_1(self, capsys):
+        from genesis_subcommands import main
+        with mock.patch("sys.argv", ["genesis_subcommands.py", "unknown"]):
+            with pytest.raises(SystemExit) as exc:
+                main()
+        assert exc.value.code == 1
+
+    def test_no_args_exits_1(self, capsys):
+        from genesis_subcommands import main
+        with mock.patch("sys.argv", ["genesis_subcommands.py"]):
+            with pytest.raises(SystemExit) as exc:
+                main()
+        assert exc.value.code == 1
 
 
 class TestQueryOsv:

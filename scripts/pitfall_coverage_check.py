@@ -82,59 +82,43 @@ def search_keyword_in_files(keyword: str, files: list[Path]) -> list[str]:
     return matches
 
 
-def main() -> None:
+def _check_args() -> tuple[Path, Path]:
+    """Validate CLI args and return (pitfalls_path, src_dir). Exits on error."""
     if len(sys.argv) != 3:
-        print(
-            f"Usage: {sys.argv[0]} PITFALLS.md src/",
-            file=sys.stderr,
-        )
+        print(f"Usage: {sys.argv[0]} PITFALLS.md src/", file=sys.stderr)
         sys.exit(2)
-
     pitfalls_path = Path(sys.argv[1])
     src_dir = Path(sys.argv[2])
-
     if not pitfalls_path.exists():
         print(f"ERROR: {pitfalls_path} not found", file=sys.stderr)
         sys.exit(2)
     if not src_dir.is_dir():
         print(f"ERROR: {src_dir} is not a directory", file=sys.stderr)
         sys.exit(2)
+    return pitfalls_path, src_dir
 
-    pitfalls = parse_pitfalls(pitfalls_path)
-    if not pitfalls:
-        print("WARNING: no pitfalls parsed from PITFALLS.md", file=sys.stderr)
 
-    source_files = collect_source_files(src_dir)
+def _deduplicate(items: list[str]) -> list[str]:
+    seen: set[str] = set()
+    result: list[str] = []
+    for item in items:
+        if item not in seen:
+            seen.add(item)
+            result.append(item)
+    return result
 
-    results: dict[str, dict] = {}
-    missing: list[str] = []
 
-    for pid, mitigation_text in pitfalls.items():
-        keywords = extract_keywords(mitigation_text)
-        all_matches: list[str] = []
-        for kw in keywords:
-            all_matches.extend(search_keyword_in_files(kw, source_files))
-        # Deduplicate
-        seen_files: set[str] = set()
-        deduped: list[str] = []
-        for m in all_matches:
-            if m not in seen_files:
-                seen_files.add(m)
-                deduped.append(m)
+def _check_pitfall(pid: str, mitigation_text: str, source_files: list[Path]) -> dict:
+    keywords = extract_keywords(mitigation_text)
+    raw_matches: list[str] = []
+    for kw in keywords:
+        raw_matches.extend(search_keyword_in_files(kw, source_files))
+    deduped = _deduplicate(raw_matches)
+    return {"mitigation": " ".join(keywords), "found": bool(deduped), "matches": deduped}
 
-        found = bool(deduped)
-        results[pid] = {
-            "mitigation": " ".join(keywords),
-            "found": found,
-            "matches": deduped,
-        }
-        if not found:
-            missing.append(pid)
 
-    # JSON to stdout
-    print(json.dumps(results, indent=2))
-
-    # Human-readable summary to stderr
+def _print_summary(results: dict[str, dict]) -> list[str]:
+    missing = [pid for pid, info in results.items() if not info["found"]]
     total = len(results)
     covered = total - len(missing)
     print(f"\nCoverage: {covered}/{total} mitigations found in source", file=sys.stderr)
@@ -143,7 +127,25 @@ def main() -> None:
         print(f"  [{status}] {pid}: {info['mitigation']}", file=sys.stderr)
         for m in info["matches"]:
             print(f"           {m}", file=sys.stderr)
+    return missing
 
+
+def main() -> None:
+    pitfalls_path, src_dir = _check_args()
+
+    pitfalls = parse_pitfalls(pitfalls_path)
+    if not pitfalls:
+        print("WARNING: no pitfalls parsed from PITFALLS.md", file=sys.stderr)
+
+    source_files = collect_source_files(src_dir)
+
+    results: dict[str, dict] = {
+        pid: _check_pitfall(pid, text, source_files)
+        for pid, text in pitfalls.items()
+    }
+
+    print(json.dumps(results, indent=2))
+    missing = _print_summary(results)
     sys.exit(1 if missing else 0)
 
 

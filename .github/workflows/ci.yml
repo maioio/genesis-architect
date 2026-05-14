@@ -126,6 +126,9 @@ jobs:
           test -f /tmp/scaffold-rust-scalable/src/config.rs
           echo "Scaffold smoke test passed for all 8 combos"
 
+      - name: Run pitfall coverage check on example
+        run: python scripts/pitfall_coverage_check.py examples/python-cli/PITFALLS.md examples/python-cli/src/
+
       - name: Check SKILL.md constraints
         run: |
           lines=$(wc -l < SKILL.md)

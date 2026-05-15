@@ -7,10 +7,11 @@ import urllib.error
 import os
 import glob
 
-# Hardcoded known-latest GitHub Actions major versions
+# Known-latest GitHub Actions major versions - update when actions release new majors
+# Last verified: 2026-05-14
 KNOWN_LATEST_ACTIONS = {
-    "actions/checkout": "v4",
-    "actions/setup-python": "v5",
+    "actions/checkout": "v6",
+    "actions/setup-python": "v6",
     "actions/setup-node": "v4",
     "actions/setup-go": "v5",
     "actions/setup-java": "v4",

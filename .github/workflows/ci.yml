@@ -57,6 +57,16 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: Generate coverage report for SonarCloud
+        run: |
+          pip install pytest pytest-cov -q
+          python -m pytest tests/ -q --cov=scripts --cov-report=xml:coverage.xml
+
       - name: SonarCloud Scan
         uses: SonarSource/sonarqube-scan-action@v8
         env:
@@ -82,8 +92,14 @@ jobs:
 
       - name: Run unit tests
         run: |
-          pip install pytest -q
-          python -m pytest tests/ -v --tb=short
+          pip install pytest pytest-cov -q
+          python -m pytest tests/ -v --tb=short --cov=scripts --cov-report=xml:coverage.xml
+
+      - name: Upload coverage to SonarCloud
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage.xml
 
       - name: Run research validator on example
         run: python scripts/research_validator.py examples/typescript-cli/RESEARCH.md
@@ -125,6 +141,9 @@ jobs:
           test -f /tmp/scaffold-typescript-minimalist/.github/workflows/ci.yml
           test -f /tmp/scaffold-rust-scalable/src/config.rs
           echo "Scaffold smoke test passed for all 8 combos"
+
+      - name: Run pitfall coverage check on example
+        run: python scripts/pitfall_coverage_check.py examples/python-cli/PITFALLS.md examples/python-cli/src/
 
       - name: Check SKILL.md constraints
         run: |

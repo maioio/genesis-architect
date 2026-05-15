@@ -69,6 +69,22 @@ Follow the existing Python and TypeScript patterns exactly.
 
 ---
 
+## Code review and feedback
+
+You don't have to write code to contribute. Experienced feedback is just as valuable.
+
+If you read through the codebase and something looks fragile, inconsistent, or wrong - open an issue and explain what you found. That's how nitayk contributed: a careful read, specific findings, clear reasoning.
+
+**What makes a good review issue:**
+- Point at the specific file and line
+- Explain what the problem is and why it matters
+- Suggest a direction if you have one, but it's not required
+
+**Where to start if you want to review:**
+- [`scripts/scaffold_generator.py`](scripts/scaffold_generator.py) - core output path, most user-visible
+- [`scripts/genesis_subcommands.py`](scripts/genesis_subcommands.py) - OSV.dev integration, network code
+- [`SKILL.md`](SKILL.md) - the skill definition itself, benefits from fresh eyes
+
 ## Questions
 
 Open an issue or start a GitHub Discussion.

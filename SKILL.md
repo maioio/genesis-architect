@@ -214,7 +214,9 @@ Display as: `Research quality: [LABEL] ([brief reason])`. THIN does not block - 
 > "Detected: [Archetype] / [Scale] / [Language]. Correct? [Y / correct me]"
 Wait for reply. If user corrects any field, update and proceed. Skip when Phase 1 ran normally.
 
-Present research summary and architectural options in a single message. Show: repo table (project, stars, key insight), Ecosystem Velocity signals, convention match question (from Phase 0), then the two structures.
+Present research summary and architectural options in a single message. Show: repo table (project, stars, key insight), Ecosystem Velocity signals, convention match question (from Phase 0), then the pitfall annotations, then the two structures.
+
+**Pitfall annotation (required)**: Before showing A/B, read PITFALLS.md. For each pitfall, note which option mitigates it and which accepts the risk. Example: "Pitfall 2 (memory leak): Scalable mitigates via worker isolation / Minimalist accepts this risk." If PITFALLS.md is missing or empty: "No pitfalls found - architecture choice is unaided."
 
 Shape folder structures using the archetype (Phase 1 Q2):
 - CLI: entrypoint + core, no server; Library: public API, no main(); Web Service: router + Dockerfile + /health; Frontend: component tree + build config

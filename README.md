@@ -46,11 +46,11 @@ builds your project to avoid them, and keeps learning alongside you as you ship.
 
 | Feature | What it does |
 |---------|-------------|
-| **Hard gate state files** | `genesis_state.py` — Phase 5/6 gates are now machine-readable state files, not prose wishes |
-| **`genesis check` command** | Queries OSV.dev for CVEs in your deps, audits CI action versions — JSON output with critical/warnings/info |
-| **Mitigation coverage check** | `pitfall_coverage_check.py` — verifies each PITFALLS.md mitigation is present in source code |
-| **Single source of truth** | `references/folder-structures.toml` — all scaffold file lists in one place; `scaffold_generator.py` loads from it |
-| **Eval schema validation** | `eval_runner --mode validate` wired into CI — catches eval drift before it ships |
+| **Hard gate state files** | `genesis_state.py` - Phase 5/6 gates are now machine-readable state files, not prose wishes |
+| **`genesis check` command** | Queries OSV.dev for CVEs in your deps, audits CI action versions - JSON output with critical/warnings/info |
+| **Mitigation coverage check** | `pitfall_coverage_check.py` - verifies each PITFALLS.md mitigation is present in source code |
+| **Single source of truth** | `references/folder-structures.toml` - all scaffold file lists in one place; `scaffold_generator.py` loads from it |
+| **Eval schema validation** | `eval_runner --mode validate` wired into CI - catches eval drift before it ships |
 
 ---
 
@@ -465,7 +465,7 @@ Measured against the [quality rubric](evals/quality_rubric.md) (100-point, 4 dim
 | [python-cli example](examples/python-cli/) | Python CLI | 75/100 | Projected (same rubric, not yet run) |
 | Go / Rust / React | - | 67-69/100 | Projected |
 
-Scores are self-reported against an internal rubric. No external benchmark yet — see [Roadmap](#roadmap) for planned third-party comparison.
+Scores are self-reported against an internal rubric. No external benchmark yet - see [Roadmap](#roadmap) for planned third-party comparison.
 
 ---
 
@@ -536,6 +536,14 @@ Genesis Architect improves through real-world use.
 - **Fork intelligence**: Genesis Architect scans forks of researched repos for patches not yet merged upstream
 
 [Open an issue](https://github.com/maioio-projects/genesis-architect/issues) | [Submit a PR](https://github.com/maioio-projects/genesis-architect/pulls) | [Discussions](https://github.com/maioio-projects/genesis-architect/discussions)
+
+### Looking for experienced reviewers
+
+If you have production experience with CLI tools, Python packaging, or AI skill engineering - feedback is welcome at any level:
+
+- **Code review**: open a Discussion or comment directly on a commit
+- **Architecture critique**: if something looks wrong or fragile, open an issue and explain why
+- **Language templates**: if you know Elixir, Java, Ruby, or Swift well enough to write idiomatic CI - a template PR would be high value
 
 ---
 

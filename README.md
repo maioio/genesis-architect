@@ -15,10 +15,17 @@ builds your project to avoid them - then stays active as your architect.
 [![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=maioio_genesis-architect&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=maioio_genesis-architect)
 [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=maioio_genesis-architect&metric=coverage)](https://sonarcloud.io/summary/new_code?id=maioio_genesis-architect)
 [![Known Vulnerabilities](https://snyk.io/test/github/maioio/genesis-architect/badge.svg)](https://snyk.io/test/github/maioio/genesis-architect)
+[![Star History](https://img.shields.io/github/stars/maioio/genesis-architect?style=social)](https://star-history.com/#maioio/genesis-architect)
 
 **If this saved you from a bad architecture decision - [star it](https://github.com/maioio/genesis-architect/stargazers). It helps others find it.**
 
 </div>
+
+---
+
+<!-- Demo GIF: replace assets/demo.gif with a real recording to unlock the biggest conversion boost.
+     See DEMO_SCRIPT.md for exact recording steps (2-3 min session, export at 15fps, keep under 5MB). -->
+> **Demo coming soon** - see [DEMO_SCRIPT.md](DEMO_SCRIPT.md) if you want to record one
 
 ---
 
@@ -184,6 +191,15 @@ A 404 fails the build.
 - [`examples/typescript-cli/RESEARCH.md`](examples/typescript-cli/RESEARCH.md) - 5 repos analyzed, every source linked
 - [`examples/typescript-cli/PITFALLS.md`](examples/typescript-cli/PITFALLS.md) - 4 real pitfalls from live Issues
 - [`examples/typescript-cli/ROADMAP.md`](examples/typescript-cli/ROADMAP.md) - 5-phase plan calibrated to findings
+
+---
+
+## What contributors found
+
+> "The code review you left on this PR was exceptional. Finding the annotation bug, the em dash in CI, the Jest/Node mismatch, and the validator scope issue -- then fixing all four in the same session -- is exactly the kind of rigor this project needs."
+> -- [@maioio](https://github.com/maioio) to first contributor [@nitayk](https://github.com/nitayk)
+
+> First external contributor [@nitayk](https://github.com/nitayk) opened 7 issues and submitted a 444-line PR with self-contained code review within 48 hours of launch.
 
 ---
 

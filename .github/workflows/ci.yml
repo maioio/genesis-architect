@@ -7,75 +7,6 @@ on:
     branches: [main]
 
 jobs:
-  secrets-scan:
-    name: Secret Scanning (Gitleaks)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-
-      - name: Run Gitleaks
-        uses: docker://zricethezav/gitleaks:latest
-        with:
-          args: detect --source=. --verbose --redact
-
-  security-scan:
-    name: Dependency Security (Snyk)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-
-      - name: Set up Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: '3.11'
-
-      - name: Install dependencies for Snyk scan
-        run: pip install -r requirements.txt 2>/dev/null || echo "No requirements.txt - skipping pip install"
-
-      - name: Run Snyk Python scan
-        uses: snyk/actions/python@master
-        continue-on-error: true
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        with:
-          args: --severity-threshold=high --sarif-file-output=snyk-python.sarif
-
-      - name: Upload Snyk SARIF to GitHub Code Scanning
-        uses: github/codeql-action/upload-sarif@v4
-        if: always()
-        with:
-          sarif_file: snyk-python.sarif
-        continue-on-error: true
-
-  sonarcloud:
-    name: Static Analysis (SonarCloud)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-
-      - name: Set up Python
-        uses: actions/setup-python@v6
-        with:
-          python-version: '3.11'
-
-      - name: Generate coverage report for SonarCloud
-        run: |
-          pip install pytest pytest-cov -q
-          python -m pytest tests/ -q --cov=scripts --cov-report=xml:coverage.xml
-
-      - name: SonarCloud Scan
-        uses: SonarSource/sonarqube-scan-action@v8
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        with:
-          args: >
-            -Dsonar.qualitygate.wait=false
-
   quality-gates:
     name: Quality Gates
     runs-on: ubuntu-latest
@@ -87,29 +18,21 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Install test dependencies
+        run: pip install pytest pytest-cov -q
+
       - name: Phase 0 env probe (self-check)
         run: python scripts/env_probe.py --self-check
 
-      - name: Run unit tests
-        run: |
-          pip install pytest pytest-cov -q
-          python -m pytest tests/ -v --tb=short --cov=scripts --cov-report=xml:coverage.xml
-
-      - name: Upload coverage to SonarCloud
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-report
-          path: coverage.xml
+      - name: Run unit tests with coverage
+        run: python -m pytest tests/ -v --tb=short --cov=scripts --cov-report=xml:coverage.xml
 
       - name: Run research validator on example
         run: python scripts/research_validator.py examples/typescript-cli/RESEARCH.md
 
-      - name: Run research validator on example (live citations)
-        # Live URL check - this enforces the headline "no fabricated citations"
-        # guarantee. --issues-only skips the RESEARCH.md-shaped section checks
-        # (which don't apply to PITFALLS.md). The validator already returns
-        # success on transient network errors / rate limits, so a flake won't
-        # block the PR; only an actual 404 will fail this step.
+      - name: Run research validator (live citation check)
+        # --issues-only skips RESEARCH.md section checks (not applicable to PITFALLS.md).
+        # Returns success on transient network errors; only a real 404 fails this step.
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: python scripts/research_validator.py examples/typescript-cli/PITFALLS.md --verify-issues --issues-only
@@ -123,11 +46,8 @@ jobs:
       - name: Run eval runner
         run: python scripts/eval_runner.py --mode report
 
-      - name: Run scaffold generator smoke test (all language/tier combos)
-        # Cover every (language, tier) so a missing _starter_content case is
-        # caught here rather than shipping invalid stubs to a real scaffold.
-        # The generator now raises NotImplementedError on unhandled filenames,
-        # so any miss makes this step fail loudly.
+      - name: Scaffold smoke test (all 8 language/tier combos)
+        # Raises NotImplementedError on any unhandled filename - catches stub regressions.
         run: |
           set -e
           for lang in python typescript go rust; do
@@ -164,3 +84,74 @@ jobs:
             exit 1
           fi
           echo "OK: no em dashes"
+
+  secrets-scan:
+    name: Secret Scanning (Gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  sonarcloud:
+    name: Static Analysis (SonarCloud)
+    runs-on: ubuntu-latest
+    if: ${{ secrets.SONAR_TOKEN != '' }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: Generate coverage report
+        run: |
+          pip install pytest pytest-cov -q
+          python -m pytest tests/ -q --cov=scripts --cov-report=xml:coverage.xml
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarqube-scan-action@v8
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.qualitygate.wait=false
+
+  security-scan:
+    name: Dependency Security (Snyk)
+    runs-on: ubuntu-latest
+    if: ${{ secrets.SNYK_TOKEN != '' }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt 2>/dev/null || echo "No requirements.txt - skipping"
+
+      - name: Run Snyk scan
+        uses: snyk/actions/python@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high --sarif-file-output=snyk-python.sarif
+
+      - name: Upload Snyk SARIF
+        uses: github/codeql-action/upload-sarif@v4
+        if: always()
+        with:
+          sarif_file: snyk-python.sarif
+        continue-on-error: true

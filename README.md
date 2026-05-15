@@ -20,7 +20,7 @@ builds your project to avoid them, and keeps learning alongside you as you ship.
 [![Phases](https://img.shields.io/badge/phases-9-blueviolet?style=flat-square)](SKILL.md)
 [![Languages](https://img.shields.io/badge/languages-4-informational?style=flat-square)](references/architecture-patterns.md)
 [![Archetypes](https://img.shields.io/badge/archetypes-4-success?style=flat-square)](SKILL.md)
-[![Tests](https://img.shields.io/badge/tests-93-brightgreen?style=flat-square)](tests/)
+[![Tests](https://img.shields.io/badge/tests-125-brightgreen?style=flat-square)](tests/)
 [![Eval accuracy](https://img.shields.io/badge/eval_accuracy-100%25-brightgreen?style=flat-square)](evals/test_queries.json)
 [![Stars](https://img.shields.io/github/stars/maioio/genesis-architect?style=social)](https://github.com/maioio/genesis-architect/stargazers)
 
@@ -35,11 +35,49 @@ builds your project to avoid them, and keeps learning alongside you as you ship.
 
 <br/>
 
-<img src="assets/demo.gif" alt="Genesis Architect demo" width="860" />
+<!-- Demo GIF: replace assets/demo.gif with a real recording - see DEMO_SCRIPT.md -->
 
 **If this saved you from a bad architecture decision - [star it](https://github.com/maioio/genesis-architect/stargazers). It helps others find it.**
 
 </div>
+
+---
+
+## What it actually produces
+
+Run: `genesis init a Python CLI for analyzing log files`
+
+**Pitfalls found from real GitHub Issues (before a single file is written):**
+
+| # | Issue | Found in | Root cause | Built-in mitigation |
+|---|-------|----------|-----------|---------------------|
+| 1 | [pallets/click#2416](https://github.com/pallets/click/issues/2416) | 4/5 repos | Business logic inside Click callback - untestable | `cli.py` only parses args, all logic in `core.py` |
+| 2 | [pallets/click#2558](https://github.com/pallets/click/issues/2558) | 3/5 repos | Type stubs change in Click 8.1.4 breaks mypy silently | Pin `click>=8.1.7`, `# type: ignore` only where needed |
+| 3 | [pallets/click#1846](https://github.com/pallets/click/issues/1846) | 3/5 repos | Raw file path from CLI args allows `../../../etc/passwd` | `get_safe_path(base, user_input)` in `utils/security.py` |
+| 4 | [fastapi/typer#522](https://github.com/fastapi/typer/issues/522) | 5/5 repos | No input validation produces cryptic tracebacks as errors | `click.BadParameter` at entry point before any processing |
+
+**Scaffold generated (12 files, 0 empty stubs):**
+
+```
+log-analyzer/
+├── src/log-analyzer/
+│   ├── __init__.py
+│   ├── main.py        # Click CLI - args only, delegates to core
+│   ├── core.py        # All logic lives here, testable without subprocess
+│   └── utils/
+│       └── security.py  # get_safe_path() - path traversal guard
+├── tests/
+│   ├── __init__.py
+│   └── test_core.py   # Tests core directly, no subprocess needed
+├── .github/workflows/ci.yml  # 4 jobs: tests, secrets, SAST, quality gate
+├── .env.example
+├── pyproject.toml     # click>=8.1.7 pinned, mypy strict, pytest config
+├── RESEARCH.md        # 5 repos analyzed, all sources verified live
+├── PITFALLS.md        # The 4 pitfalls above with full root cause analysis
+└── ROADMAP.md         # 5-phase plan: scaffold -> tests -> CI -> quality -> ship
+```
+
+Every cited issue URL is verified by CI. A 404 fails the build.
 
 ---
 
@@ -50,7 +88,7 @@ builds your project to avoid them, and keeps learning alongside you as you ship.
 
 | Feature | What it does |
 |---------|-------------|
-| **93 unit tests** | Full coverage of scaffold_generator, pitfall_coverage_check, genesis_subcommands |
+| **125 unit tests** | Full coverage of scaffold_generator, pitfall_coverage_check, genesis_subcommands |
 | **CI overhaul** | Gitleaks pinned, optional jobs skip when secrets missing, ~40% faster per push |
 | **Hard gate state files** | `genesis_state.py` - Phase 5/6 gates are now machine-readable, not prose wishes |
 | **`genesis check` command** | Queries OSV.dev for CVEs in your deps, audits CI action versions - JSON output |
@@ -426,11 +464,12 @@ genesis-architect/
 │   ├── feedback.py                 # Pitfall feedback recorder
 │   ├── env_probe.py                # Phase 0 environment detection
 │   └── eval_runner.py              # Trigger rate eval + schema validation
-├── tests/                          # 93 unit tests
-│   ├── test_scaffold_generator.py  # 41 tests - all combos, path traversal, TOML integrity
-│   ├── test_pr13_scripts.py        # 52 tests - pitfall_coverage_check + genesis_subcommands
-│   ├── test_research_validator.py  # 12 tests for validator logic
-│   └── test_resolve_engine.py      # 9 tests for resolution engine
+├── tests/                          # 125 unit tests
+│   ├── test_scaffold_generator.py  # 41 tests: all combos, path traversal, TOML integrity
+│   ├── test_pr13_scripts.py        # 52 tests: pitfall_coverage_check + genesis_subcommands
+│   ├── test_new_scripts.py         # 11 tests: feedback, drift_detector, issue_miner
+│   ├── test_research_validator.py  # 12 tests: validator logic
+│   └── test_resolve_engine.py      # 9 tests: resolution engine
 ├── evals/
 │   ├── test_queries.json           # 40 trigger/no-trigger test cases (100% accuracy)
 │   └── README.md
@@ -480,7 +519,9 @@ Four CI jobs run on every push and pull request:
 | `sonarcloud` | Maintainability, Reliability, Security Hotspots; skips if SONAR_TOKEN absent | `SONAR_TOKEN` |
 | `security-scan` | Dependency CVEs (HIGH+) via Snyk; skips if SNYK_TOKEN absent | `SNYK_TOKEN` |
 
-**To activate optional jobs:** add `SNYK_TOKEN` and `SONAR_TOKEN` in repository Settings > Secrets and variables > Actions.
+**To activate optional jobs:** set repository Variables (not Secrets) in Settings > Secrets and variables > Actions > Variables:
+- `SONAR_ENABLED` = `true` (then add `SONAR_TOKEN` as a Secret)
+- `SNYK_ENABLED` = `true` (then add `SNYK_TOKEN` as a Secret)
 
 > [!IMPORTANT]
 > After connecting SonarCloud, disable **Automatic Analysis** in the SonarCloud project settings (`Project Settings > Analysis Method`). Running both simultaneously causes the quality-gate job to fail.

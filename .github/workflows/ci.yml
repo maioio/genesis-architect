@@ -94,14 +94,14 @@ jobs:
           fetch-depth: 0
 
       - name: Run Gitleaks
-        uses: gitleaks/gitleaks-action@v2
+        uses: gitleaks/gitleaks-action@dcedce43c6f43de0b836d1fe38946645c9c638dc  # v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   sonarcloud:
     name: Static Analysis (SonarCloud)
     runs-on: ubuntu-latest
-    if: ${{ secrets.SONAR_TOKEN != '' }}
+    if: ${{ vars.SONAR_ENABLED == 'true' }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -129,7 +129,7 @@ jobs:
   security-scan:
     name: Dependency Security (Snyk)
     runs-on: ubuntu-latest
-    if: ${{ secrets.SNYK_TOKEN != '' }}
+    if: ${{ vars.SNYK_ENABLED == 'true' }}
     steps:
       - uses: actions/checkout@v6
 

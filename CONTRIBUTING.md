@@ -28,7 +28,7 @@ Not useful without prior discussion:
 ```bash
 git clone https://github.com/maioio/genesis-architect.git
 cd genesis-architect
-pip install pytest
+pip install pytest pytest-cov
 python -m pytest tests/ -q
 ```
 

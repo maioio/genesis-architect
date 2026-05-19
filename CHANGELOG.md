@@ -9,6 +9,37 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+## [2.6.0] - 2026-05-20
+
+Credibility recovery pass: closes the gap between claimed enforcement and actual mechanical enforcement.
+
+### Added
+- **AST-level mitigation enforcement** in `mitigation_enforcer.py`: enforces parse validity, non-stub code, optional `mitigation_symbol` (function/class must exist in AST), and optional `mitigation_import` (import must be present in AST). File existence was the only check before; now it's the first of five checks.
+- **Import boundary drift detection** in `drift_detector.py` (Level 2, default): walks every Python source file using AST analysis, checks against `forbidden_imports` derived from `.genesis/evidence.json`. Replaces the removed 10x-growth heuristic.
+- **Confidence scoring** in `evidence_pack.py`: `_compute_confidence()` returns a weighted 0-1 score (repos 25%, pitfalls 25%, mapping 25%, decision 15%, content 10%); `verify()` rejects packs below 0.25 minimum threshold.
+- **`evidence_signed` fixed**: was always `false`. Now `true` only when `.genesis/phase-5-confirmed.json` records a real archetype and user choice.
+- **Genesis enforcement pre-commit hooks**: `.pre-commit-config.yaml` scaffolded into every project now contains real local hooks - mitigation enforcer and drift detector run on every `git commit`.
+- **`genesis-validate` CI job** in the Python CI template: checks `ARCHITECTURE_EVIDENCE.md` exists and runs mitigation enforcer as a hard gate.
+- **New PITFALLS.md optional fields**: `mitigation_symbol:` and `mitigation_import:` enable precise AST assertions beyond file existence.
+
+### Changed
+- `drift_detector.py`: removed 10x-directory-growth heuristic (was measuring wrong thing). Detection is now: structural drift (dirs vs ADR) + import boundary violations (AST vs evidence rules).
+- `drift_detector.py`: added `--level` flag (1=structural only, 2=structural+imports, default 2) and `--json` flag.
+- `drift_detector.py`: `DriftReport` now includes `import_violations: list[ImportViolation]`.
+- `scaffold_generator.py`: `_FIXED_CONTENT` now writes real hook content to `.pre-commit-config.yaml` (was empty).
+
+### Tests
+- 237 -> 250 tests (13 new: pre-commit hook content test + AST enforcement tests)
+
+### Definition of Done
+- [x] `mitigation_enforcer.py` rejects stub-only files (not just missing files)
+- [x] `drift_detector.py` detects forbidden imports via AST (no exec)
+- [x] `evidence_pack.py` confidence score is computed from measurable sub-scores
+- [x] `evidence_signed` is only true when Phase 5 recorded a real user choice
+- [x] `.pre-commit-config.yaml` generated with real genesis enforcement hooks
+- [x] CI `genesis-validate` job in Python CI template
+- [x] All 250 tests green
+
 ## [2.5.0] - 2026-05-19
 
 Research outputs to enforcement: Priority 1 and Priority 2 from the Genesis Architect upgrade plan.

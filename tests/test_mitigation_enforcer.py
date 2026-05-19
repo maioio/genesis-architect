@@ -111,11 +111,15 @@ class TestResolveMitigationPath:
 
 class TestEnforce:
     def test_all_present_returns_ok(self, tmp_path):
-        # Create the mitigation files
+        # Create the mitigation files with substantive code (comment-only files fail the stub check)
         (tmp_path / "src" / "podcast_dl" / "core").mkdir(parents=True)
         (tmp_path / "src" / "podcast_dl" / "utils").mkdir(parents=True)
-        (tmp_path / "src" / "podcast_dl" / "core" / "fetcher.py").write_text("# ok")
-        (tmp_path / "src" / "podcast_dl" / "utils" / "security.py").write_text("# ok")
+        (tmp_path / "src" / "podcast_dl" / "core" / "fetcher.py").write_text(
+            "import requests\ndef fetch(url): return requests.get(url, timeout=10)\n"
+        )
+        (tmp_path / "src" / "podcast_dl" / "utils" / "security.py").write_text(
+            "from pathlib import Path\ndef safe_path(base, p): return Path(base) / Path(p).name\n"
+        )
 
         pitfalls = [
             {"id": "pitfall_1", "name": "feedparser hangs",
@@ -149,7 +153,7 @@ class TestEnforce:
 
     def test_mixed_passed_failed_unmapped(self, tmp_path):
         (tmp_path / "src").mkdir()
-        (tmp_path / "src" / "exists.py").write_text("# ok")
+        (tmp_path / "src" / "exists.py").write_text("def check(): return True\n")
 
         pitfalls = [
             {"id": "pitfall_1", "name": "ok pitfall",
@@ -192,7 +196,7 @@ class TestMainExitCodes:
     def test_exits_0_when_all_files_present(self, tmp_path):
         import subprocess
         (tmp_path / "src").mkdir()
-        (tmp_path / "src" / "fetcher.py").write_text("# ok")
+        (tmp_path / "src" / "fetcher.py").write_text("def fetch(url): return url\n")
         pitfalls_md = tmp_path / "PITFALLS.md"
         pitfalls_md.write_text(
             "## Pitfall 1: Test\n"

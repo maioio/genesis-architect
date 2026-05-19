@@ -360,6 +360,33 @@ jobs:
       - name: Perform static analysis
         uses: github/codeql-action/analyze@v3
 
+  genesis-validate:
+    name: Genesis Mitigation Enforcement
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify evidence pack exists
+        run: |
+          if [ ! -f "ARCHITECTURE_EVIDENCE.md" ]; then
+            echo "ERROR: ARCHITECTURE_EVIDENCE.md missing."
+            echo "Run: python scripts/evidence_pack.py generate --project-dir ."
+            exit 1
+          fi
+          echo "ARCHITECTURE_EVIDENCE.md present."
+      - name: Run mitigation enforcer
+        # Hard check: every mitigation_file_path in PITFALLS.md must exist on disk
+        # and contain substantive code (not empty stubs). Exit 1 fails this job.
+        run: |
+          if [ -f "PITFALLS.md" ]; then
+            python scripts/mitigation_enforcer.py PITFALLS.md --src-root .
+          else
+            echo "WARNING: PITFALLS.md not found - skipping enforcement."
+          fi
+
   quality-gate:
     name: Code Quality Gate
     runs-on: ubuntu-latest

@@ -270,6 +270,18 @@ class TestStructuresIntegrity:
         content = vault_readme.read_text(encoding="utf-8")
         assert "vault" in content.lower() or "genesis" in content.lower()
 
+    def test_pre_commit_config_has_genesis_hooks(self, tmp_path):
+        """scaffold_generator must write genesis enforcement hooks to .pre-commit-config.yaml."""
+        from scaffold_generator import create_structure
+        create_structure(str(tmp_path), "python", "minimalist", "myapp")
+        pre_commit = tmp_path / ".pre-commit-config.yaml"
+        assert pre_commit.exists(), ".pre-commit-config.yaml was not created"
+        content = pre_commit.read_text(encoding="utf-8")
+        assert "genesis-mitigation-enforcer" in content, "Missing mitigation enforcer hook"
+        assert "genesis-drift-detector" in content, "Missing drift detector hook"
+        assert "mitigation_enforcer.py" in content, "Hook must call mitigation_enforcer.py"
+        assert "drift_detector.py" in content, "Hook must call drift_detector.py"
+
     def test_security_file_in_all_archetypes(self):
         """Every archetype/tier must include a language-appropriate security.py/ts/go/rs."""
         from scaffold_generator import STRUCTURES

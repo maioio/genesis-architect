@@ -60,8 +60,44 @@ Usage:
 This directory is safe to commit - it contains only text summaries, no secrets.
 """
 
+# Pre-commit config: local hooks only, no external pre-commit plugin repos.
+# Runs genesis enforcement on every commit without requiring the LLM session.
+_PRE_COMMIT_CONFIG = """\
+# Genesis Architect - enforcement hooks
+# These hooks enforce architecture decisions on every git commit.
+# They require no external services - only Python stdlib.
+#
+# Install once: pip install pre-commit && pre-commit install
+# Run manually: pre-commit run --all-files
+# Skip (emergency only): git commit --no-verify
+
+repos:
+  - repo: local
+    hooks:
+      - id: genesis-mitigation-enforcer
+        name: Genesis Mitigation Enforcer
+        language: python
+        entry: python scripts/mitigation_enforcer.py PITFALLS.md --src-root .
+        pass_filenames: false
+        always_run: true
+        stages: [pre-commit]
+        # Fails if any mitigation_file_path in PITFALLS.md is missing or stub-only.
+        # Fix: create the file with real implementation code.
+
+      - id: genesis-drift-detector
+        name: Genesis Architecture Drift Detector
+        language: python
+        entry: python scripts/drift_detector.py . --level 2
+        pass_filenames: false
+        always_run: true
+        stages: [pre-commit]
+        # Fails if imports violate architecture rules in .genesis/evidence.json.
+        # Fix: remove the forbidden import, or update evidence.json rules if intentional.
+"""
+
 _FIXED_CONTENT: dict[str, str] = {
     ".genesis/vault/README.md": _VAULT_README,
+    ".pre-commit-config.yaml": _PRE_COMMIT_CONFIG,
 }
 
 

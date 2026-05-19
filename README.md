@@ -7,7 +7,7 @@ Not a one-time scaffolder. A research-first architect that mines real production
 builds your project to avoid them, and keeps learning alongside you as you ship.
 
 [![CI](https://img.shields.io/github/actions/workflow/status/maioio/genesis-architect/ci.yml?branch=main&style=for-the-badge&label=CI)](https://github.com/maioio/genesis-architect/actions)
-[![Version](https://img.shields.io/badge/version-2.3.0-blue?style=for-the-badge)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-2.6.0-blue?style=for-the-badge)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-MIT-green?style=for-the-badge)](LICENSE)
 [![Claude Code](https://img.shields.io/badge/Claude_Code-skill-orange?style=for-the-badge)](https://github.com/anthropics/claude-code)
 [![Known Vulnerabilities](https://snyk.io/test/github/maioio/genesis-architect/badge.svg?style=for-the-badge)](https://snyk.io/test/github/maioio/genesis-architect)
@@ -20,7 +20,7 @@ builds your project to avoid them, and keeps learning alongside you as you ship.
 [![Phases](https://img.shields.io/badge/phases-9-blueviolet?style=flat-square)](SKILL.md)
 [![Languages](https://img.shields.io/badge/languages-4-informational?style=flat-square)](references/architecture-patterns.md)
 [![Archetypes](https://img.shields.io/badge/archetypes-4-success?style=flat-square)](SKILL.md)
-[![Tests](https://img.shields.io/badge/tests-125-brightgreen?style=flat-square)](tests/)
+[![Tests](https://img.shields.io/badge/tests-250-brightgreen?style=flat-square)](tests/)
 [![Eval accuracy](https://img.shields.io/badge/eval_accuracy-100%25-brightgreen?style=flat-square)](evals/test_queries.json)
 [![Stars](https://img.shields.io/github/stars/maioio/genesis-architect?style=social)](https://github.com/maioio/genesis-architect/stargazers)
 
@@ -81,20 +81,20 @@ Every cited issue URL is verified by CI. A 404 fails the build.
 
 ---
 
-## What's new in v2.3.0
+## What's new in v2.6.0
 
 > [!NOTE]
-> v2.3.0 adds 93 total unit tests, overhauls CI for reliability, and wires SonarCloud coverage. v2.2.0 closed 5 community-requested issues with new scripts and hardened internals.
+> v2.6.0 closes the gap between claimed enforcement and actual mechanical enforcement. Every change is verifiable.
 
 | Feature | What it does |
 |---------|-------------|
-| **125 unit tests** | Full coverage of scaffold_generator, pitfall_coverage_check, genesis_subcommands |
-| **CI overhaul** | Gitleaks pinned, optional jobs skip when secrets missing, ~40% faster per push |
-| **Hard gate state files** | `genesis_state.py` - Phase 5/6 gates are now machine-readable, not prose wishes |
-| **`genesis check` command** | Queries OSV.dev for CVEs in your deps, audits CI action versions - JSON output |
-| **Mitigation coverage check** | `pitfall_coverage_check.py` - verifies each PITFALLS.md mitigation exists in source |
-| **Single source of truth** | `references/folder-structures.toml` - all scaffold file lists in one place |
-| **Eval schema validation** | `eval_runner --mode validate` wired into CI - catches eval drift before it ships |
+| **AST-level mitigation enforcement** | `mitigation_enforcer.py` now checks parse validity, non-stub code, optional symbol and import presence - not just file existence |
+| **Import boundary drift detection** | `drift_detector.py` walks every Python file with AST analysis, checks against `forbidden_imports` derived from `.genesis/evidence.json` |
+| **Confidence scoring in evidence packs** | `evidence_pack.py` computes a weighted 0-1 score (repos, pitfalls, mapping, decision, content) and rejects template-only packs |
+| **`evidence_signed` fixed** | Was always `false`. Now `true` only when Phase 5 recorded a real archetype and user choice |
+| **Genesis enforcement pre-commit hooks** | `.pre-commit-config.yaml` now contains real hooks: mitigation enforcer + drift detector run on every `git commit` |
+| **CI genesis-validate job** | Python CI template includes a `genesis-validate` job: checks `ARCHITECTURE_EVIDENCE.md` exists and runs mitigation enforcer |
+| **250 unit tests** | Full test coverage including AST enforcement, confidence scoring, drift detection, and pre-commit hook content |
 
 ---
 
@@ -287,7 +287,7 @@ create a tool that converts CSV to JSON
 | `docs/adr/001-initial-architecture.md` | Every architectural decision explained with evidence |
 | `.gitignore` | Language-appropriate, hardened against secrets and build artifacts |
 | `sonar-project.properties` | Code quality gate config, ready to activate with one secret |
-| `.pre-commit-config.yaml` | Local pre-commit hook - blocks secrets before they reach GitHub |
+| `.pre-commit-config.yaml` | Genesis enforcement hooks: mitigation enforcer + drift detector run on every `git commit` |
 
 **Production-readiness defaults baked into every scaffold:**
 
@@ -313,7 +313,7 @@ After scaffolding, Genesis Architect stays active for the rest of your session -
 genesis help I need to add rate limiting      → searches Phase 2 repos for how they solved it
 genesis research authentication patterns      → targeted scan with 1-3 ranked approaches
 genesis check                                 → freshness audit: CVEs, outdated deps, CI versions
-genesis harden ./existing-project             → inject security gates into any existing project
+genesis harden ./existing-project             → inject security gates into any existing project [skill-mediated]
 genesis resolve path traversal python         → Smart Resolution Engine with vault-first lookup
 ```
 
@@ -464,12 +464,15 @@ genesis-architect/
 │   ├── feedback.py                 # Pitfall feedback recorder
 │   ├── env_probe.py                # Phase 0 environment detection
 │   └── eval_runner.py              # Trigger rate eval + schema validation
-├── tests/                          # 125 unit tests
-│   ├── test_scaffold_generator.py  # 41 tests: all combos, path traversal, TOML integrity
+├── tests/                          # 250 unit tests
+│   ├── test_scaffold_generator.py  # 53 tests: all combos, path traversal, TOML integrity, pre-commit hooks
 │   ├── test_pr13_scripts.py        # 52 tests: pitfall_coverage_check + genesis_subcommands
 │   ├── test_new_scripts.py         # 11 tests: feedback, drift_detector, issue_miner
 │   ├── test_research_validator.py  # 12 tests: validator logic
-│   └── test_resolve_engine.py      # 9 tests: resolution engine
+│   ├── test_resolve_engine.py      # 9 tests: resolution engine
+│   ├── test_genesis_state.py       # 25+ tests: hard gate state machine
+│   ├── test_scaffold_smoke_test.py # 16 tests: all 8 archetypes smoke-tested
+│   └── test_pitfall_coverage_check_platform.py  # 13 tests: platform risk validation
 ├── evals/
 │   ├── test_queries.json           # 40 trigger/no-trigger test cases (100% accuracy)
 │   └── README.md
@@ -514,7 +517,7 @@ Four CI jobs run on every push and pull request:
 
 | Job | What it gates | Secret required |
 |-----|--------------|-----------------|
-| `quality-gates` | 93 unit tests, eval accuracy, scaffold smoke test, SKILL.md constraints | `GITHUB_TOKEN` (built-in) |
+| `quality-gates` | 250 unit tests, eval accuracy, scaffold smoke test, SKILL.md constraints | `GITHUB_TOKEN` (built-in) |
 | `secrets-scan` | Exposed credentials, API keys, tokens in every commit | none |
 | `sonarcloud` | Maintainability, Reliability, Security Hotspots; skips if SONAR_TOKEN absent | `SONAR_TOKEN` |
 | `security-scan` | Dependency CVEs (HIGH+) via Snyk; skips if SNYK_TOKEN absent | `SNYK_TOKEN` |

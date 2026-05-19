@@ -1,27 +1,41 @@
 #!/usr/bin/env python3
 """
-mitigation_enforcer.py - Genesis Architect v2.5.0
+mitigation_enforcer.py - Genesis Architect v2.6.0
 
 Hard enforcement of mitigation_file_path rules from PITFALLS.md.
 
-Unlike pitfall_coverage_check.py (which does keyword grepping and is advisory),
-this script checks that the EXACT FILE specified in mitigation_file_path actually
-exists in the project tree. A missing file means the mitigation was never
-implemented. Exit 1 is a hard block - not a warning.
+Enforcement hierarchy (applied in order, stops at first definitive result):
+  1. FILE EXISTENCE   - the mitigation file must exist on disk.
+  2. AST PARSE        - the file must be valid Python (if .py). An empty or
+                        stub-only file fails this check.
+  3. SYMBOL CHECK     - if mitigation_symbol is specified in PITFALLS.md, the
+                        named function/class must exist in the file's AST.
+  4. IMPORT CHECK     - if mitigation_import is specified, the named module
+                        must be importable from the file (detected via AST
+                        import nodes, no actual import executed).
+  5. NON-EMPTY CHECK  - file must contain at least one non-comment, non-blank
+                        line of real code (guards against empty stub files).
+
+Unlike pitfall_coverage_check.py (keyword grepping, advisory),
+this script fails mechanically. Exit 1 = hard block.
 
 Usage:
-    python scripts/mitigation_enforcer.py PITFALLS.md --src-root src/
-    python scripts/mitigation_enforcer.py PITFALLS.md --src-root src/ --json
+    python scripts/mitigation_enforcer.py PITFALLS.md --src-root .
+    python scripts/mitigation_enforcer.py PITFALLS.md --src-root . --json
+    python scripts/mitigation_enforcer.py PITFALLS.md --src-root . --strict
 
-Reads .genesis/evidence.json if present (richer data). Falls back to parsing
-PITFALLS.md directly if not.
+PITFALLS.md optional fields per pitfall block:
+    mitigation_file_path: src/myapp/utils/security.py   (required)
+    mitigation_symbol: safe_filename                     (optional: function/class name)
+    mitigation_import: pathlib                           (optional: import that must exist)
 
 Exit codes:
-    0 - all mitigation_file_paths exist
-    1 - one or more are missing (enforcement failure)
+    0 - all enforcement checks pass
+    1 - one or more checks failed (enforcement failure)
     2 - bad arguments or unreadable files
 """
 
+import ast
 import json
 import re
 import sys
@@ -36,7 +50,13 @@ from pathlib import Path
 def _parse_pitfalls_from_md(pitfalls_path: Path) -> list[dict]:
     """
     Parse pitfalls directly from PITFALLS.md.
-    Returns list of {id, name, mitigation_file_path, issue_url}.
+
+    Recognises these fields per pitfall block:
+        mitigation_file_path: src/...   (required for enforcement)
+        mitigation_symbol: func_or_class (optional: AST symbol check)
+        mitigation_import: module_name   (optional: AST import check)
+
+    Returns list of dicts.
     """
     text = pitfalls_path.read_text(encoding="utf-8")
     pitfalls: list[dict] = []
@@ -51,12 +71,16 @@ def _parse_pitfalls_from_md(pitfalls_path: Path) -> list[dict]:
         name = re.sub(r"^Pitfall\s+\d+[:\s]*", "", header, flags=re.IGNORECASE).strip()
 
         path_m = re.search(r"mitigation_file_path\s*:\s*([^\n]+)", body)
+        symbol_m = re.search(r"mitigation_symbol\s*:\s*([^\n]+)", body)
+        import_m = re.search(r"mitigation_import\s*:\s*([^\n]+)", body)
         url_m = re.search(r"https://github\.com/[^\s,)\]>\"']+/issues/\d+", body)
 
         pitfalls.append({
             "id": pid,
             "name": name,
             "mitigation_file_path": path_m.group(1).strip() if path_m else "",
+            "mitigation_symbol": symbol_m.group(1).strip() if symbol_m else "",
+            "mitigation_import": import_m.group(1).strip() if import_m else "",
             "issue_url": url_m.group(0) if url_m else "",
         })
 
@@ -72,6 +96,130 @@ def _load_from_evidence(evidence_json: Path) -> list[dict]:
         return data.get("pitfalls", [])
     except (json.JSONDecodeError, OSError):
         return []
+
+
+# ---------------------------------------------------------------------------
+# AST-level checks (Python files only)
+# ---------------------------------------------------------------------------
+
+def _ast_parse(source: str) -> ast.Module | None:
+    """Return parsed AST or None if the source is invalid Python."""
+    try:
+        return ast.parse(source)
+    except SyntaxError:
+        return None
+
+
+def _is_substantive(source: str) -> bool:
+    """
+    Return True if the file contains at least one non-trivial statement.
+    Guards against stub files that are all comments and pass/... stubs.
+    """
+    tree = _ast_parse(source)
+    if tree is None:
+        return False
+    for node in ast.walk(tree):
+        if isinstance(node, (
+            ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef,
+            ast.Assign, ast.AugAssign, ast.AnnAssign,
+            ast.Return, ast.Raise, ast.Assert,
+            ast.Import, ast.ImportFrom,
+        )):
+            # A function/class body of only Pass or Ellipsis is not substantive
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+                body = node.body
+                if all(isinstance(s, (ast.Pass, ast.Expr)) and
+                       (isinstance(s, ast.Pass) or
+                        isinstance(getattr(s, 'value', None), ast.Constant))
+                       for s in body):
+                    continue
+            return True
+    return False
+
+
+def _symbol_exists(source: str, symbol: str) -> bool:
+    """
+    Return True if a top-level function or class named `symbol` exists in the AST.
+    Also checks for module-level assignments (e.g. CONSTANT = ...).
+    """
+    tree = _ast_parse(source)
+    if tree is None:
+        return False
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            if node.name == symbol:
+                return True
+        if isinstance(node, ast.Assign):
+            for target in node.targets:
+                if isinstance(target, ast.Name) and target.id == symbol:
+                    return True
+    return False
+
+
+def _import_exists(source: str, module_name: str) -> bool:
+    """
+    Return True if the file imports `module_name` anywhere (import or from-import).
+    Does NOT execute the import - purely AST-level.
+    """
+    tree = _ast_parse(source)
+    if tree is None:
+        return False
+    top = module_name.split(".")[0]
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                if alias.name == module_name or alias.name.startswith(top + "."):
+                    return True
+        if isinstance(node, ast.ImportFrom):
+            if node.module and (node.module == module_name or
+                                node.module.startswith(top + ".")):
+                return True
+    return False
+
+
+def _check_python_file(
+    path: Path,
+    symbol: str = "",
+    import_name: str = "",
+    strict: bool = False,
+) -> list[str]:
+    """
+    Run AST-level checks on a Python file.
+
+    Returns a list of error strings (empty = all checks passed).
+    """
+    errors: list[str] = []
+    try:
+        source = path.read_text(encoding="utf-8", errors="replace")
+    except OSError as exc:
+        return [f"Cannot read file: {exc}"]
+
+    # 1. Parse check
+    if _ast_parse(source) is None:
+        errors.append(f"SyntaxError: {path} is not valid Python - mitigation is broken code")
+        return errors  # remaining checks meaningless
+
+    # 2. Non-empty / non-stub check (always on)
+    if not _is_substantive(source):
+        errors.append(
+            f"Stub-only: {path} contains no substantive code "
+            "(only pass/..., comments, or bare docstrings)"
+        )
+
+    # 3. Symbol check (optional, only when specified)
+    if symbol and not _symbol_exists(source, symbol):
+        errors.append(
+            f"Symbol missing: '{symbol}' not found in {path} "
+            f"(expected function, class, or assignment named '{symbol}')"
+        )
+
+    # 4. Import check (optional, only when specified)
+    if import_name and not _import_exists(source, import_name):
+        errors.append(
+            f"Import missing: '{import_name}' not imported in {path}"
+        )
+
+    return errors
 
 
 # ---------------------------------------------------------------------------
@@ -118,12 +266,18 @@ class EnforcementResult:
 def enforce(
     pitfalls: list[dict],
     project_root: Path,
+    strict: bool = False,
 ) -> EnforcementResult:
     """
-    For each pitfall, verify that mitigation_file_path exists.
+    For each pitfall, run the full enforcement hierarchy:
 
-    Pitfalls with no mitigation_file_path are flagged as 'unmapped' -
-    this is a separate failure category from a mapped path that doesn't exist.
+      1. File existence (always required)
+      2. AST parse validity (Python .py files only)
+      3. Non-stub check: file must contain real code
+      4. Symbol check: mitigation_symbol must exist in AST (if specified)
+      5. Import check: mitigation_import must be present in AST (if specified)
+
+    Pitfalls with no mitigation_file_path go to 'unmapped' (separate category).
     """
     result = EnforcementResult()
 
@@ -131,6 +285,8 @@ def enforce(
         pid = p.get("id", "?")
         name = p.get("name", "?")
         raw_path = p.get("mitigation_file_path", "").strip()
+        symbol = p.get("mitigation_symbol", "").strip()
+        import_name = p.get("mitigation_import", "").strip()
 
         if not raw_path:
             result.unmapped.append({
@@ -148,13 +304,37 @@ def enforce(
                 "mitigation_file_path": raw_path,
                 "reason": f"File not found: {raw_path}",
             })
+            continue
+
+        # File exists - now run deeper checks for Python files
+        ast_errors: list[str] = []
+        if resolved.suffix == ".py":
+            ast_errors = _check_python_file(
+                resolved,
+                symbol=symbol,
+                import_name=import_name,
+                strict=strict,
+            )
+
+        if ast_errors:
+            result.failed.append({
+                "id": pid,
+                "name": name,
+                "mitigation_file_path": raw_path,
+                "reason": "; ".join(ast_errors),
+            })
         else:
-            result.passed.append({
+            entry: dict = {
                 "id": pid,
                 "name": name,
                 "mitigation_file_path": raw_path,
                 "resolved": str(resolved),
-            })
+            }
+            if symbol:
+                entry["symbol_verified"] = symbol
+            if import_name:
+                entry["import_verified"] = import_name
+            result.passed.append(entry)
 
     return result
 
@@ -235,6 +415,11 @@ def main() -> None:
         action="store_true",
         help="Load pitfalls from .genesis/evidence.json instead of parsing PITFALLS.md",
     )
+    parser.add_argument(
+        "--strict",
+        action="store_true",
+        help="(Reserved for future stricter checks; currently same as default)",
+    )
 
     args = parser.parse_args()
 
@@ -266,7 +451,7 @@ def main() -> None:
         print("WARNING: No pitfalls parsed from PITFALLS.md", file=sys.stderr)
         sys.exit(0)
 
-    result = enforce(pitfalls, project_root)
+    result = enforce(pitfalls, project_root, strict=args.strict)
     _print_report(result, as_json=args.json)
 
     if not result.ok:

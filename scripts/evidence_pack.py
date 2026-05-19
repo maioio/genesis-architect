@@ -148,6 +148,85 @@ def _load_phase2(genesis_dir: Path) -> dict:
 
 
 # ---------------------------------------------------------------------------
+# Confidence scoring (measured, not aspirational)
+# ---------------------------------------------------------------------------
+
+def _confidence_breakdown(
+    repos: list[dict],
+    pitfalls: list[dict],
+    phase2: dict,
+    phase5: dict,
+    exec_summary: str,
+    arch_rationale: str,
+) -> dict[str, float]:
+    """
+    Return a breakdown of confidence sub-scores, each 0.0-1.0.
+
+    These are mechanical measurements, not opinions:
+      repos_score     - based on verified repo count vs required floor (12)
+      pitfalls_score  - fraction of pitfalls that have verified issue URLs
+      mapping_score   - fraction of pitfalls with mitigation_file_path
+      decision_score  - whether a real architecture choice was recorded
+      content_score   - whether exec_summary and arch_rationale have real prose
+    """
+    repo_count = phase2.get("repo_count", len(repos))
+    repos_score = min(1.0, repo_count / 12.0) if repo_count else 0.0
+
+    if pitfalls:
+        with_url = sum(1 for p in pitfalls if p.get("issue_url"))
+        pitfalls_score = with_url / len(pitfalls)
+        with_path = sum(1 for p in pitfalls if p.get("mitigation_file_path"))
+        mapping_score = with_path / len(pitfalls)
+    else:
+        pitfalls_score = 0.0
+        mapping_score = 0.0
+
+    decision_score = 1.0 if (phase5.get("user_choice") and phase5.get("archetype")) else 0.0
+
+    # Content: penalise short or template-only prose
+    summary_words = len(exec_summary.split()) if exec_summary else 0
+    rationale_words = len(arch_rationale.split()) if arch_rationale else 0
+    content_score = min(1.0, (summary_words + rationale_words) / 100.0)
+
+    return {
+        "repos_score": round(repos_score, 2),
+        "pitfalls_score": round(pitfalls_score, 2),
+        "mapping_score": round(mapping_score, 2),
+        "decision_score": round(decision_score, 2),
+        "content_score": round(content_score, 2),
+    }
+
+
+def _compute_confidence(
+    repos: list[dict],
+    pitfalls: list[dict],
+    phase2: dict,
+    phase5: dict,
+    exec_summary: str,
+    arch_rationale: str,
+) -> float:
+    """
+    Weighted average of sub-scores -> single 0.0-1.0 confidence value.
+
+    Weights reflect what actually matters for architecture credibility:
+      repos     0.25 - did we look at enough real projects?
+      pitfalls  0.25 - did we find real failure evidence?
+      mapping   0.25 - did we map failures to concrete mitigations?
+      decision  0.15 - did the user make an explicit choice?
+      content   0.10 - is there real prose, not just template placeholders?
+    """
+    bd = _confidence_breakdown(repos, pitfalls, phase2, phase5, exec_summary, arch_rationale)
+    score = (
+        bd["repos_score"] * 0.25
+        + bd["pitfalls_score"] * 0.25
+        + bd["mapping_score"] * 0.25
+        + bd["decision_score"] * 0.15
+        + bd["content_score"] * 0.10
+    )
+    return round(score, 3)
+
+
+# ---------------------------------------------------------------------------
 # Generator
 # ---------------------------------------------------------------------------
 
@@ -191,11 +270,28 @@ def generate(project_dir: str) -> int:
 
     now = datetime.now(timezone.utc).isoformat()
 
+    # Compute confidence score: 0.0-1.0, measured not aspirational
+    confidence = _compute_confidence(
+        repos=repos,
+        pitfalls=pitfalls,
+        phase2=phase2,
+        phase5=phase5,
+        exec_summary=exec_summary,
+        arch_rationale=arch_rationale,
+    )
+
+    # evidence_signed: True only when phase-5-confirmed.json exists with a real choice
+    evidence_signed = bool(phase5.get("user_choice") and phase5.get("archetype"))
+
     # Machine-readable backing store
     evidence: dict = {
         "generated_at": now,
         "project_dir": str(base),
         "research_quality": quality_label,
+        "confidence": confidence,
+        "confidence_breakdown": _confidence_breakdown(
+            repos, pitfalls, phase2, phase5, exec_summary, arch_rationale
+        ),
         "repo_count": phase2.get("repo_count", len(repos)),
         "deep_count": phase2.get("deep_count", 0),
         "repos": repos,
@@ -207,7 +303,7 @@ def generate(project_dir: str) -> int:
         "language": phase5.get("language", ""),
         "exec_summary": exec_summary,
         "arch_rationale": arch_rationale,
-        "evidence_signed": False,  # set to True when user confirms in Phase 5
+        "evidence_signed": evidence_signed,
     }
 
     # Human-readable ARCHITECTURE_EVIDENCE.md
@@ -332,20 +428,28 @@ def generate(project_dir: str) -> int:
     evidence_json = gdir / "evidence.json"
     evidence_json.write_text(json.dumps(evidence, indent=2), encoding="utf-8")
 
+    mapped = sum(1 for p in pitfalls if p['mitigation_file_path'])
+    unmapped_count = len(pitfalls) - mapped
     print(f"Evidence pack written: {evidence_md}")
     print(f"Machine store: {evidence_json}")
-    print(
-        f"Pitfalls: {len(pitfalls)} | "
-        f"Mapped: {sum(1 for p in pitfalls if p['mitigation_file_path'])} | "
-        f"Unmapped: {sum(1 for p in pitfalls if not p['mitigation_file_path'])}"
-    )
+    print(f"Confidence: {confidence:.2f} | Quality: {quality_label}")
+    print(f"Pitfalls: {len(pitfalls)} | Mapped: {mapped} | Unmapped: {unmapped_count}")
+    if evidence_signed:
+        print("Evidence: SIGNED (Phase 5 choice recorded)")
+    else:
+        print("Evidence: UNSIGNED (Phase 5 not yet confirmed - normal before architecture choice)")
     return 0
 
 
-def verify(project_dir: str) -> int:
+# Minimum confidence required for the evidence pack to be considered valid
+_MIN_CONFIDENCE = 0.25
+
+
+def verify(project_dir: str, min_confidence: float = _MIN_CONFIDENCE) -> int:
     """
-    Verify that ARCHITECTURE_EVIDENCE.md and .genesis/evidence.json both exist
-    and that no pitfall is unmapped.
+    Verify that ARCHITECTURE_EVIDENCE.md and .genesis/evidence.json both exist,
+    all pitfalls are mapped, and confidence is above the minimum threshold.
+
     Returns 0 if valid, 1 if not.
     """
     base = Path(project_dir).resolve()
@@ -355,9 +459,15 @@ def verify(project_dir: str) -> int:
     errors: list[str] = []
 
     if not evidence_md.exists():
-        errors.append("ARCHITECTURE_EVIDENCE.md not found - run: python scripts/evidence_pack.py generate --project-dir .")
+        errors.append(
+            "ARCHITECTURE_EVIDENCE.md not found - run: "
+            "python scripts/evidence_pack.py generate --project-dir ."
+        )
     if not evidence_json.exists():
-        errors.append(".genesis/evidence.json not found - run: python scripts/evidence_pack.py generate --project-dir .")
+        errors.append(
+            ".genesis/evidence.json not found - run: "
+            "python scripts/evidence_pack.py generate --project-dir ."
+        )
 
     if errors:
         for e in errors:
@@ -384,9 +494,29 @@ def verify(project_dir: str) -> int:
             "then re-run generate.",
             file=sys.stderr,
         )
+        errors.append(f"{len(unmapped)} unmapped pitfall(s)")
+
+    # Confidence check: reject evidence packs built from empty/template docs
+    confidence = evidence.get("confidence", 0.0)
+    if confidence < min_confidence:
+        print(
+            f"ERROR: Evidence confidence {confidence:.2f} is below minimum {min_confidence:.2f}. "
+            "This usually means RESEARCH.md, PITFALLS.md, or ROADMAP.md contain "
+            "template placeholders instead of real research data.",
+            file=sys.stderr,
+        )
+        bd = evidence.get("confidence_breakdown", {})
+        for key, val in bd.items():
+            print(f"  {key}: {val:.2f}", file=sys.stderr)
+        errors.append(f"confidence {confidence:.2f} < minimum {min_confidence:.2f}")
+
+    if errors:
         return 1
 
-    print(f"Evidence pack valid: {len(pitfalls)} pitfall(s), all mapped.")
+    print(
+        f"Evidence pack valid: {len(pitfalls)} pitfall(s), all mapped. "
+        f"Confidence: {confidence:.2f}"
+    )
     return 0
 
 

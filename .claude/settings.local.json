@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python scripts/pitfall_coverage_check.py examples/python-cli/PITFALLS.md examples/python-cli/src/ --check-platform-risks)",
+      "Bash(python -c ' *)",
+      "Bash(python scripts/env_probe.py)",
+      "WebSearch",
+      "mcp__firecrawl__firecrawl_search",
+      "mcp__firecrawl__firecrawl_scrape"
+    ]
+  }
+}

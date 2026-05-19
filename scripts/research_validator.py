@@ -239,11 +239,89 @@ def _check_issue_urls(content: str, verify: bool) -> list[str]:
     return issues
 
 
+def _check_pitfalls_file(content: str, scaffold_files: list[str],
+                          verify_issues: bool) -> list[str]:
+    """
+    Validate PITFALLS.md for the Phase 2 -> Phase 3 gate.
+
+    Rules:
+    - Every pitfall block must contain a live GitHub issue URL
+      (pattern: https://github.com/.../issues/NNN)
+    - Every pitfall block must contain a mitigation_file_path that
+      matches an entry in scaffold_files (or scaffold_files is empty,
+      in which case path presence is still required but existence check
+      is skipped with a warning)
+    - Pitfalls with 'general ecosystem knowledge' or no issue URL are rejected
+    """
+    issues = []
+
+    # Split on pitfall headers: ## Pitfall N or ## N.
+    sections = re.split(r"(?m)^## (?:Pitfall\s+)?\d+[^\n]*\n", content)
+    # sections[0] is preamble; rest are pitfall bodies
+    pitfall_bodies = [s for s in sections[1:] if s.strip()]
+
+    if not pitfall_bodies:
+        issues.append(
+            "PITFALLS.md contains no parseable pitfall sections "
+            "(expected '## Pitfall N:' or '## N.' headers)"
+        )
+        return issues
+
+    for idx, body in enumerate(pitfall_bodies, start=1):
+        pid = f"Pitfall {idx}"
+
+        # Must have a GitHub issue URL
+        issue_urls = re.findall(
+            r"https://github\.com/[^/]+/[^/]+/issues/\d+", body
+        )
+        if not issue_urls:
+            issues.append(
+                f"{pid}: no GitHub issue URL found - "
+                "drop this pitfall or replace with a verified issue citation"
+            )
+        elif verify_issues:
+            dead = verify_github_issues(issue_urls)
+            for url in dead:
+                issues.append(f"{pid}: issue URL returns 404 (fabricated?): {url}")
+
+        # Must have mitigation_file_path
+        mit_path_match = re.search(
+            r"mitigation[_\s-]*file[_\s-]*path\s*[:\-]\s*([^\n]+)", body, re.IGNORECASE
+        )
+        if not mit_path_match:
+            issues.append(
+                f"{pid}: missing mitigation_file_path field - "
+                "each pitfall must map to a concrete file in the scaffold"
+            )
+        else:
+            mit_path = mit_path_match.group(1).strip().strip("`\"'")
+            if scaffold_files:
+                # Normalize separators for comparison
+                norm_mit = mit_path.replace("\\", "/")
+                norm_scaffold = [f.replace("\\", "/") for f in scaffold_files]
+                if not any(norm_mit in sf or sf.endswith(norm_mit) for sf in norm_scaffold):
+                    issues.append(
+                        f"{pid}: mitigation_file_path '{mit_path}' not found "
+                        "in scaffold tree - add it or correct the path"
+                    )
+            else:
+                # No scaffold tree provided - warn but don't block
+                print(
+                    f"  WARNING: {pid}: cannot verify mitigation_file_path "
+                    f"'{mit_path}' (no scaffold tree provided)",
+                    file=sys.stderr,
+                )
+
+    return issues
+
+
 def validate(
     path: str,
     verify_issues: bool = False,
     verify_repos: bool = False,
     issues_only: bool = False,
+    validate_pitfalls: bool = False,
+    scaffold_files: list[str] | None = None,
 ) -> list[str]:
     """
     Returns a list of issues. Empty list = valid.
@@ -251,6 +329,10 @@ def validate(
     `issues_only=True` skips the RESEARCH.md-shaped checks (required sections,
     repo table size, source-link minimum, header signature) so the same script
     can verify GitHub issue URL liveness in non-RESEARCH files like PITFALLS.md.
+
+    `validate_pitfalls=True` applies Phase 2 -> Phase 3 gate rules: every pitfall
+    must have a verified Issue URL and a mitigation_file_path. Pass `scaffold_files`
+    to enable path existence checking against the scaffold plan.
     """
     try:
         with open(_safe_path(path), "r", encoding="utf-8") as f:
@@ -261,6 +343,11 @@ def validate(
         return [f"File not found: {path}"]
 
     issues = []
+
+    if validate_pitfalls:
+        issues.extend(_check_pitfalls_file(content, scaffold_files or [], verify_issues))
+        # pitfalls mode is exclusive - skip RESEARCH.md structure checks
+        return issues
 
     if not issues_only:
         issues.extend(_check_structure(content))
@@ -278,19 +365,22 @@ def validate(
 def main():
     if len(sys.argv) < 2 or sys.argv[1] in ("-h", "--help"):
         print(
-            "Usage: python research_validator.py <path-to-md> [--verify-issues] [--verify-repos] [--issues-only]\n"
+            "Usage: python research_validator.py <path-to-md> [flags]\n"
             "\n"
             "Flags:\n"
-            "  --verify-issues   HTTP HEAD-check each cited GitHub issue URL (checks for 404)\n"
-            "  --verify-repos    Call GitHub API for each repo in the table:\n"
-            "                      - confirms repo exists\n"
-            "                      - checks reported star count is within +-50% of actual\n"
-            "  --issues-only     Skip RESEARCH.md-shaped checks (sections, repo table, sources,\n"
-            "                    Genesis Architect header). Use this when verifying citation\n"
-            "                    URLs in PITFALLS.md or any non-RESEARCH file.\n"
+            "  --verify-issues       HTTP HEAD-check each cited GitHub issue URL (checks for 404)\n"
+            "  --verify-repos        Call GitHub API for each repo in the table:\n"
+            "                          - confirms repo exists\n"
+            "                          - checks reported star count is within +-50% of actual\n"
+            "  --issues-only         Skip RESEARCH.md-shaped checks (sections, repo table, sources,\n"
+            "                        Genesis Architect header). Use for PITFALLS.md or non-RESEARCH files.\n"
+            "  --validate-pitfalls   Phase 2->3 gate: every pitfall must have a GitHub issue URL\n"
+            "                        and a mitigation_file_path. Implies --issues-only.\n"
+            "  --scaffold-files F    Comma-separated list of scaffold file paths to validate\n"
+            "                        mitigation_file_path entries against.\n"
             "\n"
             "Environment:\n"
-            "  GITHUB_TOKEN      Optional. Raises GitHub API rate limit from 60 to 5000 req/hr.\n"
+            "  GITHUB_TOKEN          Optional. Raises GitHub API rate limit from 60 to 5000 req/hr.\n"
         )
         sys.exit(1)
 
@@ -301,12 +391,21 @@ def main():
     verify_issues = "--verify-issues" in sys.argv
     verify_repos = "--verify-repos" in sys.argv
     issues_only = "--issues-only" in sys.argv
+    validate_pitfalls = "--validate-pitfalls" in sys.argv
+
+    scaffold_files: list[str] = []
+    if "--scaffold-files" in sys.argv:
+        idx = sys.argv.index("--scaffold-files")
+        if idx + 1 < len(sys.argv):
+            scaffold_files = [f.strip() for f in sys.argv[idx + 1].split(",") if f.strip()]
 
     issues = validate(
         path,
         verify_issues=verify_issues,
         verify_repos=verify_repos,
         issues_only=issues_only,
+        validate_pitfalls=validate_pitfalls,
+        scaffold_files=scaffold_files,
     )
 
     label = path

@@ -98,61 +98,28 @@ Present:
 
 ## Phase 1: Vision Alignment
 
-Ask exactly 2-3 focused questions. Use A/B/C format with D as free-text escape hatch.
+Ask 2-3 focused questions (A/B/C format, D = free-text):
 
-**Q1 - Core purpose:**
-"What does this project/feature do? (one sentence)"
+**Q1** - Core purpose: "What does this project do? (one sentence)"
+**Q2** - Archetype (skip if obvious): "A: CLI  B: Library/SDK  C: Web Service/API  D: Frontend  E: Other"
+Archetype shapes scaffold: CLI=no server, Library=no main(), Service=Dockerfile+/health, Frontend=build pipeline.
+**Q3** - Scale: "A: Personal  B: Team  C: Production/enterprise  D: Other"
+**Q4** - Language (skip if clear): "A: JS/TS  B: Python  C: Let research decide  D: Other"
 
-**Q2 - Archetype (ask only if not obvious from Q1):**
-"What kind of artifact?
-A: CLI Tool  B: Library/SDK  C: Web Service/API  D: Frontend App  E: Other"
-
-The archetype shapes the scaffold more than tier: CLI gets no server, Library gets no
-main(), Web Service gets Dockerfile + /health, Frontend gets build pipeline + no pytest.
-
-**Q3 - Scale:**
-"What is the planned scale?
-A: Personal/small (up to 100 users, solo developer)
-B: Team (multiple developers, medium scale)
-C: Production/enterprise (scale matters from day one)
-D: Other (describe)"
-
-**Q4 - Technology (ask only if not clear from context):**
-"Which language/platform?
-A: JavaScript/TypeScript
-B: Python
-C: Let the research decide
-D: Other (specify)"
-
-**Critical rule**: Wait for answers. Never guess on architecture decisions.
-
-After receiving answers, announce: "Starting research - scanning 15-20 repos, deep-analyzing top 5-8..."
+Wait for answers. Never guess on architecture decisions.
+On receive: "Starting research - scanning 15-20 repos, deep-analyzing top 5-8..."
 
 ---
 
 ## Phase 2: Deep Discovery
 
-Use available MCP tools. Run searches in parallel where possible.
+Use available MCP tools. Run streams in parallel where possible.
 
-### Parallel research (run all three simultaneously)
+**Stream A - GitHub repos**: 15-20 repos, stars >100 (niche) or >1k (infra), last commit <12mo. Select top 5-8 by stars+recency for deep analysis. Wait for A before starting C.
+**Stream B - Ecosystem context** (parallel with A): Exa search "[vision] pitfalls reddit", "[vision] mistakes hacker news", "[vision] architecture regrets stackoverflow".
+**Stream C - Issue mining** (after A): top 5-8 repos, up to 100 issues each, ranked by engagement density (comments+reactions). Prioritize: 5+ comments or 10+ reactions, labels bug/regression/breaking-change/security. Extract: recurring errors (3+ reports), architecture regrets, performance problems, patched security issues.
 
-Launch searches in parallel where possible:
-
-**Stream A - GitHub repos**: Search for 15-20 repositories matching the vision (broad scan).
-Filter: stars >100 (niche) or >1,000 (infrastructure), last commit within 12 months,
-language matching user preference or auto-detected.
-Select the top 5-8 by stars + recency for deep analysis in Streams B/C.
-Wait for Stream A selection before starting Stream C.
-
-**Stream B - Ecosystem context** (run in parallel with Stream A): Exa search for "[vision] pitfalls reddit",
-"[vision] mistakes hacker news", "[vision] architecture regrets stackoverflow".
-Target: reddit.com, news.ycombinator.com, stackoverflow.com.
-
-**Stream C - Issue mining** (start after Stream A repo selection): for top 5-8 repos from Stream A, scan up to 100 issues per repo. Rank by engagement density (comments + reactions). Prioritize: issues with 5+ comments or 10+ reactions, labels 'bug'/'regression'/'breaking-change'/'security', closed issues with 'fixed in X.Y.Z'. Surface top 10 per repo. Extract: recurring errors (3+ reports), architecture regrets, performance problems at scale, patched security issues.
-
-Merge results from all three streams before proceeding to Phase 3.
-If an MCP fails, report briefly, switch to web search fallback, and continue.
-Never block on a tool failure.
+Merge all three streams before Phase 3. On MCP failure: report briefly, switch to web search, continue.
 
 ### Ecosystem Velocity Scoring
 For key dependencies found in 3+ repos, check: commits in last 90 days, open CVEs (query OSV.dev API - see mcp-strategy.md - deterministic, no rate limit).
@@ -162,21 +129,32 @@ Show in Phase 5 as one-line signals before the A/B choice:
 ```
 Informational only - flag, never block.
 
+### Research floor (hard gate)
+
+Floor: 12 repos with verified Issue URLs, 5-8 deep-analyzed.
+On success: `python scripts/genesis_state.py write-phase2 . --repo-count N --deep-count M`
+Phase 5 requires this gate. If floor not met, stop and offer:
+A) Broaden search  B) Accept thin research (`--override`)  C) Architect Mode
+Option B re-runs write-phase2 with --override to record acknowledgment.
+
 ### Failure handling
 
 | Situation | Action |
 |-----------|--------|
-| 0 repos found | Architect Mode: apply SOLID + Clean Architecture principles. Note in RESEARCH.md: "First-principles design - no direct ecosystem precedent found." |
-| Active forks detected | Mandatory: analyze top 3 forks for bug fixes and patches. Incorporate improvements into output. |
-| 1-2 repos found | Warn user. Offer: A) Broaden search and retry B) Continue with THIN quality C) Architect Mode. |
-| 3-4 repos found | Warn (THIN quality). Require explicit user approval before Phase 3. |
-| 5+ repos found | Continue normally |
-| API timeout | Report briefly, try web search fallback, continue |
-| MCP unavailable | Switch to next tool, mention the switch |
+| 0 repos | Architect Mode - note "first-principles design" in RESEARCH.md |
+| Active forks | Analyze top 3 forks, incorporate fixes |
+| 1-11 repos | Floor not met - present A/B/C above, wait for user choice |
+| 12+ repos, 5+ deep | Floor met - write phase-2-research.json, continue |
+| API timeout / MCP unavailable | Report briefly, switch to web search fallback |
 
 ---
 
 ## Phase 3: Architecture Analysis
+
+**Prerequisite gate**: Phase 2 outputs must pass citation validation before Phase 3 begins.
+Run: `python scripts/research_validator.py RESEARCH.md --verify-issues`
+If any issue URL returns 404, replace or drop that repo before synthesizing architecture.
+On success: `python scripts/genesis_state.py write-phase3-validation .`
 
 **The Wise Average**: do not copy one project. Synthesize: most common folder structure (ecosystem convergence) + highest-rated project's structural decisions (quality signal).
 
@@ -192,9 +170,14 @@ Informational only - flag, never block.
 
 ## Phase 4: Pitfall Identification
 
-Compile top pitfalls from the issue scan. For each pitfall: **What** (problem), **Where** (full URL `https://github.com/[owner]/[repo]/issues/[number]` - never shorthand like "repo#142"), **Why** (root cause), **Mitigation** (what we build differently). Aim for 3-7; if fewer than 3 from issues, supplement with known language/framework anti-patterns.
+Compile top pitfalls from the issue scan. For each: **What** (problem), **Where** (full URL `https://github.com/[owner]/[repo]/issues/[number]`), **Why** (root cause), **Mitigation** (what we build differently), **mitigation_file_path** (scaffold path - required). Aim for 3-7.
 
-After writing PITFALLS.md, run self-check: if `GITHUB_TOKEN` set run `python scripts/research_validator.py PITFALLS.md --verify-issues`; otherwise verify first 3 URLs via web fetch and add note: "X of Y issue URLs live-verified (no GITHUB_TOKEN - set it for full verification)." If any URL returns 404: replace that pitfall. Do not proceed to Phase 5 with a fabricated citation.
+**Phase 2 -> Phase 3 gate** (run immediately after writing PITFALLS.md):
+`python scripts/research_validator.py PITFALLS.md --validate-pitfalls [--verify-issues]`
+Rejects pitfalls without a live Issue URL or unmapped mitigation_file_path. Fix or drop before Phase 5.
+If `GITHUB_TOKEN` set: all URLs verified. Otherwise first 3 checked via web fetch.
+
+**Platform risks**: Every platform/archetype-specific risk (e.g., Windows console encoding, path separators) must appear in PITFALLS.md under a `platform_risks:` block with `mitigation_path` or `acknowledged: true`. Run after PITFALLS.md: `python scripts/pitfall_coverage_check.py PITFALLS.md src/ --check-platform-risks`
 
 Before proceeding to Phase 5, compute and display a one-line **Research Quality Signal**:
 
@@ -210,29 +193,47 @@ Display as: `Research quality: [LABEL] ([brief reason])`. THIN does not block - 
 
 ## Phase 5: Interactive Choice
 
+**Prerequisite gates** (check before rendering this phase):
+1. `python scripts/genesis_state.py require-phase2 .` - aborts if Phase 2 floor not met
+2. PITFALLS.md passed `--validate-pitfalls` check in Phase 4
+3. `python scripts/pitfall_coverage_check.py PITFALLS.md src/ --check-platform-risks` - all mitigations and platform risks accounted for
+
 **Archetype confirmation** (run only when Phase 1 was skipped via `genesis init`):
 > "Detected: [Archetype] / [Scale] / [Language]. Correct? [Y / correct me]"
 Wait for reply. If user corrects any field, update and proceed. Skip when Phase 1 ran normally.
 
-Present research summary and architectural options in a single message. Show: repo table (project, stars, key insight), Ecosystem Velocity signals, convention match question (from Phase 0), then the pitfall annotations, then the two structures.
+Present research summary and architectural options in a **single message** containing all of the following sections in order:
 
-**Pitfall annotation (required)**: Before showing A/B, read PITFALLS.md. For each pitfall, note which option mitigates it and which accepts the risk. Example: "Pitfall 2 (memory leak): Scalable mitigates via worker isolation / Minimalist accepts this risk." If PITFALLS.md is missing or empty: "No pitfalls found - architecture choice is unaided."
+**Section 1 - Research summary**: repo table (project, stars, key insight), Ecosystem Velocity signals, convention match question (from Phase 0).
 
-Shape folder structures using the archetype (Phase 1 Q2):
-- CLI: entrypoint + core, no server; Library: public API, no main(); Web Service: router + Dockerfile + /health; Frontend: component tree + build config
+**Section 2 - Pitfall annotations (required)**: For each pitfall in PITFALLS.md, note which option mitigates it and which accepts the risk. Example: "Pitfall 2 (memory leak): Scalable mitigates via worker isolation / Minimalist accepts this risk." If PITFALLS.md is missing or empty: "No pitfalls found - architecture choice is unaided."
 
-Present as: "Archetype: [X]. Two proven structures:"
+**Section 3 - Architecture options**: Load trees from `references/folder-structures.toml`. Every tree must include production defaults:
+- `src/<pkg>/utils/security.py` (language equivalent), `.env.example`, `.pre-commit-config.yaml`, `sonar-project.properties`, `docs/adr/001-initial-architecture.md`, `RESEARCH.md`, `PITFALLS.md`, `ROADMAP.md`
+- `.github/workflows/ci.yml` with comment: `# Jobs: quality-gates (always) | secrets-scan (always) | sonarcloud (SONAR_TOKEN) | security-scan (SNYK_TOKEN)`
 
-**A: Minimalist** - [8-12 line folder structure, archetype-appropriate]
-Best for personal/prototype. Fast start, harder to extend.
-
-**B: Scalable** - [12-18 line folder structure, archetype-appropriate]
-Best for team/long-term. Clear separation, higher initial complexity.
-
+**A: Minimalist** - TOML minimalist tier. Best for personal/prototype.
+**B: Scalable** - TOML scalable tier. Best for team/long-term.
 **C: Let research decide** - highest-starred repo structure, state reasoning.
 **D: Hybrid** - ask base (A or B) then what to change, confirm before building.
 
-**Hard gate**: user must confirm one of A, B, C, or D. Accept single letters (case-insensitive) or clear prose that unambiguously maps to one choice (e.g., "scalable", "go with the research recommendation", "I want minimalist"). If the prose is ambiguous, confirm: "I'll take that as [X] - correct?" and proceed on yes. If a single response is truly uninterpretable, ask once more. After 3 unresolvable responses, ask: 'Start over from Phase 1? [Y/N]'. Do not start Phase 6 until confirmed.
+**Section 4 - Inline doc previews (required)**: Before the A/B/C/D prompt, show real content:
+- **RESEARCH.md**: Executive Summary + first 3 repo rows from the Analyzed Repositories table
+- **PITFALLS.md**: all pitfall names, mitigation_file_path, and issue URL for each
+- **ROADMAP.md**: all phase names and one-line descriptions
+
+If any preview is "TBD" or empty, Phase 5 is invalid - complete research first. On success, run in order:
+`python scripts/genesis_state.py write-phase5-previews . --research --pitfalls --roadmap`
+`python scripts/evidence_pack.py generate --project-dir .` (writes ARCHITECTURE_EVIDENCE.md + .genesis/evidence.json)
+`python scripts/genesis_state.py write-evidence-pack . --pitfall-count N --mapped-count M` (gates Phase 6)
+
+**Section 5 - Phase 6 smoke gate**: Show the exact command Phase 6 must pass:
+`python scripts/scaffold_smoke_test.py --archetype [archetype] --entrypoint [name] --print-only`
+
+**Section 6 - Companion Mode handoff** (required at end of Phase 5 message):
+> "Companion Mode active after scaffold. Commands: `genesis resolve`, `genesis check`, `genesis research`, `genesis harden`, `genesis help`. Cache: `.genesis/vault/`."
+
+**Hard gate**: user must confirm one of A, B, C, or D. Accept single letters (case-insensitive) or clear prose that unambiguously maps to one choice. If the prose is ambiguous, confirm: "I'll take that as [X] - correct?" and proceed on yes. After 3 unresolvable responses, ask: 'Start over from Phase 1? [Y/N]'. Do not start Phase 6 until confirmed.
 
 ---
 
@@ -240,8 +241,12 @@ Best for team/long-term. Clear separation, higher initial complexity.
 
 Build in this exact order. Announce each step.
 
+### Step 0: Evidence gate (mandatory)
+`python scripts/genesis_state.py require-evidence-pack .` - exits non-zero if ARCHITECTURE_EVIDENCE.md is missing or any pitfall lacks a mitigation_file_path. Abort Phase 6 until this passes.
+
 ### Step 1: File structure (automatic)
 Create all directories and files including `.gitignore`. Non-destructive - no approval needed. Announce: "Creating folder structure..."
+Always create `.genesis/vault/` with a `README.md` explaining: "Smart Resolution Engine cache. Use `genesis resolve [topic]` to query. Solutions cached here avoid external API calls."
 If project uses .env: after creating `.env.example`, ask: "Configure .env now? I'll ask for key values." Fill interactively - never leave the user with only `.env.example`.
 
 ### Step 2: Approval gates (always ask before running)
@@ -289,20 +294,17 @@ Run `pytest` / `npm test` / `cargo test` / `go test ./...`. If exit 0: proceed.
 If non-zero: read error, fix the failing file, retry - max 3 attempts.
 After 3 failures: report exact error, ask user before proceeding. Never commit on red.
 
-Also verify the CLI entrypoint if one exists:
-- Python: read `[project.scripts]` in `pyproject.toml`, run `[entrypoint] --help`
-- Node/Go/Rust: read `bin`/build first, then run `[entrypoint] --help`
+After tests pass, run the archetype smoke test defined in Phase 5:
+`python scripts/scaffold_smoke_test.py --archetype [archetype] --entrypoint [name] --run`
+Record the result: `python scripts/genesis_state.py write-phase6-smoke . --archetype [archetype] --smoke-command "[cmd]" --exit-code [N]`
 
-**Hard gate**: do not run `git commit` and do not announce "Genesis Architect complete" until the test suite exits 0.
-If the test runner is not installed or not on PATH: report "Test runner not found - run [install command] first, then re-run tests." Do not proceed to Step 7 without green tests. If dependency install was declined in Step 2, skip Steps 4 and 6 and note in summary: "Tests not run - dependencies not installed."
+**Hard gate**: do not run `git commit` and do not announce "Genesis Architect complete" until:
+1. Test suite exits 0 (write-tests-passing recorded)
+2. Smoke test exits 0 (write-phase6-smoke recorded with exit_code=0)
+If the test runner is not installed: report "Test runner not found - run [install command] first." Do not proceed to Step 7 without both gates green. If dependency install was declined in Step 2, skip Steps 4 and 6 and note: "Tests not run - dependencies not installed."
 
-### Step 6.5: Mitigation coverage check
-For each pitfall in PITFALLS.md, extract the Mitigation field and identify core nouns/verbs (e.g., "lazy-load", "validate", "stream").
-Search src/ for files containing the key patterns.
-Output:
-- "Pitfall [N]: mitigation detected" if found
-- "Pitfall [N]: mitigation not detected - manual review advised" if not found
-Do not block on this - it is a warning, not a gate.
+### Step 6.5: Mitigation enforcement (blocking gate)
+`python scripts/genesis_subcommands.py validate .` - checks evidence pack + every mitigation_file_path exists on disk. Exit 1 blocks git commit. Fix missing files before Step 7. The advisory keyword-grep (pitfall_coverage_check.py) continues running in CI as a soft signal.
 
 ### Step 7: README badges, demo, and git
 

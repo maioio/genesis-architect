@@ -36,3 +36,11 @@ resolves and validates every path stays within `base` before any file operation.
 tracebacks visible to end users instead of clean error messages.
 **Our mitigation**: `core.py` validates all inputs at the entry point and raises
 `click.BadParameter` with a human-readable message before any processing begins.
+
+platform_risks:
+  - name: Windows console encoding (cp1252 vs utf-8)
+    platform: windows
+    mitigation_path: src/python_cli/utils/security.py
+  - name: Path separator differences (backslash vs forward-slash)
+    platform: windows
+    acknowledged: true

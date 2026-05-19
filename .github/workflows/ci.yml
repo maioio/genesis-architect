@@ -63,7 +63,7 @@ jobs:
           echo "Scaffold smoke test passed for all 8 combos"
 
       - name: Run pitfall coverage check on example
-        run: python scripts/pitfall_coverage_check.py examples/python-cli/PITFALLS.md examples/python-cli/src/
+        run: python scripts/pitfall_coverage_check.py examples/python-cli/PITFALLS.md examples/python-cli/src/ --check-platform-risks
 
       - name: Check SKILL.md constraints
         run: |

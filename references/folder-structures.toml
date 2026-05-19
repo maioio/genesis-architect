@@ -2,15 +2,35 @@
 # Single source of truth for all scaffold folder structures.
 # Used by scripts/scaffold_generator.py
 # Loaded via tomllib (Python 3.11+ stdlib). No external dependencies.
+#
+# MANDATORY PRODUCTION DEFAULTS (must appear in every archetype tree):
+#   .env.example
+#   .pre-commit-config.yaml
+#   sonar-project.properties
+#   docs/adr/001-initial-architecture.md
+#   .github/workflows/ci.yml
+#   RESEARCH.md
+#   PITFALLS.md
+#   ROADMAP.md
+#
+# Language-specific security file (when archetype handles file paths or user input):
+#   python: src/{name}/utils/security.py
+#   typescript: src/utils/security.ts
+#   go: internal/utils/security.go
+#   rust: src/utils/security.rs
 
 [typescript.minimalist]
 files = [
     "src/index.ts",
     "src/core.ts",
-    "src/utils.ts",
+    "src/utils/security.ts",
     "tests/core.test.ts",
     ".github/workflows/ci.yml",
     ".env.example",
+    ".pre-commit-config.yaml",
+    "sonar-project.properties",
+    "docs/adr/001-initial-architecture.md",
+    ".genesis/vault/README.md",
     "package.json",
     "tsconfig.json",
     "RESEARCH.md",
@@ -25,10 +45,15 @@ files = [
     "src/services/.gitkeep",
     "src/infrastructure/.gitkeep",
     "src/config/index.ts",
+    "src/utils/security.ts",
     "tests/unit/.gitkeep",
     "tests/integration/.gitkeep",
     ".github/workflows/ci.yml",
     ".env.example",
+    ".pre-commit-config.yaml",
+    "sonar-project.properties",
+    "docs/adr/001-initial-architecture.md",
+    ".genesis/vault/README.md",
     "package.json",
     "tsconfig.json",
     "RESEARCH.md",
@@ -41,11 +66,15 @@ files = [
     "src/{name}/__init__.py",
     "src/{name}/main.py",
     "src/{name}/core.py",
-    "src/{name}/utils.py",
+    "src/{name}/utils/security.py",
     "tests/__init__.py",
     "tests/test_core.py",
     ".github/workflows/ci.yml",
     ".env.example",
+    ".pre-commit-config.yaml",
+    "sonar-project.properties",
+    "docs/adr/001-initial-architecture.md",
+    ".genesis/vault/README.md",
     "pyproject.toml",
     "RESEARCH.md",
     "PITFALLS.md",
@@ -59,10 +88,15 @@ files = [
     "src/{name}/services/.gitkeep",
     "src/{name}/adapters/.gitkeep",
     "src/{name}/config.py",
+    "src/{name}/utils/security.py",
     "tests/unit/.gitkeep",
     "tests/integration/.gitkeep",
     ".github/workflows/ci.yml",
     ".env.example",
+    ".pre-commit-config.yaml",
+    "sonar-project.properties",
+    "docs/adr/001-initial-architecture.md",
+    ".genesis/vault/README.md",
     "pyproject.toml",
     "RESEARCH.md",
     "PITFALLS.md",
@@ -73,10 +107,14 @@ files = [
 files = [
     "cmd/main.go",
     "internal/core/core.go",
-    "internal/utils/utils.go",
+    "internal/utils/security.go",
     "internal/core/core_test.go",
     ".github/workflows/ci.yml",
     ".env.example",
+    ".pre-commit-config.yaml",
+    "sonar-project.properties",
+    "docs/adr/001-initial-architecture.md",
+    ".genesis/vault/README.md",
     "go.mod",
     "RESEARCH.md",
     "PITFALLS.md",
@@ -89,11 +127,16 @@ files = [
     "internal/domain/.gitkeep",
     "internal/service/.gitkeep",
     "internal/repository/.gitkeep",
+    "internal/utils/security.go",
     "pkg/config/config.go",
     "tests/unit/.gitkeep",
     "tests/integration/.gitkeep",
     ".github/workflows/ci.yml",
     ".env.example",
+    ".pre-commit-config.yaml",
+    "sonar-project.properties",
+    "docs/adr/001-initial-architecture.md",
+    ".genesis/vault/README.md",
     "go.mod",
     "RESEARCH.md",
     "PITFALLS.md",
@@ -104,10 +147,14 @@ files = [
 files = [
     "src/main.rs",
     "src/core.rs",
-    "src/utils.rs",
+    "src/utils/security.rs",
     "tests/integration_test.rs",
     ".github/workflows/ci.yml",
     ".env.example",
+    ".pre-commit-config.yaml",
+    "sonar-project.properties",
+    "docs/adr/001-initial-architecture.md",
+    ".genesis/vault/README.md",
     "Cargo.toml",
     "RESEARCH.md",
     "PITFALLS.md",
@@ -121,9 +168,14 @@ files = [
     "src/services/mod.rs",
     "src/infrastructure/mod.rs",
     "src/config.rs",
+    "src/utils/security.rs",
     "tests/integration_test.rs",
     ".github/workflows/ci.yml",
     ".env.example",
+    ".pre-commit-config.yaml",
+    "sonar-project.properties",
+    "docs/adr/001-initial-architecture.md",
+    ".genesis/vault/README.md",
     "Cargo.toml",
     "RESEARCH.md",
     "PITFALLS.md",

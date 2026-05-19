@@ -6,7 +6,7 @@ from pathlib import Path
 ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
 
-from research_validator import validate, _parse_star_count, _safe_path
+from research_validator import validate, _parse_star_count, _safe_path, _check_pitfalls_file
 
 
 class TestSafePath:
@@ -43,6 +43,59 @@ class TestParseStarCount:
 
     def test_returns_none_for_text(self):
         assert _parse_star_count("N/A") is None
+
+
+class TestCheckPitfallsFile:
+    """Tests for _check_pitfalls_file - called directly to bypass _safe_path."""
+
+    def test_pitfall_without_issue_url_is_rejected(self):
+        content = (
+            "## Pitfall 1: Bad encoding\n"
+            "**Why**: Windows cp1252.\n"
+            "**Mitigation**: Use utf-8.\n"
+            "mitigation_file_path: src/myapp/utils/security.py\n"
+        )
+        issues = _check_pitfalls_file(content, scaffold_files=[], verify_issues=False)
+        assert any("no GitHub issue URL" in i for i in issues), issues
+
+    def test_pitfall_without_mitigation_file_path_is_rejected(self):
+        content = (
+            "## Pitfall 1: Bad encoding\n"
+            "**Where**: https://github.com/pallets/click/issues/2416\n"
+            "**Why**: Windows cp1252.\n"
+            "**Mitigation**: Use utf-8.\n"
+        )
+        issues = _check_pitfalls_file(content, scaffold_files=[], verify_issues=False)
+        assert any("mitigation_file_path" in i for i in issues), issues
+
+    def test_pitfall_with_mitigation_path_not_in_scaffold_is_rejected(self):
+        content = (
+            "## Pitfall 1: Bad encoding\n"
+            "**Where**: https://github.com/pallets/click/issues/2416\n"
+            "**Why**: Windows cp1252.\n"
+            "**Mitigation**: Use utf-8.\n"
+            "mitigation_file_path: src/myapp/utils/security.py\n"
+        )
+        scaffold = ["src/myapp/core.py", "src/myapp/main.py"]
+        issues = _check_pitfalls_file(content, scaffold_files=scaffold, verify_issues=False)
+        assert any("not found in scaffold" in i for i in issues), issues
+
+    def test_pitfall_with_all_fields_passes(self):
+        content = (
+            "## Pitfall 1: Path traversal\n"
+            "**Where**: https://github.com/pallets/click/issues/1846\n"
+            "**Why**: Raw path from CLI arg.\n"
+            "**Mitigation**: Use get_safe_path.\n"
+            "mitigation_file_path: src/myapp/utils/security.py\n"
+        )
+        scaffold = ["src/myapp/utils/security.py", "src/myapp/core.py"]
+        issues = _check_pitfalls_file(content, scaffold_files=scaffold, verify_issues=False)
+        assert issues == [], issues
+
+    def test_empty_pitfalls_file_reports_no_sections(self):
+        content = "# PITFALLS.md\n\nNo pitfalls found.\n"
+        issues = _check_pitfalls_file(content, scaffold_files=[], verify_issues=False)
+        assert any("no parseable pitfall" in i.lower() for i in issues), issues
 
 
 class TestValidate:

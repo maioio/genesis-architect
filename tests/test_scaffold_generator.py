@@ -190,6 +190,25 @@ def test_all_combos_produce_files(tmp_path, language, tier, expected_count):
 # STRUCTURES (TOML integrity)
 # ---------------------------------------------------------------------------
 
+PRODUCTION_DEFAULTS = [
+    ".env.example",
+    ".pre-commit-config.yaml",
+    "sonar-project.properties",
+    "docs/adr/001-initial-architecture.md",
+    ".github/workflows/ci.yml",
+    "RESEARCH.md",
+    "PITFALLS.md",
+    "ROADMAP.md",
+]
+
+SECURITY_FILE_SUFFIXES = (
+    "utils/security.py",
+    "utils/security.ts",
+    "utils/security.go",
+    "utils/security.rs",
+)
+
+
 class TestStructuresIntegrity:
     def test_all_expected_languages_present(self):
         from scaffold_generator import STRUCTURES
@@ -215,6 +234,57 @@ class TestStructuresIntegrity:
                 for f in files:
                     assert not f.startswith("/"), f"Absolute path in TOML: {f}"
                     assert not f.startswith("\\"), f"Absolute path in TOML: {f}"
+
+    @pytest.mark.parametrize("required_file", PRODUCTION_DEFAULTS)
+    def test_production_defaults_in_all_archetypes(self, required_file):
+        """Every archetype/tier must include all mandatory production-defaults files."""
+        from scaffold_generator import STRUCTURES
+        for lang, tiers in STRUCTURES.items():
+            for tier, files in tiers.items():
+                norm = [f.replace("\\", "/") for f in files]
+                assert any(
+                    f == required_file or f.endswith("/" + required_file)
+                    for f in norm
+                ), (
+                    f"{lang}/{tier} missing production default: '{required_file}'. "
+                    f"Add it to references/folder-structures.toml."
+                )
+
+    def test_vault_readme_in_all_archetypes(self):
+        """Every archetype/tier must include .genesis/vault/README.md."""
+        from scaffold_generator import STRUCTURES
+        for lang, tiers in STRUCTURES.items():
+            for tier, files in tiers.items():
+                norm = [f.replace("\\", "/") for f in files]
+                assert ".genesis/vault/README.md" in norm, (
+                    f"{lang}/{tier} missing .genesis/vault/README.md"
+                )
+
+    def test_vault_readme_has_content_after_scaffold(self, tmp_path):
+        """scaffold_generator must write non-empty content to .genesis/vault/README.md."""
+        from scaffold_generator import create_structure
+        create_structure(str(tmp_path), "python", "minimalist", "myapp")
+        vault_readme = tmp_path / ".genesis" / "vault" / "README.md"
+        assert vault_readme.exists(), ".genesis/vault/README.md was not created"
+        assert vault_readme.stat().st_size > 0, ".genesis/vault/README.md is empty"
+        content = vault_readme.read_text(encoding="utf-8")
+        assert "vault" in content.lower() or "genesis" in content.lower()
+
+    def test_security_file_in_all_archetypes(self):
+        """Every archetype/tier must include a language-appropriate security.py/ts/go/rs."""
+        from scaffold_generator import STRUCTURES
+        for lang, tiers in STRUCTURES.items():
+            for tier, files in tiers.items():
+                norm = [f.replace("\\", "/") for f in files]
+                has_security = any(
+                    any(f.endswith(suffix) for suffix in SECURITY_FILE_SUFFIXES)
+                    for f in norm
+                )
+                assert has_security, (
+                    f"{lang}/{tier} missing a utils/security.* file. "
+                    f"Add src/{{name}}/utils/security.{{'py'|'ts'|'go'|'rs'}} "
+                    f"to references/folder-structures.toml."
+                )
 
 
 # ---------------------------------------------------------------------------

@@ -449,3 +449,43 @@ class TestCmdCheck:
         captured = capsys.readouterr()
         data = json.loads(captured.out)
         assert data["critical"][0]["cve"] == "GHSA-9999"
+
+
+class TestSubcommandStubs:
+    """Tests for genesis research and genesis harden stubs added in v2.4.1."""
+
+    def test_cmd_research_returns_nonzero(self, capsys):
+        from genesis_subcommands import cmd_research
+        rc = cmd_research("gpx parsing")
+        assert rc == 1
+
+    def test_cmd_research_mentions_planned(self, capsys):
+        from genesis_subcommands import cmd_research
+        cmd_research("gpx parsing")
+        err = capsys.readouterr().err
+        assert "planned" in err.lower() or "not yet implemented" in err.lower()
+
+    def test_cmd_harden_returns_nonzero(self, capsys):
+        from genesis_subcommands import cmd_harden
+        rc = cmd_harden(".")
+        assert rc == 1
+
+    def test_cmd_harden_mentions_planned(self, capsys):
+        from genesis_subcommands import cmd_harden
+        cmd_harden(".")
+        err = capsys.readouterr().err
+        assert "planned" in err.lower() or "not yet implemented" in err.lower()
+
+    def test_main_research_exits_1(self):
+        from genesis_subcommands import main
+        with mock.patch("sys.argv", ["genesis_subcommands.py", "research", "gpx"]):
+            with pytest.raises(SystemExit) as exc:
+                main()
+        assert exc.value.code == 1
+
+    def test_main_harden_exits_1(self):
+        from genesis_subcommands import main
+        with mock.patch("sys.argv", ["genesis_subcommands.py", "harden", "."]):
+            with pytest.raises(SystemExit) as exc:
+                main()
+        assert exc.value.code == 1

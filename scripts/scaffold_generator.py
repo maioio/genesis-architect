@@ -46,6 +46,29 @@ def _load_structures() -> dict:
 
 STRUCTURES = _load_structures()
 
+_VAULT_README = """\
+# Genesis Vault - Smart Resolution Engine Cache
+
+Solutions found by `genesis resolve` are cached here by topic and language.
+Vault hits avoid external API calls entirely.
+
+Usage:
+  python scripts/vault.py search "[topic]" [language]   # query the cache
+  python scripts/vault.py save                          # save a new entry
+  python scripts/vault.py stats                         # inspect cache size
+
+This directory is safe to commit - it contains only text summaries, no secrets.
+"""
+
+_FIXED_CONTENT: dict[str, str] = {
+    ".genesis/vault/README.md": _VAULT_README,
+}
+
+
+def _file_content(resolved_path: str) -> str:
+    """Return initial file content. Special-cased for known files, empty otherwise."""
+    return _FIXED_CONTENT.get(resolved_path, "")
+
 
 _WINDOWS_RESERVED = {"con", "prn", "aux", "nul", "com1", "com2", "com3", "com4",
                      "com5", "com6", "com7", "com8", "com9", "lpt1", "lpt2",
@@ -99,7 +122,8 @@ def create_structure(base_path: str, language: str, tier: str, name: str) -> lis
         try:
             full_path.parent.mkdir(parents=True, exist_ok=True)
             if not full_path.exists():
-                full_path.write_text("", encoding="utf-8")
+                content = _file_content(resolved)
+                full_path.write_text(content, encoding="utf-8")
                 created.append(resolved)
         except OSError as e:
             print(f"  Warning: could not create {resolved}: {e}")

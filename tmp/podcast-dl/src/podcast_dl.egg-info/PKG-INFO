@@ -1,0 +1,13 @@
+Metadata-Version: 2.4
+Name: podcast-dl
+Version: 0.1.0
+Summary: Download podcast episodes from RSS feeds
+License: MIT
+Requires-Python: >=3.11
+Description-Content-Type: text/markdown
+Requires-Dist: click>=8.1.7
+Requires-Dist: feedparser>=6.0.10
+Requires-Dist: requests>=2.31.0
+Provides-Extra: dev
+Requires-Dist: pytest>=8.0; extra == "dev"
+Requires-Dist: pytest-cov; extra == "dev"

@@ -54,6 +54,119 @@ class TestDriftDetector:
         report = detect_drift(str(tmp_path))
         assert report.adr_found is False
 
+    def test_level1_only_skips_import_check(self, tmp_path):
+        from drift_detector import detect_drift
+        # Write evidence.json with a forbidden import
+        genesis = tmp_path / ".genesis"
+        genesis.mkdir()
+        (genesis / "evidence.json").write_text(
+            '{"arch_rationale": "no database, file-based state", "archetype": "cli"}',
+            encoding="utf-8",
+        )
+        src = tmp_path / "src"
+        src.mkdir()
+        (src / "bad.py").write_text("import sqlite3\n\ndef run(): pass\n")
+        report = detect_drift(str(tmp_path), level=1)
+        # Level 1 should NOT check imports
+        assert report.import_violations == []
+
+    def test_level2_detects_forbidden_import(self, tmp_path):
+        from drift_detector import detect_drift
+        genesis = tmp_path / ".genesis"
+        genesis.mkdir()
+        (genesis / "evidence.json").write_text(
+            '{"arch_rationale": "no database, file-based state", "archetype": "cli"}',
+            encoding="utf-8",
+        )
+        src = tmp_path / "src"
+        src.mkdir()
+        (src / "bad.py").write_text("import sqlite3\n\ndef run(): pass\n")
+        report = detect_drift(str(tmp_path), level=2)
+        assert report.has_import_violations
+        modules = [v.module for v in report.import_violations]
+        assert "sqlite3" in modules
+
+    def test_level2_no_violation_when_no_forbidden(self, tmp_path):
+        from drift_detector import detect_drift
+        genesis = tmp_path / ".genesis"
+        genesis.mkdir()
+        # CLI archetype - flask is forbidden
+        (genesis / "evidence.json").write_text(
+            '{"arch_rationale": "no server", "archetype": "cli"}',
+            encoding="utf-8",
+        )
+        src = tmp_path / "src"
+        src.mkdir()
+        # Uses requests, not flask - should be clean
+        (src / "fetcher.py").write_text("import requests\ndef fetch(url): return requests.get(url)\n")
+        report = detect_drift(str(tmp_path), level=2)
+        assert not report.has_import_violations
+
+    def test_level2_cli_archetype_forbids_flask(self, tmp_path):
+        from drift_detector import detect_drift
+        genesis = tmp_path / ".genesis"
+        genesis.mkdir()
+        (genesis / "evidence.json").write_text(
+            '{"arch_rationale": "pure cli tool", "archetype": "cli"}',
+            encoding="utf-8",
+        )
+        src = tmp_path / "src"
+        src.mkdir()
+        (src / "app.py").write_text("import flask\napp = flask.Flask(__name__)\n")
+        report = detect_drift(str(tmp_path), level=2)
+        assert report.has_import_violations
+        assert any(v.module == "flask" for v in report.import_violations)
+
+    def test_report_ok_property(self, tmp_path):
+        from drift_detector import detect_drift
+        (tmp_path / "src").mkdir()
+        (tmp_path / "tests").mkdir()
+        (tmp_path / "docs").mkdir()
+        report = detect_drift(str(tmp_path), level=2)
+        # No evidence.json and standard dirs present -> ok
+        assert report.ok
+
+    def test_violation_contains_file_and_line(self, tmp_path):
+        from drift_detector import detect_drift
+        genesis = tmp_path / ".genesis"
+        genesis.mkdir()
+        (genesis / "evidence.json").write_text(
+            '{"arch_rationale": "no database", "archetype": "cli"}',
+            encoding="utf-8",
+        )
+        src = tmp_path / "src"
+        src.mkdir()
+        (src / "dal.py").write_text("import sqlite3\n\ndef query(): pass\n")
+        report = detect_drift(str(tmp_path), level=2)
+        assert len(report.import_violations) == 1
+        v = report.import_violations[0]
+        assert v.file.endswith("dal.py")
+        assert v.line == 1
+        assert v.module == "sqlite3"
+        assert v.rule == "forbidden"
+
+    def test_json_output_shape(self, tmp_path):
+        from drift_detector import DriftReport, print_json_report
+        import io, json
+        report = DriftReport()
+        report.new_dirs = ["tmp"]
+        report.missing_dirs = []
+        report.adr_found = False
+        report.evidence_found = False
+        buf = io.StringIO()
+        import sys
+        old_stdout = sys.stdout
+        sys.stdout = buf
+        try:
+            print_json_report(report)
+        finally:
+            sys.stdout = old_stdout
+        data = json.loads(buf.getvalue())
+        assert "ok" in data
+        assert "structural_drift" in data
+        assert "import_violations" in data
+        assert data["structural_drift"]["new_dirs"] == ["tmp"]
+
 
 class TestIssueMinerClassify:
     def test_classify_security(self):

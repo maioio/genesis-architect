@@ -173,6 +173,144 @@ class TestEnforce:
         result = enforce([], tmp_path)
         assert result.ok
 
+    def test_symbol_check_passes_when_symbol_exists(self, tmp_path):
+        (tmp_path / "src").mkdir()
+        (tmp_path / "src" / "core.py").write_text(
+            "def process_file(path): return path\n"
+        )
+        pitfalls = [
+            {"id": "p1", "name": "test", "mitigation_file_path": "src/core.py",
+             "mitigation_symbol": "process_file", "mitigation_import": ""},
+        ]
+        result = enforce(pitfalls, tmp_path)
+        assert result.ok
+        assert result.passed[0].get("symbol_verified") == "process_file"
+
+    def test_symbol_check_fails_when_symbol_missing(self, tmp_path):
+        (tmp_path / "src").mkdir()
+        (tmp_path / "src" / "core.py").write_text(
+            "def wrong_name(path): return path\n"
+        )
+        pitfalls = [
+            {"id": "p1", "name": "test", "mitigation_file_path": "src/core.py",
+             "mitigation_symbol": "process_file", "mitigation_import": ""},
+        ]
+        result = enforce(pitfalls, tmp_path)
+        assert not result.ok
+        assert len(result.failed) == 1
+        assert "process_file" in result.failed[0]["reason"]
+
+    def test_import_check_passes_when_import_exists(self, tmp_path):
+        (tmp_path / "src").mkdir()
+        (tmp_path / "src" / "security.py").write_text(
+            "from pathlib import Path\ndef safe(base, p): return Path(base) / p\n"
+        )
+        pitfalls = [
+            {"id": "p1", "name": "test", "mitigation_file_path": "src/security.py",
+             "mitigation_symbol": "", "mitigation_import": "pathlib"},
+        ]
+        result = enforce(pitfalls, tmp_path)
+        assert result.ok
+        assert result.passed[0].get("import_verified") == "pathlib"
+
+    def test_import_check_fails_when_import_missing(self, tmp_path):
+        (tmp_path / "src").mkdir()
+        (tmp_path / "src" / "security.py").write_text(
+            "def safe(base, p): return base + p\n"
+        )
+        pitfalls = [
+            {"id": "p1", "name": "test", "mitigation_file_path": "src/security.py",
+             "mitigation_symbol": "", "mitigation_import": "pathlib"},
+        ]
+        result = enforce(pitfalls, tmp_path)
+        assert not result.ok
+        assert "pathlib" in result.failed[0]["reason"]
+
+    def test_stub_only_file_fails(self, tmp_path):
+        (tmp_path / "src").mkdir()
+        (tmp_path / "src" / "stub.py").write_text("# todo: implement this\n")
+        pitfalls = [
+            {"id": "p1", "name": "test", "mitigation_file_path": "src/stub.py",
+             "mitigation_symbol": "", "mitigation_import": ""},
+        ]
+        result = enforce(pitfalls, tmp_path)
+        assert not result.ok
+        assert "Stub-only" in result.failed[0]["reason"]
+
+    def test_syntax_error_file_fails(self, tmp_path):
+        (tmp_path / "src").mkdir()
+        (tmp_path / "src" / "broken.py").write_text("def broken(\n")
+        pitfalls = [
+            {"id": "p1", "name": "test", "mitigation_file_path": "src/broken.py",
+             "mitigation_symbol": "", "mitigation_import": ""},
+        ]
+        result = enforce(pitfalls, tmp_path)
+        assert not result.ok
+        assert "SyntaxError" in result.failed[0]["reason"]
+
+
+# ---------------------------------------------------------------------------
+# --allow-unmapped CLI flag
+# ---------------------------------------------------------------------------
+
+class TestAllowUnmapped:
+    def test_allow_unmapped_exits_0_when_only_unmapped(self, tmp_path):
+        import subprocess
+        pitfalls_md = tmp_path / "PITFALLS.md"
+        pitfalls_md.write_text(
+            "## Pitfall 1: Config-file mitigation\n"
+            "**Seen in**: https://github.com/example/repo/issues/1\n"
+            "**Our mitigation**: Pin version in pyproject.toml.\n"
+            "<!-- no mitigation_file_path -->\n",
+            encoding="utf-8",
+        )
+        result = subprocess.run(
+            [sys.executable,
+             str(ROOT / "scripts" / "mitigation_enforcer.py"),
+             str(pitfalls_md),
+             "--src-root", str(tmp_path),
+             "--allow-unmapped"],
+            capture_output=True,
+        )
+        assert result.returncode == 0, result.stderr.decode()
+
+    def test_allow_unmapped_exits_1_when_file_missing(self, tmp_path):
+        import subprocess
+        pitfalls_md = tmp_path / "PITFALLS.md"
+        pitfalls_md.write_text(
+            "## Pitfall 1: Missing file\n"
+            "**Seen in**: https://github.com/example/repo/issues/1\n"
+            "mitigation_file_path: src/does_not_exist.py\n",
+            encoding="utf-8",
+        )
+        result = subprocess.run(
+            [sys.executable,
+             str(ROOT / "scripts" / "mitigation_enforcer.py"),
+             str(pitfalls_md),
+             "--src-root", str(tmp_path),
+             "--allow-unmapped"],
+            capture_output=True,
+        )
+        assert result.returncode == 1
+
+    def test_without_allow_unmapped_exits_1_on_unmapped(self, tmp_path):
+        import subprocess
+        pitfalls_md = tmp_path / "PITFALLS.md"
+        pitfalls_md.write_text(
+            "## Pitfall 1: Config-file mitigation\n"
+            "**Seen in**: https://github.com/example/repo/issues/1\n"
+            "**Our mitigation**: Pin version in pyproject.toml.\n",
+            encoding="utf-8",
+        )
+        result = subprocess.run(
+            [sys.executable,
+             str(ROOT / "scripts" / "mitigation_enforcer.py"),
+             str(pitfalls_md),
+             "--src-root", str(tmp_path)],
+            capture_output=True,
+        )
+        assert result.returncode == 1  # unmapped without --allow-unmapped = exit 1
+
 
 # ---------------------------------------------------------------------------
 # EnforcementResult.summary

@@ -23,5 +23,8 @@ scripts/__pycache__/
 *.so
 *.dylib
 
-# drift_detector baseline
+# genesis state files (vault cache, phase state) - not committed in live projects
 .genesis/
+# but commit evidence outputs in examples/ to demonstrate the toolchain
+!examples/**/.genesis/
+!examples/**/.genesis/evidence.json

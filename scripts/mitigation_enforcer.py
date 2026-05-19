@@ -420,6 +420,15 @@ def main() -> None:
         action="store_true",
         help="(Reserved for future stricter checks; currently same as default)",
     )
+    parser.add_argument(
+        "--allow-unmapped",
+        action="store_true",
+        help=(
+            "Treat unmapped pitfalls (no mitigation_file_path) as warnings, not failures. "
+            "Exit 1 only on 'failed' (file missing or stub-only). "
+            "Use in CI when some mitigations are config-file-based (e.g. pyproject.toml pins)."
+        ),
+    )
 
     args = parser.parse_args()
 
@@ -454,12 +463,21 @@ def main() -> None:
     result = enforce(pitfalls, project_root, strict=args.strict)
     _print_report(result, as_json=args.json)
 
-    if not result.ok:
+    # Determine failure: always fail on 'failed'; fail on unmapped unless --allow-unmapped
+    has_failure = bool(result.failed) or (result.unmapped and not args.allow_unmapped)
+    if has_failure:
         _print_failure_guidance(result)
         sys.exit(1)
 
     if not args.json:
-        print("Mitigation enforcement: PASSED", file=sys.stderr)
+        if result.unmapped and args.allow_unmapped:
+            print(
+                f"Mitigation enforcement: PASSED ({len(result.unmapped)} unmapped pitfall(s) "
+                "allowed via --allow-unmapped - add mitigation_file_path when files exist)",
+                file=sys.stderr,
+            )
+        else:
+            print("Mitigation enforcement: PASSED", file=sys.stderr)
     sys.exit(0)
 
 

@@ -65,6 +65,21 @@ jobs:
       - name: Run pitfall coverage check on example
         run: python scripts/pitfall_coverage_check.py examples/python-cli/PITFALLS.md examples/python-cli/src/ --check-platform-risks
 
+      - name: Genesis evidence pack (example)
+        # Generates ARCHITECTURE_EVIDENCE.md + .genesis/evidence.json from the example project.
+        # Fails if RESEARCH.md/PITFALLS.md/ROADMAP.md are missing or contain only template text.
+        run: python scripts/evidence_pack.py generate --project-dir examples/python-cli/
+
+      - name: Genesis mitigation enforcement on example
+        # Hard check: every mitigation_file_path in PITFALLS.md must exist and contain real code.
+        # --allow-unmapped: pitfalls without mitigation_file_path (e.g. config-file mitigations) are
+        # reported as warnings but do not fail the build. Only missing or stub-only files fail.
+        run: |
+          python scripts/mitigation_enforcer.py \
+            examples/python-cli/PITFALLS.md \
+            --src-root examples/python-cli/ \
+            --allow-unmapped
+
       - name: Check SKILL.md constraints
         run: |
           lines=$(wc -l < SKILL.md)

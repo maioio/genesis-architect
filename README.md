@@ -139,12 +139,22 @@ Active forks of researched repos are also scanned for bug fixes not yet merged u
 
 ### Stage 2: Secure Scaffolding
 
-The scaffold is generated with hard gates that cannot be skipped:
+**Mechanically enforced (CI fails if violated):**
+- Issue URL 404 check: `research_validator.py --verify-issues` in CI
+- Mitigation file existence and code quality: `mitigation_enforcer.py` on examples in CI
+- Evidence pack generation: `evidence_pack.py generate` on examples in CI
+- Structural drift detection: `drift_detector.py --level 1` on examples in CI
+- 266 unit tests: pytest fails the build on any regression
+- Secret scanning: Gitleaks on every push
+- SKILL.md constraints: line count and em-dash scan in CI
 
-- Phase 5 requires an explicit A/B/C/D architecture choice - "looks good" is not accepted
-- Phase 6 blocks `git commit` until the smoke test exits 0
-- Every scaffold includes `utils/security.py` or `src/utils/security.ts` with `get_safe_path` for projects handling user-supplied file paths
-- Four parallel CI jobs activate on the first push: secret scanning, SAST, quality gate, and internal constraints check
+**Skill-enforced (Claude follows SKILL.md instructions):**
+- Phase 2: stops if fewer than 12 repos found, records state via `genesis_state.py`
+- Phase 5: requires explicit A/B/C/D choice before scaffold begins
+- Phase 6: blocks `git commit` until smoke test exits 0
+- Phase 6 end: runs `evidence_pack.py generate` before Step 7
+
+Every scaffold includes `utils/security.py` (or language equivalent) with `get_safe_path` for projects handling user-supplied file paths.
 
 ### Stage 3: Smart Resolution (the feedback loop)
 
@@ -219,7 +229,7 @@ flowchart TD
 ```
 
 > [!NOTE]
-> **Three hard gates protect you:** Phase 2 stops if fewer than 5 repos found. Phase 5 requires an explicit A/B/C/D choice. Phase 6 blocks `git commit` until the smoke test passes.
+> **Skill-enforced gates:** Phase 2 stops if fewer than 12 repos found. Phase 5 requires an explicit A/B/C/D choice. Phase 6 blocks `git commit` until the smoke test passes. See Stage 2 above for what is mechanically enforced in CI.
 
 ---
 

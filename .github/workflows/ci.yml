@@ -80,6 +80,23 @@ jobs:
             --src-root examples/python-cli/ \
             --allow-unmapped
 
+      - name: Run drift detector on example
+        # Level 1 structural drift only - Level 2 requires .genesis/evidence.json
+        # which is generated at Phase 6 end, not present as a static fixture.
+        # Exits 0 if no structural drift, 1 if unexpected or missing dirs vs ADR.
+        run: python scripts/drift_detector.py examples/python-cli/ --level 1 --json
+
+      - name: Verify own evidence pack (dogfooding)
+        # Genesis Architect generates its own ARCHITECTURE_EVIDENCE.md from SELF_RESEARCH.md.
+        # This proves the toolchain works on a real project (itself).
+        run: |
+          python scripts/evidence_pack.py generate \
+            --project-dir . \
+            --research-path SELF_RESEARCH.md \
+            --pitfalls-path SELF_PITFALLS.md \
+            --roadmap-path SELF_ROADMAP.md
+          python scripts/mitigation_enforcer.py SELF_PITFALLS.md --src-root .
+
       - name: Check SKILL.md constraints
         run: |
           lines=$(wc -l < SKILL.md)

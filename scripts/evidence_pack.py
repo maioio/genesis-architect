@@ -230,20 +230,32 @@ def _compute_confidence(
 # Generator
 # ---------------------------------------------------------------------------
 
-def generate(project_dir: str) -> int:
+def generate(
+    project_dir: str,
+    research_path: str | None = None,
+    pitfalls_path_override: str | None = None,
+    roadmap_path_override: str | None = None,
+) -> int:
     """
     Read RESEARCH.md, PITFALLS.md, ROADMAP.md and .genesis/ state files.
     Write ARCHITECTURE_EVIDENCE.md and .genesis/evidence.json.
     Returns 0 on success, 1 on failure.
+
+    research_path: override for RESEARCH.md location (e.g. SELF_RESEARCH.md).
+    pitfalls_path_override: override for PITFALLS.md location.
+    roadmap_path_override: override for ROADMAP.md location.
     """
     base = Path(project_dir).resolve()
     gdir = base / ".genesis"
 
-    research_path = base / "RESEARCH.md"
-    pitfalls_path = base / "PITFALLS.md"
-    roadmap_path = base / "ROADMAP.md"
+    resolved_research = Path(research_path).resolve() if research_path else base / "RESEARCH.md"
+    pitfalls_path = Path(pitfalls_path_override).resolve() if pitfalls_path_override else base / "PITFALLS.md"
+    roadmap_path = Path(roadmap_path_override).resolve() if roadmap_path_override else base / "ROADMAP.md"
 
-    missing = [p.name for p in [research_path, pitfalls_path, roadmap_path] if not p.exists()]
+    missing = []
+    for p in [resolved_research, pitfalls_path, roadmap_path]:
+        if not p.exists():
+            missing.append(p.name)
     if missing:
         print(
             f"ERROR: Cannot generate evidence pack - missing files: {', '.join(missing)}",
@@ -251,7 +263,7 @@ def generate(project_dir: str) -> int:
         )
         return 1
 
-    research_text = research_path.read_text(encoding="utf-8")
+    research_text = resolved_research.read_text(encoding="utf-8")
     pitfalls_text = pitfalls_path.read_text(encoding="utf-8")
     roadmap_text = roadmap_path.read_text(encoding="utf-8")
 
@@ -542,6 +554,18 @@ def main() -> None:
 
     gen = sub.add_parser("generate", help="Generate ARCHITECTURE_EVIDENCE.md from research outputs")
     gen.add_argument("--project-dir", default=".", help="Project root directory")
+    gen.add_argument(
+        "--research-path", default=None,
+        help="Override path to RESEARCH.md (e.g. SELF_RESEARCH.md).",
+    )
+    gen.add_argument(
+        "--pitfalls-path", default=None,
+        help="Override path to PITFALLS.md (e.g. SELF_PITFALLS.md).",
+    )
+    gen.add_argument(
+        "--roadmap-path", default=None,
+        help="Override path to ROADMAP.md (e.g. SELF_ROADMAP.md).",
+    )
 
     ver = sub.add_parser("verify", help="Verify evidence pack is present and complete")
     ver.add_argument("--project-dir", default=".", help="Project root directory")
@@ -552,7 +576,12 @@ def main() -> None:
     args = parser.parse_args()
 
     if args.command == "generate":
-        sys.exit(generate(args.project_dir))
+        sys.exit(generate(
+            args.project_dir,
+            research_path=args.research_path,
+            pitfalls_path_override=args.pitfalls_path,
+            roadmap_path_override=args.roadmap_path,
+        ))
     elif args.command == "verify":
         sys.exit(verify(args.project_dir))
     elif args.command == "show":

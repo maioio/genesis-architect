@@ -358,13 +358,23 @@ def main() -> None:
     level = 2
     as_json = False
 
-    for arg in args:
+    skip_next = False
+    for i, arg in enumerate(args):
+        if skip_next:
+            skip_next = False
+            continue
         if arg == "--json":
             as_json = True
-        elif arg.startswith("--level"):
+        elif arg == "--level":
             try:
-                level = int(arg.split("=")[1]) if "=" in arg else int(args[args.index(arg) + 1])
+                level = int(args[i + 1])
+                skip_next = True
             except (IndexError, ValueError):
+                level = 2
+        elif arg.startswith("--level="):
+            try:
+                level = int(arg.split("=")[1])
+            except ValueError:
                 level = 2
         elif not arg.startswith("--"):
             project_path = arg

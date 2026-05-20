@@ -167,6 +167,39 @@ class TestDriftDetector:
         assert "import_violations" in data
         assert data["structural_drift"]["new_dirs"] == ["tmp"]
 
+    def test_cli_level_flag_does_not_consume_project_path(self, tmp_path):
+        # Regression: `drift_detector.py path --level 2` was parsing "2" as project_path
+        import subprocess, sys, json
+        from pathlib import Path
+        root = Path(__file__).parent.parent
+        (tmp_path / "src").mkdir()
+        (tmp_path / "tests").mkdir()
+        (tmp_path / "docs").mkdir()
+        result = subprocess.run(
+            [sys.executable, str(root / "scripts" / "drift_detector.py"),
+             str(tmp_path), "--level", "1", "--json"],
+            capture_output=True, text=True,
+        )
+        assert result.returncode == 0, result.stderr
+        data = json.loads(result.stdout)
+        assert data["ok"] is True
+
+    def test_cli_level_equals_syntax(self, tmp_path):
+        import subprocess, sys, json
+        from pathlib import Path
+        root = Path(__file__).parent.parent
+        (tmp_path / "src").mkdir()
+        (tmp_path / "tests").mkdir()
+        (tmp_path / "docs").mkdir()
+        result = subprocess.run(
+            [sys.executable, str(root / "scripts" / "drift_detector.py"),
+             str(tmp_path), "--level=1", "--json"],
+            capture_output=True, text=True,
+        )
+        assert result.returncode == 0, result.stderr
+        data = json.loads(result.stdout)
+        assert data["ok"] is True
+
 
 class TestIssueMinerClassify:
     def test_classify_security(self):

@@ -1,4 +1,4 @@
-<div align="center">
+﻿<div align="center">
 
 # Genesis Architect
 
@@ -60,21 +60,21 @@ Run: `genesis init a Python CLI for analyzing log files`
 
 ```
 log-analyzer/
-├── src/log-analyzer/
-│   ├── __init__.py
-│   ├── main.py        # Click CLI - args only, delegates to core
-│   ├── core.py        # All logic lives here, testable without subprocess
-│   └── utils/
-│       └── security.py  # get_safe_path() - path traversal guard
-├── tests/
-│   ├── __init__.py
-│   └── test_core.py   # Tests core directly, no subprocess needed
-├── .github/workflows/ci.yml  # 4 jobs: tests, secrets, SAST, quality gate
-├── .env.example
-├── pyproject.toml     # click>=8.1.7 pinned, mypy strict, pytest config
-├── RESEARCH.md        # 5 repos analyzed, all sources verified live
-├── PITFALLS.md        # The 4 pitfalls above with full root cause analysis
-└── ROADMAP.md         # 5-phase plan: scaffold -> tests -> CI -> quality -> ship
+â”œâ”€â”€ src/log-analyzer/
+â”‚   â”œâ”€â”€ __init__.py
+â”‚   â”œâ”€â”€ main.py        # Click CLI - args only, delegates to core
+â”‚   â”œâ”€â”€ core.py        # All logic lives here, testable without subprocess
+â”‚   â””â”€â”€ utils/
+â”‚       â””â”€â”€ security.py  # get_safe_path() - path traversal guard
+â”œâ”€â”€ tests/
+â”‚   â”œâ”€â”€ __init__.py
+â”‚   â””â”€â”€ test_core.py   # Tests core directly, no subprocess needed
+â”œâ”€â”€ .github/workflows/ci.yml  # 4 jobs: tests, secrets, SAST, quality gate
+â”œâ”€â”€ .env.example
+â”œâ”€â”€ pyproject.toml     # click>=8.1.7 pinned, mypy strict, pytest config
+â”œâ”€â”€ RESEARCH.md        # 5 repos analyzed, all sources verified live
+â”œâ”€â”€ PITFALLS.md        # The 4 pitfalls above with full root cause analysis
+â””â”€â”€ ROADMAP.md         # 5-phase plan: scaffold -> tests -> CI -> quality -> ship
 ```
 
 Every cited issue URL is verified by CI. A 404 fails the build.
@@ -162,17 +162,17 @@ After scaffolding, the Knowledge Vault starts building up:
 
 ```
 You hit a problem
-       ↓
+       â†“
 genesis resolve "csv streaming large file python"
-       ↓
+       â†“
 Check local .genesis/vault/ first
-       ↓
+       â†“
 Vault hit? Return instantly. No API call. No tokens.
-       ↓
+       â†“
 No hit? Query Stack Overflow API for top 3 accepted answers
-       ↓
+       â†“
 Display with source link. You confirm before anything changes.
-       ↓
+       â†“
 Solution saved to vault for next time.
 ```
 
@@ -191,7 +191,7 @@ flowchart TD
     end
 
     subgraph P1["Phase 1 - Align"]
-        C[Archetype · Scale · Language\n3 focused questions]
+        C[Archetype Â· Scale Â· Language\n3 focused questions]
     end
 
     subgraph P2["Phase 2 - Research x3 parallel"]
@@ -208,7 +208,7 @@ flowchart TD
     end
 
     subgraph P7["Phase 7 - Companion"]
-        J[genesis help · genesis research · genesis check · genesis resolve]
+        J[genesis help Â· genesis research Â· genesis check Â· genesis resolve]
         J --> K[(Knowledge Vault\n.genesis/vault/)]
         K -->|vault hit: instant| J
         K -->|no hit: fetch + cache| L[Stack Overflow API]
@@ -320,11 +320,11 @@ create a tool that converts CSV to JSON
 After scaffolding, Genesis Architect stays active for the rest of your session - and picks up where it left off in future sessions by reading `RESEARCH.md` from your project directory.
 
 ```
-genesis help I need to add rate limiting      → searches Phase 2 repos for how they solved it
-genesis research authentication patterns      → targeted scan with 1-3 ranked approaches
-genesis check                                 → freshness audit: CVEs, outdated deps, CI versions
-genesis harden ./existing-project             → inject security gates into any existing project [skill-mediated]
-genesis resolve path traversal python         → Smart Resolution Engine with vault-first lookup
+genesis help I need to add rate limiting      â†’ searches Phase 2 repos for how they solved it
+genesis research authentication patterns      â†’ targeted scan with 1-3 ranked approaches
+genesis check                                 â†’ freshness audit: CVEs, outdated deps, CI versions
+genesis harden ./existing-project             â†’ inject security gates into any existing project [skill-mediated]
+genesis resolve path traversal python         â†’ Smart Resolution Engine with vault-first lookup
 ```
 
 ---
@@ -459,64 +459,64 @@ From actual projects:
 
 ```
 genesis-architect/
-├── SKILL.md                        # Skill definition - the brain
-├── plugin.json                     # Marketplace manifest
-├── scripts/
-│   ├── scaffold_generator.py       # Creates project structure (loads from folder-structures.toml)
-│   ├── research_validator.py       # Validates RESEARCH.md + live GitHub URL checks
-│   ├── resolve_engine.py           # Smart Resolution Engine (Stack Overflow API + vault)
-│   ├── vault.py                    # Knowledge Vault - local solution cache
-│   ├── genesis_state.py            # Phase 5/6 hard gate state files
-│   ├── genesis_subcommands.py      # genesis check: CVE scan + CI action audit
-│   ├── pitfall_coverage_check.py   # Verifies PITFALLS.md mitigations exist in source
-│   ├── drift_detector.py           # Architecture drift detection vs ADR baseline
-│   ├── issue_miner.py              # GitHub Issue mining (GraphQL + REST)
-│   ├── feedback.py                 # Pitfall feedback recorder
-│   ├── env_probe.py                # Phase 0 environment detection
-│   └── eval_runner.py              # Trigger rate eval + schema validation
-├── tests/                          # 270 unit tests
-│   ├── test_scaffold_generator.py  # 53 tests: all combos, path traversal, TOML integrity, pre-commit hooks
-│   ├── test_pr13_scripts.py        # 58 tests: pitfall_coverage_check + genesis_subcommands
-│   ├── test_new_scripts.py         # 22 tests: feedback, drift_detector CLI, import boundary, issue_miner
-│   ├── test_research_validator.py  # 17 tests: validator logic
-│   ├── test_resolve_engine.py      # 9 tests: resolution engine
-│   ├── test_genesis_state.py       # 30 tests: hard gate state machine
-│   ├── test_mitigation_enforcer.py # 26 tests: AST enforcement, symbol/import, allow-unmapped
-│   ├── test_evidence_pack.py       # 26 tests: confidence scoring, generate, verify
-│   ├── test_scaffold_smoke_test.py # 16 tests: all 8 archetypes smoke-tested
-│   └── test_pitfall_coverage_check_platform.py  # 13 tests: platform risk validation
-├── evals/
-│   ├── test_queries.json           # 40 trigger/no-trigger test cases (100% accuracy)
-│   └── README.md
-├── examples/
-│   ├── typescript-cli/             # Real TypeScript CLI output
-│   │   ├── RESEARCH.md
-│   │   ├── PITFALLS.md
-│   │   └── ROADMAP.md
-│   └── python-cli/                 # Real Python CLI output
-│       ├── RESEARCH.md
-│       ├── PITFALLS.md
-│       └── ROADMAP.md
-├── assets/
-│   ├── demo.gif                    # Demo recording (see DEMO_SCRIPT.md to record)
-│   ├── RESEARCH.template.md
-│   ├── PITFALLS.template.md
-│   └── ROADMAP.template.md
-├── references/
-│   ├── architecture-patterns.md    # Boilerplate per language/tier + production defaults
-│   ├── mcp-strategy.md             # MCP tool strategy and fallback logic
-│   └── security-templates.md       # CI templates for secret scanning, SAST, quality gate
-├── .github/
-│   ├── dependabot.yml              # Weekly automated dependency updates
-│   └── workflows/
-│       ├── ci.yml                  # Tests, secret scanning, SAST, quality gate
-│       └── codeql.yml              # GitHub Code Scanning
-├── pyproject.toml                  # pytest + ruff config
-├── DEMO_SCRIPT.md                  # Step-by-step guide to record the demo GIF
-├── LAUNCH_COPY.md                  # Ready-to-post text for HN, Reddit, X, Discord
-├── SECURITY.md
-├── CHANGELOG.md
-└── CONTRIBUTING.md
+â”œâ”€â”€ SKILL.md                        # Skill definition - the brain
+â”œâ”€â”€ plugin.json                     # Marketplace manifest
+â”œâ”€â”€ scripts/
+â”‚   â”œâ”€â”€ scaffold_generator.py       # Creates project structure (loads from folder-structures.toml)
+â”‚   â”œâ”€â”€ research_validator.py       # Validates RESEARCH.md + live GitHub URL checks
+â”‚   â”œâ”€â”€ resolve_engine.py           # Smart Resolution Engine (Stack Overflow API + vault)
+â”‚   â”œâ”€â”€ vault.py                    # Knowledge Vault - local solution cache
+â”‚   â”œâ”€â”€ genesis_state.py            # Phase 5/6 hard gate state files
+â”‚   â”œâ”€â”€ genesis_subcommands.py      # genesis check: CVE scan + CI action audit
+â”‚   â”œâ”€â”€ pitfall_coverage_check.py   # Verifies PITFALLS.md mitigations exist in source
+â”‚   â”œâ”€â”€ drift_detector.py           # Architecture drift detection vs ADR baseline
+â”‚   â”œâ”€â”€ issue_miner.py              # GitHub Issue mining (GraphQL + REST)
+â”‚   â”œâ”€â”€ feedback.py                 # Pitfall feedback recorder
+â”‚   â”œâ”€â”€ env_probe.py                # Phase 0 environment detection
+â”‚   â””â”€â”€ eval_runner.py              # Trigger rate eval + schema validation
+â”œâ”€â”€ tests/                          # 270 unit tests
+â”‚   â”œâ”€â”€ test_scaffold_generator.py  # 53 tests: all combos, path traversal, TOML integrity, pre-commit hooks
+â”‚   â”œâ”€â”€ test_pr13_scripts.py        # 58 tests: pitfall_coverage_check + genesis_subcommands
+â”‚   â”œâ”€â”€ test_new_scripts.py         # 22 tests: feedback, drift_detector CLI, import boundary, issue_miner
+â”‚   â”œâ”€â”€ test_research_validator.py  # 17 tests: validator logic
+â”‚   â”œâ”€â”€ test_resolve_engine.py      # 9 tests: resolution engine
+â”‚   â”œâ”€â”€ test_genesis_state.py       # 30 tests: hard gate state machine
+â”‚   â”œâ”€â”€ test_mitigation_enforcer.py # 26 tests: AST enforcement, symbol/import, allow-unmapped
+â”‚   â”œâ”€â”€ test_evidence_pack.py       # 26 tests: confidence scoring, generate, verify
+â”‚   â”œâ”€â”€ test_scaffold_smoke_test.py # 16 tests: all 8 archetypes smoke-tested
+â”‚   â””â”€â”€ test_pitfall_coverage_check_platform.py  # 13 tests: platform risk validation
+â”œâ”€â”€ evals/
+â”‚   â”œâ”€â”€ test_queries.json           # 40 trigger/no-trigger test cases (100% accuracy)
+â”‚   â””â”€â”€ README.md
+â”œâ”€â”€ examples/
+â”‚   â”œâ”€â”€ typescript-cli/             # Real TypeScript CLI output
+â”‚   â”‚   â”œâ”€â”€ RESEARCH.md
+â”‚   â”‚   â”œâ”€â”€ PITFALLS.md
+â”‚   â”‚   â””â”€â”€ ROADMAP.md
+â”‚   â””â”€â”€ python-cli/                 # Real Python CLI output
+â”‚       â”œâ”€â”€ RESEARCH.md
+â”‚       â”œâ”€â”€ PITFALLS.md
+â”‚       â””â”€â”€ ROADMAP.md
+â”œâ”€â”€ assets/
+â”‚   â”œâ”€â”€ demo.gif                    # Demo recording (see DEMO_SCRIPT.md to record)
+â”‚   â”œâ”€â”€ RESEARCH.template.md
+â”‚   â”œâ”€â”€ PITFALLS.template.md
+â”‚   â””â”€â”€ ROADMAP.template.md
+â”œâ”€â”€ references/
+â”‚   â”œâ”€â”€ architecture-patterns.md    # Boilerplate per language/tier + production defaults
+â”‚   â”œâ”€â”€ mcp-strategy.md             # MCP tool strategy and fallback logic
+â”‚   â””â”€â”€ security-templates.md       # CI templates for secret scanning, SAST, quality gate
+â”œâ”€â”€ .github/
+â”‚   â”œâ”€â”€ dependabot.yml              # Weekly automated dependency updates
+â”‚   â””â”€â”€ workflows/
+â”‚       â”œâ”€â”€ ci.yml                  # Tests, secret scanning, SAST, quality gate
+â”‚       â””â”€â”€ codeql.yml              # GitHub Code Scanning
+â”œâ”€â”€ pyproject.toml                  # pytest + ruff config
+â”œâ”€â”€ DEMO_SCRIPT.md                  # Step-by-step guide to record the demo GIF
+â”œâ”€â”€ LAUNCH_COPY.md                  # Ready-to-post text for HN, Reddit, X, Discord
+â”œâ”€â”€ SECURITY.md
+â”œâ”€â”€ CHANGELOG.md
+â””â”€â”€ CONTRIBUTING.md
 ```
 
 </details>
@@ -629,6 +629,7 @@ New language templates, improved MCP strategies, and workflow refinements are we
 
 **[Star this repo](https://github.com/maioio/genesis-architect/stargazers) if Genesis Architect saved you from a bad architecture decision. It helps others find it.**
 
-[Issues](https://github.com/maioio/genesis-architect/issues) · [Discussions](https://github.com/maioio/genesis-architect/discussions) · [CHANGELOG](CHANGELOG.md)
+[Issues](https://github.com/maioio/genesis-architect/issues) Â· [Discussions](https://github.com/maioio/genesis-architect/discussions) Â· [CHANGELOG](CHANGELOG.md)
 
 </div>
+

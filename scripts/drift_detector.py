@@ -170,21 +170,26 @@ def _load_architecture_rules(root: Path) -> dict:
     if "architecture_rules" in evidence:
         return evidence["architecture_rules"]
 
-    # Derive conservative rules from arch_rationale prose
+    # Derive conservative rules from arch_rationale prose.
+    # NOTE: This derivation is heuristic (keyword-based). For precise rules,
+    # set "architecture_rules" explicitly in evidence.json (takes priority above).
     rules: dict = {"forbidden_imports": [], "required_in_files": []}
     rationale = evidence.get("arch_rationale", "").lower()
+    archetype = evidence.get("archetype", "").lower()
 
-    # "no database" -> forbid sqlite3, sqlalchemy, psycopg2, pymongo
-    if any(phrase in rationale for phrase in ("no database", "no db", "file-based state", "json state")):
+    # "no database" / "relational" -> forbid common DB drivers
+    _db_phrases = (
+        "no database", "no db", "file-based state", "json state",
+        "no relational", "avoid relational", "no sql", "nosql-free",
+        "no persistence layer",
+    )
+    if any(phrase in rationale for phrase in _db_phrases):
         rules["forbidden_imports"].extend(["sqlite3", "sqlalchemy", "psycopg2", "pymongo", "motor"])
 
-    # "no server" (CLI archetype) -> forbid flask, fastapi, starlette, django
-    archetype = evidence.get("archetype", "").lower()
-    if archetype == "cli" or "no server" in rationale:
+    # "no server" / CLI archetype -> forbid web frameworks
+    _server_phrases = ("no server", "no http server", "no web server", "cli only", "command-line only")
+    if archetype == "cli" or any(phrase in rationale for phrase in _server_phrases):
         rules["forbidden_imports"].extend(["flask", "fastapi", "starlette", "django", "aiohttp"])
-
-    # "requests-first" -> forbid urllib as primary HTTP (only flag if also feedparser is allowed)
-    # This is nuanced - skip this auto-derivation to avoid false positives.
 
     # Dedup
     rules["forbidden_imports"] = list(set(rules["forbidden_imports"]))

@@ -9,6 +9,28 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+## [2.6.1] - 2026-05-20
+
+Hardening pass: argparse fix, CI stability, honest enforcement audit.
+
+### Fixed
+- `drift_detector.py`: replaced fragile manual CLI parser with `argparse`. Previous `skip_next` approach still mishandled edge cases; argparse is unambiguous. Exact failing CI command (`drift_detector.py path --level 1 --json`) now works correctly.
+- `drift_detector.py`: expanded heuristic phrases for "no database" rule (added "no relational", "avoid relational", "no sql") and "no server" rule (added "no http server", "no web server", "cli only"). Labeled heuristic in `ENFORCEMENT_DEPTH.md`.
+
+### Added
+- `ENFORCEMENT_DEPTH.md`: honest internal audit of every enforcement mechanism. Classifies each check as AST, symbol, import, structural, regex, existence, heuristic, or LLM-dependent. No inflation.
+- `genesis_state.py` smoke test in CI: write-phase2 + require-phase2 + write-phase3-validation + require-phase3-validation cycle. Proves state machine is not broken on every push.
+- `drift_detector.py` upgraded to Level 2 in CI (was Level 1): runs AST import boundary detection after `evidence_pack.py generate` provides `.genesis/evidence.json`.
+- `examples/python-cli/docs/adr/001-initial-architecture.md`: real ADR for drift detector baseline.
+- 4 regression tests for drift_detector CLI (argparse correctness, default path, equals syntax).
+
+### Changed
+- README: all test counts corrected to 270. Per-file test breakdown updated to match reality.
+- README Quality Shield: CI job description updated with genesis_state smoke test and drift Level 2.
+
+### Tests
+- 268 -> 270 tests (2 new argparse regression tests)
+
 ## [2.6.0] - 2026-05-20
 
 Credibility recovery pass: closes the gap between claimed enforcement and actual mechanical enforcement.

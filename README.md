@@ -20,7 +20,7 @@ builds your project to avoid them, and keeps learning alongside you as you ship.
 [![Phases](https://img.shields.io/badge/phases-9-blueviolet?style=flat-square)](SKILL.md)
 [![Languages](https://img.shields.io/badge/languages-4-informational?style=flat-square)](references/architecture-patterns.md)
 [![Archetypes](https://img.shields.io/badge/archetypes-4-success?style=flat-square)](SKILL.md)
-[![Tests](https://img.shields.io/badge/tests-266-brightgreen?style=flat-square)](tests/)
+[![Tests](https://img.shields.io/badge/tests-270-brightgreen?style=flat-square)](tests/)
 [![Eval accuracy](https://img.shields.io/badge/eval_accuracy-100%25-brightgreen?style=flat-square)](evals/test_queries.json)
 [![Stars](https://img.shields.io/github/stars/maioio/genesis-architect?style=social)](https://github.com/maioio/genesis-architect/stargazers)
 
@@ -94,7 +94,7 @@ Every cited issue URL is verified by CI. A 404 fails the build.
 | **`evidence_signed` fixed** | Was always `false`. Now `true` only when Phase 5 recorded a real archetype and user choice |
 | **Genesis enforcement pre-commit hooks** | `.pre-commit-config.yaml` now contains real hooks: mitigation enforcer + drift detector run on every `git commit` |
 | **CI genesis-validate job** | Python CI template includes a `genesis-validate` job: checks `ARCHITECTURE_EVIDENCE.md` exists and runs mitigation enforcer |
-| **250 unit tests** | Full test coverage including AST enforcement, confidence scoring, drift detection, and pre-commit hook content |
+| **270 unit tests** | Full coverage: AST enforcement, confidence scoring, drift detection, argparse CLI, pre-commit hook content |
 
 ---
 
@@ -144,7 +144,7 @@ Active forks of researched repos are also scanned for bug fixes not yet merged u
 - Mitigation file existence and code quality: `mitigation_enforcer.py` on examples in CI
 - Evidence pack generation: `evidence_pack.py generate` on examples in CI
 - Structural drift detection: `drift_detector.py --level 1` on examples in CI
-- 266 unit tests: pytest fails the build on any regression
+- 270 unit tests: pytest fails the build on any regression
 - Secret scanning: Gitleaks on every push
 - SKILL.md constraints: line count and em-dash scan in CI
 
@@ -474,13 +474,15 @@ genesis-architect/
 │   ├── feedback.py                 # Pitfall feedback recorder
 │   ├── env_probe.py                # Phase 0 environment detection
 │   └── eval_runner.py              # Trigger rate eval + schema validation
-├── tests/                          # 250 unit tests
+├── tests/                          # 270 unit tests
 │   ├── test_scaffold_generator.py  # 53 tests: all combos, path traversal, TOML integrity, pre-commit hooks
-│   ├── test_pr13_scripts.py        # 52 tests: pitfall_coverage_check + genesis_subcommands
-│   ├── test_new_scripts.py         # 11 tests: feedback, drift_detector, issue_miner
-│   ├── test_research_validator.py  # 12 tests: validator logic
+│   ├── test_pr13_scripts.py        # 58 tests: pitfall_coverage_check + genesis_subcommands
+│   ├── test_new_scripts.py         # 22 tests: feedback, drift_detector CLI, import boundary, issue_miner
+│   ├── test_research_validator.py  # 17 tests: validator logic
 │   ├── test_resolve_engine.py      # 9 tests: resolution engine
-│   ├── test_genesis_state.py       # 25+ tests: hard gate state machine
+│   ├── test_genesis_state.py       # 30 tests: hard gate state machine
+│   ├── test_mitigation_enforcer.py # 26 tests: AST enforcement, symbol/import, allow-unmapped
+│   ├── test_evidence_pack.py       # 26 tests: confidence scoring, generate, verify
 │   ├── test_scaffold_smoke_test.py # 16 tests: all 8 archetypes smoke-tested
 │   └── test_pitfall_coverage_check_platform.py  # 13 tests: platform risk validation
 ├── evals/
@@ -527,7 +529,7 @@ Four CI jobs run on every push and pull request:
 
 | Job | What it gates | Secret required |
 |-----|--------------|-----------------|
-| `quality-gates` | 266 unit tests, evidence pack generation, mitigation enforcement, scaffold smoke test, SKILL.md constraints | `GITHUB_TOKEN` (built-in) |
+| `quality-gates` | 270 unit tests, evidence pack generation, mitigation enforcement, drift detection (Level 2), genesis_state smoke test, scaffold smoke test, SKILL.md constraints | `GITHUB_TOKEN` (built-in) |
 | `secrets-scan` | Exposed credentials, API keys, tokens in every commit | none |
 | `sonarcloud` | Maintainability, Reliability, Security Hotspots; skips if SONAR_TOKEN absent | `SONAR_TOKEN` |
 | `security-scan` | Dependency CVEs (HIGH+) via Snyk; skips if SNYK_TOKEN absent | `SNYK_TOKEN` |

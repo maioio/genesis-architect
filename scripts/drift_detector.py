@@ -22,6 +22,7 @@ Usage:
   python scripts/drift_detector.py [project_path] --json
 """
 
+import argparse
 import ast
 import json
 import re
@@ -349,42 +350,37 @@ def print_json_report(report: DriftReport) -> None:
 
 
 def main() -> None:
-    if len(sys.argv) > 1 and sys.argv[1] in ("-h", "--help"):
-        print(__doc__)
-        sys.exit(0)
+    parser = argparse.ArgumentParser(
+        description="Genesis Architect - Architecture Drift Detector",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=__doc__,
+    )
+    parser.add_argument(
+        "project_path",
+        nargs="?",
+        default=".",
+        help="Project root directory to inspect (default: current directory)",
+    )
+    parser.add_argument(
+        "--level",
+        type=int,
+        default=2,
+        choices=[1, 2],
+        help="Detection level: 1=structural only, 2=structural+import boundary (default: 2)",
+    )
+    parser.add_argument(
+        "--json",
+        action="store_true",
+        help="Output results as JSON instead of human-readable text",
+    )
+    args = parser.parse_args()
 
-    args = sys.argv[1:]
-    project_path = "."
-    level = 2
-    as_json = False
+    report = detect_drift(args.project_path, level=args.level)
 
-    skip_next = False
-    for i, arg in enumerate(args):
-        if skip_next:
-            skip_next = False
-            continue
-        if arg == "--json":
-            as_json = True
-        elif arg == "--level":
-            try:
-                level = int(args[i + 1])
-                skip_next = True
-            except (IndexError, ValueError):
-                level = 2
-        elif arg.startswith("--level="):
-            try:
-                level = int(arg.split("=")[1])
-            except ValueError:
-                level = 2
-        elif not arg.startswith("--"):
-            project_path = arg
-
-    report = detect_drift(project_path, level=level)
-
-    if as_json:
+    if args.json:
         print_json_report(report)
     else:
-        print_report(report, project_path)
+        print_report(report, args.project_path)
 
     sys.exit(1 if not report.ok else 0)
 

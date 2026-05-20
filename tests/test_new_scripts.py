@@ -167,8 +167,9 @@ class TestDriftDetector:
         assert "import_violations" in data
         assert data["structural_drift"]["new_dirs"] == ["tmp"]
 
-    def test_cli_level_flag_does_not_consume_project_path(self, tmp_path):
-        # Regression: `drift_detector.py path --level 2` was parsing "2" as project_path
+    def test_cli_positional_path_with_level_and_json(self, tmp_path):
+        # Regression: argparse replaces manual parser that misread "1" as project_path.
+        # Exact CI command: drift_detector.py <path> --level 1 --json
         import subprocess, sys, json
         from pathlib import Path
         root = Path(__file__).parent.parent
@@ -178,6 +179,24 @@ class TestDriftDetector:
         result = subprocess.run(
             [sys.executable, str(root / "scripts" / "drift_detector.py"),
              str(tmp_path), "--level", "1", "--json"],
+            capture_output=True, text=True,
+        )
+        assert result.returncode == 0, result.stderr
+        data = json.loads(result.stdout)
+        assert data["ok"] is True
+        # Verify project_path was not misread as "1"
+        assert "FileNotFoundError" not in result.stderr
+
+    def test_cli_level_2_with_positional_path(self, tmp_path):
+        import subprocess, sys, json
+        from pathlib import Path
+        root = Path(__file__).parent.parent
+        (tmp_path / "src").mkdir()
+        (tmp_path / "tests").mkdir()
+        (tmp_path / "docs").mkdir()
+        result = subprocess.run(
+            [sys.executable, str(root / "scripts" / "drift_detector.py"),
+             str(tmp_path), "--level", "2", "--json"],
             capture_output=True, text=True,
         )
         assert result.returncode == 0, result.stderr
@@ -199,6 +218,21 @@ class TestDriftDetector:
         assert result.returncode == 0, result.stderr
         data = json.loads(result.stdout)
         assert data["ok"] is True
+
+    def test_cli_default_path_is_dot(self, tmp_path):
+        # When no positional arg given, project_path defaults to "."
+        import subprocess, sys
+        from pathlib import Path
+        root = Path(__file__).parent.parent
+        result = subprocess.run(
+            [sys.executable, str(root / "scripts" / "drift_detector.py"),
+             "--level", "1", "--json"],
+            capture_output=True, text=True,
+            cwd=str(tmp_path),
+        )
+        # tmp_path has no dirs - will exit 0 or 1 but must NOT crash with FileNotFoundError
+        assert "FileNotFoundError" not in result.stderr
+        assert "Traceback" not in result.stderr
 
 
 class TestIssueMinerClassify:

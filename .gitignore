@@ -23,6 +23,11 @@ scripts/__pycache__/
 *.so
 *.dylib
 
+# scaffold output directories generated during local testing
+a_cli_podcast_downlo/
+*_downlo/
+*_project/
+
 # genesis state files (vault cache, phase state) - not committed in live projects
 .genesis/
 # but commit evidence outputs in examples/ to demonstrate the toolchain

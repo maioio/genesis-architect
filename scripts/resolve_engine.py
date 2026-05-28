@@ -188,17 +188,51 @@ def _badge(label: str, value: str) -> str:
     return f"[{label}: {value}]"
 
 
+_KNOWN_LANGUAGES = ("python", "typescript", "javascript", "go", "rust", "java", "ruby", "php")
+VAULT_TTL_DAYS = 180  # must match vault.py TTL_DAYS
+
+
+def _parse_query(query: str) -> tuple[str, str]:
+    """Split 'csv streaming memory python' into (topic, language)."""
+    parts = query.split()
+    language = parts[-1] if parts and parts[-1].lower() in _KNOWN_LANGUAGES else ""
+    topic = query if not language else " ".join(parts[:-1])
+    return topic, language
+
+
 def _check_vault(query: str) -> list[dict]:
-    """Check local vault before hitting external APIs."""
+    """Check local vault before hitting external APIs. Returns entries with stale flag."""
     try:
         sys.path.insert(0, str(Path(__file__).parent))
         from vault import search as vault_search
-        parts = query.split()
-        language = parts[-1] if parts[-1] in ("python", "typescript", "javascript", "go", "rust") else ""
-        topic = query if not language else " ".join(parts[:-1])
+        topic, language = _parse_query(query)
         return vault_search(topic, language, project_root=Path.cwd())
     except Exception:
         return []
+
+
+def _refresh_stale_entry(query: str, stale_entry: dict, limit: int) -> bool:
+    """
+    Attempt to fetch a fresh answer and overwrite the stale vault entry.
+    Returns True if refresh succeeded, False if offline/API error.
+    """
+    try:
+        sys.path.insert(0, str(Path(__file__).parent))
+        from vault import save as vault_save
+        topic, language = _parse_query(query)
+        questions = search_questions(query, limit=1)
+        if not questions:
+            return False
+        answer_map = fetch_answers([questions[0].question_id])
+        questions[0].answers = answer_map.get(questions[0].question_id, [])
+        best = questions[0].best_answer
+        if not best:
+            return False
+        solution_text = _truncate(best.body_markdown, max_chars=2000)
+        vault_save(topic, language, solution_text, source=best.link)
+        return True
+    except Exception:
+        return False
 
 
 def resolve(query: str, limit: int = 3) -> None:
@@ -206,9 +240,14 @@ def resolve(query: str, limit: int = 3) -> None:
     print(f"Query: {query!r}")
 
     vault_hits = _check_vault(query)
-    if vault_hits:
-        print(f"Source: Knowledge Vault ({len(vault_hits)} cached result(s))\n")
-        for i, entry in enumerate(vault_hits[:limit], 1):
+
+    # Separate fresh from stale hits
+    fresh_hits = [e for e in vault_hits if not e.get("stale")]
+    stale_hits = [e for e in vault_hits if e.get("stale")]
+
+    if fresh_hits:
+        print(f"Source: Knowledge Vault ({len(fresh_hits)} cached result(s))\n")
+        for i, entry in enumerate(fresh_hits[:limit], 1):
             print(f"{'=' * 60}")
             print(f"Vault Result {i}: {entry['topic']} ({entry['language']})")
             preview = entry["solution"][:400]
@@ -221,6 +260,47 @@ def resolve(query: str, limit: int = 3) -> None:
         print("Vault hit - no external API call needed.")
         print("Use 'python scripts/vault.py save' to add more entries.")
         return
+
+    if stale_hits:
+        # TTL expired - attempt refresh from Stack Overflow
+        print(f"  Vault entry found but is over {VAULT_TTL_DAYS} days old. Attempting refresh...")
+        refreshed = _refresh_stale_entry(query, stale_hits[0], limit)
+        if refreshed:
+            print("  Refresh succeeded. Showing updated results.\n")
+            # Re-query vault for the refreshed entry
+            updated = _check_vault(query)
+            fresh_after_refresh = [e for e in updated if not e.get("stale")]
+            if fresh_after_refresh:
+                for i, entry in enumerate(fresh_after_refresh[:limit], 1):
+                    print(f"{'=' * 60}")
+                    print(f"Vault Result {i} (refreshed): {entry['topic']} ({entry['language']})")
+                    preview = entry["solution"][:400]
+                    if len(entry["solution"]) > 400:
+                        preview += " ..."
+                    print(f"\n  {preview}")
+                    if entry.get("source"):
+                        print(f"\n  Source: {entry['source']}")
+                print(f"\n{'=' * 60}")
+                print("Genesis Architect never patches your code without your confirmation.")
+                return
+        else:
+            # Offline or API failed - return stale with prominent warning
+            print(f"\n{'!' * 60}")
+            print("WARNING: This solution is from the local vault and is over")
+            print(f"{VAULT_TTL_DAYS} days old. Could not verify updates due to network issues.")
+            print(f"{'!' * 60}\n")
+            for i, entry in enumerate(stale_hits[:limit], 1):
+                print(f"{'=' * 60}")
+                print(f"Vault Result {i} [STALE - VERIFY MANUALLY]: {entry['topic']} ({entry['language']})")
+                preview = entry["solution"][:400]
+                if len(entry["solution"]) > 400:
+                    preview += " ..."
+                print(f"\n  {preview}")
+                if entry.get("source"):
+                    print(f"\n  Source: {entry['source']}")
+            print(f"\n{'=' * 60}")
+            print("Genesis Architect never patches your code without your confirmation.")
+            return
 
     print(f"Source: Stack Overflow community answers\n")
 

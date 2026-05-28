@@ -142,7 +142,7 @@ Option B re-runs write-phase2 with --override to record acknowledgment.
 | Situation | Action |
 |-----------|--------|
 | 0 repos | Architect Mode - note "first-principles design" in RESEARCH.md |
-| Active forks | Analyze top 3 forks, incorporate fixes |
+| Active forks detected | Analyze top 3 forks ranked by most recently merged commits or PRs in the last 6 months (not by stars). Extract bug fixes and incorporate into pitfall list. |
 | 1-11 repos | Floor not met - present A/B/C above, wait for user choice |
 | 12+ repos, 5+ deep | Floor met - write phase-2-research.json, continue |
 | API timeout / MCP unavailable | Report briefly, switch to web search fallback |

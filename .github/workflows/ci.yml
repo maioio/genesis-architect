@@ -11,15 +11,15 @@ jobs:
     name: Quality Gates
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      - name: Install test dependencies
-        run: pip install pytest pytest-cov -q
+      - name: Install dependencies
+        run: pip install -e ".[dev]" -q
 
       - name: Phase 0 env probe (self-check)
         run: python scripts/env_probe.py --self-check
@@ -133,7 +133,7 @@ jobs:
     name: Secret Scanning (Gitleaks)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -147,18 +147,18 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ vars.SONAR_ENABLED == 'true' }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
       - name: Generate coverage report
         run: |
-          pip install pytest pytest-cov -q
+          pip install -e ".[dev]" -q
           python -m pytest tests/ -q --cov=scripts --cov-report=xml:coverage.xml
 
       - name: SonarCloud Scan
@@ -175,10 +175,10 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ vars.SNYK_ENABLED == 'true' }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 

@@ -42,8 +42,16 @@ def _get(url: str, token: str | None = None) -> Any:
         raise
 
 
-def search_repos(query: str, token: str | None = None, limit: int = 15) -> list[dict]:
-    q = urllib.parse.quote(f"{query} in:description,readme language:python stars:>50")
+def search_repos(
+    query: str,
+    token: str | None = None,
+    limit: int = 15,
+    language: str | None = None,
+) -> list[dict]:
+    base = f"{query} in:description,readme stars:>50"
+    if language:
+        base += f" language:{language}"
+    q = urllib.parse.quote(base)
     url = f"https://api.github.com/search/repositories?q={q}&sort=stars&per_page={limit}"
     data = _get(url, token)
     return [

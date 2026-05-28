@@ -1,16 +1,23 @@
 [project]
 name = "genesis-architect"
-version = "2.1.0"
+version = "3.0.0"
 description = "The AI Software Architect that researches before it builds."
 requires-python = ">=3.11"
-dependencies = []
+dependencies = [
+    "typer>=0.12",
+    "anthropic>=0.28",
+    "httpx>=0.27",
+]
 
 [project.optional-dependencies]
-dev = ["pytest>=8", "ruff>=0.4"]
+dev = ["pytest>=8", "ruff>=0.4", "pytest-cov>=5"]
+
+[project.scripts]
+genesis = "genesis_architect.cli:main"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["scripts"]
+pythonpath = ["scripts", "src"]
 addopts = "-v --tb=short"
 
 [tool.ruff]

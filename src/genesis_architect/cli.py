@@ -22,6 +22,7 @@ def init(
     output: Optional[str] = typer.Option(None, "--output", "-o", help="Output directory"),
     model: str = typer.Option("claude-sonnet-4-6", "--model", "-m", help="LLM model to use"),
     name: Optional[str] = typer.Option(None, "--name", "-n", help="Project name"),
+    language: Optional[str] = typer.Option(None, "--language", "-l", help="Primary language (python, typescript, go, rust, ...)"),
 ):
     """Scan GitHub repos, mine pitfalls, and scaffold your project."""
     from genesis_architect import config as cfg
@@ -55,7 +56,7 @@ def init(
     # --- Phase 1: GitHub scan ---
     typer.echo("Phase 1: Scanning GitHub repositories...")
     try:
-        repos = github.search_repos(vision, token=github_token, limit=15)
+        repos = github.search_repos(vision, token=github_token, limit=15, language=language)
     except GitHubRateLimitError as e:
         typer.echo(str(e), err=True)
         raise typer.Exit(1)

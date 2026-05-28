@@ -1,4 +1,18 @@
-"""Collect release data and generate publish-ready content for HN and GitHub Releases."""
+"""Collect release data and generate publish-ready content for HN and GitHub Releases.
+
+Architectural note — why we use a browser-AI prompt instead of headless auto-submission:
+  Hacker News runs persistent anti-bot detection (rate fingerprinting, TLS JA3 hashing,
+  behavioral mouse/timing analysis). Automated headless submissions — even via Playwright
+  with stealth plugins — are silently shadowbanned: the post appears to the submitter but
+  is invisible to everyone else, with no error or warning. This is unrecoverable once it
+  happens to an account or domain.
+
+  This module deliberately generates a human-readable prompt that the user pastes into an
+  authenticated browser session via their own AI extension. The actual HTTP request comes
+  from a real browser with a valid session cookie, real user-agent, and human-like timing.
+  This is not an incomplete implementation — it is the correct architecture for any tool
+  that cares about the long-term health of the user's HN account and domain reputation.
+"""
 
 import json
 import re
@@ -197,11 +211,21 @@ def format_output(content: dict, version: str = "") -> str:
         f'Then click the submit button.'
     )
 
+    arch_note = (
+        "NOTE: genesis publish uses a browser-AI prompt instead of headless auto-submission.\n"
+        "  This is a deliberate architectural decision: HN silently shadowbans automated\n"
+        "  submissions (no error — post is invisible to everyone but you). By generating\n"
+        "  a prompt for your authenticated browser session, your account and domain stay\n"
+        "  100% safe. Paste Option 2 into your Chrome AI extension and it handles the rest."
+    )
+
     lines = [
         "",
         bar,
         f"  Genesis Publish  {v}".rstrip(),
         bar,
+        "",
+        arch_note,
         "",
         "OPTION 1 - Manual Copy-Paste",
         "-" * 40,

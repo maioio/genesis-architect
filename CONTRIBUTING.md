@@ -7,7 +7,9 @@ Thanks for your interest. This document covers everything you need to make a use
 ## What to work on
 
 Check [open issues](https://github.com/maioio/genesis-architect/issues) first.
-Issues labeled `good first issue` are scoped and ready to pick up.
+Issues labeled [`good first issue`](https://github.com/maioio/genesis-architect/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) are scoped, well-defined, and ready to pick up without needing deep context.
+
+If you're opening a new issue and it's small and self-contained, add the `good first issue` label yourself - it helps other contributors find it.
 
 Good contribution types:
 - New language templates (Elixir, Java, Ruby, Swift)

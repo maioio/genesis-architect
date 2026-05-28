@@ -233,3 +233,219 @@ class TestFormatOutput:
         out = publish_agent.format_output(self._content())
         assert "OPTION 1" in out
         assert "OPTION 2" in out
+
+    def test_visual_assets_section_present_when_gif_provided(self, tmp_path):
+        gif = tmp_path / "action_replay.gif"
+        gif.write_bytes(b"GIF")
+        psr = {"replay_gif": gif, "screenshots": [], "session_name": "psr_20260519_output"}
+        out = publish_agent.format_output(self._content(), version="3.0.0", psr_assets=psr)
+        assert "VISUAL ASSETS" in out
+
+    def test_visual_assets_shows_gif_filename(self, tmp_path):
+        gif = tmp_path / "action_replay.gif"
+        gif.write_bytes(b"GIF")
+        psr = {"replay_gif": gif, "screenshots": [], "session_name": "psr_20260519_output"}
+        out = publish_agent.format_output(self._content(), version="3.0.0", psr_assets=psr)
+        assert "action_replay.gif" in out
+
+    def test_visual_assets_section_absent_when_no_assets(self):
+        psr = {"replay_gif": None, "screenshots": [], "session_name": ""}
+        out = publish_agent.format_output(self._content(), version="3.0.0", psr_assets=psr)
+        assert "VISUAL ASSETS" not in out
+
+    def test_visual_assets_shows_screenshot_count(self, tmp_path):
+        shots = []
+        for i in range(3):
+            p = tmp_path / f"step_{i:03d}.png"
+            p.write_bytes(b"PNG")
+            shots.append(p)
+        psr = {"replay_gif": None, "screenshots": shots, "session_name": "psr_20260519_output"}
+        out = publish_agent.format_output(self._content(), version="3.0.0", psr_assets=psr)
+        assert "VISUAL ASSETS" in out
+        assert "step_000.png" in out
+
+    def test_no_absolute_paths_in_output(self, tmp_path):
+        gif = tmp_path / "action_replay.gif"
+        gif.write_bytes(b"GIF")
+        psr = {"replay_gif": gif, "screenshots": [], "session_name": "psr_session"}
+        out = publish_agent.format_output(self._content(), version="3.0.0", psr_assets=psr)
+        # Must not expose Windows-style absolute user paths
+        import re
+        assert not re.search(r"[A-Za-z]:[/\\]Users[/\\]\w+[/\\]", out)
+
+
+# ---------------------------------------------------------------------------
+# sanitize_for_public
+# ---------------------------------------------------------------------------
+
+class TestSanitizeForPublic:
+    def test_redacts_windows_user_path(self):
+        text = r"File at C:\Users\JohnDoe\psr_output\session"
+        out = publish_agent.sanitize_for_public(text)
+        assert "JohnDoe" not in out
+        assert "~" in out
+
+    def test_redacts_windows_path_no_trailing_slash(self):
+        text = r"Path: C:\Users\alice"
+        out = publish_agent.sanitize_for_public(text)
+        assert "alice" not in out
+
+    def test_redacts_posix_home_path(self):
+        text = "/home/bobsmith/psr_output/session"
+        out = publish_agent.sanitize_for_public(text)
+        assert "bobsmith" not in out
+        assert "~" in out
+
+    def test_redacts_api_key_sk_ant(self):
+        text = "key=sk-ant-api03-abcdefghijk123456"
+        out = publish_agent.sanitize_for_public(text)
+        assert "abcdefghijk123456" not in out
+        assert "[REDACTED]" in out
+
+    def test_redacts_github_pat(self):
+        text = "token: ghp_ABCDEFGHIJKLMNOPQRST"
+        out = publish_agent.sanitize_for_public(text)
+        assert "ABCDEFGHIJKLMNOPQRST" not in out
+
+    def test_safe_text_unchanged(self):
+        text = "Genesis Architect v3.0.0 - Added fork analysis."
+        out = publish_agent.sanitize_for_public(text)
+        assert out == text
+
+    def test_empty_string_unchanged(self):
+        assert publish_agent.sanitize_for_public("") == ""
+
+    def test_none_like_empty_handled(self):
+        assert publish_agent.sanitize_for_public("") == ""
+
+
+# ---------------------------------------------------------------------------
+# detect_psr_assets
+# ---------------------------------------------------------------------------
+
+class TestDetectPsrAssets:
+    def _make_session(self, base: Path, name: str, has_gif: bool = True, shot_count: int = 5) -> Path:
+        session_dir = base / name
+        session_dir.mkdir(parents=True)
+        if has_gif:
+            (session_dir / "action_replay.gif").write_bytes(b"GIF")
+        shots_dir = session_dir / "screenshots"
+        shots_dir.mkdir()
+        for i in range(shot_count):
+            (shots_dir / f"step_{i:03d}.png").write_bytes(b"PNG")
+        return session_dir
+
+    def test_returns_none_when_no_psr_dir(self, tmp_path):
+        result = publish_agent.detect_psr_assets(tmp_path / "nonexistent")
+        assert result["replay_gif"] is None
+        assert result["screenshots"] == []
+
+    def test_detects_replay_gif(self, tmp_path):
+        self._make_session(tmp_path, "psr_20260519_222400_output")
+        result = publish_agent.detect_psr_assets(tmp_path)
+        assert result["replay_gif"] is not None
+        assert result["replay_gif"].name == "action_replay.gif"
+
+    def test_detects_screenshots(self, tmp_path):
+        self._make_session(tmp_path, "psr_20260519_222400_output", shot_count=5)
+        result = publish_agent.detect_psr_assets(tmp_path)
+        assert len(result["screenshots"]) == 3  # first, middle, last
+
+    def test_picks_latest_session_when_multiple(self, tmp_path):
+        self._make_session(tmp_path, "psr_20260518_output")
+        import time; time.sleep(0.05)
+        self._make_session(tmp_path, "psr_20260519_output")
+        result = publish_agent.detect_psr_assets(tmp_path)
+        assert result["session_name"] == "psr_20260519_output"
+
+    def test_session_name_is_dirname_not_full_path(self, tmp_path):
+        self._make_session(tmp_path, "psr_20260519_222400_output")
+        result = publish_agent.detect_psr_assets(tmp_path)
+        assert result["session_name"] == "psr_20260519_222400_output"
+        assert str(tmp_path) not in result["session_name"]
+
+    def test_no_gif_when_file_absent(self, tmp_path):
+        self._make_session(tmp_path, "psr_20260519_output", has_gif=False)
+        result = publish_agent.detect_psr_assets(tmp_path)
+        assert result["replay_gif"] is None
+
+    def test_screenshots_capped_at_three(self, tmp_path):
+        self._make_session(tmp_path, "psr_20260519_output", shot_count=20)
+        result = publish_agent.detect_psr_assets(tmp_path)
+        assert len(result["screenshots"]) <= 3
+
+    def test_single_screenshot_returned_once(self, tmp_path):
+        self._make_session(tmp_path, "psr_20260519_output", shot_count=1)
+        result = publish_agent.detect_psr_assets(tmp_path)
+        assert len(result["screenshots"]) == 1
+
+
+# ---------------------------------------------------------------------------
+# collect_release_data — psr_assets integration
+# ---------------------------------------------------------------------------
+
+class TestCollectReleaseDataPsr:
+    def test_psr_assets_included_in_return(self, tmp_path):
+        psr_root = tmp_path / "psr_output"
+        psr_root.mkdir()
+        session = psr_root / "psr_20260519_output"
+        session.mkdir()
+        (session / "action_replay.gif").write_bytes(b"GIF")
+
+        from unittest import mock
+        with mock.patch.object(publish_agent, "_get_recent_commits", return_value=[]):
+            with mock.patch.object(publish_agent, "_detect_test_count", return_value=0):
+                data = publish_agent.collect_release_data(tmp_path, psr_root=psr_root)
+
+        assert "psr_assets" in data
+        assert data["psr_assets"]["replay_gif"] is not None
+
+    def test_psr_assets_empty_when_no_psr_dir(self, tmp_path):
+        from unittest import mock
+        with mock.patch.object(publish_agent, "_get_recent_commits", return_value=[]):
+            with mock.patch.object(publish_agent, "_detect_test_count", return_value=0):
+                data = publish_agent.collect_release_data(tmp_path, psr_root=tmp_path / "nonexistent")
+
+        assert data["psr_assets"]["replay_gif"] is None
+
+
+# ---------------------------------------------------------------------------
+# generate_publish_content — visual markdown in release body
+# ---------------------------------------------------------------------------
+
+class TestGeneratePublishContentVisual:
+    def _data(self, psr_assets=None):
+        return {
+            "version": "3.0.0",
+            "release_notes_raw": "# v3.0.0\n\nAdded fork analysis.",
+            "commits": ["abc feat: fork analyzer"],
+            "test_count": 316,
+            "psr_assets": psr_assets or {"replay_gif": None, "screenshots": [], "session_name": ""},
+        }
+
+    def test_release_body_contains_gif_tag_when_gif_present(self, tmp_path):
+        gif = tmp_path / "action_replay.gif"
+        gif.write_bytes(b"GIF")
+        psr = {"replay_gif": gif, "screenshots": [], "session_name": "psr_session"}
+        import json
+        hn = json.dumps({"title": "Show HN: X", "comment": "Y"})
+        llm_fn = __import__("unittest.mock", fromlist=["Mock"]).Mock(side_effect=[hn, "body text"])
+        content = publish_agent.generate_publish_content(self._data(psr), llm_fn)
+        assert "action_replay.gif" in content["release_body"]
+
+    def test_release_body_no_absolute_paths(self, tmp_path):
+        gif = tmp_path / "action_replay.gif"
+        gif.write_bytes(b"GIF")
+        psr = {"replay_gif": gif, "screenshots": [], "session_name": "psr_session"}
+        import json, re
+        hn = json.dumps({"title": "Show HN: X", "comment": "Y"})
+        llm_fn = __import__("unittest.mock", fromlist=["Mock"]).Mock(side_effect=[hn, "body"])
+        content = publish_agent.generate_publish_content(self._data(psr), llm_fn)
+        assert not re.search(r"[A-Za-z]:[/\\]Users[/\\]\w+", content["release_body"])
+
+    def test_release_body_clean_when_no_psr_assets(self):
+        import json
+        hn = json.dumps({"title": "Show HN: X", "comment": "Y"})
+        llm_fn = __import__("unittest.mock", fromlist=["Mock"]).Mock(side_effect=[hn, "body text"])
+        content = publish_agent.generate_publish_content(self._data(), llm_fn)
+        assert "action_replay.gif" not in content["release_body"]

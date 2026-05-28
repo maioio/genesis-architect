@@ -193,12 +193,17 @@ def publish(
     typer.echo(f"  Version: {data['version']}")
     typer.echo(f"  Commits found: {len(data['commits'])}")
     typer.echo(f"  Tests: {data['test_count']}")
+    psr = data.get("psr_assets", {})
+    if psr.get("replay_gif"):
+        typer.echo(f"  PSR replay GIF: {psr['session_name']}/action_replay.gif")
+    if psr.get("screenshots"):
+        typer.echo(f"  PSR screenshots: {len(psr['screenshots'])} key frames found")
     typer.echo("\nGenerating content with LLM...")
 
     llm_fn = lambda prompt: llm.ask(prompt, model=model, api_key=llm_api_key)
     content = publish_agent.generate_publish_content(data, llm_fn)
 
-    typer.echo(publish_agent.format_output(content, version=data["version"]))
+    typer.echo(publish_agent.format_output(content, version=data["version"], psr_assets=psr))
 
 
 @app.command()

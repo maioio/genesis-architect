@@ -4,9 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Genesis Architect — Research First. Build Once.</title>
-<meta name="description" content="Claude Code skill that scans 15-20 real repos, extracts pitfalls from GitHub Issues, and delivers a battle-tested scaffold before writing one line of code.">
-<meta property="og:title" content="Genesis Architect">
-<meta property="og:description" content="Research first. Build once. Claude Code skill for battle-tested project scaffolding.">
+<meta name="description" content="The open-source scaffolder that checks GitHub issues and active forks before writing a single line of code. pip install genesis-architect">
+<meta property="og:title" content="Genesis Architect — Research First. Build Once.">
+<meta property="og:description" content="Scans 15-20 real GitHub repos and mines their Issues before scaffolding your project. Finds the traps before you fall into them.">
+<meta property="og:image" content="https://maioio.github.io/genesis-architect/assets/og.png">
 <style>
   :root {
     --bg: #0d0f14;
@@ -42,100 +43,96 @@
   .hero { padding: 100px 5% 80px; text-align: center; position: relative; overflow: hidden; }
   .hero::before { content: ''; position: absolute; top: -200px; left: 50%; transform: translateX(-50%); width: 700px; height: 700px; background: radial-gradient(circle, #7c6af712 0%, transparent 65%); pointer-events: none; }
   .hero-badge { display: inline-block; background: #7c6af720; border: 1px solid #7c6af750; color: var(--purple); padding: 5px 14px; border-radius: 20px; font-size: 12px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 24px; }
-  .hero h1 { font-size: clamp(42px, 6vw, 76px); font-weight: 900; line-height: 1.05; margin-bottom: 24px; }
-  .hero h1 span { background: linear-gradient(135deg, #fff 20%, #7c6af7 60%, #4fc3f7 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-  .hero p { font-size: 20px; color: var(--dim); max-width: 600px; margin: 0 auto 40px; }
-  .hero-ctas { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
-  .btn-primary { background: var(--purple); color: white; padding: 13px 28px; border-radius: 10px; font-weight: 700; font-size: 15px; transition: transform .2s, opacity .2s; }
+  .hero h1 { font-size: clamp(32px, 5vw, 64px); font-weight: 900; line-height: 1.1; margin-bottom: 24px; max-width: 820px; margin-left: auto; margin-right: auto; }
+  .hero h1 em { font-style: normal; background: linear-gradient(135deg, #fff 20%, #7c6af7 60%, #4fc3f7 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .hero p { font-size: 18px; color: var(--dim); max-width: 580px; margin: 0 auto 40px; }
+  .hero-ctas { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 48px; }
+  .btn-primary { background: var(--purple); color: white; padding: 13px 28px; border-radius: 10px; font-weight: 700; font-size: 15px; transition: transform .2s, opacity .2s; display: inline-block; }
   .btn-primary:hover { transform: translateY(-2px); opacity: 0.9; color: white; }
-  .btn-secondary { background: var(--surface); border: 1px solid var(--border); color: var(--white); padding: 13px 28px; border-radius: 10px; font-weight: 600; font-size: 15px; transition: border-color .2s; }
+  .btn-secondary { background: var(--surface); border: 1px solid var(--border); color: var(--white); padding: 13px 28px; border-radius: 10px; font-weight: 600; font-size: 15px; transition: border-color .2s; display: inline-block; }
   .btn-secondary:hover { border-color: var(--purple); color: var(--white); }
 
-  /* DEMO VIDEO */
+  /* INSTALL QUICK */
+  .install-quick { background: #090b0f; border: 1px solid var(--border); border-radius: 12px; padding: 16px 24px; font-family: 'Courier New', monospace; font-size: 14px; display: inline-flex; align-items: center; gap: 12px; margin: 0 auto; }
+  .install-quick .prompt { color: var(--muted); }
+  .install-quick .cmd { color: var(--mint); }
+  .install-quick .copy-btn { background: var(--surface2); border: 1px solid var(--border); color: var(--dim); padding: 4px 10px; border-radius: 6px; font-size: 11px; cursor: pointer; font-family: inherit; transition: all .2s; }
+  .install-quick .copy-btn:hover { border-color: var(--purple); color: var(--white); }
+
+  /* DEMO */
   .demo-section { padding: 60px 5%; max-width: 960px; margin: 0 auto; }
-  .demo-frame { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
+  .demo-frame { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; box-shadow: 0 24px 64px #00000060; }
   .demo-bar { background: var(--surface2); padding: 10px 16px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--border); }
   .demo-dot { width: 12px; height: 12px; border-radius: 50%; }
   .demo-title { font-size: 12px; color: var(--dim); margin-left: 8px; font-family: 'Courier New', monospace; }
-  .demo-placeholder { background: #090b0f; padding: 48px; text-align: center; min-height: 280px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; }
-  .demo-placeholder .icon { font-size: 48px; }
-  .demo-placeholder p { color: var(--dim); font-size: 14px; max-width: 400px; }
-  /* When demo.gif exists, replace placeholder with: */
-  /* .demo-placeholder img { width: 100%; border-radius: 8px; } */
+  .demo-content { background: #090b0f; min-height: 300px; display: flex; align-items: center; justify-content: center; }
+  .demo-content img { width: 100%; display: block; }
+  .demo-placeholder { padding: 60px 48px; text-align: center; }
+  .demo-placeholder .play-btn { width: 64px; height: 64px; background: var(--purple); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 22px; margin: 0 auto 20px; cursor: pointer; transition: transform .2s; }
+  .demo-placeholder .play-btn:hover { transform: scale(1.1); }
+  .demo-placeholder p { color: var(--dim); font-size: 14px; }
 
   /* STATS */
-  .stats { padding: 0 5% 80px; }
-  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 16px; max-width: 900px; margin: 0 auto; }
-  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 24px 16px; text-align: center; }
-  .stat-n { font-size: 36px; font-weight: 900; display: block; color: var(--mint); }
-  .stat-l { font-size: 12px; color: var(--dim); text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; }
+  .stats-strip { padding: 0 5% 60px; }
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 14px; max-width: 900px; margin: 0 auto; }
+  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px 12px; text-align: center; }
+  .stat-n { font-size: 32px; font-weight: 900; display: block; color: var(--mint); }
+  .stat-l { font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; }
+
+  /* HOW IT WORKS */
+  .how-section { padding: 80px 5%; }
+  .section-label { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: var(--purple); font-weight: 700; margin-bottom: 10px; text-align: center; }
+  .section-title { font-size: clamp(26px, 4vw, 40px); font-weight: 800; text-align: center; margin-bottom: 12px; }
+  .section-sub { text-align: center; color: var(--dim); font-size: 16px; margin-bottom: 48px; max-width: 560px; margin-left: auto; margin-right: auto; }
+  .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0; max-width: 960px; margin: 0 auto; }
+  .step { padding: 28px; position: relative; }
+  .step:not(:last-child)::after { content: '→'; position: absolute; right: -8px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 20px; }
+  .step-num { font-size: 11px; font-weight: 700; color: var(--purple); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 12px; }
+  .step-icon { font-size: 32px; margin-bottom: 12px; }
+  .step h3 { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+  .step p { font-size: 13px; color: var(--dim); }
 
   /* FEATURES */
-  .features { padding: 80px 5%; }
-  .section-label { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: var(--purple); font-weight: 700; margin-bottom: 10px; text-align: center; }
-  .section-title { font-size: 36px; font-weight: 800; text-align: center; margin-bottom: 12px; }
-  .section-sub { text-align: center; color: var(--dim); font-size: 16px; margin-bottom: 48px; max-width: 560px; margin-left: auto; margin-right: auto; }
+  .features { padding: 80px 5%; background: var(--surface); }
   .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; max-width: 1000px; margin: 0 auto; }
-  .feature-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 28px; transition: border-color .2s, transform .2s; }
+  .feature-card { background: var(--bg); border: 1px solid var(--border); border-radius: 16px; padding: 28px; transition: border-color .2s, transform .2s; }
   .feature-card:hover { border-color: var(--purple); transform: translateY(-3px); }
   .feature-icon { font-size: 28px; margin-bottom: 14px; }
   .feature-card h3 { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
   .feature-card p { font-size: 14px; color: var(--dim); line-height: 1.6; }
+  .feature-new { display: inline-block; background: #64ffda18; border: 1px solid #64ffda40; color: var(--mint); padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 700; margin-left: 8px; vertical-align: middle; }
 
-  /* PHASES */
-  .phases-section { padding: 80px 5%; background: var(--surface); }
-  .phases-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; max-width: 1000px; margin: 0 auto; }
-  .phase-card { background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 18px; }
-  .phase-num { font-size: 11px; font-weight: 700; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px; }
-  .phase-name { font-size: 14px; font-weight: 700; color: var(--white); margin-bottom: 4px; }
-  .phase-desc { font-size: 12px; color: var(--dim); }
-
-  /* INSTALL */
-  .install-section { padding: 80px 5%; max-width: 760px; margin: 0 auto; }
-  .code-block { background: #090b0f; border: 1px solid var(--border); border-radius: 12px; padding: 20px 24px; font-family: 'Courier New', monospace; font-size: 14px; line-height: 1.8; overflow-x: auto; }
-  .code-block .c { color: #4a6280; }
-  .code-block .cmd { color: var(--mint); }
-  .code-block .flag { color: var(--purple); }
-  .code-block .out { color: var(--dim); }
-
-  /* MARKET */
-  .market-section { padding: 80px 5%; }
-  .compare-table { width: 100%; border-collapse: collapse; font-size: 14px; max-width: 900px; margin: 0 auto; }
+  /* COMPARISON */
+  .compare-section { padding: 80px 5%; }
+  .compare-table { width: 100%; border-collapse: collapse; font-size: 14px; max-width: 960px; margin: 0 auto; }
   .compare-table th { background: var(--surface2); padding: 14px 16px; text-align: left; font-size: 12px; font-weight: 700; color: var(--dim); border: 1px solid var(--border); letter-spacing: 0.5px; }
+  .compare-table th.genesis { color: var(--purple); background: #7c6af710; }
   .compare-table td { padding: 12px 16px; border: 1px solid var(--border); background: var(--surface); font-size: 13px; }
   .compare-table tr:hover td { background: var(--surface2); }
   .ck { color: var(--green); font-weight: 700; }
   .cx { color: var(--muted); }
   .cp { color: var(--gold); }
-  .highlight-row td { background: #7c6af708 !important; border-left: 3px solid var(--purple) !important; }
-  .highlight-row:hover td { background: #7c6af712 !important; }
+  .highlight-row td { background: #7c6af708 !important; }
+  .highlight-row td:nth-child(2) { border-left: 3px solid var(--purple) !important; }
 
-  /* PIPELINE */
-  .pipeline-section { padding: 80px 5%; background: var(--surface); }
-  .pipeline { display: flex; align-items: center; justify-content: center; gap: 0; flex-wrap: wrap; max-width: 860px; margin: 32px auto 0; }
-  .pipe-step { background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; text-align: center; min-width: 130px; }
-  .pipe-step.hi { border-color: var(--purple); background: #7c6af708; }
-  .pipe-step.new { border-color: var(--mint); background: #64ffda08; }
-  .pipe-icon { font-size: 24px; margin-bottom: 6px; }
-  .pipe-name { font-size: 13px; font-weight: 700; }
-  .pipe-tool { font-size: 11px; color: var(--dim); margin-top: 4px; font-family: monospace; }
-  .pipe-arrow { font-size: 20px; color: var(--muted); padding: 0 10px; }
-  .pipe-badge { display: inline-block; background: #64ffda18; border: 1px solid #64ffda40; color: var(--mint); padding: 2px 8px; border-radius: 20px; font-size: 9px; font-weight: 700; margin-top: 6px; }
-  .pipeline-note { text-align: center; color: var(--dim); font-size: 14px; margin-top: 28px; font-style: italic; }
+  /* INSTALL FULL */
+  .install-section { padding: 80px 5%; max-width: 760px; margin: 0 auto; }
+  .code-block { background: #090b0f; border: 1px solid var(--border); border-radius: 12px; padding: 24px 28px; font-family: 'Courier New', monospace; font-size: 14px; line-height: 2; overflow-x: auto; }
+  .code-block .c { color: #4a6280; }
+  .code-block .cmd { color: var(--mint); }
+  .code-block .flag { color: var(--purple); }
+  .code-block .str { color: var(--gold); }
 
   /* FOOTER */
   footer { text-align: center; padding: 48px 5%; border-top: 1px solid var(--border); color: var(--muted); font-size: 13px; }
   footer a { color: var(--purple); }
 
-  /* DIVIDER */
-  .divider { height: 1px; background: var(--border); max-width: 100%; }
-
-  @media (max-width: 600px) {
-    .hero h1 { font-size: 36px; }
-    .hero p { font-size: 16px; }
+  @media (max-width: 640px) {
+    .hero h1 { font-size: 30px; }
     nav .nav-links { display: none; }
-    .pipeline { flex-direction: column; }
-    .pipe-arrow { transform: rotate(90deg); }
+    .steps { grid-template-columns: 1fr; }
+    .step::after { display: none; }
+    .install-quick { flex-direction: column; font-size: 13px; }
   }
 </style>
 </head>
@@ -147,178 +144,247 @@
     Genesis Architect
   </div>
   <div class="nav-links">
+    <a href="#how">How it works</a>
     <a href="#features">Features</a>
-    <a href="#phases">Phases</a>
-    <a href="#market">vs. Others</a>
+    <a href="#compare">vs. Others</a>
     <a href="#install">Install</a>
   </div>
-  <a class="nav-links nav-cta" href="https://github.com/maioio/genesis-architect">GitHub →</a>
+  <a class="nav-cta" href="https://github.com/maioio/genesis-architect">Star on GitHub →</a>
 </nav>
 
 <!-- HERO -->
 <section class="hero">
-  <div class="hero-badge">Claude Code Skill — v1.5.0</div>
-  <h1><span>Research First.<br>Build Once.</span></h1>
-  <p>Scans 15–20 real GitHub repos, extracts pitfalls from actual Issues, and delivers a battle-tested scaffold — before writing a single line of code.</p>
+  <div class="hero-badge">Open Source · v2.6.0 · MIT License</div>
+  <h1>The scaffolder that <em>checks GitHub Issues</em><br>before writing a single line of code.</h1>
+  <p>Scans 15–20 real repos, mines their Issues and active forks, then builds a scaffold that already knows the traps.</p>
   <div class="hero-ctas">
-    <a class="btn-primary" href="https://github.com/maioio/genesis-architect">Get Genesis →</a>
-    <a class="btn-secondary" href="#features">See what it does</a>
+    <a class="btn-primary" href="#install">Get started free →</a>
+    <a class="btn-secondary" href="https://github.com/maioio/genesis-architect">View on GitHub</a>
+  </div>
+  <div class="install-quick">
+    <span class="prompt">$</span>
+    <span class="cmd">pip install genesis-architect</span>
+    <button class="copy-btn" onclick="navigator.clipboard.writeText('pip install genesis-architect');this.textContent='Copied!';setTimeout(()=>this.textContent='Copy',1500)">Copy</button>
   </div>
 </section>
 
 <!-- DEMO -->
-<div class="demo-section">
+<div class="demo-section" id="demo">
   <div class="demo-frame">
     <div class="demo-bar">
       <div class="demo-dot" style="background:#ff5f57"></div>
       <div class="demo-dot" style="background:#febc2e"></div>
       <div class="demo-dot" style="background:#28c840"></div>
-      <span class="demo-title">claude — genesis init a Python CLI for log analysis</span>
+      <span class="demo-title">terminal — genesis init "a FastAPI task queue with Celery and Redis"</span>
     </div>
-    <div class="demo-placeholder">
-      <!-- Replace the content below with: <img src="../assets/demo.gif" alt="Genesis demo"> -->
-      <div class="icon">▶</div>
-      <p style="color:var(--dim);font-size:14px;">Demo recording coming soon.<br>
-      See <a href="https://github.com/maioio/genesis-architect/blob/main/DEMO_SCRIPT.md">DEMO_SCRIPT.md</a> for the recording guide.</p>
+    <div class="demo-content">
+      <!-- Replace with: <img src="assets/demo.gif" alt="Genesis Architect demo"> once recorded -->
+      <div class="demo-placeholder">
+        <div class="play-btn">▶</div>
+        <p>Demo GIF coming soon.<br>
+        <a href="https://github.com/maioio/genesis-architect#usage">See usage examples in the README →</a></p>
+      </div>
     </div>
   </div>
 </div>
 
 <!-- STATS -->
-<div class="stats" style="padding-top:60px;">
+<div class="stats-strip">
   <div class="stats-grid">
+    <div class="stat-card"><span class="stat-n">15–20</span><span class="stat-l">Repos scanned</span></div>
+    <div class="stat-card"><span class="stat-n">50</span><span class="stat-l">Issues per repo</span></div>
+    <div class="stat-card"><span class="stat-n">3</span><span class="stat-l">Active forks analyzed</span></div>
     <div class="stat-card"><span class="stat-n">8</span><span class="stat-l">Workflow phases</span></div>
-    <div class="stat-card"><span class="stat-n">15–20</span><span class="stat-l">Repos per run</span></div>
-    <div class="stat-card"><span class="stat-n">5</span><span class="stat-l">Invocation modes</span></div>
-    <div class="stat-card"><span class="stat-n">5</span><span class="stat-l">Languages</span></div>
-    <div class="stat-card"><span class="stat-n">50</span><span class="stat-l">Issues/repo scanned</span></div>
-    <div class="stat-card"><span class="stat-n">384</span><span class="stat-l">Lines in SKILL.md</span></div>
+    <div class="stat-card"><span class="stat-n">316</span><span class="stat-l">Tests passing</span></div>
+    <div class="stat-card"><span class="stat-n">500</span><span class="stat-l">Vault entry cache</span></div>
   </div>
 </div>
 
+<!-- HOW IT WORKS -->
+<section class="how-section" id="how">
+  <div class="section-label">How it works</div>
+  <h2 class="section-title">Research first. Then build.</h2>
+  <p class="section-sub">Every other scaffolder starts from a template. Genesis starts from production data.</p>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">Step 1</div>
+      <div class="step-icon">🔍</div>
+      <h3>Scan real repos</h3>
+      <p>Finds 15–20 GitHub repos building exactly what you described. Ranks by stars and active fork activity.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">Step 2</div>
+      <div class="step-icon">⚠️</div>
+      <h3>Mine their Issues</h3>
+      <p>Reads up to 50 closed bug Issues per repo. Extracts recurring errors, security patches, architecture regrets.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">Step 3</div>
+      <div class="step-icon">🧬</div>
+      <h3>Synthesize the ecosystem</h3>
+      <p>Builds the "wise average" — what successful projects converge on — not just a copy of one repo.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">Step 4</div>
+      <div class="step-icon">🏗️</div>
+      <h3>Generate + validate</h3>
+      <p>Creates scaffold with tests and CI/CD. Runs a smoke test. Never declares success without exit code 0.</p>
+    </div>
+  </div>
+</section>
+
 <!-- FEATURES -->
 <section class="features" id="features">
-  <div class="section-label">What makes it different</div>
-  <h2 class="section-title">Not a template generator.</h2>
-  <p class="section-sub">Genesis doesn't copy a folder structure — it synthesizes the ecosystem and extracts real failures from production projects.</p>
+  <div class="section-label">What's inside</div>
+  <h2 class="section-title">Not a template. A research pipeline.</h2>
+  <p class="section-sub">Built for developers who've been burned by boilerplate that doesn't survive contact with production.</p>
   <div class="features-grid">
     <div class="feature-card">
       <div class="feature-icon">🔬</div>
-      <h3>Real GitHub Issue Scanning</h3>
-      <p>Reads the last 50 issues per top repo — open and closed. Extracts recurring errors, architecture regrets, and security patches from production.</p>
+      <h3>Real Issue Mining</h3>
+      <p>Reads closed bug issues from production repos. Finds the feedparser hang, the Redis connection leak, the Celery task that silently drops — before you write the code.</p>
     </div>
     <div class="feature-card">
-      <div class="feature-icon">🧠</div>
-      <h3>The Wise Average</h3>
-      <p>Doesn't copy one project. Synthesizes the most common folder structure (ecosystem convergence) with the highest-starred repo's decisions (quality signal).</p>
+      <div class="feature-icon">🍴</div>
+      <h3>Smart Fork Analysis <span class="feature-new">NEW</span></h3>
+      <p>Finds the top 3 active forks ranked by merged PRs in the last 6 months — not stars. Extracts their bug fixes and incorporates them into your pitfall list.</p>
     </div>
     <div class="feature-card">
-      <div class="feature-icon">💨</div>
-      <h3>Mandatory Smoke Test</h3>
-      <p>Auto-detects entrypoint from pyproject.toml or package.json. Never announces "complete" without exit code 0. If it fails, it fixes it first.</p>
+      <div class="feature-icon">🗄️</div>
+      <h3>Knowledge Vault <span class="feature-new">NEW</span></h3>
+      <p>Caches solutions locally with a 6-month TTL and LRU eviction at 500 entries. Runs fast on repeat projects. Falls back to Stack Overflow on cache miss.</p>
     </div>
     <div class="feature-card">
-      <div class="feature-icon">⚠️</div>
-      <h3>Deprecation Radar</h3>
-      <p>Flags dependencies with last commit older than 18 months, archived repos, and migration-away patterns across analyzed projects.</p>
+      <div class="feature-icon">💬</div>
+      <h3>Natural Language Choices <span class="feature-new">NEW</span></h3>
+      <p>Say "I want the simple one" instead of typing A. Genesis maps natural language to architecture choices — no memorizing option letters.</p>
     </div>
     <div class="feature-card">
-      <div class="feature-icon">📊</div>
-      <h3>Research Quality Signal</h3>
-      <p>Full / Partial / Thin rating shown before architecture choice. Fewer than 5 repos triggers a warning and offers alternatives.</p>
+      <div class="feature-icon">🤖</div>
+      <h3>Companion Mode <span class="feature-new">NEW</span></h3>
+      <p>Run <code style="font-family:monospace;color:var(--mint)">genesis companion</code> after scaffolding. Stays active, answers questions about your project, detects when you've moved on to something new.</p>
     </div>
     <div class="feature-card">
-      <div class="feature-icon">🤝</div>
-      <h3>Team Config Sharing</h3>
-      <p>Generates .genesis.json after scaffolding. Teammates run <code style="font-family:monospace;color:var(--mint);">genesis init --from-team-config</code> to build the same scaffold without repeating research.</p>
+      <div class="feature-icon">🔌</div>
+      <h3>Works with any LLM</h3>
+      <p>Claude, GPT-4, Gemini, Ollama — all supported via LiteLLM. Set your key once with <code style="font-family:monospace;color:var(--mint)">genesis config set LLM_API_KEY</code> and it works everywhere.</p>
     </div>
   </div>
 </section>
 
-<!-- PHASES -->
-<section class="phases-section" id="phases">
-  <div class="section-label">The workflow</div>
-  <h2 class="section-title" style="text-align:center;margin-bottom:12px;">8 phases. Sequential. Gated.</h2>
-  <p class="section-sub" style="text-align:center;margin-bottom:40px;">Never guesses on architecture decisions. Every step is declared before it runs.</p>
-  <div class="phases-grid">
-    <div class="phase-card" style="border-top:3px solid var(--muted)"><div class="phase-num">Phase 0</div><div class="phase-name">Environment Probe</div><div class="phase-desc">OS, Python, package manager. Windows PATH via sysconfig.</div></div>
-    <div class="phase-card" style="border-top:3px solid var(--blue)"><div class="phase-num">Phase 1</div><div class="phase-name">Vision Alignment</div><div class="phase-desc">2–3 questions A/B/C/D. Waits for answers. Never guesses.</div></div>
-    <div class="phase-card" style="border-top:3px solid var(--purple)"><div class="phase-num">Phase 2</div><div class="phase-name">Deep Discovery</div><div class="phase-desc">15–20 repos. 50 issues each. GitHub → Exa → Web fallback.</div></div>
-    <div class="phase-card" style="border-top:3px solid var(--mint)"><div class="phase-num">Phase 3</div><div class="phase-name">Architecture Analysis</div><div class="phase-desc">The Wise Average. Language confirmation. Windows pitfall watchlist.</div></div>
-    <div class="phase-card" style="border-top:3px solid var(--red)"><div class="phase-num">Phase 4</div><div class="phase-name">Pitfall Identification</div><div class="phase-desc">3–7 real pitfalls: issue link + root cause + mitigation.</div></div>
-    <div class="phase-card" style="border-top:3px solid var(--gold)"><div class="phase-num">Phase 5</div><div class="phase-name">Interactive Choice</div><div class="phase-desc">A: Minimalist / B: Scalable / C: Research decides / D: Hybrid.</div></div>
-    <div class="phase-card" style="border-top:3px solid var(--green)"><div class="phase-num">Phase 6</div><div class="phase-name">Genesis Build</div><div class="phase-desc">Structure → deps → boilerplate → tests → CI/CD → smoke test.</div></div>
-    <div class="phase-card" style="border-top:3px solid var(--blue)"><div class="phase-num">Phase 7</div><div class="phase-name">Companion Mode</div><div class="phase-desc">Research partner for the whole project. Restores from RESEARCH.md.</div></div>
-  </div>
-</section>
-
-<!-- MARKET -->
-<section class="market-section" id="market">
+<!-- COMPARE -->
+<section class="compare-section" id="compare">
   <div class="section-label">Market position</div>
   <h2 class="section-title">Genesis vs. The Ecosystem</h2>
-  <p class="section-sub">Each tool answers a different question. Genesis is the only one that connects research to working code.</p>
+  <p class="section-sub">Every tool answers a different question. Genesis is the only one that reads from production failures before it builds.</p>
   <table class="compare-table">
     <thead>
-      <tr><th>Capability</th><th>Genesis Architect</th><th>idea-os</th><th>cc-rig</th><th>production-audit</th></tr>
+      <tr>
+        <th>Capability</th>
+        <th class="genesis">Genesis Architect</th>
+        <th>Yeoman</th>
+        <th>Cookiecutter</th>
+        <th>create-react-app</th>
+      </tr>
     </thead>
     <tbody>
-      <tr class="highlight-row"><td>GitHub Issues Scanning</td><td><span class="ck">✓</span> 50 issues/repo</td><td><span class="cx">✗</span></td><td><span class="cx">✗</span></td><td><span class="cx">✗</span></td></tr>
-      <tr><td>Real Pitfall Extraction</td><td><span class="ck">✓</span> production data</td><td><span class="cx">✗</span></td><td><span class="cx">✗</span></td><td><span class="cp">~ audit only</span></td></tr>
-      <tr class="highlight-row"><td>Working Scaffold + Tests</td><td><span class="ck">✓</span> smoke test req.</td><td><span class="cx">✗</span></td><td><span class="cp">~ CLAUDE.md</span></td><td><span class="cx">✗</span></td></tr>
-      <tr><td>TAM / JTBD / SWOT</td><td><span class="cx">✗</span></td><td><span class="ck">✓</span> core feature</td><td><span class="cx">✗</span></td><td><span class="cx">✗</span></td></tr>
-      <tr><td>PRD + Product Planning</td><td><span class="cx">✗</span></td><td><span class="ck">✓</span></td><td><span class="cx">✗</span></td><td><span class="cx">✗</span></td></tr>
-      <tr class="highlight-row"><td>Team Config Sharing</td><td><span class="ck">✓</span> .genesis.json</td><td><span class="cx">✗</span></td><td><span class="cp">~ .cc-rig.json</span></td><td><span class="cx">✗</span></td></tr>
-      <tr class="highlight-row"><td>--from-prd Pipeline</td><td><span class="ck">✓</span> v1.5.0</td><td><span class="cx">✗</span></td><td><span class="cx">✗</span></td><td><span class="cx">✗</span></td></tr>
-      <tr><td>Audit Existing Codebase</td><td><span class="ck">✓</span> genesis audit</td><td><span class="cx">✗</span></td><td><span class="cx">✗</span></td><td><span class="ck">✓</span> deployment</td></tr>
-      <tr><td>CI/CD Generation</td><td><span class="ck">✓</span> GitHub Actions</td><td><span class="cx">✗</span></td><td><span class="cx">✗</span></td><td><span class="cx">✗</span></td></tr>
-      <tr><td>Deprecation Detection</td><td><span class="ck">✓</span> &gt;18mo last commit</td><td><span class="cx">✗</span></td><td><span class="cx">✗</span></td><td><span class="cx">✗</span></td></tr>
+      <tr class="highlight-row">
+        <td>Scans real GitHub repos before build</td>
+        <td><span class="ck">✓</span> 15–20 repos</td>
+        <td><span class="cx">✗</span></td>
+        <td><span class="cx">✗</span></td>
+        <td><span class="cx">✗</span></td>
+      </tr>
+      <tr class="highlight-row">
+        <td>Extracts pitfalls from GitHub Issues</td>
+        <td><span class="ck">✓</span> 50 issues/repo</td>
+        <td><span class="cx">✗</span></td>
+        <td><span class="cx">✗</span></td>
+        <td><span class="cx">✗</span></td>
+      </tr>
+      <tr class="highlight-row">
+        <td>Analyzes active forks (by merged PRs)</td>
+        <td><span class="ck">✓</span> top 3 forks</td>
+        <td><span class="cx">✗</span></td>
+        <td><span class="cx">✗</span></td>
+        <td><span class="cx">✗</span></td>
+      </tr>
+      <tr>
+        <td>Generates scaffold with tests + CI/CD</td>
+        <td><span class="ck">✓</span> smoke test required</td>
+        <td><span class="cp">~ templates only</span></td>
+        <td><span class="cp">~ templates only</span></td>
+        <td><span class="ck">✓</span> React only</td>
+      </tr>
+      <tr>
+        <td>Stays active after scaffold (companion)</td>
+        <td><span class="ck">✓</span> genesis companion</td>
+        <td><span class="cx">✗</span></td>
+        <td><span class="cx">✗</span></td>
+        <td><span class="cx">✗</span></td>
+      </tr>
+      <tr>
+        <td>Knowledge vault (solution cache)</td>
+        <td><span class="ck">✓</span> 6-month TTL</td>
+        <td><span class="cx">✗</span></td>
+        <td><span class="cx">✗</span></td>
+        <td><span class="cx">✗</span></td>
+      </tr>
+      <tr>
+        <td>Works with any LLM provider</td>
+        <td><span class="ck">✓</span> LiteLLM</td>
+        <td><span class="cx">✗</span></td>
+        <td><span class="cx">✗</span></td>
+        <td><span class="cx">✗</span></td>
+      </tr>
+      <tr>
+        <td>Language support</td>
+        <td><span class="ck">✓</span> Python, JS, TS, Go, more</td>
+        <td><span class="ck">✓</span> any</td>
+        <td><span class="ck">✓</span> any</td>
+        <td><span class="cx">✗</span> React only</td>
+      </tr>
     </tbody>
   </table>
-</section>
-
-<!-- PIPELINE -->
-<section class="pipeline-section">
-  <div class="section-label">New in v1.5.0</div>
-  <h2 class="section-title" style="text-align:center;margin-bottom:8px;">The pipeline that didn't exist.</h2>
-  <p style="text-align:center;color:var(--dim);margin-bottom:0;font-size:15px;">idea-os asks "what to build". Genesis asks "how to build without falling into the traps". Now they're connected.</p>
-  <div class="pipeline">
-    <div class="pipe-step"><div class="pipe-icon">💡</div><div class="pipe-name">Raw Idea</div><div class="pipe-tool">your head</div></div>
-    <div class="pipe-arrow">→</div>
-    <div class="pipe-step hi"><div class="pipe-icon">📋</div><div class="pipe-name">idea-os</div><div class="pipe-tool">PRD + Market</div></div>
-    <div class="pipe-arrow">→</div>
-    <div class="pipe-step new"><div class="pipe-icon">⚡</div><div class="pipe-name">genesis init</div><div class="pipe-tool">--from-prd PRD.md</div><div><span class="pipe-badge">NEW BRIDGE</span></div></div>
-    <div class="pipe-arrow">→</div>
-    <div class="pipe-step hi"><div class="pipe-icon">🏗️</div><div class="pipe-name">Genesis Build</div><div class="pipe-tool">scaffold+tests+CI</div></div>
-    <div class="pipe-arrow">→</div>
-    <div class="pipe-step"><div class="pipe-icon">🚀</div><div class="pipe-name">Production</div><div class="pipe-tool">git push</div></div>
-  </div>
-  <p class="pipeline-note">No other tool connects product planning to engineering execution in a single command.</p>
 </section>
 
 <!-- INSTALL -->
 <section class="install-section" id="install">
   <div class="section-label">Get started</div>
-  <h2 class="section-title" style="text-align:center;margin-bottom:32px;">Install in 30 seconds</h2>
-  <div class="code-block">
-<span class="c"># Install</span>
+  <h2 class="section-title" style="text-align:center;margin-bottom:32px;">Up and running in 2 minutes</h2>
+
+  <p style="color:var(--dim);font-size:13px;margin-bottom:8px;font-weight:600;text-transform:uppercase;letter-spacing:1px;">Option 1 — pip (standalone)</p>
+  <div class="code-block" style="margin-bottom:28px;">
+<span class="cmd">pip install genesis-architect</span>
+<span class="cmd">genesis config set</span> LLM_API_KEY <span class="str">your-api-key</span>
+<span class="cmd">genesis init</span> <span class="str">"a FastAPI task queue with Celery and Redis"</span>
+  </div>
+
+  <p style="color:var(--dim);font-size:13px;margin-bottom:8px;font-weight:600;text-transform:uppercase;letter-spacing:1px;">Option 2 — Claude Code skill</p>
+  <div class="code-block" style="margin-bottom:28px;">
+<span class="c"># Clone into your Claude skills directory</span>
 <span class="cmd">git clone</span> https://github.com/maioio/genesis-architect ~/.claude/skills/genesis-architect
 
-<span class="c"># Use</span>
-<span class="cmd">genesis init</span> a Python CLI for analyzing log files
-<span class="cmd">genesis init</span> <span class="flag">--from-prd</span> PRD.md        <span class="c"># from a product spec</span>
-<span class="cmd">genesis init</span> <span class="flag">--from-team-config</span>         <span class="c"># restore teammate's research</span>
-<span class="cmd">genesis audit</span> ./existing-project        <span class="c"># audit existing code</span>
+<span class="c"># Then just describe what you want to build</span>
+genesis init a Python CLI for analyzing log files
   </div>
-  <p style="text-align:center;margin-top:28px;color:var(--dim);font-size:14px;">
-    Works with Claude Code. No API keys needed. MCP tools optional — degrades gracefully.
-  </p>
-  <div style="text-align:center;margin-top:28px;">
+
+  <p style="color:var(--dim);font-size:13px;margin-bottom:8px;font-weight:600;text-transform:uppercase;letter-spacing:1px;">After scaffold — stay in companion mode</p>
+  <div class="code-block">
+<span class="cmd">genesis companion</span>              <span class="c"># active research partner</span>
+<span class="c"># Ask: "how do I handle Redis connection drops?"</span>
+<span class="c"># Ask: "which fork handles async tasks best?"</span>
+<span class="c"># Say "done" to exit</span>
+  </div>
+
+  <div style="text-align:center;margin-top:40px;">
     <a class="btn-primary" href="https://github.com/maioio/genesis-architect">View on GitHub →</a>
   </div>
 </section>
 
 <footer>
-  <p>Genesis Architect · by <a href="https://github.com/maioio">Maio Eshet</a> · MIT License · v1.5.0</p>
+  <p style="margin-bottom:8px;">Genesis Architect &nbsp;·&nbsp; by <a href="https://github.com/maioio">Maio Eshet</a> &nbsp;·&nbsp; MIT License &nbsp;·&nbsp; v2.6.0</p>
+  <p><a href="https://github.com/maioio/genesis-architect/blob/main/CHANGELOG.md">Changelog</a> &nbsp;·&nbsp; <a href="https://github.com/maioio/genesis-architect/issues">Issues</a> &nbsp;·&nbsp; <a href="https://github.com/maioio/genesis-architect/blob/main/CONTRIBUTING.md">Contributing</a></p>
 </footer>
 
 </body>

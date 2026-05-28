@@ -1,113 +1,169 @@
-# Demo Recording Script
+# Genesis Architect — Demo Recording Script
 
-**Goal:** Show `genesis init` from start to scaffold in one clean take.
-**Target length:** 2-3 minutes → GIF of ~30-60 seconds (sped up 3-4x).
-**Output file:** `assets/demo.gif`
+**Target:** 40-second GIF showing NLU + Vault + Fork Analysis in action.
+**Scenario:** FastAPI task queue — lots of known Celery/Redis pitfalls in the wild.
 
 ---
 
 ## Setup (before recording)
 
-1. Open Claude Code in a clean folder:
-   ```powershell
-   mkdir C:\demo\log-analyzer
-   cd C:\demo\log-analyzer
-   claude
-   ```
+Open a clean terminal (120 cols x 30 rows, dark theme):
 
-2. Set terminal theme for best contrast:
-   - Font: Cascadia Code or Consolas, 14pt
-   - Theme: Dark (black bg, white text)
-   - Window size: 120 cols × 35 rows
-
-3. Close all other windows. Full-screen the terminal.
+```powershell
+mkdir C:\demo\taskqueue
+cd C:\demo\taskqueue
+set PYTHONPATH=C:\Users\User\.claude\skills\genesis-architect\src
+```
 
 ---
 
 ## Recording tool
 
-**ScreenToGif** (free, Windows):
-- Download: https://www.screentogif.com
-- Settings → Capture → Frame rate: 15 fps
-- After recording: Edit → reduce frames in waiting sections → Export as GIF
+**Terminalizer** (already installed):
+
+```bash
+terminalizer record demo --config terminalizer.yml
+```
+
+**terminalizer.yml** — create this file first:
+
+```yaml
+command: cmd
+cwd: C:\demo\taskqueue
+cols: 100
+rows: 28
+frameDelay: auto
+maxIdleTime: 500
+quality: 100
+theme:
+  background: "#0d0f14"
+  foreground: "#e8eaf0"
+  cursor: "#7c6af7"
+  black: "#0d0f14"
+  blue: "#4fc3f7"
+  green: "#64ffda"
+  magenta: "#7c6af7"
+```
 
 ---
 
 ## The Script (type exactly this)
 
-### Step 1 - Trigger Genesis
+### Step 1 - Start genesis
 
-Type slowly so each word is readable:
 ```
-genesis init a Python CLI for analyzing log files
+genesis init "a FastAPI task queue with Celery and Redis"
 ```
-Press Enter. Pause 1 second.
 
-### Step 2 - Phase 0 (silent, ~2 seconds)
+What appears:
+```
+Genesis Architect - researching: a FastAPI task queue with Celery and Redis
 
-Claude silently detects env. Nothing to type. Let it run.
+Phase 1: Scanning GitHub repositories...
+  celery/celery (24312 stars)
+  tiangolo/fastapi (73841 stars)
+  encode/starlette (9821 stars)
+  ... and 12 more
 
-### Step 3 - Phase 1 answers (Vision Alignment)
+Phase 2: Mining GitHub Issues for pitfalls...
+  Found 43 issues to analyze
 
-Claude asks 2-3 questions. Answer:
-- Scale question → type **A** (personal/small)
-- Language question → type **B** (Python)
+Phase 3: Checking knowledge vault...
+  No cache hit - generating fresh analysis
 
-### Step 4 - Phase 2 (Deep Discovery, ~30-60 seconds)
+Phase 4: Choose your architecture:
 
-Claude says "Starting engineering market research…"
-Let it run. This is the dramatic part - repos scrolling.
-**Do not skip this.** It's the core differentiator.
+  A) Minimalist - simple, small, easy to maintain
+  B) Scalable   - full production setup, CI/CD, modular
+  C) Quick      - fastest possible scaffold, minimal config
+  D) Hybrid     - mix of minimalist core + scalable extensions
+```
 
-### Step 5 - Phase 5 (Architecture Choice)
+### Step 2 - NLU in action (type this, not "B")
 
-Claude shows the repo table + A/B options.
-Type **A** (Minimalist) and press Enter.
+```
+give me the scalable approach
+```
 
-### Step 6 - Phase 6 (Genesis Build, ~20 seconds)
+Genesis responds:
+```
+I'll take that as B (scalable) - correct? [y/n]
+```
 
-Watch files being created. CI/CD being written. Tests passing.
+Type:
+```
+y
+```
 
-### Step 7 - Done
+### Step 3 - Watch it build
 
-Claude says "Genesis Architect complete."
-Pause 3 seconds on the final output so it's readable.
+```
+Phase 5: Analyzing with LLM and generating scaffold...
+
+Genesis Architect complete.
+
+  Created: taskqueue/RESEARCH.md
+  Created: taskqueue/PITFALLS.md
+
+Next: cd taskqueue and review RESEARCH.md and PITFALLS.md
+Run `genesis companion` to stay in active development mode.
+```
+
+### Step 4 - Show PITFALLS.md (the killer feature)
+
+```
+type taskqueue\PITFALLS.md
+```
+
+Pause 3 seconds on the output — let viewers read the real pitfalls extracted from GitHub Issues.
+
+### Step 5 - Enter companion mode
+
+```
+genesis companion taskqueue
+```
+
+Type a question:
+```
+how do I handle Redis connection drops?
+```
+
+Type:
+```
+done
+```
+
 Stop recording.
 
 ---
 
 ## Post-processing
 
-1. In ScreenToGif: select frames during Phase 2 search → right-click → Speed Up (0.3x) to compress
-2. Keep Phase 1 questions and Phase 6 build at normal speed
-3. Export as GIF, max 15 MB (GitHub limit for inline images)
-4. Save to `assets/demo.gif`
+```bash
+terminalizer render demo -o docs/assets/demo.gif --quality 90
+```
+
+Then in `docs/index.html`, replace the demo placeholder:
+```html
+<!-- Change this: -->
+<div class="demo-placeholder"> ... </div>
+
+<!-- To this: -->
+<img src="assets/demo.gif" alt="Genesis Architect in action">
+```
+
+Target size: under 10 MB. If too large, reduce with:
+```bash
+terminalizer render demo -o docs/assets/demo.gif --quality 70
+```
 
 ---
 
-## Upload to GitHub
+## Upload
 
 ```bash
-# Option A: via git (easiest)
-git add assets/demo.gif
-git commit -m "feat: add demo GIF"
+mkdir docs\assets
+git add docs/assets/demo.gif docs/index.html
+git commit -m "feat: add demo GIF to landing page"
 git push
-
-# Option B: via GitHub web
-# Open any Issue → drag demo.gif → copy the raw URL → paste in README
 ```
-
-The README already has the img tag pointing to:
-`https://raw.githubusercontent.com/maioio/genesis-architect/main/assets/demo.gif`
-
-Once you push the GIF to main, it appears automatically.
-
----
-
-## Optional: second clip (genesis audit)
-
-Short 30-second recording showing:
-```
-genesis audit ./existing-broken-project
-```
-Shows PITFALLS.md being generated. Good for showing the audit mode.

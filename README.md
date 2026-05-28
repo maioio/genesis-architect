@@ -7,7 +7,7 @@ Not a one-time scaffolder. A research-first architect that mines real production
 builds your project to avoid them, and keeps learning alongside you as you ship.
 
 [![CI](https://img.shields.io/github/actions/workflow/status/maioio/genesis-architect/ci.yml?branch=main&style=for-the-badge&label=CI)](https://github.com/maioio/genesis-architect/actions)
-[![Version](https://img.shields.io/badge/version-2.6.0-blue?style=for-the-badge)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-3.0.0-blue?style=for-the-badge)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-MIT-green?style=for-the-badge)](LICENSE)
 [![Claude Code](https://img.shields.io/badge/Claude_Code-skill-orange?style=for-the-badge)](https://github.com/anthropics/claude-code)
 [![Known Vulnerabilities](https://snyk.io/test/github/maioio/genesis-architect/badge.svg?style=for-the-badge)](https://snyk.io/test/github/maioio/genesis-architect)
@@ -20,7 +20,7 @@ builds your project to avoid them, and keeps learning alongside you as you ship.
 [![Phases](https://img.shields.io/badge/phases-9-blueviolet?style=flat-square)](SKILL.md)
 [![Languages](https://img.shields.io/badge/languages-4-informational?style=flat-square)](references/architecture-patterns.md)
 [![Archetypes](https://img.shields.io/badge/archetypes-4-success?style=flat-square)](SKILL.md)
-[![Tests](https://img.shields.io/badge/tests-270-brightgreen?style=flat-square)](tests/)
+[![Tests](https://img.shields.io/badge/tests-316-brightgreen?style=flat-square)](tests/)
 [![Eval accuracy](https://img.shields.io/badge/eval_accuracy-100%25-brightgreen?style=flat-square)](evals/test_queries.json)
 [![Stars](https://img.shields.io/github/stars/maioio/genesis-architect?style=social)](https://github.com/maioio/genesis-architect/stargazers)
 
@@ -35,7 +35,7 @@ builds your project to avoid them, and keeps learning alongside you as you ship.
 
 <br/>
 
-<!-- Demo GIF: replace assets/demo.gif with a real recording - see DEMO_SCRIPT.md -->
+<img src="docs/assets/demo.gif" alt="Genesis Architect demo" width="700"/>
 
 **If this saved you from a bad architecture decision - [star it](https://github.com/maioio/genesis-architect/stargazers). It helps others find it.**
 

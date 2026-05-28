@@ -94,7 +94,7 @@ jobs:
           python scripts/genesis_state.py write-phase2 /tmp/genesis-state-test \
             --repo-count 12 --deep-count 5
           python scripts/genesis_state.py require-phase2 /tmp/genesis-state-test
-          python scripts/genesis_state.py write-phase3-validation /tmp/genesis-state-test
+          python scripts/genesis_state.py write-phase3-validation /tmp/genesis-state-test --urls-checked 5
           python scripts/genesis_state.py require-phase3-validation /tmp/genesis-state-test
           echo "genesis_state.py: write+require cycle OK"
 

@@ -394,9 +394,9 @@ def format_output(content: dict, version: str = "", psr_assets: dict | None = No
     arch_note = (
         "NOTE: genesis publish uses a browser-AI prompt instead of headless auto-submission.\n"
         "  This is a deliberate architectural decision: HN silently shadowbans automated\n"
-        "  submissions (no error — post is invisible to everyone but you). By generating\n"
-        "  a prompt for your authenticated browser session, your account and domain stay\n"
-        "  100% safe. Paste Option 2 into your Chrome AI extension and it handles the rest."
+        "  submissions. By generating a prompt for your authenticated browser session,\n"
+        "  your account and domain stay 100% safe. Paste Option 2 into your Chrome AI\n"
+        "  extension and it handles the rest."
     )
 
     lines = [

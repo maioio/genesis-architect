@@ -1,2 +1,0 @@
-[console_scripts]
-podcast-dl = podcast_dl.cli:main

@@ -144,7 +144,12 @@ def companion(
     typer.echo(f"\nGenesis Companion active for: {project_name}")
     typer.echo("Ask questions about your project. Type 'done' or 'exit' to quit.\n")
 
-    llm_fn = lambda prompt: llm.ask(prompt, model=model, api_key=llm_api_key)
+    system_prompt = (
+        f"You are a development companion for a project called '{project_name}'. "
+        f"Project context: {inferred.get('description', '')}. "
+        f"Give concise, practical answers. Remember what the user said earlier in this session."
+    )
+    history: list[dict] = [{"role": "user", "content": system_prompt}, {"role": "assistant", "content": "Understood. I'm ready to help with your project."}]
 
     while True:
         try:
@@ -162,13 +167,12 @@ def companion(
         cached = resolve_engine.resolve_with_output(user_input, str(cwd))
         if cached.strip():
             typer.echo(f"\n{cached}\n")
+            history.append({"role": "user", "content": user_input})
+            history.append({"role": "assistant", "content": cached.strip()})
         else:
-            response = llm_fn(
-                f"You are a development companion for a project called '{project_name}'.\n"
-                f"Project context: {inferred.get('description', '')}\n\n"
-                f"Question: {user_input}\n\n"
-                f"Give a concise, practical answer."
-            )
+            response = llm.ask(user_input, model=model, api_key=llm_api_key, history=history)
+            history.append({"role": "user", "content": user_input})
+            history.append({"role": "assistant", "content": response})
             typer.echo(f"\n{response}\n")
 
 

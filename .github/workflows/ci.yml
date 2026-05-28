@@ -183,7 +183,7 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install -r requirements.txt 2>/dev/null || echo "No requirements.txt - skipping"
+        run: pip install -e ".[dev]" -q
 
       - name: Run Snyk scan
         uses: snyk/actions/python@master

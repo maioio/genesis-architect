@@ -1,7 +1,0 @@
-click>=8.1.7
-feedparser>=6.0.10
-requests>=2.31.0
-
-[dev]
-pytest>=8.0
-pytest-cov

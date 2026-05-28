@@ -23,7 +23,8 @@ scripts/__pycache__/
 *.so
 *.dylib
 
-# scaffold output directories generated during local testing
+# scaffold output directories and local experiments - never commit
+tmp/
 a_cli_podcast_downlo/
 *_downlo/
 *_project/

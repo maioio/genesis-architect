@@ -172,6 +172,36 @@ def companion(
 
 
 @app.command()
+def publish(
+    project_path: Optional[str] = typer.Argument(None, help="Project root (default: current dir)"),
+    model: str = typer.Option("claude-sonnet-4-6", "--model", "-m", help="LLM model to use"),
+):
+    """Generate Show HN post and GitHub Release notes, with copy-paste and browser AI options."""
+    from genesis_architect import config as cfg
+    from genesis_architect.core import llm
+    from genesis_architect.core import publish_agent
+
+    llm_api_key = cfg.get("LLM_API_KEY")
+    if not llm_api_key:
+        typer.echo("No LLM API key found. Run: genesis config set LLM_API_KEY <your-key>", err=True)
+        raise typer.Exit(1)
+
+    cwd = Path(project_path) if project_path else Path.cwd()
+    typer.echo("\nGenesis Publish - collecting release data...")
+
+    data = publish_agent.collect_release_data(cwd)
+    typer.echo(f"  Version: {data['version']}")
+    typer.echo(f"  Commits found: {len(data['commits'])}")
+    typer.echo(f"  Tests: {data['test_count']}")
+    typer.echo("\nGenerating content with LLM...")
+
+    llm_fn = lambda prompt: llm.ask(prompt, model=model, api_key=llm_api_key)
+    content = publish_agent.generate_publish_content(data, llm_fn)
+
+    typer.echo(publish_agent.format_output(content, version=data["version"]))
+
+
+@app.command()
 def config(
     action: str = typer.Argument(..., help="'set', 'get', or 'show'"),
     key: Optional[str] = typer.Argument(None, help="Key name (e.g. GITHUB_TOKEN, LLM_API_KEY)"),

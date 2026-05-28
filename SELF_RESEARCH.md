@@ -9,7 +9,7 @@ analyzing how 15+ open-source CLI tools, web frameworks, and scaffolding tools h
 decisions, pitfall documentation, and enforcement. The core insight: every major project has a
 graveyard of GitHub Issues documenting decisions that broke in production. Genesis mines that
 graveyard before writing a single file. The architecture is a SKILL.md workflow (the brain) backed
-by stdlib-only Python scripts (the enforcement) with no external runtime dependencies.
+by stdlib-only Python scripts (the enforcement) with minimal runtime dependencies (typer, anthropic, httpx).
 
 ## Analyzed Repositories
 

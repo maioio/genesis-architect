@@ -20,7 +20,7 @@ builds your project to avoid them, and keeps learning alongside you as you ship.
 [![Phases](https://img.shields.io/badge/phases-9-blueviolet?style=flat-square)](SKILL.md)
 [![Languages](https://img.shields.io/badge/languages-4-informational?style=flat-square)](references/architecture-patterns.md)
 [![Archetypes](https://img.shields.io/badge/archetypes-4-success?style=flat-square)](SKILL.md)
-[![Tests](https://img.shields.io/badge/tests-316-brightgreen?style=flat-square)](tests/)
+[![Tests](https://img.shields.io/badge/tests-372-brightgreen?style=flat-square)](tests/)
 [![Eval accuracy](https://img.shields.io/badge/eval_accuracy-100%25-brightgreen?style=flat-square)](evals/test_queries.json)
 [![Stars](https://img.shields.io/github/stars/maioio/genesis-architect?style=social)](https://github.com/maioio/genesis-architect/stargazers)
 

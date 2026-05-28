@@ -5,9 +5,8 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).parent.parent
-sys.path.insert(0, str(ROOT / "scripts"))
 
-from pitfall_coverage_check import parse_platform_risks, check_platform_risks, main
+from genesis_architect.core.pitfall_coverage_check import parse_platform_risks, check_platform_risks, main
 
 
 PITFALLS_WITH_RISKS = """\

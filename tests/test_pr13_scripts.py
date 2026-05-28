@@ -9,7 +9,6 @@ from unittest import mock
 import pytest
 
 ROOT = Path(__file__).parent.parent
-sys.path.insert(0, str(ROOT / "scripts"))
 
 
 # ---------------------------------------------------------------------------
@@ -34,7 +33,7 @@ PITFALLS_REAL_FORMAT = textwrap.dedent("""\
 
 class TestParsePitfalls:
     def test_parses_pitfall_with_mitigation(self, tmp_path):
-        from pitfall_coverage_check import parse_pitfalls
+        from genesis_architect.core.pitfall_coverage_check import parse_pitfalls
         p = tmp_path / "PITFALLS.md"
         p.write_text(PITFALLS_REAL_FORMAT, encoding="utf-8")
         result = parse_pitfalls(p)
@@ -42,7 +41,7 @@ class TestParsePitfalls:
         assert "pin" in result["pitfall_1"]
 
     def test_parses_multiple_pitfalls(self, tmp_path):
-        from pitfall_coverage_check import parse_pitfalls
+        from genesis_architect.core.pitfall_coverage_check import parse_pitfalls
         p = tmp_path / "PITFALLS.md"
         p.write_text(PITFALLS_REAL_FORMAT, encoding="utf-8")
         result = parse_pitfalls(p)
@@ -51,7 +50,7 @@ class TestParsePitfalls:
         assert "pitfall_2" in result
 
     def test_returns_empty_on_no_pitfalls(self, tmp_path):
-        from pitfall_coverage_check import parse_pitfalls
+        from genesis_architect.core.pitfall_coverage_check import parse_pitfalls
         p = tmp_path / "PITFALLS.md"
         p.write_text("# Just a header\nNo pitfall sections here.\n", encoding="utf-8")
         result = parse_pitfalls(p)
@@ -60,31 +59,31 @@ class TestParsePitfalls:
 
 class TestExtractKeywords:
     def test_skips_stop_words(self):
-        from pitfall_coverage_check import extract_keywords
+        from genesis_architect.core.pitfall_coverage_check import extract_keywords
         kws = extract_keywords("use the virtualenv for isolation")
         assert "the" not in kws
         assert "use" not in kws
         assert "for" not in kws
 
     def test_returns_up_to_three(self):
-        from pitfall_coverage_check import extract_keywords
+        from genesis_architect.core.pitfall_coverage_check import extract_keywords
         kws = extract_keywords("pin lock retry cache warmup deploy rollback")
         assert len(kws) <= 3
 
     def test_deduplicates(self):
-        from pitfall_coverage_check import extract_keywords
+        from genesis_architect.core.pitfall_coverage_check import extract_keywords
         kws = extract_keywords("retry retry retry")
         assert kws.count("retry") == 1
 
     def test_skips_short_words(self):
-        from pitfall_coverage_check import extract_keywords
+        from genesis_architect.core.pitfall_coverage_check import extract_keywords
         kws = extract_keywords("do it go run big cache")
         assert all(len(w) > 2 for w in kws)
 
 
 class TestCollectSourceFiles:
     def test_collects_known_extensions(self, tmp_path):
-        from pitfall_coverage_check import collect_source_files
+        from genesis_architect.core.pitfall_coverage_check import collect_source_files
         (tmp_path / "main.py").write_text("pass")
         (tmp_path / "app.ts").write_text("export {}")
         (tmp_path / "README.md").write_text("docs")
@@ -95,7 +94,7 @@ class TestCollectSourceFiles:
         assert "README.md" not in names
 
     def test_ignores_non_code_files(self, tmp_path):
-        from pitfall_coverage_check import collect_source_files
+        from genesis_architect.core.pitfall_coverage_check import collect_source_files
         (tmp_path / "data.csv").write_text("a,b,c")
         (tmp_path / "Makefile").write_text("all:")
         files = collect_source_files(tmp_path)
@@ -104,7 +103,7 @@ class TestCollectSourceFiles:
 
 class TestSearchKeyword:
     def test_finds_keyword_in_file(self, tmp_path):
-        from pitfall_coverage_check import search_keyword_in_files
+        from genesis_architect.core.pitfall_coverage_check import search_keyword_in_files
         f = tmp_path / "main.py"
         f.write_text("import virtualenv\nprint('hello')\n")
         matches = search_keyword_in_files("virtualenv", [f])
@@ -112,28 +111,28 @@ class TestSearchKeyword:
         assert "main.py" in matches[0]
 
     def test_case_insensitive(self, tmp_path):
-        from pitfall_coverage_check import search_keyword_in_files
+        from genesis_architect.core.pitfall_coverage_check import search_keyword_in_files
         f = tmp_path / "app.py"
         f.write_text("# Use VirtualEnv for isolation\n")
         matches = search_keyword_in_files("virtualenv", [f])
         assert len(matches) == 1
 
     def test_returns_empty_when_not_found(self, tmp_path):
-        from pitfall_coverage_check import search_keyword_in_files
+        from genesis_architect.core.pitfall_coverage_check import search_keyword_in_files
         f = tmp_path / "app.py"
         f.write_text("print('nothing here')\n")
         matches = search_keyword_in_files("xyznotpresent", [f])
         assert matches == []
 
     def test_one_match_per_file(self, tmp_path):
-        from pitfall_coverage_check import search_keyword_in_files
+        from genesis_architect.core.pitfall_coverage_check import search_keyword_in_files
         f = tmp_path / "main.py"
         f.write_text("retry = True\nretry_count = 3\n")
         matches = search_keyword_in_files("retry", [f])
         assert len(matches) == 1
 
     def test_skips_unreadable_file(self, tmp_path):
-        from pitfall_coverage_check import search_keyword_in_files
+        from genesis_architect.core.pitfall_coverage_check import search_keyword_in_files
         f = tmp_path / "bad.py"
         f.write_text("content")
         # Simulate OSError by patching Path.read_text
@@ -144,32 +143,32 @@ class TestSearchKeyword:
 
 class TestDeduplicate:
     def test_removes_duplicates(self):
-        from pitfall_coverage_check import _deduplicate
+        from genesis_architect.core.pitfall_coverage_check import _deduplicate
         result = _deduplicate(["a", "b", "a", "c", "b"])
         assert result == ["a", "b", "c"]
 
     def test_empty_list(self):
-        from pitfall_coverage_check import _deduplicate
+        from genesis_architect.core.pitfall_coverage_check import _deduplicate
         assert _deduplicate([]) == []
 
 
 class TestCheckPitfall:
     def test_found_when_keyword_present(self, tmp_path):
-        from pitfall_coverage_check import _check_pitfall
+        from genesis_architect.core.pitfall_coverage_check import _check_pitfall
         f = tmp_path / "main.py"
         f.write_text("virtualenv.create('env')\n")
         result = _check_pitfall("pitfall_1", "use virtualenv isolation", [f])
         assert result["found"] is True
 
     def test_not_found_when_keyword_absent(self, tmp_path):
-        from pitfall_coverage_check import _check_pitfall
+        from genesis_architect.core.pitfall_coverage_check import _check_pitfall
         f = tmp_path / "main.py"
         f.write_text("print('nothing relevant')\n")
         result = _check_pitfall("pitfall_1", "use virtualenv isolation", [f])
         assert result["found"] is False
 
     def test_result_has_required_keys(self, tmp_path):
-        from pitfall_coverage_check import _check_pitfall
+        from genesis_architect.core.pitfall_coverage_check import _check_pitfall
         result = _check_pitfall("pitfall_1", "retry logic timeout", [])
         assert "mitigation" in result
         assert "found" in result
@@ -178,7 +177,7 @@ class TestCheckPitfall:
 
 class TestPrintSummary:
     def test_returns_missing_ids(self, capsys):
-        from pitfall_coverage_check import _print_summary
+        from genesis_architect.core.pitfall_coverage_check import _print_summary
         results = {
             "pitfall_1": {"found": True, "mitigation": "virtualenv", "matches": ["f:1"]},
             "pitfall_2": {"found": False, "mitigation": "retry", "matches": []},
@@ -187,7 +186,7 @@ class TestPrintSummary:
         assert missing == ["pitfall_2"]
 
     def test_returns_empty_when_all_found(self, capsys):
-        from pitfall_coverage_check import _print_summary
+        from genesis_architect.core.pitfall_coverage_check import _print_summary
         results = {
             "pitfall_1": {"found": True, "mitigation": "virtualenv", "matches": ["f:1"]},
         }
@@ -197,7 +196,7 @@ class TestPrintSummary:
 
 class TestMain:
     def test_exit_0_when_all_mitigations_found(self, tmp_path, capsys):
-        from pitfall_coverage_check import main
+        from genesis_architect.core.pitfall_coverage_check import main
         src = tmp_path / "src"
         src.mkdir()
         # keywords from PITFALLS_REAL_FORMAT: "pin", "retry" (first 3 non-stop words)
@@ -210,7 +209,7 @@ class TestMain:
         assert exc.value.code == 0
 
     def test_exit_1_when_mitigations_missing(self, tmp_path, capsys):
-        from pitfall_coverage_check import main
+        from genesis_architect.core.pitfall_coverage_check import main
         src = tmp_path / "src"
         src.mkdir()
         (src / "core.py").write_text("print('nothing relevant')\n")
@@ -222,14 +221,14 @@ class TestMain:
         assert exc.value.code == 1
 
     def test_exit_2_on_missing_pitfalls_file(self, tmp_path):
-        from pitfall_coverage_check import main
+        from genesis_architect.core.pitfall_coverage_check import main
         with mock.patch("sys.argv", ["p.py", str(tmp_path / "PITFALLS.md"), str(tmp_path)]):
             with pytest.raises(SystemExit) as exc:
                 main()
         assert exc.value.code == 2
 
     def test_exit_2_on_bad_src_dir(self, tmp_path):
-        from pitfall_coverage_check import main
+        from genesis_architect.core.pitfall_coverage_check import main
         pitfalls = tmp_path / "PITFALLS.md"
         pitfalls.write_text("# empty\n")
         with mock.patch("sys.argv", ["p.py", str(pitfalls), str(tmp_path / "nosuchdir")]):
@@ -238,7 +237,7 @@ class TestMain:
         assert exc.value.code == 2
 
     def test_exit_2_on_wrong_arg_count(self, tmp_path):
-        from pitfall_coverage_check import main
+        from genesis_architect.core.pitfall_coverage_check import main
         with mock.patch("sys.argv", ["p.py"]):
             with pytest.raises(SystemExit) as exc:
                 main()
@@ -251,38 +250,38 @@ class TestMain:
 
 class TestDetectEcosystem:
     def test_detects_pypi_from_requirements(self, tmp_path):
-        from genesis_subcommands import detect_ecosystem
+        from genesis_architect.core.genesis_subcommands import detect_ecosystem
         (tmp_path / "requirements.txt").write_text("requests==2.28.0\n")
         assert detect_ecosystem(str(tmp_path)) == "PyPI"
 
     def test_detects_pypi_from_pyproject(self, tmp_path):
-        from genesis_subcommands import detect_ecosystem
+        from genesis_architect.core.genesis_subcommands import detect_ecosystem
         (tmp_path / "pyproject.toml").write_text("[tool.poetry]\n")
         assert detect_ecosystem(str(tmp_path)) == "PyPI"
 
     def test_detects_npm(self, tmp_path):
-        from genesis_subcommands import detect_ecosystem
+        from genesis_architect.core.genesis_subcommands import detect_ecosystem
         (tmp_path / "package.json").write_text("{}")
         assert detect_ecosystem(str(tmp_path)) == "npm"
 
     def test_detects_go(self, tmp_path):
-        from genesis_subcommands import detect_ecosystem
+        from genesis_architect.core.genesis_subcommands import detect_ecosystem
         (tmp_path / "go.mod").write_text("module example.com/app\n")
         assert detect_ecosystem(str(tmp_path)) == "Go"
 
     def test_detects_rust(self, tmp_path):
-        from genesis_subcommands import detect_ecosystem
+        from genesis_architect.core.genesis_subcommands import detect_ecosystem
         (tmp_path / "Cargo.toml").write_text("[package]\n")
         assert detect_ecosystem(str(tmp_path)) == "crates.io"
 
     def test_defaults_to_pypi(self, tmp_path):
-        from genesis_subcommands import detect_ecosystem
+        from genesis_architect.core.genesis_subcommands import detect_ecosystem
         assert detect_ecosystem(str(tmp_path)) == "PyPI"
 
 
 class TestExtractDepsFromResearch:
     def test_extracts_pinned_versions(self, tmp_path):
-        from genesis_subcommands import extract_deps_from_research
+        from genesis_architect.core.genesis_subcommands import extract_deps_from_research
         md = tmp_path / "RESEARCH.md"
         md.write_text("Use requests==2.28.0 and pytest>=7.0.0 in tests.\n")
         deps = extract_deps_from_research(str(md))
@@ -290,12 +289,12 @@ class TestExtractDepsFromResearch:
         assert deps["requests"] == "2.28.0"
 
     def test_returns_empty_when_file_missing(self, tmp_path):
-        from genesis_subcommands import extract_deps_from_research
+        from genesis_architect.core.genesis_subcommands import extract_deps_from_research
         deps = extract_deps_from_research(str(tmp_path / "RESEARCH.md"))
         assert deps == {}
 
     def test_returns_empty_when_no_pins(self, tmp_path):
-        from genesis_subcommands import extract_deps_from_research
+        from genesis_architect.core.genesis_subcommands import extract_deps_from_research
         md = tmp_path / "RESEARCH.md"
         md.write_text("Use requests and pytest for testing.\n")
         deps = extract_deps_from_research(str(md))
@@ -304,23 +303,23 @@ class TestExtractDepsFromResearch:
 
 class TestExtractFixVersion:
     def test_extracts_fix_from_vuln(self):
-        from genesis_subcommands import extract_fix_version
+        from genesis_architect.core.genesis_subcommands import extract_fix_version
         vuln = {"affected": [{"ranges": [{"events": [{"introduced": "0"}, {"fixed": "2.29.0"}]}]}]}
         assert extract_fix_version(vuln) == "2.29.0"
 
     def test_returns_none_when_no_fix(self):
-        from genesis_subcommands import extract_fix_version
+        from genesis_architect.core.genesis_subcommands import extract_fix_version
         assert extract_fix_version({}) is None
 
     def test_returns_none_when_only_introduced(self):
-        from genesis_subcommands import extract_fix_version
+        from genesis_architect.core.genesis_subcommands import extract_fix_version
         vuln = {"affected": [{"ranges": [{"events": [{"introduced": "0"}]}]}]}
         assert extract_fix_version(vuln) is None
 
 
 class TestCheckActions:
     def test_detects_outdated_action(self, tmp_path):
-        from genesis_subcommands import check_actions
+        from genesis_architect.core.genesis_subcommands import check_actions
         wf_dir = tmp_path / ".github" / "workflows"
         wf_dir.mkdir(parents=True)
         (wf_dir / "ci.yml").write_text("uses: actions/checkout@v4\n")
@@ -328,7 +327,7 @@ class TestCheckActions:
         assert any(w["action"] == "actions/checkout" for w in warnings)
 
     def test_no_warning_for_current_version(self, tmp_path):
-        from genesis_subcommands import check_actions
+        from genesis_architect.core.genesis_subcommands import check_actions
         wf_dir = tmp_path / ".github" / "workflows"
         wf_dir.mkdir(parents=True)
         (wf_dir / "ci.yml").write_text("uses: actions/checkout@v6\n")
@@ -336,7 +335,7 @@ class TestCheckActions:
         assert not any(w["action"] == "actions/checkout" for w in warnings)
 
     def test_no_warnings_for_unknown_action(self, tmp_path):
-        from genesis_subcommands import check_actions
+        from genesis_architect.core.genesis_subcommands import check_actions
         wf_dir = tmp_path / ".github" / "workflows"
         wf_dir.mkdir(parents=True)
         (wf_dir / "ci.yml").write_text("uses: myorg/custom-action@v1\n")
@@ -344,29 +343,29 @@ class TestCheckActions:
         assert warnings == []
 
     def test_empty_when_no_workflows(self, tmp_path):
-        from genesis_subcommands import check_actions
+        from genesis_architect.core.genesis_subcommands import check_actions
         warnings = check_actions(str(tmp_path))
         assert warnings == []
 
 
 class TestMainSubcommands:
     def test_check_subcommand_runs(self, tmp_path, capsys):
-        from genesis_subcommands import main
-        with mock.patch("genesis_subcommands.query_osv", return_value=[]):
+        from genesis_architect.core.genesis_subcommands import main
+        with mock.patch("genesis_architect.core.genesis_subcommands.query_osv", return_value=[]):
             with mock.patch("sys.argv", ["genesis_subcommands.py", "check", str(tmp_path)]):
                 with pytest.raises(SystemExit) as exc:
                     main()
         assert exc.value.code == 0
 
     def test_unknown_subcommand_exits_1(self, capsys):
-        from genesis_subcommands import main
+        from genesis_architect.core.genesis_subcommands import main
         with mock.patch("sys.argv", ["genesis_subcommands.py", "unknown"]):
             with pytest.raises(SystemExit) as exc:
                 main()
         assert exc.value.code == 1
 
     def test_no_args_exits_1(self, capsys):
-        from genesis_subcommands import main
+        from genesis_architect.core.genesis_subcommands import main
         with mock.patch("sys.argv", ["genesis_subcommands.py"]):
             with pytest.raises(SystemExit) as exc:
                 main()
@@ -375,14 +374,14 @@ class TestMainSubcommands:
 
 class TestQueryOsv:
     def test_returns_empty_on_network_error(self):
-        from genesis_subcommands import query_osv
+        from genesis_architect.core.genesis_subcommands import query_osv
         import urllib.error
         with mock.patch("urllib.request.urlopen", side_effect=urllib.error.URLError("timeout")):
             result = query_osv("requests", "PyPI")
         assert result == []
 
     def test_returns_vulns_on_success(self):
-        from genesis_subcommands import query_osv
+        from genesis_architect.core.genesis_subcommands import query_osv
         fake_response = json.dumps({"vulns": [{"id": "GHSA-001"}]}).encode()
         mock_resp = mock.MagicMock()
         mock_resp.read.return_value = fake_response
@@ -394,7 +393,7 @@ class TestQueryOsv:
         assert result[0]["id"] == "GHSA-001"
 
     def test_returns_empty_when_no_vulns_key(self):
-        from genesis_subcommands import query_osv
+        from genesis_architect.core.genesis_subcommands import query_osv
         fake_response = json.dumps({}).encode()
         mock_resp = mock.MagicMock()
         mock_resp.read.return_value = fake_response
@@ -407,8 +406,8 @@ class TestQueryOsv:
 
 class TestCmdCheck:
     def test_returns_zero_when_no_issues(self, tmp_path, capsys):
-        from genesis_subcommands import cmd_check
-        with mock.patch("genesis_subcommands.query_osv", return_value=[]):
+        from genesis_architect.core.genesis_subcommands import cmd_check
+        with mock.patch("genesis_architect.core.genesis_subcommands.query_osv", return_value=[]):
             code = cmd_check(str(tmp_path))
         assert code == 0
         captured = capsys.readouterr()
@@ -416,7 +415,7 @@ class TestCmdCheck:
         assert output["critical"] == []
 
     def test_returns_one_when_cve_found(self, tmp_path, capsys):
-        from genesis_subcommands import cmd_check
+        from genesis_architect.core.genesis_subcommands import cmd_check
         md = tmp_path / "RESEARCH.md"
         md.write_text("requests==2.0.0\n")
         fake_vuln = {
@@ -424,13 +423,13 @@ class TestCmdCheck:
             "aliases": ["CVE-2023-1234"],
             "affected": [{"ranges": [{"events": [{"fixed": "2.29.0"}]}]}],
         }
-        with mock.patch("genesis_subcommands.query_osv", return_value=[fake_vuln]):
+        with mock.patch("genesis_architect.core.genesis_subcommands.query_osv", return_value=[fake_vuln]):
             code = cmd_check(str(tmp_path))
         assert code == 1
 
     def test_output_is_valid_json(self, tmp_path, capsys):
-        from genesis_subcommands import cmd_check
-        with mock.patch("genesis_subcommands.query_osv", return_value=[]):
+        from genesis_architect.core.genesis_subcommands import cmd_check
+        with mock.patch("genesis_architect.core.genesis_subcommands.query_osv", return_value=[]):
             cmd_check(str(tmp_path))
         captured = capsys.readouterr()
         data = json.loads(captured.out)
@@ -439,11 +438,11 @@ class TestCmdCheck:
         assert "info" in data
 
     def test_cve_without_cve_alias_uses_id(self, tmp_path, capsys):
-        from genesis_subcommands import cmd_check
+        from genesis_architect.core.genesis_subcommands import cmd_check
         md = tmp_path / "RESEARCH.md"
         md.write_text("requests==2.0.0\n")
         fake_vuln = {"id": "GHSA-9999", "aliases": [], "affected": []}
-        with mock.patch("genesis_subcommands.query_osv", return_value=[fake_vuln]):
+        with mock.patch("genesis_architect.core.genesis_subcommands.query_osv", return_value=[fake_vuln]):
             code = cmd_check(str(tmp_path))
         assert code == 1
         captured = capsys.readouterr()
@@ -455,36 +454,36 @@ class TestSubcommandStubs:
     """Tests for genesis research and genesis harden stubs added in v2.4.1."""
 
     def test_cmd_research_returns_nonzero(self, capsys):
-        from genesis_subcommands import cmd_research
+        from genesis_architect.core.genesis_subcommands import cmd_research
         rc = cmd_research("gpx parsing")
         assert rc == 1
 
     def test_cmd_research_mentions_planned(self, capsys):
-        from genesis_subcommands import cmd_research
+        from genesis_architect.core.genesis_subcommands import cmd_research
         cmd_research("gpx parsing")
         err = capsys.readouterr().err
         assert "planned" in err.lower() or "not yet implemented" in err.lower()
 
     def test_cmd_harden_returns_nonzero(self, capsys):
-        from genesis_subcommands import cmd_harden
+        from genesis_architect.core.genesis_subcommands import cmd_harden
         rc = cmd_harden(".")
         assert rc == 1
 
     def test_cmd_harden_mentions_planned(self, capsys):
-        from genesis_subcommands import cmd_harden
+        from genesis_architect.core.genesis_subcommands import cmd_harden
         cmd_harden(".")
         err = capsys.readouterr().err
         assert "planned" in err.lower() or "not yet implemented" in err.lower()
 
     def test_main_research_exits_1(self):
-        from genesis_subcommands import main
+        from genesis_architect.core.genesis_subcommands import main
         with mock.patch("sys.argv", ["genesis_subcommands.py", "research", "gpx"]):
             with pytest.raises(SystemExit) as exc:
                 main()
         assert exc.value.code == 1
 
     def test_main_harden_exits_1(self):
-        from genesis_subcommands import main
+        from genesis_architect.core.genesis_subcommands import main
         with mock.patch("sys.argv", ["genesis_subcommands.py", "harden", "."]):
             with pytest.raises(SystemExit) as exc:
                 main()

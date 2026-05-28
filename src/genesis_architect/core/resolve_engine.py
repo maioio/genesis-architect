@@ -1,12 +1,51 @@
 """Resolve Engine - queries Stack Overflow, caches in vault, respects TTL."""
 
+import re
 import urllib.request
 import urllib.parse
 import json
 import time
+from dataclasses import dataclass
+from datetime import datetime, timezone
 from typing import Any
 
 from genesis_architect.core import vault as _vault
+
+
+@dataclass
+class Answer:
+    answer_id: int
+    score: int
+    is_accepted: bool
+    body_markdown: str
+    link: str
+    creation_date: int
+
+    @property
+    def is_recent(self) -> bool:
+        age_years = (datetime.now(timezone.utc).timestamp() - self.creation_date) / (365.25 * 86400)
+        return age_years <= 2.0
+
+
+def _strip_html(text: str) -> str:
+    text = re.sub(r"<code>(.*?)</code>", r"`\1`", text, flags=re.DOTALL)
+    text = re.sub(r"<pre><code>(.*?)</code></pre>", r"\n```\n\1\n```", text, flags=re.DOTALL)
+    text = re.sub(r"<a [^>]*href=[\"'](https?://[^\"']+)[\"'][^>]*>(.*?)</a>", r"\2 (\1)", text)
+    text = re.sub(r"<[^>]+>", " ", text)
+    text = re.sub(r"&lt;", "<", text)
+    text = re.sub(r"&gt;", ">", text)
+    text = re.sub(r"&amp;", "&", text)
+    text = re.sub(r"&#39;", "'", text)
+    text = re.sub(r"&quot;", '"', text)
+    text = re.sub(r"\s{2,}", " ", text)
+    return text.strip()
+
+
+def _truncate(text: str, max_chars: int = 400) -> str:
+    text = _strip_html(text)
+    if len(text) <= max_chars:
+        return text
+    return text[:max_chars].rsplit(" ", 1)[0] + " ..."
 
 
 _SO_API = "https://api.stackexchange.com/2.3"

@@ -1,11 +1,5 @@
-"""Tests for scripts/resolve_engine.py - offline/unit tests only."""
-import sys
-from pathlib import Path
-
-ROOT = Path(__file__).parent.parent
-sys.path.insert(0, str(ROOT / "scripts"))
-
-from resolve_engine import _strip_html, _truncate, Answer
+"""Tests for genesis_architect.core.resolve_engine - offline/unit tests only."""
+from genesis_architect.core.resolve_engine import _strip_html, _truncate, Answer
 from datetime import datetime, timezone
 
 

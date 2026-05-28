@@ -6,9 +6,8 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).parent.parent
-sys.path.insert(0, str(ROOT / "scripts"))
 
-from evidence_pack import (
+from genesis_architect.core.evidence_pack import (
     _parse_pitfalls,
     _parse_repos,
     _parse_exec_summary,

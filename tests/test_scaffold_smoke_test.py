@@ -4,9 +4,8 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).parent.parent
-sys.path.insert(0, str(ROOT / "scripts"))
 
-from scaffold_smoke_test import build_command, _validate_semver, SMOKE_TEMPLATES
+from genesis_architect.core.scaffold_smoke_test import build_command, _validate_semver, SMOKE_TEMPLATES
 
 
 class TestBuildCommand:
@@ -69,7 +68,7 @@ class TestSmokeTemplatesConstant:
 class TestMain:
     def test_print_only_exits_0(self):
         import unittest.mock as mock
-        from scaffold_smoke_test import main
+        from genesis_architect.core.scaffold_smoke_test import main
         with mock.patch("sys.argv", ["scaffold_smoke_test.py",
                                      "--archetype", "frontend",
                                      "--print-only"]):
@@ -79,7 +78,7 @@ class TestMain:
 
     def test_missing_entrypoint_for_cli_exits_2(self):
         import unittest.mock as mock
-        from scaffold_smoke_test import main
+        from genesis_architect.core.scaffold_smoke_test import main
         with mock.patch("sys.argv", ["scaffold_smoke_test.py",
                                      "--archetype", "cli",
                                      "--print-only"]):
@@ -89,7 +88,7 @@ class TestMain:
 
     def test_missing_pkg_for_library_exits_2(self):
         import unittest.mock as mock
-        from scaffold_smoke_test import main
+        from genesis_architect.core.scaffold_smoke_test import main
         with mock.patch("sys.argv", ["scaffold_smoke_test.py",
                                      "--archetype", "library",
                                      "--print-only"]):

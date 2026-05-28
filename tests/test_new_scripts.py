@@ -5,12 +5,11 @@ import pytest
 from pathlib import Path
 
 ROOT = Path(__file__).parent.parent
-sys.path.insert(0, str(ROOT / "scripts"))
 
 
 class TestFeedback:
     def test_record_and_retrieve(self, tmp_path):
-        from feedback import record, _load
+        from genesis_architect.core.feedback import record, _load
         record("path traversal", "python", "helpful", project_root=tmp_path)
         entries = _load(project_root=tmp_path)
         assert len(entries) == 1
@@ -18,12 +17,12 @@ class TestFeedback:
         assert entries[0]["topic"] == "path traversal"
 
     def test_invalid_rating_raises(self, tmp_path):
-        from feedback import record
+        from genesis_architect.core.feedback import record
         with pytest.raises(ValueError):
             record("topic", "python", "unknown", project_root=tmp_path)
 
     def test_stats_aggregation(self, tmp_path):
-        from feedback import record, stats
+        from genesis_architect.core.feedback import record, stats
         record("csv", "python", "helpful", project_root=tmp_path)
         record("csv", "python", "helpful", project_root=tmp_path)
         record("auth", "python", "irrelevant", project_root=tmp_path)
@@ -35,7 +34,7 @@ class TestFeedback:
 
 class TestDriftDetector:
     def test_no_drift_on_clean_project(self, tmp_path):
-        from drift_detector import detect_drift
+        from genesis_architect.core.drift_detector import detect_drift
         (tmp_path / "src").mkdir()
         (tmp_path / "tests").mkdir()
         (tmp_path / "docs").mkdir()
@@ -43,19 +42,19 @@ class TestDriftDetector:
         assert report.missing_dirs == []
 
     def test_detects_missing_dirs(self, tmp_path):
-        from drift_detector import detect_drift
+        from genesis_architect.core.drift_detector import detect_drift
         # Only src exists, tests and docs are missing
         (tmp_path / "src").mkdir()
         report = detect_drift(str(tmp_path))
         assert "tests" in report.missing_dirs or "docs" in report.missing_dirs
 
     def test_adr_not_found_flag(self, tmp_path):
-        from drift_detector import detect_drift
+        from genesis_architect.core.drift_detector import detect_drift
         report = detect_drift(str(tmp_path))
         assert report.adr_found is False
 
     def test_level1_only_skips_import_check(self, tmp_path):
-        from drift_detector import detect_drift
+        from genesis_architect.core.drift_detector import detect_drift
         # Write evidence.json with a forbidden import
         genesis = tmp_path / ".genesis"
         genesis.mkdir()
@@ -71,7 +70,7 @@ class TestDriftDetector:
         assert report.import_violations == []
 
     def test_level2_detects_forbidden_import(self, tmp_path):
-        from drift_detector import detect_drift
+        from genesis_architect.core.drift_detector import detect_drift
         genesis = tmp_path / ".genesis"
         genesis.mkdir()
         (genesis / "evidence.json").write_text(
@@ -87,7 +86,7 @@ class TestDriftDetector:
         assert "sqlite3" in modules
 
     def test_level2_no_violation_when_no_forbidden(self, tmp_path):
-        from drift_detector import detect_drift
+        from genesis_architect.core.drift_detector import detect_drift
         genesis = tmp_path / ".genesis"
         genesis.mkdir()
         # CLI archetype - flask is forbidden
@@ -103,7 +102,7 @@ class TestDriftDetector:
         assert not report.has_import_violations
 
     def test_level2_cli_archetype_forbids_flask(self, tmp_path):
-        from drift_detector import detect_drift
+        from genesis_architect.core.drift_detector import detect_drift
         genesis = tmp_path / ".genesis"
         genesis.mkdir()
         (genesis / "evidence.json").write_text(
@@ -118,7 +117,7 @@ class TestDriftDetector:
         assert any(v.module == "flask" for v in report.import_violations)
 
     def test_report_ok_property(self, tmp_path):
-        from drift_detector import detect_drift
+        from genesis_architect.core.drift_detector import detect_drift
         (tmp_path / "src").mkdir()
         (tmp_path / "tests").mkdir()
         (tmp_path / "docs").mkdir()
@@ -127,7 +126,7 @@ class TestDriftDetector:
         assert report.ok
 
     def test_violation_contains_file_and_line(self, tmp_path):
-        from drift_detector import detect_drift
+        from genesis_architect.core.drift_detector import detect_drift
         genesis = tmp_path / ".genesis"
         genesis.mkdir()
         (genesis / "evidence.json").write_text(
@@ -146,7 +145,7 @@ class TestDriftDetector:
         assert v.rule == "forbidden"
 
     def test_json_output_shape(self, tmp_path):
-        from drift_detector import DriftReport, print_json_report
+        from genesis_architect.core.drift_detector import DriftReport, print_json_report
         import io, json
         report = DriftReport()
         report.new_dirs = ["tmp"]
@@ -237,21 +236,21 @@ class TestDriftDetector:
 
 class TestIssueMinerClassify:
     def test_classify_security(self):
-        from issue_miner import _classify
+        from genesis_architect.core.issue_miner import _classify
         assert _classify("SQL injection vulnerability in query builder", []) == "security"
 
     def test_classify_performance(self):
-        from issue_miner import _classify
+        from genesis_architect.core.issue_miner import _classify
         assert _classify("Memory leak when processing large files", []) == "performance"
 
     def test_classify_breaking(self):
-        from issue_miner import _classify
+        from genesis_architect.core.issue_miner import _classify
         assert _classify("Breaking change in version 3.0 API", []) == "breaking"
 
     def test_classify_bug_default(self):
-        from issue_miner import _classify
+        from genesis_architect.core.issue_miner import _classify
         assert _classify("Button click not working in Firefox", []) == "bug"
 
     def test_classify_by_label(self):
-        from issue_miner import _classify
+        from genesis_architect.core.issue_miner import _classify
         assert _classify("Some issue title", ["security"]) == "security"

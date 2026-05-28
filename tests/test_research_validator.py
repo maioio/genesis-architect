@@ -4,9 +4,8 @@ import pytest
 from pathlib import Path
 
 ROOT = Path(__file__).parent.parent
-sys.path.insert(0, str(ROOT / "scripts"))
 
-from research_validator import validate, _parse_star_count, _safe_path, _check_pitfalls_file
+from genesis_architect.core.research_validator import validate, _parse_star_count, _safe_path, _check_pitfalls_file
 
 
 class TestSafePath:

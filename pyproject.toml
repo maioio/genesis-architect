@@ -21,7 +21,7 @@ genesis = "genesis_architect.cli:main"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["scripts", "src"]
+pythonpath = ["src"]
 addopts = "-v --tb=short"
 
 [tool.ruff]

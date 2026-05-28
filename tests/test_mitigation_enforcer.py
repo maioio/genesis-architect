@@ -6,9 +6,8 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).parent.parent
-sys.path.insert(0, str(ROOT / "scripts"))
 
-from mitigation_enforcer import (
+from genesis_architect.core.mitigation_enforcer import (
     _parse_pitfalls_from_md,
     _resolve_mitigation_path,
     enforce,

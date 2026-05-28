@@ -6,9 +6,8 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).parent.parent
-sys.path.insert(0, str(ROOT / "scripts"))
 
-from genesis_state import (
+from genesis_architect.core.genesis_state import (
     write_phase2, require_phase2,
     write_phase3_validation, require_phase3_validation,
     write_phase5_previews, require_phase5_previews,

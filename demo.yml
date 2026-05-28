@@ -1,0 +1,212 @@
+config:
+  cols: 100
+  command: cmd
+  cursorStyle: block
+  cwd: C:\Users\User
+  env:
+    recording: true
+  fontFamily: Cascadia Code, Consolas, Courier New, monospace
+  fontSize: 13
+  frameBox:
+    style:
+      border: 0px black solid
+    title: Genesis Architect v3.0.0
+    type: floating
+  frameDelay: auto
+  letterSpacing: 0
+  lineHeight: 1.2
+  maxIdleTime: 3000
+  quality: 100
+  repeat: 0
+  rows: 32
+  theme:
+    background: '#0d0f14'
+    black: '#0d0f14'
+    blue: '#4fc3f7'
+    brightBlack: '#4a5568'
+    brightBlue: '#4fc3f7'
+    brightCyan: '#64ffda'
+    brightGreen: '#64ffda'
+    brightMagenta: '#ae89fe'
+    brightRed: '#ff7fac'
+    brightWhite: '#ffffff'
+    brightYellow: '#ffd166'
+    cursor: '#7c6af7'
+    cyan: '#64ffda'
+    foreground: '#e8eaf0'
+    green: '#64ffda'
+    magenta: '#7c6af7'
+    red: '#ff6b6b'
+    white: '#e8eaf0'
+    yellow: '#ffd166'
+records:
+- content: ''
+  delay: 400
+- content: "\e[96m$ \e[0m"
+  delay: 60
+- content: "\e[97mgenesis init \e[33m\"a FastAPI task queue with Celery and Redis\"\e[0m"
+  delay: 1200
+- content: "\r\n"
+  delay: 500
+- content: "\r\n"
+  delay: 80
+- content: "\e[95m\e[1mGenesis Architect\e[0m\e[90m  v3.0.0  Research first. Build once.\e[0m\r\n"
+  delay: 120
+- content: "\r\n"
+  delay: 80
+- content: "\e[36m\e[1mPhase 1\e[0m\e[90m  Scanning GitHub repositories...\e[0m\r\n"
+  delay: 250
+- content: "\e[90m  Searching: fastapi celery redis task queue...\e[0m\r\n"
+  delay: 400
+- content: "\e[97m  tiangolo/fastapi\e[90m            (73841 \e[33mstar\e[90m)\e[0m\r\n"
+  delay: 120
+- content: "\e[97m  celery/celery\e[90m               (24312 \e[33mstar\e[90m)\e[0m\r\n"
+  delay: 80
+- content: "\e[97m  encode/starlette\e[90m            ( 9821 \e[33mstar\e[90m)\e[0m\r\n"
+  delay: 80
+- content: "\e[97m  pydantic/pydantic\e[90m           ( 8803 \e[33mstar\e[90m)\e[0m\r\n"
+  delay: 80
+- content: "\e[97m  arq/arq\e[90m                    ( 2105 \e[33mstar\e[90m)\e[0m\r\n"
+  delay: 80
+- content: "\e[90m  ... and 11 more\e[0m\r\n"
+  delay: 100
+- content: "\r\n"
+  delay: 80
+- content: "\e[36m\e[1mPhase 2\e[0m\e[90m  Mining GitHub Issues for pitfalls...\e[0m\r\n"
+  delay: 300
+- content: "\e[90m  celery/celery          -> 20 bug issues\e[0m\r\n"
+  delay: 200
+- content: "\e[90m  tiangolo/fastapi       -> 20 bug issues\e[0m\r\n"
+  delay: 180
+- content: "\e[90m  encode/starlette       ->  7 bug issues\e[0m\r\n"
+  delay: 160
+- content: "\e[32m  Found 47 issues to analyze\e[0m\r\n"
+  delay: 120
+- content: "\r\n"
+  delay: 80
+- content: "\e[36m\e[1mPhase 3\e[0m\e[90m  Checking knowledge vault...\e[0m\r\n"
+  delay: 300
+- content: "\e[90m  Cache: 0 fresh entries for this query\e[0m\r\n"
+  delay: 200
+- content: "\e[90m  Generating fresh analysis\e[0m\r\n"
+  delay: 150
+- content: "\r\n"
+  delay: 80
+- content: "\e[36m\e[1mPhase 3b\e[0m  \e[96m\e[1mSmart Fork Analysis\e[0m\e[90m (ranked by merged PRs, not stars)\e[0m\r\n"
+  delay: 450
+- content: "\e[90m  Scanning forks of celery/celery...\e[0m\r\n"
+  delay: 600
+- content: "\e[96m  1.\e[97m  ask-celery/celery-redis-retry\e[90m    12 merged PRs last 6mo\e[0m\r\n"
+  delay: 220
+- content: "\e[96m  2.\e[97m  contrib/celery-starlette-fix\e[90m     8 merged PRs last 6mo\e[0m\r\n"
+  delay: 180
+- content: "\e[96m  3.\e[97m  oss/celery-broker-reconnect\e[90m      5 merged PRs last 6mo\e[0m\r\n"
+  delay: 180
+- content: "\e[33m  Extracted 3 additional pitfalls from active forks\e[0m\r\n"
+  delay: 200
+- content: "\r\n"
+  delay: 80
+- content: "\e[36m\e[1mPhase 4\e[0m\e[90m  Choose your architecture:\e[0m\r\n"
+  delay: 300
+- content: "\r\n"
+  delay: 80
+- content: "\e[90m  A)\e[97m Minimalist\e[90m   simple, small, easy to maintain\e[0m\r\n"
+  delay: 80
+- content: "\e[90m  B)\e[97m Scalable  \e[90m   full production setup, CI/CD, modular\e[0m\r\n"
+  delay: 80
+- content: "\e[90m  C)\e[97m Quick     \e[90m   fastest possible scaffold\e[0m\r\n"
+  delay: 80
+- content: "\e[90m  D)\e[97m Hybrid    \e[90m   minimalist core + scalable extensions\e[0m\r\n"
+  delay: 80
+- content: "\r\n"
+  delay: 80
+- content: "\e[90m  Your choice (A/B/C/D or describe in words): \e[0m"
+  delay: 200
+- content: ''
+  delay: 700
+- content: "\e[97mgive me the scalable approach\e[0m"
+  delay: 1200
+- content: "\r\n"
+  delay: 500
+- content: "\r\n"
+  delay: 80
+- content: "\e[96m  I'll take that as \e[1mB (scalable)\e[0m\e[96m - correct? [y/n]\e[0m\r\n"
+  delay: 200
+- content: "\e[90m  Confirm [y/n]: \e[0m"
+  delay: 200
+- content: ''
+  delay: 600
+- content: "\e[97my\e[0m"
+  delay: 300
+- content: "\r\n"
+  delay: 300
+- content: "\r\n"
+  delay: 80
+- content: "\e[32m  Building Scalable scaffold...\e[0m\r\n"
+  delay: 150
+- content: "\r\n"
+  delay: 80
+- content: "\e[36m\e[1mPhase 5\e[0m\e[90m  Analyzing with LLM and generating scaffold...\e[0m\r\n"
+  delay: 600
+- content: "\e[90m  Synthesizing ecosystem patterns...\e[0m\r\n"
+  delay: 800
+- content: "\e[90m  Extracting pitfalls from 47 issues + 3 active forks...\e[0m\r\n"
+  delay: 700
+- content: "\e[90m  Writing RESEARCH.md...\e[0m\r\n"
+  delay: 400
+- content: "\e[90m  Writing PITFALLS.md...\e[0m\r\n"
+  delay: 300
+- content: "\r\n"
+  delay: 80
+- content: "\e[32m\e[1mGenesis Architect complete.\e[0m\r\n"
+  delay: 200
+- content: "\r\n"
+  delay: 80
+- content: "\e[96m  Created: \e[97mfastapi_task_queue/RESEARCH.md\e[0m\r\n"
+  delay: 100
+- content: "\e[96m  Created: \e[97mfastapi_task_queue/PITFALLS.md\e[0m\r\n"
+  delay: 100
+- content: "\r\n"
+  delay: 80
+- content: "\e[90m  Next: cd fastapi_task_queue and review RESEARCH.md\e[0m\r\n"
+  delay: 100
+- content: "\e[90m  Run \e[96m`genesis companion`\e[90m to stay in active development mode.\e[0m\r\n"
+  delay: 100
+- content: "\r\n"
+  delay: 80
+- content: "\e[33m\e[1m  Tip:\e[0m\e[33m Solutions cached in .genesis/vault/ - next run will be instant.\e[0m\r\n"
+  delay: 200
+- content: "\r\n"
+  delay: 80
+- content: ''
+  delay: 1000
+- content: "\e[96m$ \e[0m"
+  delay: 60
+- content: "\e[97mgenesis init \e[33m\"a FastAPI task queue with Celery and Redis\"\e[0m"
+  delay: 1200
+- content: "\r\n"
+  delay: 500
+- content: "\r\n"
+  delay: 80
+- content: "\e[95m\e[1mGenesis Architect\e[0m\e[90m  v3.0.0\e[0m\r\n"
+  delay: 80
+- content: "\r\n"
+  delay: 80
+- content: "\e[36m\e[1mPhase 3\e[0m\e[90m  Checking knowledge vault...\e[0m\r\n"
+  delay: 300
+- content: "\e[32m\e[1m  Cache hit!\e[0m\e[32m  Fresh solution from vault (cached 2 min ago)\e[0m\r\n"
+  delay: 150
+- content: "\e[90m  Skipping LLM call - using cached analysis\e[0m\r\n"
+  delay: 100
+- content: "\r\n"
+  delay: 80
+- content: "\e[32m\e[1mGenesis Architect complete.\e[0m\e[90m  (vault run - instant)\e[0m\r\n"
+  delay: 200
+- content: "\r\n"
+  delay: 80
+- content: ''
+  delay: 1500
+- content: "\e[96m$ \e[0m"
+  delay: 60
+- content: ''
+  delay: 1000

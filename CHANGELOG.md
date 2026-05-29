@@ -9,6 +9,11 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+## [3.1.1] - 2026-05-29
+
+### Fixed
+- `pyproject.toml`: corrected `build-backend` to `setuptools.build_meta` (was using a non-existent `setuptools.backends.legacy` path that broke `pip install -e .` in CI)
+
 ## [2.6.1] - 2026-05-20
 
 Hardening pass: argparse fix, CI stability, honest enforcement audit.

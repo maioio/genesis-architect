@@ -83,10 +83,7 @@ Run only when triggered by natural language ("I want to build X", "scaffold a pr
 
 Present:
 > "Genesis Architect runs a 5-10 minute research process and generates 8+ files.
-> For quick experiments this is overkill.
->
-> A: Full Genesis (recommended for projects you'll maintain)
-> B: Quick scaffold (skip research, just give me boilerplate)"
+> A: Full Genesis (recommended)  B: Quick scaffold (boilerplate only, no research)"
 
 - **A**: continue normally from Phase 1.
 - **B**: skip Phases 1-5, go straight to Phase 6 with minimal Minimalist scaffold. No RESEARCH.md or PITFALLS.md. Skip Phase 6 Step 6.5 (mitigation check) entirely. In Step 3 architecture comments, omit pitfall references. Create `QUICK_SCAFFOLD.md`: "Quick scaffold - no research. Run `genesis audit .` for pitfall analysis."
@@ -113,7 +110,11 @@ On receive: "Starting research - scanning 15-20 repos, deep-analyzing top 5-8...
 Use available MCP tools. Run streams in parallel where possible.
 
 **Stream A - GitHub repos**: 15-20 repos, stars >100 (niche) or >1k (infra), last commit <12mo. Select top 5-8 by stars+recency for deep analysis. Wait for A before starting C.
-**Stream B - Ecosystem context** (parallel with A): Exa search "[vision] pitfalls reddit", "[vision] mistakes hacker news", "[vision] architecture regrets stackoverflow".
+**Stream B - Ecosystem context** (parallel with A): Search with Exa:
+- `"[vision] common pitfalls site:reddit.com"`
+- `"[vision] architecture mistakes site:news.ycombinator.com"`
+- `"[vision] lessons learned stackoverflow"`
+Merge results into pitfall candidates before Phase 3.
 **Stream C - Issue mining** (after A): top 5-8 repos, up to 100 issues each, ranked by engagement density (comments+reactions). Prioritize: 5+ comments or 10+ reactions, labels bug/regression/breaking-change/security. Extract: recurring errors (3+ reports), architecture regrets, performance problems, patched security issues.
 
 Merge all three streams before Phase 3. On MCP failure: report briefly, switch to web search, continue.
@@ -261,19 +262,8 @@ Comment format:
 ```
 
 ### Step 3b: Production-readiness defaults (always included)
-Non-retrofittable defaults for every scaffold (details in `references/architecture-patterns.md` under "Production-Readiness Defaults"):
-- **Structured logging**: pino/winston (Node), stdlib logging (Python), slog (Go)
-- **Security**: non-root Dockerfile user, no wildcard CORS, Secure+HttpOnly cookies
-- **Env validation**: fail at startup if required env vars are missing - never silently
-- **Secret Zero**: `.env.example` with `SECRET_KEY=change-me-generate-with-openssl-rand-hex-32`
-- **Health endpoint** (Web Service only): `GET /health` returning `{"status":"ok"}`
-- **ADR stub**: `docs/adr/001-initial-architecture.md` - key decisions, links to RESEARCH.md
-- **Secret leak protection**: secret-scanning CI job in `ci.yml` - fails build on exposed credentials
-- **Dependency and SAST scan**: static analysis CI job in `ci.yml` - catches injection and path traversal vulnerabilities
-- **Quality gate**: `sonar-project.properties` ready; add `SONAR_TOKEN` to GitHub Secrets to activate the quality badge and merge gate
-- **Path traversal guard**: inject `_safe_path` (from `references/architecture-patterns.md`) when the project handles user-supplied file paths (CLI tools, file processors, upload endpoints); skip for pure API services or frontends
-
-**Web Service archetype only**: create `endpoint-inventory.json` with `[{"method":"GET","path":"/health","added_in":"scaffold"}]`. `genesis check` uses this to detect API surface drift after 30+ days.
+Apply all defaults from `references/architecture-patterns.md` section "Production-Readiness Defaults".
+**Web Service only**: `GET /health` returning `{"status":"ok"}` + `endpoint-inventory.json` with `[{"method":"GET","path":"/health","added_in":"scaffold"}]` (used by `genesis check` for API drift detection).
 
 ### Step 4: Tests
 Create `tests/` with: minimum 1 unit test that actually passes (not `assert True`), test config file (jest.config.js, pytest.ini, pyproject.toml, etc.), tested function must be the core function of the project.
@@ -356,7 +346,7 @@ After the summary, add this note (translate to user's language):
 After Phase 6, enter companion mode. Direct invocations: `genesis help [problem]`, `genesis research [topic]`, `genesis check` (freshness audit).
 **`genesis check`** - freshness audit (run 30+ days after scaffold): check deps for CVEs + CI action versions. Use OSV.dev API for deterministic CVE detection (see mcp-strategy.md). Report: CRITICAL / WARNING / INFO. Never auto-apply - show upgrade commands only.
 **`genesis resolve [topic]`** - Smart Resolution Engine: checks local Knowledge Vault first, then fetches from Stack Overflow. Prioritizes accepted answers and high-score results. Includes recency classification (recent: last 24 months / classic). Always shows source URL. Never patches code without explicit user confirmation.
-**Knowledge Vault**: solutions are cached in `.genesis/vault/` by topic and language. Use `python scripts/vault.py search "[topic]" [language]` to query, `vault.py save` to add entries, `vault.py stats` to inspect. Vault hits avoid external API calls entirely.
+**Knowledge Vault**: `.genesis/vault/` - query via `vault.py search "[topic]"`, save via `vault.py save`, inspect via `vault.py stats`. Hits avoid external API calls.
 **Stuck on a problem**: search Phase 2 repos first, then competing projects. Present 1-3 approaches ranked by ecosystem adoption. Cite source repo.
 **Dependency question**: check last commit date, open issues trend, flag better-maintained alternatives.
 **New sub-problem**: ask "Want me to search the ecosystem for how others solved this?" before scanning.

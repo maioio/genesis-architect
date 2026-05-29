@@ -34,3 +34,18 @@ a_cli_podcast_downlo/
 # but commit evidence outputs in examples/ to demonstrate the toolchain
 !examples/**/.genesis/
 !examples/**/.genesis/evidence.json
+
+# Playwright MCP session artifacts (screenshots, logs, snapshots)
+.playwright-mcp/
+
+# Claude Code internals
+.claude/commands/
+.claude/scheduled_tasks.lock
+.claude/worktrees/
+
+# PSR.ai recording config
+config.yml
+
+# Python build artifacts
+src/*.egg-info/
+*.egg-info/

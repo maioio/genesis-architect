@@ -6,7 +6,11 @@
       "Bash(python scripts/env_probe.py)",
       "WebSearch",
       "mcp__firecrawl__firecrawl_search",
-      "mcp__firecrawl__firecrawl_scrape"
+      "mcp__firecrawl__firecrawl_scrape",
+      "Bash(git checkout *)",
+      "Bash(git reset *)",
+      "Bash(git commit *)",
+      "PowerShell($env:USERPROFILE)"
     ]
   }
 }

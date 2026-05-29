@@ -27,12 +27,12 @@ Not useful without prior discussion:
 
 ## Codebase architecture
 
-Genesis Architect has two distinct layers — understanding the boundary matters before you touch anything:
+Genesis Architect has two distinct layers - understanding the boundary matters before you touch anything:
 
 | Layer | Path | Role |
 |---|---|---|
 | **Installable package** | `src/genesis_architect/` | The `genesis` CLI users install via `pip install genesis-architect`. Contains `cli.py`, `config.py`, and `core/` (github, llm, scaffolder, vault, companion, etc.). This is what runs when a user types `genesis init`. |
-| **Internal toolchain** | `scripts/` | Quality and validation tools that run in CI and locally. These are NOT part of the installable package — they validate the research artifacts (RESEARCH.md, PITFALLS.md), enforce mitigation coverage, detect drift, and run evals. |
+| **Internal toolchain** | `scripts/` | Quality and validation tools that run in CI and locally. These are NOT part of the installable package - they validate the research artifacts (RESEARCH.md, PITFALLS.md), enforce mitigation coverage, detect drift, and run evals. |
 
 **Rule of thumb:**
 - User-facing features → `src/genesis_architect/`

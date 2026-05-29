@@ -381,7 +381,7 @@ class TestDetectPsrAssets:
 
 
 # ---------------------------------------------------------------------------
-# collect_release_data — psr_assets integration
+# collect_release_data - psr_assets integration
 # ---------------------------------------------------------------------------
 
 class TestCollectReleaseDataPsr:
@@ -410,7 +410,7 @@ class TestCollectReleaseDataPsr:
 
 
 # ---------------------------------------------------------------------------
-# generate_publish_content — visual markdown in release body
+# generate_publish_content - visual markdown in release body
 # ---------------------------------------------------------------------------
 
 class TestGeneratePublishContentVisual:

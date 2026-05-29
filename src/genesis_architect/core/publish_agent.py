@@ -1,16 +1,16 @@
 """Collect release data and generate publish-ready content for HN and GitHub Releases.
 
-Architectural note — why we use a browser-AI prompt instead of headless auto-submission:
+Architectural note - why we use a browser-AI prompt instead of headless auto-submission:
   Hacker News runs persistent anti-bot detection (rate fingerprinting, TLS JA3 hashing,
-  behavioral mouse/timing analysis). Automated headless submissions — even via Playwright
-  with stealth plugins — are silently shadowbanned: the post appears to the submitter but
+  behavioral mouse/timing analysis). Automated headless submissions - even via Playwright
+  with stealth plugins - are silently shadowbanned: the post appears to the submitter but
   is invisible to everyone else, with no error or warning. This is unrecoverable once it
   happens to an account or domain.
 
   This module deliberately generates a human-readable prompt that the user pastes into an
   authenticated browser session via their own AI extension. The actual HTTP request comes
   from a real browser with a valid session cookie, real user-agent, and human-like timing.
-  This is not an incomplete implementation — it is the correct architecture for any tool
+  This is not an incomplete implementation - it is the correct architecture for any tool
   that cares about the long-term health of the user's HN account and domain reputation.
 """
 
@@ -297,7 +297,7 @@ Test count: {test_count}
 Rules:
 - Title: max 80 chars, starts with "Show HN:", factual not hype, highlight the most technically interesting thing
 - Founder comment: 2-3 sentences, honest, invites technical discussion, no marketing speak
-- HN audience is senior engineers — be specific and humble
+- HN audience is senior engineers - be specific and humble
 
 Return a JSON object with exactly these two keys:
 {{"title": "...", "comment": "..."}}
@@ -347,7 +347,7 @@ Return ONLY the markdown text, no explanation."""
     if not release_body:
         release_body = notes_raw
 
-    # Append visual asset markdown (filenames only — no local paths)
+    # Append visual asset markdown (filenames only - no local paths)
     visual_md = _build_visual_markdown(psr_assets, version)
     if visual_md:
         release_body = release_body.rstrip() + "\n\n" + visual_md
@@ -454,7 +454,7 @@ def format_output(content: dict, version: str = "", psr_assets: dict | None = No
 
         if has_gif:
             gif_path = psr["replay_gif"]
-            # Show only the session directory name + filename — no full local path
+            # Show only the session directory name + filename - no full local path
             session_name = psr.get("session_name", "")
             safe_display = f"~/psr_output/{session_name}/{gif_path.name}" if session_name else gif_path.name
             lines += [
@@ -474,7 +474,7 @@ def format_output(content: dict, version: str = "", psr_assets: dict | None = No
 
         lines += [
             "  After uploading, the release body already contains the Markdown",
-            "  image tags referencing these filenames — no editing required.",
+            "  image tags referencing these filenames - no editing required.",
             "",
         ]
 

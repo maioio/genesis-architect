@@ -79,7 +79,7 @@ def render_frame(lines: list[str]) -> Image.Image:
     draw.line([0, PAD_TOP - 1, CANVAS_W, PAD_TOP - 1], fill=BORDER, width=1)
     for cx, col in [(16, "#ff5f57"), (30, "#febc2e"), (44, "#28c840")]:
         draw.ellipse([cx - 5, 12, cx + 5, 22], fill=col)
-    draw.text((62, 11), "terminal  —  genesis init", font=FONT, fill=TITLE_TEXT)
+    draw.text((62, 11), "terminal  -  genesis init", font=FONT, fill=TITLE_TEXT)
 
     # Show last VISIBLE_ROWS lines (terminal scroll behavior)
     visible = lines[-VISIBLE_ROWS:] if len(lines) > VISIBLE_ROWS else lines
@@ -109,7 +109,7 @@ SCRIPT = [
     ("", 400),
     (MINT + "$ " + BWHITE + "genesis init " + YELLOW + '"a FastAPI task queue with Celery and Redis"' + RESET, 900),
     ("", 200),
-    (PURPLE + "Genesis Architect  v3.0.0  —  Research first. Build once." + RESET, 300),
+    (PURPLE + "Genesis Architect  v3.0.0  -  Research first. Build once." + RESET, 300),
     ("", 100),
     (CYAN + "Phase 1" + RESET + BGRAY + "  Scanning GitHub repositories..." + RESET, 350),
     (BGRAY + "  Searching: fastapi celery redis task queue..." + RESET, 450),

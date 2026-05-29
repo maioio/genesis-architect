@@ -1,4 +1,4 @@
-# Engineering Pitfalls — Genesis Architect (Self)
+# Engineering Pitfalls - Genesis Architect (Self)
 <!-- Genesis Architect internal evidence document -->
 
 ## Pitfall 1: Enforcement that depends on LLM compliance fails silently

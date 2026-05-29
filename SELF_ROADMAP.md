@@ -1,4 +1,4 @@
-# Genesis Architect — Development Roadmap (Self)
+# Genesis Architect - Development Roadmap (Self)
 <!-- Genesis Architect internal evidence document -->
 
 ## Phase 1: Core Workflow (complete)

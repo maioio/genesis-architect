@@ -1,7 +1,7 @@
-# Genesis Architect — Demo Recording Script
+# Genesis Architect - Demo Recording Script
 
 **Target:** 40-second GIF showing NLU + Vault + Fork Analysis in action.
-**Scenario:** FastAPI task queue — lots of known Celery/Redis pitfalls in the wild.
+**Scenario:** FastAPI task queue - lots of known Celery/Redis pitfalls in the wild.
 
 ---
 
@@ -25,7 +25,7 @@ set PYTHONPATH=C:\Users\User\.claude\skills\genesis-architect\src
 terminalizer record demo --config terminalizer.yml
 ```
 
-**terminalizer.yml** — create this file first:
+**terminalizer.yml** - create this file first:
 
 ```yaml
 command: cmd
@@ -115,7 +115,7 @@ Run `genesis companion` to stay in active development mode.
 type taskqueue\PITFALLS.md
 ```
 
-Pause 3 seconds on the output — let viewers read the real pitfalls extracted from GitHub Issues.
+Pause 3 seconds on the output - let viewers read the real pitfalls extracted from GitHub Issues.
 
 ### Step 5 - Enter companion mode
 

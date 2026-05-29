@@ -8,7 +8,7 @@
 instructions produce scaffolds that are immediately abandoned when developers deviate.
 **Our mitigation**: All critical checks (mitigation_enforcer.py, drift_detector.py,
 evidence_pack.py) are wired into both pre-commit hooks and CI - they run automatically.
-mitigation_file_path: scripts/mitigation_enforcer.py
+mitigation_file_path: src/genesis_architect/core/mitigation_enforcer.py
 mitigation_symbol: enforce
 mitigation_import: ast
 
@@ -19,7 +19,7 @@ mitigation_import: ast
 path traversal attacks (e.g. `../../../etc/passwd` as project name).
 **Our mitigation**: `scaffold_generator.py` validates every path via `_validate_name()` and
 verifies every generated path stays inside the output directory via `.relative_to()`.
-mitigation_file_path: scripts/scaffold_generator.py
+mitigation_file_path: src/genesis_architect/core/scaffold_generator.py
 mitigation_symbol: _validate_name
 
 ## Pitfall 3: Stub-only mitigation files pass file-existence checks
@@ -29,5 +29,5 @@ mitigation_symbol: _validate_name
 no actual mitigation. This defeats the purpose of enforcement.
 **Our mitigation**: `mitigation_enforcer.py` uses AST analysis to verify files contain
 substantive code, not just comments or pass/... stubs.
-mitigation_file_path: scripts/mitigation_enforcer.py
+mitigation_file_path: src/genesis_architect/core/mitigation_enforcer.py
 mitigation_symbol: _is_substantive

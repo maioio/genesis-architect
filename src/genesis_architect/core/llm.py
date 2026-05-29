@@ -1,6 +1,8 @@
-"""LLM client via LiteLLM - works with Claude, OpenAI, Gemini, Ollama."""
+"""LLM client — Claude via Anthropic SDK."""
 
 from typing import Any
+
+import anthropic
 
 
 def ask(
@@ -9,22 +11,19 @@ def ask(
     api_key: str | None = None,
     history: list[dict] | None = None,
 ) -> str:
-    """Send a prompt to the LLM, optionally with prior conversation history.
+    """Send a prompt to Claude, optionally with prior conversation history.
 
     history is a list of {"role": "user"|"assistant", "content": str} dicts
     representing turns before this one. The new user prompt is appended last.
     """
-    try:
-        from litellm import completion
-    except ImportError:
-        raise ImportError("Run: pip install genesis-architect[ai]")
+    client = anthropic.Anthropic(api_key=api_key) if api_key else anthropic.Anthropic()
 
-    messages = list(history) if history else []
+    messages: list[dict[str, Any]] = list(history) if history else []
     messages.append({"role": "user", "content": prompt})
 
-    kwargs: dict[str, Any] = {"model": model, "messages": messages}
-    if api_key:
-        kwargs["api_key"] = api_key
-
-    response = completion(**kwargs)
-    return response.choices[0].message.content or ""
+    response = client.messages.create(
+        model=model,
+        max_tokens=4096,
+        messages=messages,  # type: ignore[arg-type]
+    )
+    return response.content[0].text if response.content else ""

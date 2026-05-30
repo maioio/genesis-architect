@@ -389,8 +389,6 @@ Use templates in `assets/RESEARCH.template.md`, `assets/PITFALLS.template.md`, `
 When 0 comparable projects exist, switch to first-principles mode. Announce: "No similar projects found. Switching to Architect Mode."
 Apply: SOLID, Clean Architecture, Twelve-Factor App (for services). Note in RESEARCH.md: "First-principles design - no direct ecosystem precedent found."
 
----
-
 ## Format Rules
 
 - No em dashes (use hyphens or colons)

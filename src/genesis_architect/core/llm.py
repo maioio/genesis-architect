@@ -1,4 +1,4 @@
-"""LLM client — Claude via Anthropic SDK."""
+"""LLM client - Claude via Anthropic SDK."""
 
 from typing import Any
 

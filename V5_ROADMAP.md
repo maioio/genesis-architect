@@ -320,9 +320,13 @@ Genesis V5 succeeds when:
 
 ---
 
+## V5.1 Status: COMPLETE
+
+Implemented 2026-05-30. Validated with 14 tests (test_partner_mode.py). All 386 tests green.
+
 ## Next Step
 
-Implement V5.1 (Development Partner Mode) in the next session.
+Implement V5.2 (Product Discovery Layer) - requires Design Review first.
 
 Changes required:
 1. SKILL.md: Replace Phase 0.5 with Experience Selection + Development Partner question format

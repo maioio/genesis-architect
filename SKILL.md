@@ -1,13 +1,12 @@
 ---
 name: genesis-architect
 description: >
-  Use when starting a new project - scans 15-20 real GitHub repos and mines their Issues for
-  pitfalls before writing a single file. No other scaffolding tool does this automatically.
-  Identifies real architecture regrets from production codebases, then builds a working scaffold
-  with tests, CI/CD, security defaults, and an ADR explaining every decision. After scaffolding,
-  stays active as a research companion. Triggers on: "genesis init [vision]", "I want to build
-  X", "scaffold", "new project", "set up project", "start building", "create a tool", "make a
-  CLI", "bootstrap", "בנה פרויקט", "צור פרויקט", "התחל פרויקט".
+  Use when starting a new project. Genesis finds real production failures from similar GitHub
+  repos, then builds a working MVP immediately - not just documents. Two modes: fast-mvp (5 min
+  research cap, builds right after) and deep-research (full analysis). Success = user can run
+  the project. Triggers on: "genesis init [vision]", "I want to build X", "scaffold", "new
+  project", "set up project", "start building", "create a tool", "make a CLI", "bootstrap",
+  "בנה פרויקט", "צור פרויקט", "התחל פרויקט".
 ---
 
 <!--
@@ -20,7 +19,7 @@ the rest of the package metadata, not here.
 
 # Genesis Architect
 
-> Research first. Build once. The 10 minutes spent on research save 10 hours of refactoring.
+> Research fast. Build immediately. Genesis turns production failures into a working MVP.
 
 ---
 
@@ -46,6 +45,10 @@ additional search signals in Phase 2. Skip Phase 1 questions entirely.
 Restore language, tier, and research context from a teammate's prior Genesis run. Skip Phases 1-5.
 Required fields in `.genesis.json`: `language`, `tier` (minimalist|scalable), `vision`.
 If any required field is missing, abort with: "`.genesis.json` is missing field: [field]. Run `genesis init` to generate it."
+
+`genesis init --fast-mvp [description]` - Research Budget mode. Hard limits: 5 min research, 10 repos, 30 issues, 5 Exa sources. After budget exhausted, FORCE_BUILD=TRUE: skip to Phase 6 immediately. Produces BUILD_PACKET.md instead of separate RESEARCH.md/PITFALLS.md. Announce at start: "Fast MVP mode - 5 min research cap, then building immediately."
+
+`genesis init --deep-research [description]` - Full research mode (default). No time cap. All streams. Detailed RESEARCH.md + PITFALLS.md + ROADMAP.md.
 
 `genesis audit [path]` - run Phases 2-4 on an existing codebase. Delivers PITFALLS.md and RESEARCH.md.
 No scaffold generated. Pre-flight Check (Phase 0.5) does not apply to `genesis audit` - it is an explicit command.
@@ -176,6 +179,8 @@ Rejects pitfalls without a live Issue URL or unmapped mitigation_file_path. Fix 
 If `GITHUB_TOKEN` set: all URLs verified. Otherwise first 3 checked via web fetch.
 
 **Platform risks**: Every platform/archetype-specific risk (e.g., Windows console encoding, path separators) must appear in PITFALLS.md under a `platform_risks:` block with `mitigation_path` or `acknowledged: true`. Run after PITFALLS.md: `python scripts/pitfall_coverage_check.py PITFALLS.md src/ --check-platform-risks`
+
+**Fast MVP mode - BUILD_PACKET**: When `--fast-mvp` active, generate `BUILD_PACKET.md` instead of RESEARCH.md+PITFALLS.md. Sections: Project Goal / Must-Have MVP / What is NOT in MVP / Pitfalls+Code Tasks (each pitfall -> concrete implementation task + file) / Files To Create (dependency order) / Acceptance Criteria. Then skip Phase 5 and go directly to Phase 6 with Minimalist scaffold.
 
 Before proceeding to Phase 5, compute and display a one-line **Research Quality Signal**:
 
@@ -330,6 +335,14 @@ __pycache__/
 ```
 
 Add to ROADMAP.md a Phase titled 'Activate Quality Gates' with steps: (1) Add SONAR_TOKEN secret to GitHub Settings > Secrets, (2) Add SNYK_TOKEN secret to enable dependency CVE scanning, (3) Verify first green CI run.
+
+### Step 7.5: MVP Validation (mandatory - runs before summary)
+Answer all three:
+1. Can it run? - attempt `python main.py --help` / `node index.js --help` / entry point equivalent
+2. Can user see output? - does running produce visible result (not just exit 0)?
+3. Can user test it? - does `pytest` / `npm test` / `go test` pass?
+
+If any answer is NO: announce "MVP VALIDATION FAILED: [reason]" and fix before Step 8. A scaffold with 50 files that cannot run is a failed build. Documents do not count as output.
 
 ### Step 8: Deliver summary
 Announce: "Genesis Architect complete. [bullet list of created files]. Next: [first ROADMAP phase]. Entering companion mode."

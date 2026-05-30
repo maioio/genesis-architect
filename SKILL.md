@@ -93,7 +93,7 @@ When triggered by natural language, present once:
 - **B**: Full Phases 1-6. Development Partner rules active.
 - **C**: Full flow + Product Discovery prepended to Phase 1. Adds PRODUCT_STRATEGY.md after Phase 4.
 - **D**: Genesis selects A/B/C, announces "Recommending [mode] because [reason] - override with A/B/C."
-- **"Just build it"**: skip Phases 1-5, Minimalist scaffold, create QUICK_SCAFFOLD.md.
+- **"Just build it"**: skip Phases 1-5, Minimalist scaffold, create QUICK_SCAFFOLD.md. Phase 6 runs without RESEARCH.md or PITFALLS.md - skip Steps 6.5 and evidence gate. Note in QUICK_SCAFFOLD.md: "Run `genesis audit .` for full pitfall analysis."
 
 **Development Partner Rules** (active in modes B, C, D throughout the project):
 

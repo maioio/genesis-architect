@@ -171,7 +171,21 @@ On success: `python scripts/genesis_state.py write-phase3-validation .`
 
 ## Phase 4: Pitfall Identification
 
-Compile top pitfalls from the issue scan. For each: **What** (problem), **Where** (full URL `https://github.com/[owner]/[repo]/issues/[number]`), **Why** (root cause), **Mitigation** (what we build differently), **mitigation_file_path** (scaffold path - required). Aim for 3-7.
+Compile top pitfalls from the issue scan. For each pitfall write all of the following fields. Aim for 3-7 pitfalls.
+
+**Required fields per pitfall:**
+- **What**: problem description
+- **Where**: full URL `https://github.com/[owner]/[repo]/issues/[number]`
+- **Why**: root cause
+- **Mitigation**: what we build differently
+- **mitigation_file_path**: scaffold path (required)
+- **Implementation**: concrete build tasks. Format:
+  ```
+  - Create: [file or class] with [specific behavior]
+  - Test: [test file] covering [specific cases]
+  - Constrain: [what is forbidden and why]  (required when pitfall implies a banned pattern)
+  ```
+  Every pitfall needs at least one Create and one Test. Phase 6 Step 3 reads these blocks to generate real files - not documentation.
 
 **Phase 2 -> Phase 3 gate** (run immediately after writing PITFALLS.md):
 `python scripts/research_validator.py PITFALLS.md --validate-pitfalls [--verify-issues]`
@@ -260,6 +274,8 @@ Never run `git push` or send code to a remote without explicit user approval. `g
 ### Step 3: Functional boilerplate
 Every file must contain working code, not empty stubs. Requirements: at least one function or class with real basic logic, engineering decision comment on any non-obvious structure choice.
 
+**Implementation Extraction (mandatory)**: Before writing any file, read every `Implementation:` block in PITFALLS.md. Each `Create:` entry becomes a real file or class. Each `Test:` entry becomes a real test case. Each `Constrain:` entry is enforced in code. A pitfall with no resulting code is a build failure.
+
 Comment format:
 ```
 # Architecture note: [decision] (inspired by [repo-url])
@@ -321,20 +337,9 @@ sonar.qualitygate.wait=true
 ```
 Announce: 'Quality gate ready. To activate: (1) add SONAR_TOKEN to GitHub Settings > Secrets, (2) disable Automatic Analysis in SonarCloud project settings.'
 
-Create strict `.gitignore` additions (append to existing):
-```
-.env
-.env.*
-!.env.example
-*.pem
-*.key
-*.p12
-venv/
-node_modules/
-__pycache__/
-```
+Append to `.gitignore`: `.env`, `.env.*`, `!.env.example`, `*.pem`, `*.key`, `*.p12`, `venv/`, `node_modules/`, `__pycache__/`
 
-Add to ROADMAP.md a Phase titled 'Activate Quality Gates' with steps: (1) Add SONAR_TOKEN secret to GitHub Settings > Secrets, (2) Add SNYK_TOKEN secret to enable dependency CVE scanning, (3) Verify first green CI run.
+Add to ROADMAP.md a Phase titled 'Activate Quality Gates': (1) add SONAR_TOKEN to GitHub Secrets, (2) add SNYK_TOKEN, (3) verify first green CI run.
 
 ### Step 7.5: MVP Validation (mandatory - runs before summary)
 Answer all three:
@@ -356,24 +361,16 @@ After the summary, add this note (translate to user's language):
 
 ## Phase 7: Development Companion Mode
 
-After Phase 6, enter companion mode. Direct invocations: `genesis help [problem]`, `genesis research [topic]`, `genesis check` (freshness audit).
-**`genesis check`** - freshness audit (run 30+ days after scaffold): check deps for CVEs + CI action versions. Use OSV.dev API for deterministic CVE detection (see mcp-strategy.md). Report: CRITICAL / WARNING / INFO. Never auto-apply - show upgrade commands only.
-**`genesis resolve [topic]`** - Smart Resolution Engine: checks local Knowledge Vault first, then fetches from Stack Overflow. Prioritizes accepted answers and high-score results. Includes recency classification (recent: last 24 months / classic). Always shows source URL. Never patches code without explicit user confirmation.
-**Knowledge Vault**: `.genesis/vault/` - query via `vault.py search "[topic]"`, save via `vault.py save`, inspect via `vault.py stats`. Hits avoid external API calls.
-**Stuck on a problem**: search Phase 2 repos first, then competing projects. Present 1-3 approaches ranked by ecosystem adoption. Cite source repo.
-**Dependency question**: check last commit date, open issues trend, flag better-maintained alternatives.
-**New sub-problem**: ask "Want me to search the ecosystem for how others solved this?" before scanning.
+After Phase 6, enter companion mode.
+**`genesis check`**: CVE scan + CI action version audit via OSV.dev. Report CRITICAL/WARNING/INFO. Never auto-apply.
+**`genesis resolve [topic]`**: Knowledge Vault first (`.genesis/vault/`), then Stack Overflow. Shows source URL. Never patches without confirmation.
+**`genesis research [topic]`**: search Phase 2 repos first, then ecosystem. Present 1-3 approaches, ranked.
+**`genesis help [problem]`**: search analyzed repos for how they solved it. Cite source.
+**Stuck/new sub-problem**: ask "Want me to search the ecosystem?" before scanning.
 **Feature complete**: suggest updating ROADMAP.md, offer to research the next phase.
-**No research context / new session**: read `RESEARCH.md` from working directory.
-Extract and restore:
-- Repos analyzed (Analyzed Repositories table)
-- Pitfalls found (link to PITFALLS.md mitigation patterns)
-- Architecture decision (Architecture Decision Rationale section)
-- Language and tier chosen
-Announce: 'Research context restored from RESEARCH.md - [N] repos, [M] pitfalls loaded.'
-If RESEARCH.md missing: 'RESEARCH.md not found. Run genesis audit . or describe the current project.'
-**Boundaries**: never act without asking first - max 3 options - stay grounded in analyzed repos, not general advice.
-**Exit**: companion mode ends when the user explicitly starts a new unrelated task, uses `genesis init` for a new project, or says "done" / "exit companion mode". After exit, do not apply Genesis behavior to requests that are not about the current project.
+**New session**: read `RESEARCH.md`, restore repos/pitfalls/architecture/language. Announce: 'Context restored - [N] repos, [M] pitfalls.' If missing: 'RESEARCH.md not found. Run genesis audit . or describe the project.'
+**Boundaries**: never act without asking - max 3 options - stay grounded in analyzed repos.
+**Exit**: when user starts an unrelated task, runs `genesis init` for a new project, or says "done"/"exit companion mode".
 
 ---
 

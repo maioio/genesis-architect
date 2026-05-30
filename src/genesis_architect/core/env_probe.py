@@ -15,12 +15,10 @@ Usage:
 
 import argparse
 import json
-import os
 import platform
 import shutil
 import subprocess
 import sys
-
 
 # Order matters: the first available manager is the one most projects in this
 # environment are likely to use. uv before pip (uv is a superset for Python),
@@ -45,7 +43,7 @@ def detect_wsl() -> bool:
     if detect_os() != "linux":
         return False
     try:
-        with open("/proc/version", "r", encoding="utf-8") as f:
+        with open("/proc/version", encoding="utf-8") as f:
             return "microsoft" in f.read().lower()
     except OSError:
         return False

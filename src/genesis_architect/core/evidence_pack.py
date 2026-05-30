@@ -23,13 +23,12 @@ And produces:
     .genesis/evidence.json    - machine-readable backing store for genesis validate
 """
 
+import argparse
 import json
 import re
 import sys
-import argparse
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-
 
 # ---------------------------------------------------------------------------
 # Parsers
@@ -126,7 +125,7 @@ def _parse_roadmap_phases(roadmap_text: str) -> list[dict]:
     for i in range(1, len(sections), 2):
         header = sections[i].strip()
         body = sections[i + 1] if i + 1 < len(sections) else ""
-        first_line = next((l.strip() for l in body.splitlines() if l.strip()), "")
+        first_line = next((ln.strip() for ln in body.splitlines() if ln.strip()), "")
         phases.append({"name": header, "summary": first_line})
     return phases
 
@@ -280,7 +279,7 @@ def generate(
         "FULL" if phase2.get("phase2_passed") else "THIN"
     )
 
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(UTC).isoformat()
 
     # Compute confidence score: 0.0-1.0, measured not aspirational
     confidence = _compute_confidence(

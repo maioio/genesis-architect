@@ -2,7 +2,6 @@
 
 from pathlib import Path
 
-
 _RESEARCH_PROMPT = """\
 You are Genesis Architect. Analyze these GitHub repositories for a project about: {vision}
 

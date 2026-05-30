@@ -1,11 +1,10 @@
 """GitHub API - search repos and fetch issues."""
 
-import urllib.request
+import json
 import urllib.error
 import urllib.parse
-import json
+import urllib.request
 from typing import Any
-
 
 _RATE_LIMIT_MSG = """\
 GitHub rate limit reached (60 requests/hour without a token).

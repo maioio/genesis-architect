@@ -30,7 +30,6 @@ import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
-
 ADR_PATH = "docs/adr/001-initial-architecture.md"
 SRC_DIR = "src"
 

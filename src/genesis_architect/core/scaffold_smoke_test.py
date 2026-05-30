@@ -21,7 +21,6 @@ import re
 import subprocess
 import sys
 
-
 ARCHETYPES = ("cli", "library", "service", "frontend")
 
 SMOKE_TEMPLATES: dict[str, str] = {

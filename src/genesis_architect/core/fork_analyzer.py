@@ -1,12 +1,12 @@
 """Phase 2 fork analysis - finds top 3 most actively maintained forks."""
 
-import urllib.request
+import json
 import urllib.error
 import urllib.parse
-import json
-from datetime import datetime, timezone, timedelta
+import urllib.request
+from datetime import UTC, datetime, timedelta
 
-from genesis_architect.core.github import GitHubRateLimitError, _RATE_LIMIT_MSG
+from genesis_architect.core.github import _RATE_LIMIT_MSG, GitHubRateLimitError
 
 
 def _get(url: str, token: str | None = None) -> list | dict:
@@ -27,7 +27,7 @@ def _get(url: str, token: str | None = None) -> list | dict:
 
 def _recent_merged_pr_count(repo: str, token: str | None, since_days: int = 180) -> int:
     """Count merged PRs in the last `since_days` days. Ignores star count."""
-    since = datetime.now(timezone.utc) - timedelta(days=since_days)
+    since = datetime.now(UTC) - timedelta(days=since_days)
     since_iso = since.strftime("%Y-%m-%dT%H:%M:%SZ")
     try:
         params = urllib.parse.urlencode({

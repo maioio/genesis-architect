@@ -9,10 +9,9 @@ Usage:
   python scripts/scaffold_generator.py --language python --tier scalable --name my-service
 """
 
-import os
+import argparse
 import re
 import sys
-import argparse
 from pathlib import Path
 
 # Single source of truth: references/folder-structures.toml
@@ -127,7 +126,7 @@ def _validate_name(name: str) -> str:
     if safe in _WINDOWS_RESERVED:
         raise ValueError(f"Project name {name!r} is a reserved system name.")
     if len(safe) > 64:
-        raise ValueError(f"Project name is too long (max 64 chars after normalization).")
+        raise ValueError("Project name is too long (max 64 chars after normalization).")
     return safe
 
 

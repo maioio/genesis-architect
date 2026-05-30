@@ -1,8 +1,8 @@
 """Genesis Architect CLI - genesis init / genesis config / genesis companion."""
 
-import typer
-from typing import Optional
 from pathlib import Path
+
+import typer
 
 app = typer.Typer(
     name="genesis",
@@ -18,16 +18,15 @@ def _ask_confirm(prompt: str) -> bool:
 
 @app.command()
 def init(
-    vision: Optional[str] = typer.Argument(None, help="What you want to build"),
-    output: Optional[str] = typer.Option(None, "--output", "-o", help="Output directory"),
+    vision: str | None = typer.Argument(None, help="What you want to build"),
+    output: str | None = typer.Option(None, "--output", "-o", help="Output directory"),
     model: str = typer.Option("claude-sonnet-4-6", "--model", "-m", help="LLM model to use"),
-    name: Optional[str] = typer.Option(None, "--name", "-n", help="Project name"),
-    language: Optional[str] = typer.Option(None, "--language", "-l", help="Primary language (python, typescript, go, rust, ...)"),
+    name: str | None = typer.Option(None, "--name", "-n", help="Project name"),
+    language: str | None = typer.Option(None, "--language", "-l", help="Primary language (python, typescript, go, rust, ...)"),
 ):
     """Scan GitHub repos, mine pitfalls, and scaffold your project."""
     from genesis_architect import config as cfg
-    from genesis_architect.core import github, llm, scaffolder
-    from genesis_architect.core import audit_inference, nlu_gate, vault
+    from genesis_architect.core import audit_inference, github, llm, nlu_gate, scaffolder, vault
     from genesis_architect.core.github import GitHubRateLimitError
 
     github_token = cfg.get("GITHUB_TOKEN")
@@ -94,8 +93,10 @@ def init(
     typer.echo("  C) Quick      - fastest possible scaffold, minimal config")
     typer.echo("  D) Hybrid     - mix of minimalist core + scalable extensions\n")
 
-    ask_fn = lambda: typer.prompt("Your choice (A/B/C/D or describe in words)")
-    confirm_fn = lambda: _ask_confirm("Confirm")
+    def ask_fn():
+        return typer.prompt("Your choice (A/B/C/D or describe in words)")
+    def confirm_fn():
+        return _ask_confirm("Confirm")
     arch_choice = nlu_gate.prompt_choice(ask_fn, confirm_fn)
 
     if arch_choice == "__restart__":
@@ -107,7 +108,8 @@ def init(
 
     # --- Phase 5: LLM analysis + scaffold ---
     typer.echo("Phase 5: Analyzing with LLM and generating scaffold...")
-    llm_fn = lambda prompt: llm.ask(prompt, model=model, api_key=llm_api_key)
+    def llm_fn(prompt):
+        return llm.ask(prompt, model=model, api_key=llm_api_key)
 
     created = scaffolder.generate(out_dir, vision, project_name, repos, all_issues, llm_fn)
 
@@ -124,13 +126,13 @@ def init(
 
 @app.command()
 def companion(
-    project_path: Optional[str] = typer.Argument(None, help="Project path (default: current dir)"),
+    project_path: str | None = typer.Argument(None, help="Project path (default: current dir)"),
     model: str = typer.Option("claude-sonnet-4-6", "--model", "-m", help="LLM model to use"),
 ):
     """Stay active after scaffold - answers questions, detects when to exit."""
     from genesis_architect import config as cfg
+    from genesis_architect.core import audit_inference, llm, resolve_engine
     from genesis_architect.core import companion as comp
-    from genesis_architect.core import llm, audit_inference, resolve_engine
 
     llm_api_key = cfg.get("LLM_API_KEY")
     if not llm_api_key:
@@ -178,13 +180,12 @@ def companion(
 
 @app.command()
 def publish(
-    project_path: Optional[str] = typer.Argument(None, help="Project root (default: current dir)"),
+    project_path: str | None = typer.Argument(None, help="Project root (default: current dir)"),
     model: str = typer.Option("claude-sonnet-4-6", "--model", "-m", help="LLM model to use"),
 ):
     """Generate Show HN post and GitHub Release notes, with copy-paste and browser AI options."""
     from genesis_architect import config as cfg
-    from genesis_architect.core import llm
-    from genesis_architect.core import publish_agent
+    from genesis_architect.core import llm, publish_agent
 
     llm_api_key = cfg.get("LLM_API_KEY")
     if not llm_api_key:
@@ -205,7 +206,8 @@ def publish(
         typer.echo(f"  PSR screenshots: {len(psr['screenshots'])} key frames found")
     typer.echo("\nGenerating content with LLM...")
 
-    llm_fn = lambda prompt: llm.ask(prompt, model=model, api_key=llm_api_key)
+    def llm_fn(prompt):
+        return llm.ask(prompt, model=model, api_key=llm_api_key)
     content = publish_agent.generate_publish_content(data, llm_fn)
 
     typer.echo(publish_agent.format_output(content, version=data["version"], psr_assets=psr))
@@ -214,8 +216,8 @@ def publish(
 @app.command()
 def config(
     action: str = typer.Argument(..., help="'set', 'get', or 'show'"),
-    key: Optional[str] = typer.Argument(None, help="Key name (e.g. GITHUB_TOKEN, LLM_API_KEY)"),
-    value: Optional[str] = typer.Argument(None, help="Value to set"),
+    key: str | None = typer.Argument(None, help="Key name (e.g. GITHUB_TOKEN, LLM_API_KEY)"),
+    value: str | None = typer.Argument(None, help="Value to set"),
 ):
     """Manage API keys. Use: genesis config set LLM_API_KEY <key>"""
     from genesis_architect import config as cfg

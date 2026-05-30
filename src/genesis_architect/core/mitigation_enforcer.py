@@ -35,13 +35,12 @@ Exit codes:
     2 - bad arguments or unreadable files
 """
 
+import argparse
 import ast
 import json
 import re
 import sys
-import argparse
 from pathlib import Path
-
 
 # ---------------------------------------------------------------------------
 # Parsers
@@ -378,7 +377,7 @@ def _print_failure_guidance(result: EnforcementResult) -> None:
         print("\nAdd mitigation_file_path to these pitfalls in PITFALLS.md:", file=sys.stderr)
         for u in result.unmapped:
             print(f"  ## {u['name']}", file=sys.stderr)
-            print(f"  mitigation_file_path: src/<package>/utils/<module>.py", file=sys.stderr)
+            print("  mitigation_file_path: src/<package>/utils/<module>.py", file=sys.stderr)
     print(
         "\nRe-run after fixing:\n"
         "  python scripts/mitigation_enforcer.py PITFALLS.md --src-root src/",

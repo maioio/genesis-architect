@@ -1,11 +1,11 @@
 """Genesis Architect subcommands. Usage: python scripts/genesis_subcommands.py check [project_dir]"""
-import sys
-import json
-import re
-import urllib.request
-import urllib.error
-import os
 import glob
+import json
+import os
+import re
+import sys
+import urllib.error
+import urllib.request
 
 # Known-latest GitHub Actions major versions - update when actions release new majors
 # Last verified: 2026-05-14
@@ -155,7 +155,7 @@ def cmd_check(project_dir):
     print(json.dumps(result, indent=2))
 
     # Human-readable stderr summary
-    print(f"\n[genesis check] Summary:", file=sys.stderr)
+    print("\n[genesis check] Summary:", file=sys.stderr)
     print(f"  Critical (CVEs): {len(critical)}", file=sys.stderr)
     print(f"  Warnings (actions): {len(warnings)}", file=sys.stderr)
     for w in warnings:

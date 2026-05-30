@@ -3,7 +3,6 @@
 import json
 import time
 from pathlib import Path
-from typing import Any
 
 _MAX_ENTRIES = 500
 _TTL_SECONDS = 60 * 60 * 24 * 180  # 6 months

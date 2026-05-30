@@ -20,7 +20,6 @@ import re
 import subprocess
 from pathlib import Path
 
-
 # ---------------------------------------------------------------------------
 # Privacy / path redaction
 # ---------------------------------------------------------------------------
@@ -207,7 +206,7 @@ def _get_recent_commits(root: Path) -> list[str]:
                 ["git", "log", "--oneline", "-10"],
                 cwd=root, capture_output=True, text=True, timeout=10,
             )
-        lines = [l.strip() for l in result.stdout.strip().splitlines() if l.strip()]
+        lines = [ln.strip() for ln in result.stdout.strip().splitlines() if ln.strip()]
         return lines[:15]
     except Exception:
         return []

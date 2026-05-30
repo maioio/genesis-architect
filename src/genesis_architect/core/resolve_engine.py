@@ -1,13 +1,12 @@
 """Resolve Engine - queries Stack Overflow, caches in vault, respects TTL."""
 
-import re
-import urllib.request
-import urllib.parse
 import json
+import re
 import time
+import urllib.parse
+import urllib.request
 from dataclasses import dataclass
-from datetime import datetime, timezone
-from typing import Any
+from datetime import UTC, datetime
 
 from genesis_architect.core import vault as _vault
 
@@ -23,7 +22,7 @@ class Answer:
 
     @property
     def is_recent(self) -> bool:
-        age_years = (datetime.now(timezone.utc).timestamp() - self.creation_date) / (365.25 * 86400)
+        age_years = (datetime.now(UTC).timestamp() - self.creation_date) / (365.25 * 86400)
         return age_years <= 2.0
 
 

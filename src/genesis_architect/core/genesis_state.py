@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """Genesis state file helpers - replaces prose hard gates with machine-readable state."""
 
-import sys
-import json
 import argparse
+import json
+import sys
+from datetime import UTC, datetime
 from pathlib import Path
-from datetime import datetime, timezone
 
 
 def genesis_dir(project_dir: str) -> Path:
@@ -26,7 +26,7 @@ def write_phase2(project_dir: str, repo_count: int, deep_count: int,
         "deep_count": deep_count,
         "phase2_passed": passed,
         "user_override": override,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
     }
     (d / "phase-2-research.json").write_text(json.dumps(state, indent=2))
     if not passed and not override:
@@ -84,7 +84,7 @@ def write_evidence_pack(project_dir: str, pitfall_count: int,
         return 1
     if not evidence_json.exists():
         print(
-            f"ERROR: .genesis/evidence.json not found. "
+            "ERROR: .genesis/evidence.json not found. "
             "Run: python scripts/evidence_pack.py generate --project-dir .",
             file=sys.stderr,
         )
@@ -97,7 +97,7 @@ def write_evidence_pack(project_dir: str, pitfall_count: int,
         "mapped_count": mapped_count,
         "unmapped_count": unmapped,
         "evidence_pack_passed": passed,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
     }
     (d / "evidence-pack.json").write_text(json.dumps(state, indent=2))
     if not passed:
@@ -121,14 +121,14 @@ def require_evidence_pack(project_dir: str) -> int:
 
     if not evidence_md.exists():
         print(
-            f"ERROR: ARCHITECTURE_EVIDENCE.md not found - Phase 6 is blocked. "
+            "ERROR: ARCHITECTURE_EVIDENCE.md not found - Phase 6 is blocked. "
             "Run: python scripts/evidence_pack.py generate --project-dir .",
             file=sys.stderr,
         )
         return 1
     if not gate_path.exists():
         print(
-            f"ERROR: .genesis/evidence-pack.json not found - Phase 6 is blocked. "
+            "ERROR: .genesis/evidence-pack.json not found - Phase 6 is blocked. "
             "Run: python scripts/evidence_pack.py generate --project-dir . "
             "then: python scripts/genesis_state.py write-evidence-pack .",
             file=sys.stderr,
@@ -163,7 +163,7 @@ def write_phase3_validation(project_dir: str, urls_checked: int,
         "urls_checked": urls_checked,
         "urls_dead": urls_dead,
         "phase3_validation_passed": passed,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
     }
     (d / "phase-3-validation.json").write_text(json.dumps(state, indent=2))
     if not passed:
@@ -209,7 +209,7 @@ def write_phase5_previews(project_dir: str, research_present: bool,
         "pitfalls_present": pitfalls_present,
         "roadmap_present": roadmap_present,
         "phase5_previews_present": all_present,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
     }
     (d / "phase-5-previews.json").write_text(json.dumps(state, indent=2))
     if not all_present:
@@ -260,7 +260,7 @@ def write_phase5(project_dir: str, archetype: str, tier: str, language: str, cho
         "tier": tier,
         "language": language,
         "user_choice": choice,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
     }
     (d / "phase-5-confirmed.json").write_text(json.dumps(state, indent=2))
     print(f"phase-5-confirmed.json written to {d}")
@@ -304,7 +304,7 @@ def write_phase6_smoke(project_dir: str, archetype: str, smoke_command: str,
         "exit_code": exit_code,
         "phase6_smoke_defined": True,
         "phase6_smoke_passed": passed,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
     }
     (d / "phase-6-smoke.json").write_text(json.dumps(state, indent=2))
     if not passed:
@@ -347,7 +347,7 @@ def require_phase6_smoke(project_dir: str) -> int:
 def write_tests_passing(project_dir: str) -> int:
     d = genesis_dir(project_dir)
     d.mkdir(parents=True, exist_ok=True)
-    state = {"exit_code": 0, "timestamp": datetime.now(timezone.utc).isoformat()}
+    state = {"exit_code": 0, "timestamp": datetime.now(UTC).isoformat()}
     (d / "tests-passing.json").write_text(json.dumps(state, indent=2))
     print(f"tests-passing.json written to {d}")
     return 0

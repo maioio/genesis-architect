@@ -14,11 +14,10 @@ import json
 import os
 import re
 import sys
-import urllib.request
 import urllib.error
-from dataclasses import dataclass, asdict
+import urllib.request
+from dataclasses import asdict, dataclass
 from pathlib import Path
-
 
 GRAPHQL_URL = "https://api.github.com/graphql"
 REST_URL = "https://api.github.com"
@@ -64,7 +63,7 @@ def _match_keywords(text: str, keywords: set[str]) -> bool:
 
 def _classify(title: str, labels: list[str]) -> str:
     t = title.lower()
-    label_set = {l.lower() for l in labels}
+    label_set = {lb.lower() for lb in labels}
     if _match_keywords(t, SECURITY_KEYWORDS) or "security" in label_set:
         return "security"
     if _match_keywords(t, PERFORMANCE_KEYWORDS) or "performance" in label_set:
@@ -104,7 +103,7 @@ def fetch_via_graphql(owner: str, repo: str, limit: int) -> list[Issue]:
         nodes = result.get("data", {}).get("repository", {}).get("issues", {}).get("nodes", [])
         issues = []
         for n in nodes:
-            labels = [l["name"] for l in n.get("labels", {}).get("nodes", [])]
+            labels = [lb["name"] for lb in n.get("labels", {}).get("nodes", [])]
             issues.append(Issue(
                 repo=f"{owner}/{repo}",
                 number=n["number"],
@@ -144,7 +143,7 @@ def fetch_via_rest(owner: str, repo: str, limit: int) -> list[Issue]:
         for item in items:
             if "pull_request" in item:
                 continue
-            labels = [l["name"] for l in item.get("labels", [])]
+            labels = [lb["name"] for lb in item.get("labels", [])]
             issues.append(Issue(
                 repo=f"{owner}/{repo}",
                 number=item["number"],

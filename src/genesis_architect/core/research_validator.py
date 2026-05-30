@@ -16,12 +16,12 @@ Environment:
   GITHUB_TOKEN  Optional. If set, used as Bearer token to avoid rate limits (60 req/hr unauthenticated).
 """
 
-import sys
-import re
-import os
 import json
-import urllib.request
+import os
+import re
+import sys
 import urllib.error
+import urllib.request
 from pathlib import Path
 
 
@@ -335,7 +335,7 @@ def validate(
     to enable path existence checking against the scaffold plan.
     """
     try:
-        with open(_safe_path(path), "r", encoding="utf-8") as f:
+        with open(_safe_path(path), encoding="utf-8") as f:
             content = f.read()
     except PermissionError as e:
         return [str(e)]

@@ -6,8 +6,8 @@ Exit 0 if all URLs live, exit 1 if any 404.
 """
 import re
 import sys
-import urllib.request
 import urllib.error
+import urllib.request
 from pathlib import Path
 
 

@@ -10,10 +10,10 @@ Usage:
   python scripts/eval_runner.py --mode report    # show expected pass rates
 """
 
-import json
-import sys
-import os
 import argparse
+import json
+import os
+import sys
 
 # Ensure UTF-8 output on all platforms (handles Hebrew and other non-ASCII chars)
 if sys.stdout.encoding and sys.stdout.encoding.lower() != "utf-8":
@@ -24,7 +24,7 @@ EVAL_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "eval
 
 
 def load_queries() -> dict:
-    with open(EVAL_FILE, "r", encoding="utf-8") as f:
+    with open(EVAL_FILE, encoding="utf-8") as f:
         return json.load(f)
 
 

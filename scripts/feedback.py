@@ -14,7 +14,7 @@ Usage:
 
 import json
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 FEEDBACK_DIR = ".genesis"
@@ -44,7 +44,7 @@ def record(topic: str, language: str, rating: str, project_root: Path | None = N
     if rating not in ("helpful", "irrelevant"):
         raise ValueError(f"Rating must be 'helpful' or 'irrelevant', got: {rating!r}")
     entry = {
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
         "topic": topic,
         "language": language or "any",
         "rating": rating,
@@ -88,7 +88,7 @@ def _cmd_mark(command: str, args: list) -> None:
 
 def _cmd_stats() -> None:
     s = stats()
-    print(f"Feedback stats:")
+    print("Feedback stats:")
     print(f"  Total entries: {s['total']}")
     if s['by_rating']:
         print(f"  Helpful:       {s['by_rating'].get('helpful', 0)}")
@@ -96,7 +96,7 @@ def _cmd_stats() -> None:
     if s['by_language']:
         print(f"  By language:   {s['by_language']}")
     if s['by_topic']:
-        print(f"\nTop topics:")
+        print("\nTop topics:")
         for topic, counts in sorted(s['by_topic'].items(),
                                     key=lambda x: x[1]['helpful'], reverse=True)[:10]:
             print(f"  {topic}: {counts['helpful']} helpful, {counts['irrelevant']} irrelevant")

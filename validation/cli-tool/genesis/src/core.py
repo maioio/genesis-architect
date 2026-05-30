@@ -33,7 +33,7 @@ def safe_destination(dest: Path) -> Path:
         counter += 1
 
 def organize_files(source_dir: str, dry_run: bool = False) -> dict:
-    source = get_safe_path(Path("."), source_dir)
+    source = Path(source_dir).resolve()
     result = {"moved": {}, "skipped": []}
 
     for file in source.iterdir():

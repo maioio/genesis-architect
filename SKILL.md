@@ -184,8 +184,9 @@ Compile top pitfalls from the issue scan. For each pitfall write all of the foll
   - Create: [file or class] with [specific behavior]
   - Test: [test file] covering [specific cases]
   - Constrain: [what is forbidden and why]  (required when pitfall implies a banned pattern)
+  - Validate: [how to verify the mitigation exists and works - command or assertion]
   ```
-  Every pitfall needs at least one Create and one Test. Phase 6 Step 3 reads these blocks to generate real files - not documentation.
+  Every pitfall needs at least one Create and one Test. Validate is required when the mitigation can be checked mechanically (e.g., `grep -r "pool_pre_ping" src/` or running a specific test). Phase 6 Step 3 reads these blocks to generate real files - not documentation.
 
 **Phase 2 -> Phase 3 gate** (run immediately after writing PITFALLS.md):
 `python scripts/research_validator.py PITFALLS.md --validate-pitfalls [--verify-issues]`

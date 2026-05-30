@@ -1,5 +1,6 @@
 # Tests from PITFALLS.md Pitfalls 1 + 2
-import sys, os
+import sys
+import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
 import pytest
@@ -29,6 +30,7 @@ def test_dry_run_does_not_move():
         assert not (Path(tmpdir) / "images").exists()
 
 # Pitfall 1: symlinks are skipped, not followed
+@pytest.mark.skipif(sys.platform == "win32", reason="symlink creation requires elevated privileges on Windows")
 def test_symlink_is_skipped_not_followed():
     with tempfile.TemporaryDirectory() as base:
         with tempfile.TemporaryDirectory() as outside:

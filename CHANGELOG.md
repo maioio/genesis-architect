@@ -9,6 +9,53 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+## [5.1.0] - 2026-05-30
+
+Genesis V5.1 - Development Partner Mode.
+
+Genesis no longer makes major decisions silently.
+Before any significant architecture, MVP scope, technology, or product decision,
+it presents options, explains the tradeoff, and waits for your input.
+Fewer questions. Better-timed. Less rework.
+
+### Added
+
+- **Experience Selection** (replaces Phase 0.5 Quick Scaffold choice):
+  - A: Fast Build - minimal questions, quick MVP (hackathon / experiment)
+  - B: Professional - structured research and validation [default]
+  - C: Founder - market research, competitor analysis, product strategy
+  - D: Auto - Genesis infers the right mode from your description
+
+- **Development Partner Rules** (enforced in Professional, Founder, Auto modes):
+  - Explicit list of 5 major decision categories requiring A/B/C/D options before Genesis decides:
+    architecture selection, MVP scope, technology selection, product direction, business decisions
+  - Explicit list of what Genesis does NOT ask before: file names, formatting, linting, implementation details
+  - Standard question format: A/B/C/D + Why recommendation + Risk of choosing differently + Enter to accept default
+  - Rules persist through Phase 7 companion mode - not just at project start
+
+- **`genesis init --partner`** flag: forces Professional mode with Development Partner Rules active from the first message
+
+- **14 new tests** in `tests/test_partner_mode.py`: verify A/B/C/D format, Recommended marker, Why/Risk fields, Enter-to-accept, phase 7 persistence, 400-line and em-dash constraints
+
+### Changed
+
+- Phase 0.5: renamed and expanded from "Pre-flight Check" to "Experience Selection + Development Partner Rules"
+- Phase 7: Development Partner Rules explicitly noted as remaining active in companion mode
+- Steps 7 and 7b merged into single Step 7 to reclaim 12 lines for new content
+- Phase 3 Windows check compressed from 4 lines to 1
+- Version jump from 3.x to 5.1.0 aligns with V5 roadmap (V4 was internal validation milestone)
+
+### Fixed
+
+- QUICK_SCAFFOLD.md path now explicitly skips Phase 6 evidence gate and Step 6.5 when no PITFALLS.md exists
+- `llm.py` docstring: em dash replaced with hyphen (constraint violation found in audit)
+- `node_modules/` untracked from `validation/chrome-extension/genesis/` (committed accidentally in V4)
+
+### Tests
+
+- 372 -> 386 tests (14 new: Development Partner Mode)
+- All 386 passing
+
 ## [3.1.1] - 2026-05-29
 
 ### Fixed

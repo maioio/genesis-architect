@@ -8,7 +8,7 @@ Genesis Architect scans GitHub before you write code. It finds the common failur
 that real developers hit building the same thing - then generates a scaffold with those mitigations already built in.
 
 [![CI](https://img.shields.io/github/actions/workflow/status/maioio/genesis-architect/ci.yml?branch=main&style=for-the-badge&label=CI)](https://github.com/maioio/genesis-architect/actions)
-[![Version](https://img.shields.io/badge/version-3.0.0-blue?style=for-the-badge)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-5.1.0-blue?style=for-the-badge)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-MIT-green?style=for-the-badge)](LICENSE)
 [![Claude Code](https://img.shields.io/badge/Claude_Code-skill-orange?style=for-the-badge)](https://github.com/anthropics/claude-code)
 [![Known Vulnerabilities](https://snyk.io/test/github/maioio/genesis-architect/badge.svg?style=for-the-badge)](https://snyk.io/test/github/maioio/genesis-architect)
@@ -21,7 +21,7 @@ that real developers hit building the same thing - then generates a scaffold wit
 [![Phases](https://img.shields.io/badge/phases-9-blueviolet?style=flat-square)](SKILL.md)
 [![Languages](https://img.shields.io/badge/languages-4-informational?style=flat-square)](references/architecture-patterns.md)
 [![Archetypes](https://img.shields.io/badge/archetypes-4-success?style=flat-square)](SKILL.md)
-[![Tests](https://img.shields.io/badge/tests-372-brightgreen?style=flat-square)](tests/)
+[![Tests](https://img.shields.io/badge/tests-386-brightgreen?style=flat-square)](tests/)
 [![Eval accuracy](https://img.shields.io/badge/eval_accuracy-100%25-brightgreen?style=flat-square)](evals/test_queries.json)
 [![Stars](https://img.shields.io/github/stars/maioio/genesis-architect?style=social)](https://github.com/maioio/genesis-architect/stargazers)
 
@@ -122,6 +122,9 @@ genesis init a Chrome extension that does X
 # Fast MVP mode - research capped at 5 min, then immediately builds
 genesis init --fast-mvp a Discord bot in Python
 
+# Development Partner Mode - asks before every major decision
+genesis init --partner a SaaS billing system
+
 # Read a product spec, skip the questions
 genesis init --from-prd PRD.md
 
@@ -170,6 +173,62 @@ Use this when you want a running project in under 10 minutes and are willing to 
 
 ---
 
+## Development Partner Mode
+
+Genesis V5.1 does not make major decisions silently.
+
+Before choosing an architecture, defining MVP scope, selecting a technology, or making a product direction call - Genesis presents options, explains the tradeoff, and waits.
+
+**The rule:** fewer, better-timed questions. Not more questions. Less rework.
+
+### Experience Selection
+
+When you describe a project in natural language, Genesis asks once:
+
+```
+What kind of Genesis experience?
+
+A: Fast Build     - quick MVP, minimal questions (hackathon / experiment)
+B: Professional   - structured research and validation  [Recommended]
+C: Founder        - market research, competitor analysis, product strategy
+D: Auto           - Genesis infers from your description and announces its choice
+```
+
+Pick your mode once. Genesis adjusts research depth, question count, and output files accordingly.
+
+### Question format for major decisions
+
+When Genesis needs your input on something that matters:
+
+```
+Should this API use a database or in-memory state?
+
+A: In-memory dict       - zero dependencies, no persistence across restarts
+B: SQLite               - file-based, no server needed, survives restarts
+C: PostgreSQL           [Recommended]
+D: Let me decide later
+
+Why C: 3 of 5 analyzed repos moved from SQLite to Postgres under load - migration cost is high.
+Risk if you choose B: you will likely migrate later when concurrent writes break.
+Press Enter to accept C, or type A/B/D.
+```
+
+### What Genesis asks before vs. what it decides alone
+
+| Genesis MUST ask before | Genesis decides alone |
+|---|---|
+| Architecture: Minimalist vs Scalable | File names |
+| MVP scope: what is in / what is out | Folder structure details |
+| Technology: when tradeoffs are real | Formatting and linting choices |
+| Product direction: target user, pivots | Small implementation details |
+| Business: monetization, open vs commercial | Internal refactors |
+
+### Companion Mode stays active
+
+Development Partner rules do not expire after the scaffold. They remain active through Phase 7 (Companion Mode) for the lifetime of the project.
+
+---
+
 ## What every project gets
 
 | Deliverable | Contents |
@@ -209,6 +268,7 @@ Every other tool - `create-t3-app`, `bolt.new`, Copilot Workspace, Cookiecutter 
 | Research from real GitHub Issues | Yes | No | No | No |
 | Validates citations (no hallucinated repos) | Yes | n/a | No | n/a |
 | Hard gates before file creation | Yes | No | No | No |
+| Development Partner Mode (asks before major decisions) | Yes | No | No | No |
 | Secret scanning + SAST on every scaffold | Yes | No | No | No |
 | Retrofit security into existing projects | Yes | No | No | No |
 | Smart Resolution Engine with local vault | Yes | No | No | No |

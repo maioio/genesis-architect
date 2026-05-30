@@ -9,6 +9,11 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+## [5.1.1] - 2026-05-30
+
+### Fixed
+- `pyproject.toml`: add `readme = "README.md"` so PyPI renders the project description page
+
 ## [5.1.0] - 2026-05-30
 
 Genesis V5.1 - Development Partner Mode.

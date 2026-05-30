@@ -1,10 +1,11 @@
-﻿<div align="center">
+<div align="center">
 
 # Genesis Architect
 
-**The AI Software Architect that stays with you for the entire project lifecycle.**
-Not a one-time scaffolder. A research-first architect that mines real production failures,
-builds your project to avoid them, and keeps learning alongside you as you ship.
+**Most projects fail because developers repeat mistakes that were already solved in other repositories.**
+
+Genesis Architect scans GitHub before you write code. It finds the common failures, bugs, and design pitfalls
+that real developers hit building the same thing - then generates a scaffold with those mitigations already built in.
 
 [![CI](https://img.shields.io/github/actions/workflow/status/maioio/genesis-architect/ci.yml?branch=main&style=for-the-badge&label=CI)](https://github.com/maioio/genesis-architect/actions)
 [![Version](https://img.shields.io/badge/version-3.0.0-blue?style=for-the-badge)](CHANGELOG.md)
@@ -26,12 +27,6 @@ builds your project to avoid them, and keeps learning alongside you as you ship.
 
 [![GitHub Sponsors](https://img.shields.io/badge/Sponsor-%23EA4AAA?style=flat-square&logo=github-sponsors)](https://github.com/sponsors/maioio)
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy_Me_a_Coffee-%23FFDD00?style=flat-square&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/maioio)
-
-<br/>
-
-> Scans 15-20 real GitHub repos, mines their Issues for what broke in production,
-> builds your project to avoid those mistakes - then stays active as your architect
-> **for the entire development lifecycle.**
 
 <br/>
 
@@ -60,176 +55,42 @@ Run: `genesis init a Python CLI for analyzing log files`
 
 ```
 log-analyzer/
-â”œâ”€â”€ src/log-analyzer/
-â”‚   â”œâ”€â”€ __init__.py
-â”‚   â”œâ”€â”€ main.py        # Click CLI - args only, delegates to core
-â”‚   â”œâ”€â”€ core.py        # All logic lives here, testable without subprocess
-â”‚   â””â”€â”€ utils/
-â”‚       â””â”€â”€ security.py  # get_safe_path() - path traversal guard
-â”œâ”€â”€ tests/
-â”‚   â”œâ”€â”€ __init__.py
-â”‚   â””â”€â”€ test_core.py   # Tests core directly, no subprocess needed
-â”œâ”€â”€ .github/workflows/ci.yml  # 4 jobs: tests, secrets, SAST, quality gate
-â”œâ”€â”€ .env.example
-â”œâ”€â”€ pyproject.toml     # click>=8.1.7 pinned, mypy strict, pytest config
-â”œâ”€â”€ RESEARCH.md        # 5 repos analyzed, all sources verified live
-â”œâ”€â”€ PITFALLS.md        # The 4 pitfalls above with full root cause analysis
-â””â”€â”€ ROADMAP.md         # 5-phase plan: scaffold -> tests -> CI -> quality -> ship
+├── src/log-analyzer/
+│   ├── __init__.py
+│   ├── main.py        # Click CLI - args only, delegates to core
+│   ├── core.py        # All logic lives here, testable without subprocess
+│   └── utils/
+│       └── security.py  # get_safe_path() - path traversal guard
+├── tests/
+│   ├── __init__.py
+│   └── test_core.py   # Tests core directly, no subprocess needed
+├── .github/workflows/ci.yml  # 4 jobs: tests, secrets, SAST, quality gate
+├── .env.example
+├── pyproject.toml     # click>=8.1.7 pinned, mypy strict, pytest config
+├── RESEARCH.md        # 5 repos analyzed, all sources verified live
+├── PITFALLS.md        # The 4 pitfalls above with full root cause analysis
+└── ROADMAP.md         # 5-phase plan: scaffold -> tests -> CI -> quality -> ship
 ```
 
 Every cited issue URL is verified by CI. A 404 fails the build.
 
 ---
 
-## What's new in v2.6.0
+## When NOT to use Genesis
 
-> [!NOTE]
-> v2.6.0 closes the gap between claimed enforcement and actual mechanical enforcement. Every change is verifiable.
+> Honesty matters. Genesis is overkill for some things.
 
-| Feature | What it does |
-|---------|-------------|
-| **AST-level mitigation enforcement** | `mitigation_enforcer.py` now checks parse validity, non-stub code, optional symbol and import presence - not just file existence |
-| **Import boundary drift detection** | `drift_detector.py` walks every Python file with AST analysis, checks against `forbidden_imports` derived from `.genesis/evidence.json` |
-| **Confidence scoring in evidence packs** | `evidence_pack.py` computes a weighted 0-1 score (repos, pitfalls, mapping, decision, content) and rejects template-only packs |
-| **`evidence_signed` fixed** | Was always `false`. Now `true` only when Phase 5 recorded a real archetype and user choice |
-| **Genesis enforcement pre-commit hooks** | `.pre-commit-config.yaml` now contains real hooks: mitigation enforcer + drift detector run on every `git commit` |
-| **CI genesis-validate job** | Python CI template includes a `genesis-validate` job: checks `ARCHITECTURE_EVIDENCE.md` exists and runs mitigation enforcer |
-| **270 unit tests** | Full coverage: AST enforcement, confidence scoring, drift detection, argparse CLI, pre-commit hook content |
+**Skip Genesis if you are building:**
+- A tiny script (under 100 lines, no tests needed)
+- A throwaway experiment or one-off utility
+- A single-file tool you will delete in a week
+- Something with zero external dependencies
 
----
-
-## Why Genesis Architect is different
-
-Every other tool - `create-t3-app`, `bolt.new`, Copilot Workspace, Cookiecutter - generates code from templates. They have no idea what broke in production for the 50,000 developers who built the same thing before you. And they stop helping the moment the scaffold is created.
-
-Genesis Architect treats every project as a **research problem first**, and treats development as a **continuous collaboration** - not a one-time event.
-
-```
-Day 1: You describe a vision
-       Genesis researches 15-20 real repos and their Issues
-       Builds a scaffold that avoids the mistakes it found
-       Three security gates activate on the first commit
-
-Day 30: You hit a bug
-        genesis resolve "path traversal python"
-        Vault hit: instant answer from last project, no API call
-
-Day 60: Deps are aging
-        genesis check
-        CVE scan + CI action version audit, upgrade commands ready
-
-Day 90: New feature needs research
-        genesis research "rate limiting patterns"
-        Searches Phase 2 repos first, then ecosystem - cites sources
-```
-
----
-
-## How it works: three stages
-
-### Stage 1: Deep Research
-
-Before writing a single file, Genesis Architect runs three parallel research streams:
-
-- **Stream A**: Scans 15-20 GitHub repos matching your vision. Filters by stars, recency, and language.
-- **Stream B**: Searches Reddit, Hacker News, and Stack Overflow for architecture regrets and pitfalls in the wild.
-- **Stream C**: For the top 5-8 repos, mines up to 100 GitHub Issues each. Ranks by engagement (comments + reactions). Extracts recurring failures, security patches, and architecture regrets.
-
-Active forks of researched repos are also scanned for bug fixes not yet merged upstream. The result is a `RESEARCH.md` with verified citations and a `PITFALLS.md` with real root causes and mitigations built into the scaffold.
-
-### Stage 2: Secure Scaffolding
-
-**Mechanically enforced (CI fails if violated):**
-- Issue URL 404 check: `research_validator.py --verify-issues` in CI
-- Mitigation file existence and code quality: `mitigation_enforcer.py` on examples in CI
-- Evidence pack generation: `evidence_pack.py generate` on examples in CI
-- Structural drift detection: `drift_detector.py --level 1` on examples in CI
-- 270 unit tests: pytest fails the build on any regression
-- Secret scanning: Gitleaks on every push
-- SKILL.md constraints: line count and em-dash scan in CI
-
-**Skill-enforced (Claude follows SKILL.md instructions):**
-- Phase 2: stops if fewer than 12 repos found, records state via `genesis_state.py`
-- Phase 5: requires explicit A/B/C/D choice before scaffold begins
-- Phase 6: blocks `git commit` until smoke test exits 0
-- Phase 6 end: runs `evidence_pack.py generate` before Step 7
-
-Every scaffold includes `utils/security.py` (or language equivalent) with `get_safe_path` for projects handling user-supplied file paths.
-
-### Stage 3: Smart Resolution (the feedback loop)
-
-After scaffolding, the Knowledge Vault starts building up:
-
-```
-You hit a problem
-       â†“
-genesis resolve "csv streaming large file python"
-       â†“
-Check local .genesis/vault/ first
-       â†“
-Vault hit? Return instantly. No API call. No tokens.
-       â†“
-No hit? Query Stack Overflow API for top 3 accepted answers
-       â†“
-Display with source link. You confirm before anything changes.
-       â†“
-Solution saved to vault for next time.
-```
-
-The vault grows with every project. A solution found for a path traversal issue in one project is immediately available in the next one.
-
----
-
-## Visual architecture
-
-```mermaid
-flowchart TD
-    A([You describe a vision]) --> B
-
-    subgraph P0["Phase 0 - Probe"]
-        B[Detect OS, package manager\nScan nearby projects for conventions]
-    end
-
-    subgraph P1["Phase 1 - Align"]
-        C[Archetype Â· Scale Â· Language\n3 focused questions]
-    end
-
-    subgraph P2["Phase 2 - Research x3 parallel"]
-        D1[Stream A\nGitHub repos + active forks]
-        D2[Stream B\nReddit / HN / SO ecosystem]
-        D3[Stream C\nIssue mining top 5-8 repos]
-        D1 & D2 & D3 --> E[Merge + quality signal\nFULL / PARTIAL / THIN]
-    end
-
-    subgraph P3456["Phases 3-6 - Build"]
-        F[Architecture synthesis] --> G[Pitfall identification]
-        G --> H[A/B architecture choice\nhard gate: explicit confirm required]
-        H --> I[Scaffold + tests + CI\nProduction defaults + ADR\nSmoke test gate]
-    end
-
-    subgraph P7["Phase 7 - Companion"]
-        J[genesis help Â· genesis research Â· genesis check Â· genesis resolve]
-        J --> K[(Knowledge Vault\n.genesis/vault/)]
-        K -->|vault hit: instant| J
-        K -->|no hit: fetch + cache| L[Stack Overflow API]
-        L --> K
-    end
-
-    B --> C --> E --> F
-    I --> J
-
-    style P0 fill:#1e3a5f,color:#fff
-    style P1 fill:#1e3a5f,color:#fff
-    style P2 fill:#1a472a,color:#fff
-    style P3456 fill:#4a1942,color:#fff
-    style P7 fill:#7a3b00,color:#fff
-    style K fill:#b8860b,color:#fff
-    style L fill:#555,color:#fff
-    style A fill:#333,color:#fff
-```
-
-> [!NOTE]
-> **Skill-enforced gates:** Phase 2 stops if fewer than 12 repos found. Phase 5 requires an explicit A/B/C/D choice. Phase 6 blocks `git commit` until the smoke test passes. See Stage 2 above for what is mechanically enforced in CI.
+**Use Genesis if you are building:**
+- A project you plan to maintain for more than a month
+- Anything with authentication, file I/O, or external APIs
+- A library or SDK other people will depend on
+- Something you want to ship without hitting the same bugs everyone else hit
 
 ---
 
@@ -252,34 +113,60 @@ No build step, no dependencies.
 
 ## Usage
 
-<details>
-<summary><b>Explicit commands</b></summary>
-
-```
+```bash
+# Full research mode (default) - 15-20 repos, full Issue mining
 genesis init a REST API in TypeScript
 genesis init a Python CLI for batch image processing
 genesis init a Chrome extension that does X
-genesis init --from-prd PRD.md          # read a product spec, skip Phase 1
-genesis init --from-team-config          # restore a teammate's research
-genesis audit ./my-existing-project      # audit existing code, no scaffold
-genesis harden ./my-existing-project     # inject security gates into any project
-genesis resolve path traversal python    # Smart Resolution Engine
+
+# Fast MVP mode - research capped at 5 min, then immediately builds
+genesis init --fast-mvp a Discord bot in Python
+
+# Read a product spec, skip the questions
+genesis init --from-prd PRD.md
+
+# Audit an existing project
+genesis audit ./my-existing-project
+
+# Inject security gates into any project
+genesis harden ./my-existing-project
+
+# Smart Resolution with local vault
+genesis resolve path traversal python
 ```
 
-</details>
-
-<details>
-<summary><b>Natural triggers - just describe what you want</b></summary>
+Or just describe what you want:
 
 ```
 I want to build a Telegram bot
 scaffold a new project for web scraping
 start building a VS Code extension
-I need to build a data pipeline from scratch
-create a tool that converts CSV to JSON
 ```
 
-</details>
+---
+
+## How it works
+
+Before writing a single file, Genesis runs research across real GitHub repos:
+
+1. **Finds 15-20 repos** similar to what you are building (filtered by stars, recency, language)
+2. **Mines GitHub Issues** from the top repos - up to 50 closed issues each - extracting recurring failures, security patches, and architecture regrets
+3. **Synthesizes the wise average** of what actually survives in production across those repos
+4. **Generates a scaffold** where every pitfall found becomes a concrete code task - not a document to read later
+
+The difference from templates: the scaffold reflects what broke for the people who built this before you.
+
+---
+
+## Fast MVP mode
+
+```bash
+genesis init --fast-mvp a REST API
+```
+
+Research is capped at 5 minutes, 10 repos, 30 issues. Genesis then immediately builds instead of asking questions. Output is a single `BUILD_PACKET.md` with each pitfall as a concrete code task, plus the full scaffold.
+
+Use this when you want a running project in under 10 minutes and are willing to trade some research depth.
 
 ---
 
@@ -287,19 +174,18 @@ create a tool that converts CSV to JSON
 
 | Deliverable | Contents |
 |-------------|----------|
-| `RESEARCH.md` | 15-20 repos scanned, top 5-8 deeply analyzed, sources linked, ecosystem velocity signals |
+| `RESEARCH.md` | 15-20 repos scanned, top repos deeply analyzed, sources linked |
 | `PITFALLS.md` | 3-7 real pitfalls from GitHub Issues with root causes and mitigations |
-| `ROADMAP.md` | 5-10 phase development plan including "Activate Quality Gates" phase |
-| `src/` | Functional boilerplate - not empty stubs |
+| `ROADMAP.md` | 5-10 phase development plan |
+| `src/` | Functional code - not empty stubs |
 | `tests/` | Passing unit tests for core logic |
 | `.github/workflows/ci.yml` | 4 parallel jobs: tests, secret scanning, SAST, code quality gate |
 | `utils/security.py` or `security.ts` | `get_safe_path` guard for all file I/O (when applicable) |
 | `docs/adr/001-initial-architecture.md` | Every architectural decision explained with evidence |
 | `.gitignore` | Language-appropriate, hardened against secrets and build artifacts |
-| `sonar-project.properties` | Code quality gate config, ready to activate with one secret |
-| `.pre-commit-config.yaml` | Genesis enforcement hooks: mitigation enforcer + drift detector run on every `git commit` |
+| `.pre-commit-config.yaml` | Genesis enforcement hooks: mitigation enforcer + drift detector |
 
-**Production-readiness defaults baked into every scaffold:**
+**Production defaults baked into every scaffold:**
 
 | Default | What it does |
 |---------|-------------|
@@ -311,46 +197,45 @@ create a tool that converts CSV to JSON
 | Secret Zero | `.env.example` with generation hint, validated at startup |
 | Secret scanning CI | Every push scanned - build fails on exposed credentials |
 | SAST analysis CI | Static analysis catches injection and path traversal on every push |
-| Code quality gate | Merge blocked on maintainability or security regressions |
 
 ---
 
-## Development Companion Mode
+## How it compares
 
-After scaffolding, Genesis Architect stays active for the rest of your session - and picks up where it left off in future sessions by reading `RESEARCH.md` from your project directory.
+Every other tool - `create-t3-app`, `bolt.new`, Copilot Workspace, Cookiecutter - generates code from templates. They have no idea what broke in production for the developers who built the same thing before you.
 
-```
-genesis help I need to add rate limiting      â†’ searches Phase 2 repos for how they solved it
-genesis research authentication patterns      â†’ targeted scan with 1-3 ranked approaches
-genesis check                                 â†’ freshness audit: CVEs, outdated deps, CI versions
-genesis harden ./existing-project             â†’ inject security gates into any existing project [skill-mediated]
-genesis resolve path traversal python         â†’ Smart Resolution Engine with vault-first lookup
-```
+| Capability | Genesis Architect | create-t3-app | bolt.new | Cursor Rules |
+|-----------|:-----------------:|:-------------:|:--------:|:------------:|
+| Research from real GitHub Issues | Yes | No | No | No |
+| Validates citations (no hallucinated repos) | Yes | n/a | No | n/a |
+| Hard gates before file creation | Yes | No | No | No |
+| Secret scanning + SAST on every scaffold | Yes | No | No | No |
+| Retrofit security into existing projects | Yes | No | No | No |
+| Smart Resolution Engine with local vault | Yes | No | No | No |
+| Stays active for entire project lifecycle | Yes | No | No | No |
+
+> Assessments based on public documentation as of 2026.
+
+---
+
+## Works at every level of MCP setup
+
+| Setup | Research quality | Speed |
+|-------|-----------------|-------|
+| No MCPs | Web search - real repos, shallower issue data | Normal |
+| GitHub MCP | Deep repo scan + real Issue extraction | Normal |
+| GitHub + Exa | Full parallel: repos + Reddit/HN/SO context | ~3x faster |
+| GitHub + Exa + Firecrawl | Full parallel + targeted page scraping | ~3x faster |
+
+> The skill never blocks on a missing tool. It reports what it is using and continues.
 
 ---
 
 ## Smart Resolution Engine
 
-`genesis resolve [topic]` is a two-layer system designed to get you an answer as fast as possible while building up institutional knowledge over time.
-
-**Layer 1 - Knowledge Vault (instant, free):**
-Every problem you resolve is stored in `.genesis/vault/` tagged by topic and language. On the next query, the vault is checked first. If there is a match, the answer comes back instantly - no network call, no tokens consumed.
+`genesis resolve [topic]` checks a local vault first (instant, no API call), then falls back to Stack Overflow.
 
 ```bash
-# Search the vault directly
-python scripts/vault.py search "path traversal" python
-
-# Save a solution to the vault
-python scripts/vault.py save "path traversal" python "Use get_safe_path..." --source https://...
-
-# See vault stats
-python scripts/vault.py stats
-```
-
-**Layer 2 - Stack Overflow API (when vault misses):**
-Fetches the top 3 community-verified solutions. Prioritizes accepted answers and high-score results. Classifies each as "recent" (last 24 months) or "classic". Caches the result in the vault for next time.
-
-```
 $ genesis resolve "csv streaming large file python"
 
 Smart Resolution Engine
@@ -372,7 +257,22 @@ IMPORTANT: Always review community solutions before applying.
 Genesis Architect never patches your code without your confirmation.
 ```
 
-No API key required (300 requests/day). Set `STACKOVERFLOW_KEY` env var for 10,000/day.
+Every resolved solution is saved to `.genesis/vault/` and returned instantly on the next query.
+
+No API key required (300 requests/day). Set `STACKOVERFLOW_KEY` for 10,000/day.
+
+---
+
+## Development Companion Mode
+
+After scaffolding, Genesis stays active for the rest of your session:
+
+```
+genesis help I need to add rate limiting    -> searches Phase 2 repos for how they solved it
+genesis research authentication patterns    -> targeted scan with 1-3 ranked approaches
+genesis check                              -> freshness audit: CVEs, outdated deps, CI versions
+genesis resolve path traversal python      -> Smart Resolution Engine with vault-first lookup
+```
 
 ---
 
@@ -392,41 +292,6 @@ TypeScript / JavaScript    Python    Go    Rust
 | Library/SDK | Public API, no `main()` | No | No | pytest / jest |
 | Web Service/API | Router | Yes | Yes + `/health` | pytest / jest |
 | Frontend App | Component tree | No (SSR optional) | Optional | vitest / jest |
-
----
-
-## How Genesis Architect compares
-
-| Capability | Genesis Architect | create-t3-app | bolt.new | Cursor Rules | madison/scaffolding |
-|-----------|:-----------------:|:-------------:|:--------:|:------------:|:-------------------:|
-| Research from real GitHub Issues | Yes | No | No | No | No |
-| Validates citations (no hallucinated repos) | Yes | n/a | No | n/a | No |
-| Anti-hallucination CVE check (OSV.dev) | Yes | No | No | No | No |
-| Research Quality Signal (FULL/PARTIAL/THIN) | Yes | No | No | No | No |
-| Hard gates before file creation | Yes | No | No | No | Yes |
-| Secret scanning + SAST on every scaffold | Yes | No | No | No | No |
-| Retrofit security into existing projects | Yes | No | No | No | No |
-| Smart Resolution Engine with local vault | Yes | No | No | No | No |
-| Active fork intelligence | Yes | No | No | No | No |
-| Works without any MCP | Yes | n/a | n/a | n/a | n/a |
-| PRD-driven flow (`--from-prd`) | Yes | No | No | No | No |
-| Stays active for entire project lifecycle | Yes | No | No | No | No |
-
-> Assessments based on public documentation as of 2026. Some capabilities may vary by version or configuration.
-
----
-
-## Works at every level of MCP setup
-
-| Setup | Research quality | Speed |
-|-------|-----------------|-------|
-| No MCPs | Web search - real repos, shallower issue data | Normal |
-| GitHub MCP | Deep repo scan + real Issue extraction | Normal |
-| GitHub + Exa | Full parallel: repos + Reddit/HN/SO context | ~3x faster |
-| GitHub + Exa + Firecrawl | Full parallel + targeted page scraping | ~3x faster |
-
-> [!TIP]
-> The skill never blocks on a missing tool. It reports what it's using and continues.
 
 ---
 
@@ -452,6 +317,18 @@ From actual projects:
 
 ---
 
+## Honest Limitations
+
+| Limitation | Details |
+|-----------|---------|
+| **Issue mining depth** | Scans up to 50 most-recent issues across repos. Low-traffic projects or old issues may not surface. |
+| **Web-search-only mode** | Without GitHub MCP, issue extraction is shallow. RESEARCH.md will note this automatically. |
+| **Stack Overflow API limit** | 300 requests/day unauthenticated. Set `STACKOVERFLOW_KEY` for 10,000/day. Vault hits bypass this entirely. |
+| **Fork intelligence** | Scanning active forks for upstream patches requires GitHub MCP. Without it, fork analysis is skipped. |
+| **WSL** | On Windows inside WSL, Linux paths and package managers are used - Windows PATH fixes do not apply. |
+
+---
+
 ## Project structure
 
 <details>
@@ -459,64 +336,41 @@ From actual projects:
 
 ```
 genesis-architect/
-â”œâ”€â”€ SKILL.md                        # Skill definition - the brain
-â”œâ”€â”€ plugin.json                     # Marketplace manifest
-â”œâ”€â”€ scripts/
-â”‚   â”œâ”€â”€ scaffold_generator.py       # Creates project structure (loads from folder-structures.toml)
-â”‚   â”œâ”€â”€ research_validator.py       # Validates RESEARCH.md + live GitHub URL checks
-â”‚   â”œâ”€â”€ resolve_engine.py           # Smart Resolution Engine (Stack Overflow API + vault)
-â”‚   â”œâ”€â”€ vault.py                    # Knowledge Vault - local solution cache
-â”‚   â”œâ”€â”€ genesis_state.py            # Phase 5/6 hard gate state files
-â”‚   â”œâ”€â”€ genesis_subcommands.py      # genesis check: CVE scan + CI action audit
-â”‚   â”œâ”€â”€ pitfall_coverage_check.py   # Verifies PITFALLS.md mitigations exist in source
-â”‚   â”œâ”€â”€ drift_detector.py           # Architecture drift detection vs ADR baseline
-â”‚   â”œâ”€â”€ issue_miner.py              # GitHub Issue mining (GraphQL + REST)
-â”‚   â”œâ”€â”€ feedback.py                 # Pitfall feedback recorder
-â”‚   â”œâ”€â”€ env_probe.py                # Phase 0 environment detection
-â”‚   â””â”€â”€ eval_runner.py              # Trigger rate eval + schema validation
-â”œâ”€â”€ tests/                          # 270 unit tests
-â”‚   â”œâ”€â”€ test_scaffold_generator.py  # 53 tests: all combos, path traversal, TOML integrity, pre-commit hooks
-â”‚   â”œâ”€â”€ test_pr13_scripts.py        # 58 tests: pitfall_coverage_check + genesis_subcommands
-â”‚   â”œâ”€â”€ test_new_scripts.py         # 22 tests: feedback, drift_detector CLI, import boundary, issue_miner
-â”‚   â”œâ”€â”€ test_research_validator.py  # 17 tests: validator logic
-â”‚   â”œâ”€â”€ test_resolve_engine.py      # 9 tests: resolution engine
-â”‚   â”œâ”€â”€ test_genesis_state.py       # 30 tests: hard gate state machine
-â”‚   â”œâ”€â”€ test_mitigation_enforcer.py # 26 tests: AST enforcement, symbol/import, allow-unmapped
-â”‚   â”œâ”€â”€ test_evidence_pack.py       # 26 tests: confidence scoring, generate, verify
-â”‚   â”œâ”€â”€ test_scaffold_smoke_test.py # 16 tests: all 8 archetypes smoke-tested
-â”‚   â””â”€â”€ test_pitfall_coverage_check_platform.py  # 13 tests: platform risk validation
-â”œâ”€â”€ evals/
-â”‚   â”œâ”€â”€ test_queries.json           # 40 trigger/no-trigger test cases (100% accuracy)
-â”‚   â””â”€â”€ README.md
-â”œâ”€â”€ examples/
-â”‚   â”œâ”€â”€ typescript-cli/             # Real TypeScript CLI output
-â”‚   â”‚   â”œâ”€â”€ RESEARCH.md
-â”‚   â”‚   â”œâ”€â”€ PITFALLS.md
-â”‚   â”‚   â””â”€â”€ ROADMAP.md
-â”‚   â””â”€â”€ python-cli/                 # Real Python CLI output
-â”‚       â”œâ”€â”€ RESEARCH.md
-â”‚       â”œâ”€â”€ PITFALLS.md
-â”‚       â””â”€â”€ ROADMAP.md
-â”œâ”€â”€ assets/
-â”‚   â”œâ”€â”€ demo.gif                    # Demo recording (see DEMO_SCRIPT.md to record)
-â”‚   â”œâ”€â”€ RESEARCH.template.md
-â”‚   â”œâ”€â”€ PITFALLS.template.md
-â”‚   â””â”€â”€ ROADMAP.template.md
-â”œâ”€â”€ references/
-â”‚   â”œâ”€â”€ architecture-patterns.md    # Boilerplate per language/tier + production defaults
-â”‚   â”œâ”€â”€ mcp-strategy.md             # MCP tool strategy and fallback logic
-â”‚   â””â”€â”€ security-templates.md       # CI templates for secret scanning, SAST, quality gate
-â”œâ”€â”€ .github/
-â”‚   â”œâ”€â”€ dependabot.yml              # Weekly automated dependency updates
-â”‚   â””â”€â”€ workflows/
-â”‚       â”œâ”€â”€ ci.yml                  # Tests, secret scanning, SAST, quality gate
-â”‚       â””â”€â”€ codeql.yml              # GitHub Code Scanning
-â”œâ”€â”€ pyproject.toml                  # pytest + ruff config
-â”œâ”€â”€ DEMO_SCRIPT.md                  # Step-by-step guide to record the demo GIF
-â”œâ”€â”€ LAUNCH_COPY.md                  # Ready-to-post text for HN, Reddit, X, Discord
-â”œâ”€â”€ SECURITY.md
-â”œâ”€â”€ CHANGELOG.md
-â””â”€â”€ CONTRIBUTING.md
+├── SKILL.md                        # Skill definition - the brain
+├── plugin.json                     # Marketplace manifest
+├── scripts/
+│   ├── scaffold_generator.py       # Creates project structure
+│   ├── research_validator.py       # Validates RESEARCH.md + live GitHub URL checks
+│   ├── resolve_engine.py           # Smart Resolution Engine (Stack Overflow API + vault)
+│   ├── vault.py                    # Knowledge Vault - local solution cache
+│   ├── genesis_state.py            # Phase 5/6 hard gate state files
+│   ├── genesis_subcommands.py      # genesis check: CVE scan + CI action audit
+│   ├── pitfall_coverage_check.py   # Verifies PITFALLS.md mitigations exist in source
+│   ├── drift_detector.py           # Architecture drift detection vs ADR baseline
+│   ├── issue_miner.py              # GitHub Issue mining (GraphQL + REST)
+│   ├── feedback.py                 # Pitfall feedback recorder
+│   ├── env_probe.py                # Phase 0 environment detection
+│   └── eval_runner.py              # Trigger rate eval + schema validation
+├── tests/                          # 372 unit tests
+├── evals/
+│   ├── test_queries.json           # 40 trigger/no-trigger test cases (100% accuracy)
+│   └── README.md
+├── examples/
+│   ├── typescript-cli/
+│   └── python-cli/
+├── references/
+│   ├── architecture-patterns.md    # Boilerplate per language/tier + production defaults
+│   ├── mcp-strategy.md             # MCP tool strategy and fallback logic
+│   └── security-templates.md       # CI templates for secret scanning, SAST, quality gate
+├── .github/
+│   ├── dependabot.yml
+│   └── workflows/
+│       ├── ci.yml
+│       └── codeql.yml
+├── pyproject.toml
+├── CHANGELOG.md
+├── SECURITY.md
+└── CONTRIBUTING.md
 ```
 
 </details>
@@ -529,27 +383,17 @@ Four CI jobs run on every push and pull request:
 
 | Job | What it gates | Secret required |
 |-----|--------------|-----------------|
-| `quality-gates` | 270 unit tests, evidence pack generation, mitigation enforcement, drift detection (Level 2), genesis_state smoke test, scaffold smoke test, SKILL.md constraints | `GITHUB_TOKEN` (built-in) |
+| `quality-gates` | 372 unit tests, evidence pack generation, mitigation enforcement, drift detection, scaffold smoke test, SKILL.md constraints | `GITHUB_TOKEN` (built-in) |
 | `secrets-scan` | Exposed credentials, API keys, tokens in every commit | none |
 | `sonarcloud` | Maintainability, Reliability, Security Hotspots; skips if SONAR_TOKEN absent | `SONAR_TOKEN` |
 | `security-scan` | Dependency CVEs (HIGH+) via Snyk; skips if SNYK_TOKEN absent | `SNYK_TOKEN` |
 
-**To activate optional jobs:** set repository Variables (not Secrets) in Settings > Secrets and variables > Actions > Variables:
+**To activate optional jobs:** set repository Variables in Settings > Secrets and variables > Actions > Variables:
 - `SONAR_ENABLED` = `true` (then add `SONAR_TOKEN` as a Secret)
 - `SNYK_ENABLED` = `true` (then add `SNYK_TOKEN` as a Secret)
 
 > [!IMPORTANT]
-> After connecting SonarCloud, disable **Automatic Analysis** in the SonarCloud project settings (`Project Settings > Analysis Method`). Running both simultaneously causes the quality-gate job to fail.
-
-| Badge | Meaning |
-|-------|---------|
-| [![Known Vulnerabilities](https://snyk.io/test/github/maioio/genesis-architect/badge.svg)](https://snyk.io/test/github/maioio/genesis-architect) | No high/critical CVEs in Python deps |
-| [![Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=maioio_genesis-architect&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=maioio_genesis-architect) | Code quality gate status |
-| [![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=maioio_genesis-architect&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=maioio_genesis-architect) | Security rating (A = best) |
-| [![Maintainability](https://sonarcloud.io/api/project_badges/measure?project=maioio_genesis-architect&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=maioio_genesis-architect) | Maintainability rating |
-| ![CI](https://img.shields.io/github/actions/workflow/status/maioio/genesis-architect/ci.yml?branch=main&label=CI) | All CI jobs passing |
-
-<sub>Built on open-source security tooling. See [security-templates.md](references/security-templates.md) for implementation details.</sub>
+> After connecting SonarCloud, disable **Automatic Analysis** in SonarCloud project settings. Running both simultaneously causes the quality-gate job to fail.
 
 ---
 
@@ -557,40 +401,21 @@ Four CI jobs run on every push and pull request:
 
 | Priority | Feature | Status |
 |----------|---------|--------|
-| 1 | Demo GIF - record with [DEMO_SCRIPT.md](DEMO_SCRIPT.md) | Pending recording |
+| 1 | Demo GIF | Pending |
 | 2 | Go and Rust real-world example projects | In progress |
-| 3 | Interactive CLI with progress bars and pretty output | Planned |
-| 4 | VS Code extension with MCP deep integration | Planned |
-| 5 | Templates gallery: Next.js + Supabase, FastAPI + React, T3 Stack | Planned |
-| 6 | Benchmark report vs. competing tools (speed, quality, cost) | Planned |
-| 7 | Hosted version with web UI for non-terminal users | Future |
+| 3 | Benchmark report: Genesis vs plain Claude on real projects | Planned |
+| 4 | Interactive CLI with progress bars | Planned |
+| 5 | VS Code extension | Planned |
 
 Community contributions welcome - see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ---
 
-## Honest Limitations
-
-| Limitation | Details |
-|-----------|---------|
-| **Issue mining depth** | Scans 100 most-recent issues across 5-8 repos. Low-traffic projects or issues closed years ago may not surface. |
-| **Web-search-only mode** | Without GitHub MCP, issue extraction is shallow. RESEARCH.md will note this automatically. |
-| **Quick experiment trigger** | Natural-language triggers ask intent first - but `genesis init` always runs the full flow. |
-| **Issue URL authenticity** | Run `python scripts/research_validator.py RESEARCH.md --verify-issues` to HTTP-check every cited issue URL. |
-| **WSL** | On Windows inside WSL, Linux paths and package managers are used - Windows PATH fixes do not apply. |
-| **Fork intelligence** | Scanning active forks for upstream patches requires GitHub MCP. Without it, fork analysis is skipped. |
-| **Stack Overflow API limit** | 300 requests/day unauthenticated. Set `STACKOVERFLOW_KEY` for 10,000/day. Vault hits bypass this entirely. |
-
----
-
 ## Community
 
-Genesis Architect improves through real-world use.
-
 - **Share your output**: open a PR adding your `RESEARCH.md` and `PITFALLS.md` to `examples/`
-- **Report missed pitfalls**: if something slipped past the research phase, open an issue - it becomes a future mitigation
-- **Good first issues**: check the [`good first issue`](https://github.com/maioio/genesis-architect/issues?q=label%3A%22good+first+issue%22) label to start contributing
-- **Looking for experienced reviewers**: if you have production experience with CLI tools, Python packaging, or AI skill engineering - feedback is welcome at any level
+- **Report missed pitfalls**: if something slipped past the research phase, open an issue
+- **Good first issues**: check the [`good first issue`](https://github.com/maioio/genesis-architect/issues?q=label%3A%22good+first+issue%22) label
 
 [Open an issue](https://github.com/maioio/genesis-architect/issues) | [Submit a PR](https://github.com/maioio/genesis-architect/pulls) | [Discussions](https://github.com/maioio/genesis-architect/discussions)
 
@@ -598,12 +423,10 @@ Genesis Architect improves through real-world use.
 
 ## Support this project
 
-Genesis Architect is free and open-source. If it saved you from a bad architecture decision, a production incident, or hours of research - consider supporting continued development:
+Genesis Architect is free and open-source. If it saved you from a bad architecture decision or production incident:
 
 [![GitHub Sponsors](https://img.shields.io/badge/Sponsor_on_GitHub-%23EA4AAA?style=for-the-badge&logo=github-sponsors)](https://github.com/sponsors/maioio)
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy_Me_a_Coffee-%23FFDD00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/maioio)
-
-Sponsorship funds: additional language templates, deeper MCP integrations, real-world example projects, and VS Code extension development.
 
 ---
 
@@ -611,13 +434,8 @@ Sponsorship funds: additional language templates, deeper MCP integrations, real-
 
 See [CONTRIBUTING.md](CONTRIBUTING.md).
 
-New language templates, improved MCP strategies, and workflow refinements are welcome.
-
 > [!IMPORTANT]
 > Keep SKILL.md under 400 lines. No em dashes anywhere. All code, filenames, and comments in English.
-
-> [!NOTE]
-> This project is part of a portfolio demonstrating production-grade AI skill engineering: research-driven scaffolding, self-validating output, multi-layer quality gates, and measurable outcome quality. [View all projects](https://github.com/maioio)
 
 ## License
 
@@ -629,7 +447,6 @@ New language templates, improved MCP strategies, and workflow refinements are we
 
 **[Star this repo](https://github.com/maioio/genesis-architect/stargazers) if Genesis Architect saved you from a bad architecture decision. It helps others find it.**
 
-[Issues](https://github.com/maioio/genesis-architect/issues) Â· [Discussions](https://github.com/maioio/genesis-architect/discussions) Â· [CHANGELOG](CHANGELOG.md)
+[Issues](https://github.com/maioio/genesis-architect/issues) · [Discussions](https://github.com/maioio/genesis-architect/discussions) · [CHANGELOG](CHANGELOG.md)
 
 </div>
-

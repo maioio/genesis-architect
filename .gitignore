@@ -49,3 +49,4 @@ config.yml
 # Python build artifacts
 src/*.egg-info/
 *.egg-info/
+validation/fastapi-api/genesis/tasks.db

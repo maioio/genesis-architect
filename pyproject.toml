@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "genesis-architect-pro"
-version = "5.4.0"
+version = "5.4.1"
 description = "Genesis Architect Pro - multi-source research, pitfall ranking, video-to-pitfall, and cross-session memory. Requires a license."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -15,6 +15,9 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=8", "ruff>=0.4", "pytest-cov>=5"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

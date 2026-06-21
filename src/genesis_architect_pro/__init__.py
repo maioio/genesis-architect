@@ -6,7 +6,7 @@ recovery diagnosis. Requires a valid license and the free
 genesis-architect core package.
 """
 
-__version__ = "5.4.0"
+__version__ = "5.4.1"
 
 from genesis_architect_pro.license import require_license, LicenseError
 

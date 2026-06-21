@@ -124,9 +124,11 @@ def test_skill_md_under_400_lines():
 
 def test_skill_md_no_em_dashes():
     text = SKILL_MD.read_text(encoding="utf-8")
+    # Use escape codes so this file itself stays free of em/en dashes.
+    dashes = (chr(0x2014), chr(0x2013))
     em_dash_lines = [
         i + 1 for i, line in enumerate(text.splitlines())
-        if "—" in line or "–" in line
+        if any(d in line for d in dashes)
     ]
     assert not em_dash_lines, f"Em dashes found on lines: {em_dash_lines}"
 

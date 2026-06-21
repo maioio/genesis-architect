@@ -148,6 +148,24 @@ start building a VS Code extension
 
 ---
 
+## Natural Language Routing
+
+You never need to know command names. Genesis detects what you want from normal language and routes to the right workflow automatically.
+
+| What you say | What Genesis does |
+|---|---|
+| "I have an idea. Check if it is worth building." | Founder mode: market research, competitor analysis, PRODUCT_STRATEGY.md |
+| "Build me a quick working version." | Fast MVP mode: 5 min research cap, builds immediately |
+| "This project is broken. Figure out what is wrong." | Recovery mode: reads project state, diagnoses, proposes fix order |
+| "Review this project before I continue." | Audit mode: Phases 2-4 on existing code, PITFALLS.md delivered |
+| "Continue from where we stopped." | Resume mode: reads state, restores context, picks up from last step |
+| "Just do research, don't build yet." | Research-only mode: Phases 2-4, no scaffold |
+| "Does this work?" | Validation mode: smoke test + MVP validation checks |
+
+When Genesis is confident, it routes immediately and announces why. When unsure, it asks one short question before proceeding. Commands like `genesis init`, `genesis audit`, and `genesis harden` still work for power users.
+
+---
+
 ## How it works
 
 Before writing a single file, Genesis runs research across real GitHub repos:

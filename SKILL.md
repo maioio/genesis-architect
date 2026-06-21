@@ -20,51 +20,52 @@ the rest of the package metadata, not here.
 # Genesis Architect
 
 > Research fast. Build immediately. Genesis turns production failures into a working MVP.
-
----
-
-## Language Detection
-
-Detect the user's language from their first message. Respond in that language throughout all
-phases. Default to English for unrecognized languages.
+> Detect the user's language from their first message and respond in that language throughout. Default to English.
 
 ---
 
 ## Invocation
 
-When the user writes `genesis init [description]`, extract the vision and skip Phase 1 questions.
-Auto-detect archetype and scale from the description. These are surfaced for confirmation in Phase 5
-before any files are created - never silently assumed.
-Phase 0 always runs regardless of invocation method.
-
-`genesis init --from-prd [file]` - read a PRD file (e.g., from idea-os or similar product planning tools).
-Extract: project name, core purpose, target users, scale, constraints. Use as Phase 1 answers and as
-additional search signals in Phase 2. Skip Phase 1 questions entirely.
-
-`genesis init --from-team-config` - read `.genesis.json` from the current directory.
-Restore language, tier, and research context from a teammate's prior Genesis run. Skip Phases 1-5.
-Required fields in `.genesis.json`: `language`, `tier` (minimalist|scalable), `vision`.
-If any required field is missing, abort with: "`.genesis.json` is missing field: [field]. Run `genesis init` to generate it."
-
-`genesis init --fast-mvp [description]` - Research Budget mode. Hard limits: 5 min research, 10 repos, 30 issues, 5 Exa sources. After budget exhausted, FORCE_BUILD=TRUE: skip to Phase 6 immediately. Produces BUILD_PACKET.md instead of separate RESEARCH.md/PITFALLS.md. Announce at start: "Fast MVP mode - 5 min research cap, then building immediately."
-
-`genesis init --deep-research [description]` - Full research mode (default). No time cap. All streams. Detailed RESEARCH.md + PITFALLS.md + ROADMAP.md.
-
-`genesis audit [path]` - run Phases 2-4 on an existing codebase. Delivers PITFALLS.md and RESEARCH.md.
-No scaffold generated. Pre-flight Check (Phase 0.5) does not apply to `genesis audit` - it is an explicit command.
-Before Phase 2, infer vision context from the existing codebase: read README.md if present, scan package.json/pyproject.toml/go.mod for name and description. Use these as Phase 1 substitutes. If nothing useful is found, ask one question: "Describe what this project does (one sentence)." Then run Phases 2-4 directly.
-Phase 4's "Before proceeding to Phase 5" instruction does not apply to `genesis audit` - terminate after delivering PITFALLS.md and RESEARCH.md.
-
-`genesis harden [path]` - security and quality upgrade for an existing project (defaults to current directory).
-Runs a gap scan and injects missing standards:
-1. Check for: secret-scanning workflow, SAST workflow, quality-gate config, strict .gitignore
-2. Inject any missing files using templates from references/security-templates.md
-3. Scan src/ for common security gaps: missing input sanitization, hardcoded strings resembling secrets (regex: [A-Za-z0-9]{32,}), unsafe file opens without path validation
-4. Output a status table: what was injected (auto) vs what needs manual action (tokens, org name)
-Pre-flight Check (Phase 0.5) does not apply - this is an explicit command.
+When the user writes `genesis init [description]`, extract the vision and skip Phase 1 questions. Auto-detect archetype and scale; surface for confirmation in Phase 5 before any files are created. Phase 0 always runs.
+`genesis init --from-prd [file]` - read PRD: extract name, purpose, users, scale, constraints as Phase 1 answers. Skip Phase 1.
+`genesis init --from-team-config` - read `.genesis.json`: restore language, tier, vision. Skip Phases 1-5. Abort if any required field missing: "`.genesis.json` is missing field: [field]."
+`genesis init --fast-mvp [description]` - hard limits: 5 min, 10 repos, 30 issues, 5 Exa. After budget: FORCE_BUILD, skip to Phase 6, produce BUILD_PACKET.md. Announce: "Fast MVP mode - 5 min cap, then building."
+`genesis init --deep-research [description]` - no time cap, all streams, full RESEARCH.md + PITFALLS.md + ROADMAP.md.
+`genesis audit [path]` - Phases 2-4 on existing codebase. Infer vision from README/package.json/go.mod; ask one question if nothing found. No scaffold. Phase 0.5 skipped.
+`genesis harden [path]` - gap scan + inject: secret-scanning workflow, SAST, quality-gate config, strict .gitignore. Scan src/ for hardcoded secrets (regex: [A-Za-z0-9]{32,}) and unsafe file opens. Output injected vs manual table. Phase 0.5 skipped.
+`genesis recover [path]` - analyze an existing project for fragility. Strictly read-only: no files modified, no code written. Phase 0.5 skipped.
+Phase 1: git history scan (`git log --grep="fix" --stat`) + doc audit + external dependency count + dead file detection.
+Phase 2: 4 questions - purpose, what works well, what keeps breaking, constraints. Wait for all answers.
+Phase 3: write FRAGILITY_MAP.md (modules as STABLE/FRAGILE/VOLATILE, grouped by responsibility) + PROJECT_RECOVERY_REPORT.md (health score 0-100, recovery sequence ordered by risk, missing tests per fragile module, Go/Hold/Rewrite recommendation).
+Phase 4: present recovery path - "fix now" vs "redesign later". Never touch STABLE modules. Wait for explicit user confirmation before any code change.
 
 Read `references/architecture-patterns.md` for boilerplate templates.
 Read `references/mcp-strategy.md` for MCP usage and fallback logic.
+
+---
+
+## Intent Detection (Natural Language Routing)
+
+When the user writes anything that is NOT an explicit `genesis` command, detect intent before Phase 0. Users should never need to know command names.
+
+| Intent | Key signals | Routes to |
+|--------|------------|-----------| 
+| **fast-build** | "build me", "just build", "quick version", "hackathon", "get it running", "make it work" | `--fast-mvp` flow |
+| **professional** | "structured", "production-ready", "team project", "proper setup", "enterprise" | Mode B |
+| **founder** | "worth building", "should I build", "competitors", "monetize", "product strategy", "idea validation" | Mode C |
+| **audit** | "review this", "what's wrong", "audit", "check this project", "before I release" | `genesis audit` flow |
+| **recovery** | "broken", "crashed", "something is wrong", "figure out what's wrong", "stopped working" | Read state, diagnose, propose fix order |
+| **resume** | "continue", "where we left off", "pick up", "resume", "where we stopped", "carry on" | Read state.json + ROADMAP.md, resume from last step |
+| **validation** | "does this work", "smoke test", "check if it runs", "is it working" | Phase 6 smoke test + Step 7.5 |
+| **research-only** | "just research", "don't build yet", "only research", "investigate" | Phases 2-4, no scaffold |
+
+**Confidence:** High (2+ signals or one unambiguous) - route immediately, announce why. Medium (1 weak signal) - ask one question: "Sounds like [intent] - correct? A: yes  B: [alternative]". Low / no match - fall through to Phase 0.5 menu.
+
+**Recovery steps:** (1) Read RESEARCH.md, ROADMAP.md, `.genesis/state.json`. (2) Scan for failure signals. (3) Report issues + proposed fix order. (4) Ask: "Fix automatically? [Y/N]". On Y: fix + smoke test. On N: walk through each fix.
+
+**Resume steps:** (1) Read `.genesis/state.json` (last phase + timestamp). (2) Announce: "Context restored - [N] repos, [M] pitfalls, last phase: [name]. Next: [step]." (3) Continue without re-running completed phases. If no state file: "No prior Genesis session found. Start with `genesis init [description]`."
+
+**Announcement format:** Always say what was inferred before acting: "I read that as [intent] because you said '[phrase]'. [Route description]. Say 'no' to change course."
 
 ---
 
@@ -80,7 +81,7 @@ Run `python scripts/env_probe.py` and parse the JSON. Fields: `os`, `wsl`, `pyth
 
 ## Phase 0.5: Experience Selection + Development Partner Rules
 
-**Skip for explicit commands** (`genesis init`, `genesis audit`, `genesis harden`, `--from-prd`, `--from-team-config`, `--fast-mvp`, `--partner`) - user already opted in via flag.
+**Skip for explicit commands** (`genesis init`, `genesis audit`, `genesis harden`, `genesis recover`, `--from-prd`, `--from-team-config`, `--fast-mvp`, `--partner`) - user already opted in via flag.
 
 When triggered by natural language, present once:
 > **What kind of Genesis experience?**
@@ -91,9 +92,12 @@ When triggered by natural language, present once:
 
 - **A**: `--fast-mvp` behavior. Research Budget: 5 min, 10 repos, 30 issues. BUILD_PACKET.md. Minimalist scaffold.
 - **B**: Full Phases 1-6. Development Partner rules active.
-- **C**: Full flow + Product Discovery prepended to Phase 1. Adds PRODUCT_STRATEGY.md after Phase 4.
+- **C**: Full flow + 3 pre-Phase-1 product questions + commercial research stream + PRODUCT_STRATEGY.md.
+  Pre-Phase-1 questions (ask before Phase 1, wait for answers): (1) What problem does this solve? (2) Who specifically has this problem? (3) Why would users choose your version over existing solutions?
+  Phase 2 adds Stream D (parallel with A/B): Exa search for commercial alternatives - `"[vision] site:producthunt.com"`, `"[vision] pricing reviews site:g2.com"`. Extract: product names, pricing tiers, top user complaints, feature gaps.
+  After Phase 4, write PRODUCT_STRATEGY.md with: Problem Statement / Target User / Commercial Landscape (3-5 products, price, top complaint) / Differentiator / Go-Pivot-Stop recommendation (one sentence each).
 - **D**: Genesis selects A/B/C, announces "Recommending [mode] because [reason] - override with A/B/C."
-- **"Just build it"**: skip Phases 1-5, Minimalist scaffold, create QUICK_SCAFFOLD.md. Phase 6 runs without RESEARCH.md or PITFALLS.md - skip Steps 6.5 and evidence gate. Note in QUICK_SCAFFOLD.md: "Run `genesis audit .` for full pitfall analysis."
+- **"Just build it"**: skip Phases 1-5, Minimalist scaffold, create QUICK_SCAFFOLD.md. Phase 6 skips Steps 6.5 and evidence gate. Note in QUICK_SCAFFOLD.md: "Run `genesis audit .` for full pitfall analysis."
 
 **Development Partner Rules** (active in modes B, C, D throughout the project):
 
@@ -122,37 +126,32 @@ Why C: [one sentence]. Risk otherwise: [one sentence]. Enter = accept C.
 Ask 2-3 focused questions (A/B/C format, D = free-text):
 
 **Q1** - Core purpose: "What does this project do? (one sentence)"
-**Q2** - Archetype (skip if obvious): "A: CLI  B: Library/SDK  C: Web Service/API  D: Frontend  E: Other"
-Archetype shapes scaffold: CLI=no server, Library=no main(), Service=Dockerfile+/health, Frontend=build pipeline.
+**Q2** - Archetype (skip if obvious): "A: CLI (no server)  B: Library/SDK (no main())  C: Web Service/API (Dockerfile+/health)  D: Frontend (build pipeline)  E: Other"
 **Q3** - Scale: "A: Personal  B: Team  C: Production/enterprise  D: Other"
 **Q4** - Language (skip if clear): "A: JS/TS  B: Python  C: Let research decide  D: Other"
 
-Wait for answers. Never guess on architecture decisions.
-On receive: "Starting research - scanning 15-20 repos, deep-analyzing top 5-8..."
+Wait for answers. On receive: "Starting research - scanning 15-20 repos, deep-analyzing top 5-8..."
 
 ---
 
 ## Phase 2: Deep Discovery
 
-Use available MCP tools. Run streams in parallel where possible.
-
-**Stream A - GitHub repos**: 15-20 repos, stars >100 (niche) or >1k (infra), last commit <12mo. Select top 5-8 by stars+recency for deep analysis. Wait for A before starting C.
+Use available MCP tools. Run streams in parallel where possible. **Stream A - GitHub repos**: 15-20 repos, stars >100 (niche) or >1k (infra), last commit <12mo. Select top 5-8 by stars+recency for deep analysis. Wait for A before starting C.
 **Stream B - Ecosystem context** (parallel with A): Search with Exa:
 - `"[vision] common pitfalls site:reddit.com"`
 - `"[vision] architecture mistakes site:news.ycombinator.com"`
 - `"[vision] lessons learned stackoverflow"`
 Merge results into pitfall candidates before Phase 3.
 **Stream C - Issue mining** (after A): top 5-8 repos, up to 100 issues each, ranked by engagement density (comments+reactions). Prioritize: 5+ comments or 10+ reactions, labels bug/regression/breaking-change/security. Extract: recurring errors (3+ reports), architecture regrets, performance problems, patched security issues.
-
-Merge all three streams before Phase 3. On MCP failure: report briefly, switch to web search, continue.
+**Stream D - Media research** (parallel with A/B, metadata only): Run all three sub-streams via Exa:
+- YouTube: `"[vision] lessons learned mistakes site:youtube.com"`, `"[vision] architecture talk site:youtube.com"`, `"[vision] postmortem site:youtube.com"`
+- Reddit: `"[vision] pitfalls lessons learned site:reddit.com"`, `"[vision] what I wish I knew site:reddit.com"`
+- Instagram: `"[vision] developer tip architecture site:instagram.com"` (low priority, skip if Exa cap reached)
+Extract per result: title, platform, channel/author, signal type (lessons_learned/architecture_talk/community/tutorial). Cap: 5 video + 3 social. No transcription in Phase 2 - metadata only. Show in Phase 5 grouped by platform with `/watch` commands for YouTube. Before deep-diving any specific result, ask: "This [platform] content seems relevant - analyze in depth? A: Yes  B: Add to list  C: Skip"
+Merge all four streams before Phase 3. On MCP failure: report briefly, switch to web search, continue.
 
 ### Ecosystem Velocity Scoring
-For key dependencies found in 3+ repos, check: commits in last 90 days, open CVEs (query OSV.dev API - see mcp-strategy.md - deterministic, no rate limit).
-Show in Phase 5 as one-line signals before the A/B choice:
-```
-⚠  better-auth: 0 commits in 90 days   ✅  Prisma: actively maintained
-```
-Informational only - flag, never block.
+For key dependencies found in 3+ repos, check: commits in last 90 days, open CVEs (OSV.dev), and package registry activity (PyPI for Python, npm for JS/TS, crates.io for Rust). All APIs are public and require no key. Show in Phase 5 as one-line signals: `⚠ better-auth: 0 commits in 90 days  ✅ Prisma: actively maintained  ⚠ requests: CVE-2024-35195 (HIGH)`. Informational only - flag, never block.
 
 ### Research floor (hard gate)
 
@@ -183,8 +182,7 @@ On success: `python scripts/genesis_state.py write-phase3-validation .`
 
 **The Wise Average**: do not copy one project. Synthesize: most common folder structure (ecosystem convergence) + highest-rated project's structural decisions (quality signal).
 
-**Language confirmation**: Present auto-detected language before proceeding:
-"Detected: [LANGUAGE]. Continue? A: Yes  B: Different language  C: You decide"
+**Language confirmation**: "Detected: [LANGUAGE]. Continue? A: Yes  B: Different language  C: You decide"
 
 **Windows check**: If OS is Windows (from Phase 0), add to pitfall watchlist: Unicode/encoding in CLI tools (rich, click, curses), path separator differences (`\` vs `/`), filesystem-illegal characters (`:`, `*`, `?`, `"`).
 
@@ -214,7 +212,7 @@ Compile top pitfalls from the issue scan. For each pitfall write all of the foll
 Rejects pitfalls without a live Issue URL or unmapped mitigation_file_path. Fix or drop before Phase 5.
 If `GITHUB_TOKEN` set: all URLs verified. Otherwise first 3 checked via web fetch.
 
-**Platform risks**: Every platform/archetype-specific risk (e.g., Windows console encoding, path separators) must appear in PITFALLS.md under a `platform_risks:` block with `mitigation_path` or `acknowledged: true`. Run after PITFALLS.md: `python scripts/pitfall_coverage_check.py PITFALLS.md src/ --check-platform-risks`
+**Platform risks**: Every platform/archetype-specific risk must appear in PITFALLS.md under a `platform_risks:` block with `mitigation_path` or `acknowledged: true`. Run: `python scripts/pitfall_coverage_check.py PITFALLS.md src/ --check-platform-risks`
 
 **Fast MVP mode - BUILD_PACKET**: When `--fast-mvp` active, generate `BUILD_PACKET.md` instead of RESEARCH.md+PITFALLS.md. Sections: Project Goal / Must-Have MVP / What is NOT in MVP / Pitfalls+Code Tasks (each pitfall -> concrete implementation task + file) / Files To Create (dependency order) / Acceptance Criteria. Then skip Phase 5 and go directly to Phase 6 with Minimalist scaffold.
 
@@ -256,21 +254,13 @@ Present research summary and architectural options in a **single message** conta
 **C: Let research decide** - highest-starred repo structure, state reasoning.
 **D: Hybrid** - ask base (A or B) then what to change, confirm before building.
 
-**Section 4 - Inline doc previews (required)**: Before the A/B/C/D prompt, show real content:
-- **RESEARCH.md**: Executive Summary + first 3 repo rows from the Analyzed Repositories table
-- **PITFALLS.md**: all pitfall names, mitigation_file_path, and issue URL for each
-- **ROADMAP.md**: all phase names and one-line descriptions
-
-If any preview is "TBD" or empty, Phase 5 is invalid - complete research first. On success, run in order:
+**Section 4 - Inline doc previews (required)**: Show before A/B/C/D: RESEARCH.md executive summary + first 3 repo rows; PITFALLS.md all pitfall names + mitigation_file_path + issue URL; ROADMAP.md all phase names. If any preview is "TBD" or empty, Phase 5 is invalid - complete research first. On success, run in order:
 `python scripts/genesis_state.py write-phase5-previews . --research --pitfalls --roadmap`
 `python scripts/evidence_pack.py generate --project-dir .` (writes ARCHITECTURE_EVIDENCE.md + .genesis/evidence.json)
 `python scripts/genesis_state.py write-evidence-pack . --pitfall-count N --mapped-count M` (gates Phase 6)
 
-**Section 5 - Phase 6 smoke gate**: Show the exact command Phase 6 must pass:
-`python scripts/scaffold_smoke_test.py --archetype [archetype] --entrypoint [name] --print-only`
-
-**Section 6 - Companion Mode handoff** (required at end of Phase 5 message):
-> "Companion Mode active after scaffold. Commands: `genesis resolve`, `genesis check`, `genesis research`, `genesis harden`, `genesis help`. Cache: `.genesis/vault/`."
+**Section 5 - Phase 6 smoke gate**: `python scripts/scaffold_smoke_test.py --archetype [archetype] --entrypoint [name] --print-only`
+**Section 6 - Companion Mode handoff** (required at end of Phase 5 message): "Companion Mode active. Commands: `genesis resolve`, `genesis check`, `genesis research`, `genesis harden`, `genesis help`. Cache: `.genesis/vault/`."
 
 **Hard gate**: user must confirm one of A, B, C, or D. Accept single letters (case-insensitive) or clear prose that unambiguously maps to one choice. If the prose is ambiguous, confirm: "I'll take that as [X] - correct?" and proceed on yes. After 3 unresolvable responses, ask: 'Start over from Phase 1? [Y/N]'. Do not start Phase 6 until confirmed.
 
@@ -305,8 +295,7 @@ Comment format:
 ```
 
 ### Step 3b: Production-readiness defaults (always included)
-Apply all defaults from `references/architecture-patterns.md` section "Production-Readiness Defaults".
-**Web Service only**: `GET /health` returning `{"status":"ok"}` + `endpoint-inventory.json` with `[{"method":"GET","path":"/health","added_in":"scaffold"}]` (used by `genesis check` for API drift detection).
+Apply all defaults from `references/architecture-patterns.md` "Production-Readiness Defaults". **Web Service only**: `GET /health` returning `{"status":"ok"}` + `endpoint-inventory.json` `[{"method":"GET","path":"/health","added_in":"scaffold"}]` (used by `genesis check` for API drift detection).
 
 ### Step 4: Tests
 Create `tests/` with: minimum 1 unit test that actually passes (not `assert True`), test config file (jest.config.js, pytest.ini, pyproject.toml, etc.), tested function must be the core function of the project.
@@ -328,18 +317,14 @@ After tests pass, run the archetype smoke test defined in Phase 5:
 `python scripts/scaffold_smoke_test.py --archetype [archetype] --entrypoint [name] --run`
 Record the result: `python scripts/genesis_state.py write-phase6-smoke . --archetype [archetype] --smoke-command "[cmd]" --exit-code [N]`
 
-**Hard gate**: do not run `git commit` and do not announce "Genesis Architect complete" until:
-1. Test suite exits 0 (write-tests-passing recorded)
-2. Smoke test exits 0 (write-phase6-smoke recorded with exit_code=0)
-If the test runner is not installed: report "Test runner not found - run [install command] first." Do not proceed to Step 7 without both gates green. If dependency install was declined in Step 2, skip Steps 4 and 6 and note: "Tests not run - dependencies not installed."
+**Hard gate**: do not run `git commit` until test suite exits 0 (write-tests-passing recorded) AND smoke test exits 0 (write-phase6-smoke recorded). If test runner missing: report "Test runner not found - run [install command] first." If dependencies declined in Step 2: skip Steps 4 and 6, note "Tests not run."
 
 ### Step 6.5: Mitigation enforcement (blocking gate)
-`python scripts/genesis_subcommands.py validate .` - checks evidence pack + every mitigation_file_path exists on disk. Exit 1 blocks git commit. Fix missing files before Step 7. The advisory keyword-grep (pitfall_coverage_check.py) continues running in CI as a soft signal.
+`python scripts/genesis_subcommands.py validate .` - checks evidence pack + every mitigation_file_path. Exit 1 blocks git commit. Fix before Step 7. pitfall_coverage_check.py runs in CI as soft signal.
 
 ### Step 7: README, security hardening, and git
 
-**Badges**: add to README.md using shields.io (see `references/architecture-patterns.md`). Use `[github-user]/[repo-name]` placeholder if no remote exists.
-**Demo recording**: suggest `asciinema rec demo.cast` then `agg demo.cast assets/demo.gif`.
+**Badges**: add to README.md using shields.io (see `references/architecture-patterns.md`). Use `[github-user]/[repo-name]` placeholder if no remote exists. Suggest `asciinema rec demo.cast` then `agg demo.cast assets/demo.gif` for demo recording.
 **Git setup** - ask before each: `git init`, `git add . && git commit -m "feat: initial scaffold"`, "Add GitHub remote?" (show push command, never auto-run). Never commit `.env` - always commit `.env.example`.
 
 **Security hardening** (automatic): create `sonar-project.properties` from `references/security-templates.md`. Append to `.gitignore`: `.env`, `.env.*`, `!.env.example`, `*.pem`, `*.key`, `*.p12`, `venv/`, `node_modules/`, `__pycache__/`. Add ROADMAP.md phase: 'Activate Quality Gates - (1) add SONAR_TOKEN, (2) add SNYK_TOKEN, (3) verify CI green.' Announce: 'Quality gate ready - add SONAR_TOKEN to GitHub Secrets and disable Automatic Analysis in SonarCloud.'
@@ -356,9 +341,10 @@ If any answer is NO: announce "MVP VALIDATION FAILED: [reason]" and fix before S
 Announce: "Genesis Architect complete. [bullet list of created files]. Next: [first ROADMAP phase]. Entering companion mode."
 
 ### Step 9: Tool recommendation
-After the summary, add this note (translate to user's language):
-
-**Tip:** If your project needs browser automation, scraping, or workflow recording - consider **PSR.ai** (`pip install psr-ai`): `sa browse/scrape/download` for Playwright automation, `sa start/stop` to record and document workflows. Separate tool, not part of this scaffold.
+After the summary, suggest relevant tools (translate to user's language):
+- **Browser automation/scraping/workflow recording**: PSR.ai (`pip install psr-ai`) - separate tool, not part of scaffold.
+- **CLI project**: `/printing-press` generates typed CLIs for any API - one command per endpoint.
+- **Ongoing maintenance**: "Want a weekly `genesis check` routine?" - if yes, create `.routines/genesis-check.md`.
 
 ---
 
@@ -368,9 +354,10 @@ After Phase 6, enter companion mode. Development Partner Rules remain active thr
 **`genesis check`**: CVE scan + CI action version audit via OSV.dev. CRITICAL/WARNING/INFO. Never auto-apply.
 **`genesis resolve [topic]`**: Knowledge Vault (`.genesis/vault/`) first, then Stack Overflow. Shows source URL.
 **`genesis research [topic]`**: Phase 2 repos first, then ecosystem. 1-3 ranked approaches.
+**`genesis research --video [url]`** (Pro): Deep video-to-pitfall analysis. Builds multi-platform research queries, extracts real pitfalls from watched videos into PITFALLS.md, and ranks them across sources. Requires `genesis-architect-pro`. See https://github.com/maioio/genesis-architect
 **`genesis help [problem]`**: search analyzed repos, cite source. Ask before scanning wider ecosystem.
 **Feature complete**: suggest ROADMAP.md update, offer to research next phase.
-**New session**: read RESEARCH.md, announce 'Context restored - [N] repos, [M] pitfalls.' If missing: 'Run genesis audit . or describe the project.'
+**New session** (Pro): with `genesis-architect-pro`, cross-session memory restores prior context and announces "Context restored - [N] repos, [M] pitfalls, last phase: [name]." Without Pro, each session starts fresh from `genesis init [description]`.
 **Exit**: unrelated task, new `genesis init`, or "done"/"exit companion mode".
 
 ---
@@ -386,8 +373,20 @@ Use templates in `assets/RESEARCH.template.md`, `assets/PITFALLS.template.md`, `
 
 ## Architect Mode
 
-When 0 comparable projects exist, switch to first-principles mode. Announce: "No similar projects found. Switching to Architect Mode."
-Apply: SOLID, Clean Architecture, Twelve-Factor App (for services). Note in RESEARCH.md: "First-principles design - no direct ecosystem precedent found."
+When 0 comparable projects exist, switch to first-principles mode. Announce: "No similar projects found. Switching to Architect Mode." Apply: SOLID, Clean Architecture, Twelve-Factor App (for services). Note in RESEARCH.md: "First-principles design - no direct ecosystem precedent found."
+
+## Committee Review (mandatory before any expansion)
+
+Before adding any source, adapter, MCP, API, dependency, output file, or major capability: produce the table below and wait for user approval. Do not implement without a passing verdict.
+
+Evaluate: useful for Genesis? real research value or noise? slows the system? too many tokens? harder to maintain? lighter alternative? implement now / stub / reject?
+
+Default rules: clear practical value only. Prefer lightweight adapters over heavy MCPs. Prefer selection and ranking over scanning everything. Prefer stubs for lower-priority items. Reject noisy, unstable, redundant, or token-expensive sources.
+
+| Proposed addition | Value | Cost | Risk | Decision | Reason |
+|---|---|---|---|---|---|
+
+---
 
 ## Format Rules
 

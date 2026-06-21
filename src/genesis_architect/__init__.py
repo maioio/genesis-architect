@@ -1,3 +1,3 @@
 """Genesis Architect - Research first. Build once."""
 
-__version__ = "0.1.0"
+__version__ = "5.4.0"

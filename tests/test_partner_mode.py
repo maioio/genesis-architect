@@ -129,3 +129,71 @@ def test_skill_md_no_em_dashes():
         if "—" in line or "–" in line
     ]
     assert not em_dash_lines, f"Em dashes found on lines: {em_dash_lines}"
+
+
+# --- OSINT system structural tests ---
+
+MCP_STRATEGY = Path(__file__).parent.parent / "references" / "mcp-strategy.md"
+OSINT_DOC = Path(__file__).parent.parent / "references" / "OPEN_SOURCE_INTELLIGENCE.md"
+
+
+def test_skill_md_phase2_mentions_package_registries():
+    text = SKILL_MD.read_text(encoding="utf-8")
+    phase2_start = text.find("## Phase 2")
+    phase2_end = text.find("## Phase 3")
+    section = text[phase2_start:phase2_end]
+    assert "PyPI" in section, "Phase 2 Ecosystem Velocity Scoring must mention PyPI"
+    assert "npm" in section, "Phase 2 Ecosystem Velocity Scoring must mention npm"
+    assert "crates.io" in section, "Phase 2 Ecosystem Velocity Scoring must mention crates.io"
+
+
+def test_mcp_strategy_has_normalized_schema():
+    text = MCP_STRATEGY.read_text(encoding="utf-8")
+    assert "Normalized Result Schema" in text
+    assert "confidence" in text
+    assert "signal_type" in text
+
+
+def test_mcp_strategy_has_source_selection_rules():
+    text = MCP_STRATEGY.read_text(encoding="utf-8")
+    assert "Source Selection Rules" in text
+    assert "Always query" in text
+    assert "Never query" in text
+
+
+def test_mcp_strategy_has_ranking_rules():
+    text = MCP_STRATEGY.read_text(encoding="utf-8")
+    assert "Ranking Rules" in text
+    assert "corroboration" in text
+    assert "Recency" in text
+
+
+def test_mcp_strategy_has_adapter_interface():
+    text = MCP_STRATEGY.read_text(encoding="utf-8")
+    assert "Adapter Interface" in text
+    assert "available()" in text
+
+
+def test_mcp_strategy_has_package_registry_adapters():
+    text = MCP_STRATEGY.read_text(encoding="utf-8")
+    assert "Package Registry Adapters" in text
+    assert "PyPI" in text
+    assert "npm" in text
+    assert "crates.io" in text
+
+
+def test_mcp_strategy_gitlab_is_stub_only():
+    text = MCP_STRATEGY.read_text(encoding="utf-8")
+    assert "GitLab" in text
+    assert "stub" in text.lower() or "future" in text.lower()
+
+
+def test_open_source_intelligence_doc_exists():
+    assert OSINT_DOC.exists(), "references/OPEN_SOURCE_INTELLIGENCE.md must exist"
+
+
+def test_open_source_intelligence_doc_is_public_safe():
+    text = OSINT_DOC.read_text(encoding="utf-8")
+    assert "engagement density" not in text, "engagement density threshold is private"
+    assert "confidence weight" not in text.lower(), "confidence weights are private"
+    assert "fallback chain" not in text.lower(), "fallback chain is private"

@@ -46,7 +46,18 @@ a_cli_podcast_downlo/
 # PSR.ai recording config
 config.yml
 
+# Internal strategy / private working docs - never publish
+_private/
+
 # Python build artifacts
 src/*.egg-info/
 *.egg-info/
 validation/fastapi-api/genesis/tasks.db
+
+# Build artifacts - built in CI, never committed
+dist/
+*.whl
+*.tar.gz
+
+# Local Claude settings - not for public repo
+.claude/settings.json

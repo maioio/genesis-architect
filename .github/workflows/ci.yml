@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install the free core (dependency) from GitHub
+        run: pip install -q "git+https://github.com/maioio/genesis-architect.git@main"
+
+      - name: Install Pro and dev tools
+        run: pip install -q -e ".[dev]"
+
+      - name: Generate an ephemeral CI license
+        env:
+          CI_SIGNING_KEY: ${{ secrets.PRO_SIGNING_KEY_B64 }}
+        run: |
+          if [ -z "$CI_SIGNING_KEY" ]; then
+            echo "PRO_SIGNING_KEY_B64 secret not set; skipping gated tests."
+            echo "GENESIS_PRO_LICENSE=" >> "$GITHUB_ENV"
+          else
+            python - <<'PY' >> "$GITHUB_ENV"
+          import base64, json, os, time
+          from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+          def b64url(b): return base64.urlsafe_b64encode(b).decode().rstrip("=")
+          priv = Ed25519PrivateKey.from_private_bytes(base64.b64decode(os.environ["CI_SIGNING_KEY"]))
+          payload = json.dumps({"sub": "ci@genesis", "exp": int(time.time()) + 3600}, separators=(",", ":"), sort_keys=True).encode()
+          print("GENESIS_PRO_LICENSE=gpro_" + b64url(payload) + "." + b64url(priv.sign(payload)))
+          PY
+          fi
+
+      - name: Run tests
+        env:
+          GENESIS_CORE_ROOT: ${{ github.workspace }}/.core
+        run: |
+          git clone --depth 1 https://github.com/maioio/genesis-architect.git "$GENESIS_CORE_ROOT"
+          python -m pytest tests/ -q

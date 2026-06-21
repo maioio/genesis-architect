@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.pyc
+.env
+.env.*
+
+# Build artifacts
+*.egg-info/
+src/*.egg-info/
+dist/
+build/
+
+# Local license / state
+.genesis/
+pro_license
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
+*.swp

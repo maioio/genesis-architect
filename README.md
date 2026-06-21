@@ -301,8 +301,23 @@ export GENESIS_PRO_LICENSE=<your-key>
 genesis upgrade   # check status
 ```
 
-Run `genesis upgrade` any time to see what is unlocked. Learn more or get
-a license at the project page.
+Run `genesis upgrade` any time to see what is unlocked.
+
+### Get Pro
+
+Pro is a commercial license: **$99/year** per developer.
+
+1. Buy a license: [GET PRO](YOUR-GUMROAD-LINK)
+2. You receive a license key and access to the Pro package.
+3. Install and activate:
+
+```bash
+pip install genesis-architect-pro
+export GENESIS_PRO_LICENSE=<your-key>
+genesis upgrade
+```
+
+Questions or team licensing: open an issue or email maio.eshet@gmail.com
 
 ---
 

@@ -242,6 +242,50 @@ def config(
         raise typer.Exit(1)
 
 
+@app.command()
+def research(
+    topic: str = typer.Argument(..., help="Topic to research, or a video URL with --video"),
+    video: bool = typer.Option(False, "--video", help="Deep video-to-pitfall analysis (Pro)"),
+):
+    """Research a topic. Use --video for Pro video-to-pitfall analysis."""
+    from genesis_architect.core import pro_bridge
+
+    if video:
+        try:
+            engine = pro_bridge.get_pro_module("video_research")
+        except pro_bridge.ProUnavailable as exc:
+            typer.echo(str(exc), err=True)
+            raise typer.Exit(2)
+        queries = engine.build_all_media_queries(topic)
+        typer.echo("Pro video research queries built:")
+        for platform, qs in queries.items():
+            typer.echo(f"  {platform}: {len(qs)} queries")
+        typer.echo("Run /watch on a chosen video, then extract pitfalls with Pro.")
+        return
+
+    from genesis_architect.core import genesis_subcommands
+    raise typer.Exit(genesis_subcommands.cmd_research(topic))
+
+
+@app.command()
+def upgrade():
+    """Show Pro status and how to unlock advanced features."""
+    from genesis_architect.core import pro_bridge
+
+    if pro_bridge.pro_licensed():
+        typer.echo("Genesis Architect Pro: installed and licensed. All features unlocked.")
+    elif pro_bridge.pro_installed():
+        typer.echo("Pro is installed but not licensed.")
+        typer.echo("Set GENESIS_PRO_LICENSE=<your-key>.")
+        typer.echo(f"Get a license: {pro_bridge.UPGRADE_URL}")
+    else:
+        typer.echo("Pro is not installed. The free core covers scaffolding and")
+        typer.echo("the top 3 GitHub pitfalls. Pro adds multi-source research,")
+        typer.echo("pitfall ranking, video-to-pitfall, and cross-session memory.")
+        typer.echo("Install: pip install genesis-architect-pro")
+        typer.echo(f"Learn more: {pro_bridge.UPGRADE_URL}")
+
+
 def main():
     app()
 

@@ -305,7 +305,12 @@ Run `genesis upgrade` any time to see what is unlocked.
 
 ### Get Pro
 
-Pro is a commercial license: **$99/year** per developer.
+Founder's pricing for early adopters (price goes up as the tool grows):
+
+- **$9/month** per developer, or
+- **$90/year** (two months free)
+
+Early adopters keep this price for life.
 
 1. Buy a license: [GET PRO](YOUR-GUMROAD-LINK)
 2. You receive a license key and access to the Pro package.

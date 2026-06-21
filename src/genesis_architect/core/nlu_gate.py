@@ -6,7 +6,6 @@ import re
 from dataclasses import dataclass
 from enum import Enum
 
-
 # ---------------------------------------------------------------------------
 # Phase 5 scaffold-tier choice (A/B/C/D) - unchanged from original
 # ---------------------------------------------------------------------------

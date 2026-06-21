@@ -146,9 +146,11 @@ Merge results into pitfall candidates before Phase 3.
 **Stream D - Media research** (parallel with A/B, metadata only): Run all three sub-streams via Exa:
 - YouTube: `"[vision] lessons learned mistakes site:youtube.com"`, `"[vision] architecture talk site:youtube.com"`, `"[vision] postmortem site:youtube.com"`
 - Reddit: `"[vision] pitfalls lessons learned site:reddit.com"`, `"[vision] what I wish I knew site:reddit.com"`
-- Instagram: `"[vision] developer tip architecture site:instagram.com"` (low priority, skip if Exa cap reached)
+- Instagram (visual/design projects only): `"[vision] UI design app site:instagram.com"` - run only when the vision is visual (UI, app, design, game, brand). Skip for CLIs, APIs, infra, libraries. See `references/mcp-strategy.md` "Pro Multi-Source Default".
 Extract per result: title, platform, channel/author, signal type (lessons_learned/architecture_talk/community/tutorial). Cap: 5 video + 3 social. No transcription in Phase 2 - metadata only. Show in Phase 5 grouped by platform with `/watch` commands for YouTube. Before deep-diving any specific result, ask: "This [platform] content seems relevant - analyze in depth? A: Yes  B: Add to list  C: Skip"
 Merge all four streams before Phase 3. On MCP failure: report briefly, switch to web search, continue.
+
+**Pro multi-source default**: with `genesis-architect-pro`, Phase 2 always runs the fast tier (GitHub + Exa ecosystem + YouTube/Reddit metadata) in parallel. Heavy scrapers (Apify for Reddit threads, Instagram) escalate only when the fast tier is thin or the project is visual. Full policy and routing in `references/mcp-strategy.md` "Pro Multi-Source Default". Free tier stays GitHub + Exa only.
 
 ### Ecosystem Velocity Scoring
 For key dependencies found in 3+ repos, check: commits in last 90 days, open CVEs (OSV.dev), and package registry activity (PyPI for Python, npm for JS/TS, crates.io for Rust). All APIs are public and require no key. Show in Phase 5 as one-line signals: `⚠ better-auth: 0 commits in 90 days  ✅ Prisma: actively maintained  ⚠ requests: CVE-2024-35195 (HIGH)`. Informational only - flag, never block.

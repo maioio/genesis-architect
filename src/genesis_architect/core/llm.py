@@ -26,4 +26,7 @@ def ask(
         max_tokens=4096,
         messages=messages,  # type: ignore[arg-type]
     )
-    return response.content[0].text if response.content else ""
+    for block in response.content:
+        if getattr(block, "type", None) == "text":
+            return block.text
+    return ""

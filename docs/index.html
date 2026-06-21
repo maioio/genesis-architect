@@ -3,248 +3,393 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Genesis Architect - Research first. Build once.</title>
+<title>Genesis Architect &mdash; Research first. Build once.</title>
 <meta name="description" content="Genesis Architect scans real GitHub failures before you write code, then scaffolds a working project with the fixes already built in.">
-<meta property="og:title" content="Genesis Architect - Research first. Build once.">
+<meta property="og:title" content="Genesis Architect &mdash; Research first. Build once.">
 <meta property="og:description" content="Finds real production failures from similar GitHub repos, then builds a working MVP with the mitigations already in place.">
 <meta property="og:type" content="website">
 <link rel="icon" type="image/png" href="assets/logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Newsreader:ital,opsz@0,6..72;1,6..72&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root{
-    --deep:#0025A3; --bright:#0083FE; --ink:#0b1220; --muted:#5b6573;
-    --bg:#ffffff; --soft:#f5f7fb; --line:#e6eaf2; --ok:#0083FE; --no:#c3c9d4;
+    --ink:#0a0e17;          /* near-black text */
+    --paper:#fbfbf9;        /* warm off-white, NOT pure white */
+    --paper-2:#f3f2ec;      /* panel */
+    --rule:#1a1f2b;         /* hairline dark */
+    --rule-soft:#dcdbd2;    /* hairline light */
+    --blue:#0025A3;         /* deep brand */
+    --blue-2:#0083FE;       /* bright brand */
+    --dim:#6a6f7a;
+    --maxw:1180px;
   }
   *{box-sizing:border-box;margin:0;padding:0}
   html{scroll-behavior:smooth}
-  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;
-    color:var(--ink);background:var(--bg);line-height:1.6;-webkit-font-smoothing:antialiased}
-  a{color:var(--bright);text-decoration:none}
-  .wrap{max-width:1080px;margin:0 auto;padding:0 24px}
-  .btn{display:inline-block;padding:14px 26px;border-radius:10px;font-weight:700;font-size:16px;
-    transition:transform .12s ease,box-shadow .12s ease;cursor:pointer;border:none}
-  .btn:hover{transform:translateY(-2px);box-shadow:0 8px 22px rgba(0,37,163,.18)}
-  .btn-primary{background:var(--bright);color:#fff}
-  .btn-deep{background:var(--deep);color:#fff}
-  .btn-ghost{background:transparent;color:var(--deep);border:2px solid var(--line)}
+  ::selection{background:var(--blue-2);color:#fff}
+  body{
+    font-family:'Space Grotesk',-apple-system,sans-serif;
+    background:var(--paper);color:var(--ink);line-height:1.55;
+    -webkit-font-smoothing:antialiased;overflow-x:hidden;
+    text-wrap:pretty;
+  }
+  .serif{font-family:'Newsreader',Georgia,serif}
+  .mono{font-family:'IBM Plex Mono',monospace}
+  a{color:inherit;text-decoration:none}
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 32px}
+  @media(max-width:620px){.wrap{padding:0 20px}}
 
-  nav{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.9);backdrop-filter:blur(10px);
-    border-bottom:1px solid var(--line)}
-  nav .wrap{display:flex;align-items:center;justify-content:space-between;height:66px}
-  nav img{height:34px}
-  nav .links a{color:var(--ink);font-weight:600;margin-left:22px;font-size:15px}
-  nav .links a:hover{color:var(--bright)}
-  @media(max-width:640px){nav .links a:not(.cta){display:none}}
+  /* index numbers - editorial signature */
+  .idx{font-family:'IBM Plex Mono';font-size:12px;letter-spacing:.18em;color:var(--blue-2);font-weight:500}
 
-  .hero{padding:80px 0 60px;text-align:center;background:
-    radial-gradient(1200px 400px at 50% -120px, rgba(0,131,254,.10), transparent)}
-  .hero h1{font-size:clamp(34px,6vw,60px);line-height:1.08;font-weight:800;letter-spacing:-1px}
-  .hero h1 .grad{color:var(--bright)}
-  .hero p.sub{font-size:clamp(17px,2.4vw,22px);color:var(--muted);max-width:680px;margin:22px auto 0}
-  .hero .cta-row{margin-top:34px;display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
-  .hero .note{margin-top:16px;font-size:14px;color:var(--muted)}
+  /* buttons */
+  .btn{display:inline-flex;align-items:center;gap:9px;font-family:'Space Grotesk';
+    font-weight:600;font-size:15px;padding:13px 22px;border:1.5px solid var(--ink);
+    border-radius:0;cursor:pointer;transition:.16s ease;background:none;color:var(--ink)}
+  .btn svg{width:16px;height:16px}
+  .btn:hover{background:var(--ink);color:var(--paper)}
+  .btn-fill{background:var(--ink);color:var(--paper)}
+  .btn-fill:hover{background:var(--blue);border-color:var(--blue)}
+  .btn-blue{background:var(--blue);border-color:var(--blue);color:#fff}
+  .btn-blue:hover{background:var(--blue-2);border-color:var(--blue-2)}
 
-  .proof{background:var(--soft);border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:26px 0}
-  .proof .row{display:flex;gap:40px;justify-content:center;flex-wrap:wrap;text-align:center}
-  .proof .stat b{display:block;font-size:26px;color:var(--deep)}
-  .proof .stat span{font-size:14px;color:var(--muted)}
+  /* NAV */
+  nav{position:sticky;top:0;z-index:50;background:rgba(251,251,249,.85);backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--rule)}
+  nav .wrap{display:flex;align-items:center;justify-content:space-between;height:78px}
+  .brand img{height:52px;display:block}
+  .navlinks{display:flex;align-items:center;gap:30px}
+  .navlinks a.lnk{font-size:14px;font-weight:500;color:var(--ink);position:relative}
+  .navlinks a.lnk::after{content:"";position:absolute;left:0;bottom:-3px;width:0;height:1.5px;background:var(--blue-2);transition:.2s}
+  .navlinks a.lnk:hover::after{width:100%}
+  @media(max-width:720px){.navlinks a.lnk{display:none}}
 
-  section.block{padding:72px 0}
-  .eyebrow{color:var(--bright);font-weight:700;letter-spacing:1.5px;text-transform:uppercase;font-size:13px;text-align:center}
-  h2.sec{font-size:clamp(26px,4vw,40px);font-weight:800;text-align:center;margin:10px 0 8px;letter-spacing:-.5px}
-  p.lead{text-align:center;color:var(--muted);max-width:640px;margin:0 auto 44px;font-size:18px}
+  /* HERO - typography as hero */
+  .hero{border-bottom:1px solid var(--rule);padding:0}
+  .hero .wrap{padding-top:70px;padding-bottom:0}
+  .hero .meta{display:flex;justify-content:space-between;align-items:baseline;
+    padding-bottom:18px;border-bottom:1px solid var(--rule-soft);margin-bottom:48px;flex-wrap:wrap;gap:10px}
+  .hero .meta .l{font-family:'IBM Plex Mono';font-size:12.5px;letter-spacing:.12em;color:var(--dim);text-transform:uppercase}
+  .hero h1{font-family:'Space Grotesk';font-weight:700;
+    font-size:clamp(48px,10vw,128px);line-height:.94;letter-spacing:-.04em}
+  .hero h1 .it{font-family:'Newsreader';font-style:italic;font-weight:400;color:var(--blue)}
+  .hero .lower{display:grid;grid-template-columns:1fr 1fr;gap:50px;align-items:end;
+    margin-top:46px;padding-bottom:64px}
+  @media(max-width:820px){.hero .lower{grid-template-columns:1fr;gap:32px}}
+  .hero .desc{font-family:'Newsreader';font-size:clamp(19px,2.4vw,24px);line-height:1.5;color:#2c313c;max-width:520px}
+  .hero .actions{display:flex;flex-direction:column;gap:16px;align-items:flex-start}
+  .hero .cta-row{display:flex;gap:12px;flex-wrap:wrap}
+  .hero .install{font-family:'IBM Plex Mono';font-size:13.5px;color:var(--dim);
+    display:inline-flex;align-items:center;gap:10px;border-bottom:1px dashed var(--rule-soft);padding-bottom:5px}
+  .hero .install b{color:var(--ink);font-weight:500}
+  .copybtn{cursor:pointer;background:none;border:none;color:var(--dim);padding:0;display:flex}
+  .copybtn:hover{color:var(--blue-2)}
 
-  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
-  @media(max-width:820px){.grid{grid-template-columns:1fr}}
-  .card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:26px}
-  .card:hover{border-color:var(--bright);box-shadow:0 10px 30px rgba(0,37,163,.07)}
-  .card .ic{width:44px;height:44px;border-radius:10px;background:rgba(0,131,254,.12);
-    display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:14px}
-  .card h3{font-size:18px;margin-bottom:6px}
-  .card p{color:var(--muted);font-size:15px}
+  /* MARQUEE proof - editorial ticker */
+  .ticker{border-bottom:1px solid var(--rule);background:var(--ink);color:var(--paper);overflow:hidden;white-space:nowrap}
+  .ticker .run{display:inline-block;padding:13px 0;animation:scroll 28s linear infinite}
+  .ticker .run span{font-family:'IBM Plex Mono';font-size:13px;letter-spacing:.08em;margin:0 30px;color:#cfd3dc}
+  .ticker .run b{color:var(--blue-2)}
+  @keyframes scroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
 
-  .steps{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
-  @media(max-width:820px){.steps{grid-template-columns:1fr 1fr}}
-  @media(max-width:480px){.steps{grid-template-columns:1fr}}
-  .step{text-align:center;padding:22px}
-  .step .n{width:42px;height:42px;border-radius:50%;background:var(--deep);color:#fff;font-weight:800;
-    display:flex;align-items:center;justify-content:center;margin:0 auto 12px}
-  .step h4{font-size:16px;margin-bottom:4px}
-  .step p{font-size:14px;color:var(--muted)}
+  /* SECTION shell */
+  section{border-bottom:1px solid var(--rule)}
+  .head{display:grid;grid-template-columns:auto 1fr;gap:26px;align-items:start;padding:72px 0 0}
+  .head h2{font-family:'Space Grotesk';font-weight:700;font-size:clamp(28px,4.4vw,52px);
+    line-height:1.02;letter-spacing:-.03em;max-width:14ch}
+  .head .r{padding-top:6px}
+  .head .lead{font-family:'Newsreader';font-size:18px;color:#3a3f4a;max-width:46ch;margin-top:14px}
+  @media(max-width:680px){.head{grid-template-columns:1fr;gap:14px}}
 
-  .cmp{border:1px solid var(--line);border-radius:16px;overflow:hidden}
+  /* WHY - numbered rows, no cards */
+  .rows{padding:54px 0 76px}
+  .row{display:grid;grid-template-columns:64px 1fr 1.4fr;gap:30px;align-items:start;
+    padding:30px 0;border-top:1px solid var(--rule-soft)}
+  .row:last-child{border-bottom:1px solid var(--rule-soft)}
+  .row .n{font-family:'IBM Plex Mono';font-size:13px;color:var(--blue-2);padding-top:5px}
+  .row h3{font-family:'Space Grotesk';font-weight:600;font-size:22px;letter-spacing:-.01em}
+  .row p{font-family:'Newsreader';font-size:17.5px;color:#3a3f4a;line-height:1.55}
+  @media(max-width:680px){.row{grid-template-columns:1fr;gap:8px}.row .n{padding-top:0}}
+
+  /* HOW - horizontal steps with rule */
+  .flow{padding:54px 0 80px;display:grid;grid-template-columns:repeat(4,1fr);gap:0}
+  @media(max-width:780px){.flow{grid-template-columns:1fr 1fr}}
+  @media(max-width:440px){.flow{grid-template-columns:1fr}}
+  .fstep{padding:26px 26px 26px 0;border-left:1px solid var(--rule-soft);padding-left:24px;position:relative}
+  .fstep:first-child{border-left:none;padding-left:0}
+  .fstep .fn{font-family:'IBM Plex Mono';font-size:12px;color:var(--blue-2);letter-spacing:.1em}
+  .fstep h4{font-family:'Space Grotesk';font-weight:600;font-size:19px;margin:14px 0 7px}
+  .fstep p{font-family:'Newsreader';font-size:16px;color:#3a3f4a}
+
+  /* COMPARE - editorial table */
+  .cmpwrap{padding:50px 0 80px}
   table{width:100%;border-collapse:collapse}
-  thead th{background:var(--deep);color:#fff;padding:16px;text-align:left;font-size:15px}
+  thead th{font-family:'IBM Plex Mono';font-size:12px;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--dim);font-weight:500;text-align:left;padding:0 0 16px;border-bottom:1.5px solid var(--ink)}
   thead th:nth-child(2),thead th:nth-child(3){text-align:center;width:120px}
-  tbody td{padding:14px 16px;border-top:1px solid var(--line);font-size:15px}
-  tbody td:nth-child(2),tbody td:nth-child(3){text-align:center;font-weight:800}
-  tbody tr:nth-child(even){background:var(--soft)}
-  .yes{color:var(--ok)} .dash{color:var(--no)}
-  @media(max-width:560px){thead th,tbody td{padding:11px 8px;font-size:13px}}
+  thead th:nth-child(3){color:var(--blue)}
+  tbody td{font-family:'Space Grotesk';font-size:16px;padding:17px 0;border-bottom:1px solid var(--rule-soft);color:var(--ink)}
+  tbody td:nth-child(2),tbody td:nth-child(3){text-align:center}
+  tbody tr:hover td{background:rgba(0,131,254,.03)}
+  .mk{display:inline-block;width:20px;height:20px;line-height:20px}
+  .mk.y{color:var(--blue)} .mk.n{color:var(--rule-soft)}
+  @media(max-width:560px){tbody td,thead th{font-size:13px}thead th:nth-child(2),thead th:nth-child(3){width:54px}}
 
-  .price-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;max-width:760px;margin:0 auto}
-  @media(max-width:680px){.price-grid{grid-template-columns:1fr}}
-  .plan{border:1px solid var(--line);border-radius:18px;padding:32px;text-align:center;background:#fff}
-  .plan.pro{border:2px solid var(--bright);position:relative;box-shadow:0 14px 40px rgba(0,37,163,.10)}
-  .plan .badge{position:absolute;top:-13px;left:50%;transform:translateX(-50%);background:var(--bright);
-    color:#fff;font-size:12px;font-weight:700;padding:5px 14px;border-radius:20px;white-space:nowrap}
-  .plan h3{font-size:20px}
-  .plan .amt{font-size:44px;font-weight:800;color:var(--deep);margin:10px 0 2px}
-  .plan .amt span{font-size:16px;color:var(--muted);font-weight:600}
-  .plan .alt{font-size:14px;color:var(--muted);margin-bottom:18px}
-  .plan ul{list-style:none;text-align:left;margin:18px 0 24px}
-  .plan li{padding:7px 0;font-size:15px;color:var(--ink)}
-  .plan li::before{content:"\2713";color:var(--bright);font-weight:800;margin-right:10px}
-  .plan .btn{width:100%}
-  .founder{text-align:center;color:var(--muted);font-size:14px;margin-top:22px}
+  /* PRICING */
+  .pricing{padding:54px 0 84px;display:grid;grid-template-columns:1fr 1.1fr;gap:0;border:1px solid var(--ink);margin-bottom:0}
+  @media(max-width:760px){.pricing{grid-template-columns:1fr}}
+  .plan{padding:42px 40px}
+  .plan.free{border-right:1px solid var(--rule-soft)}
+  .plan.pro{background:var(--ink);color:var(--paper);position:relative}
+  @media(max-width:760px){.plan.free{border-right:none;border-bottom:1px solid var(--rule-soft)}}
+  .plan .pn{font-family:'IBM Plex Mono';font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
+  .plan.pro .pn{color:var(--blue-2)}
+  .plan .amt{font-family:'Space Grotesk';font-weight:700;font-size:clamp(44px,6vw,64px);letter-spacing:-.04em;margin:16px 0 0;line-height:1}
+  .plan .amt span{font-family:'Newsreader';font-style:italic;font-size:20px;font-weight:400;color:var(--dim)}
+  .plan.pro .amt span{color:#9aa0ad}
+  .plan .alt{font-family:'Newsreader';font-size:16px;color:var(--dim);margin-top:8px}
+  .plan.pro .alt{color:#9aa0ad}
+  .plan .fbadge{position:absolute;top:42px;right:40px;font-family:'IBM Plex Mono';font-size:10.5px;
+    letter-spacing:.1em;color:var(--ink);background:var(--blue-2);padding:5px 10px;font-weight:500}
+  .plan ul{list-style:none;margin:28px 0 32px;display:flex;flex-direction:column;gap:13px}
+  .plan li{display:flex;gap:12px;font-size:15px;align-items:flex-start;font-family:'Space Grotesk'}
+  .plan li .b{color:var(--blue);font-weight:700;flex-shrink:0}
+  .plan.pro li .b{color:var(--blue-2)}
+  .plan .acts{display:flex;flex-direction:column;gap:11px}
+  .plan .acts .btn{justify-content:center;width:100%}
+  .plan.pro .btn{border-color:#fff;color:#fff}
+  .plan.pro .btn:hover{background:#fff;color:var(--ink)}
+  .plan.pro .btn-blue{background:var(--blue-2);border-color:var(--blue-2);color:var(--ink)}
+  .plan.pro .btn-blue:hover{background:#fff;border-color:#fff}
+  .pfoot{font-family:'IBM Plex Mono';font-size:12.5px;color:var(--dim);padding:22px 0 0;text-align:center}
 
-  .final{background:linear-gradient(135deg,var(--deep),var(--bright));color:#fff;text-align:center;padding:70px 0}
-  .final h2{font-size:clamp(26px,4vw,40px);font-weight:800}
-  .final p{opacity:.92;font-size:18px;margin:12px auto 28px;max-width:560px}
-  .final .btn-primary{background:#fff;color:var(--deep)}
+  /* CLOSER */
+  .closer{padding:96px 0;text-align:center;position:relative}
+  .closer h2{font-family:'Space Grotesk';font-weight:700;font-size:clamp(34px,6.5vw,80px);
+    line-height:.98;letter-spacing:-.04em;max-width:16ch;margin:0 auto}
+  .closer h2 .it{font-family:'Newsreader';font-style:italic;font-weight:400;color:var(--blue)}
+  .closer p{font-family:'Newsreader';font-size:20px;color:#3a3f4a;margin:24px auto 36px;max-width:42ch}
+  .closer .cta-row{display:flex;gap:13px;justify-content:center;flex-wrap:wrap}
 
-  footer{padding:40px 0;text-align:center;color:var(--muted);font-size:14px;border-top:1px solid var(--line)}
-  footer a{margin:0 10px}
-  code.k{background:var(--soft);border:1px solid var(--line);border-radius:6px;padding:3px 8px;font-size:14px}
+  footer{background:var(--ink);color:#c9cdd6;padding:40px 0}
+  footer .wrap{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:18px}
+  footer .fl{display:flex;align-items:center;gap:13px;font-family:'IBM Plex Mono';font-size:12.5px;color:#8a90a0}
+  footer img{height:34px}
+  footer .links a{font-size:14px;color:#c9cdd6;margin-left:24px;font-family:'Space Grotesk'}
+  footer .links a:hover{color:var(--blue-2)}
+  @media(max-width:560px){footer .wrap{flex-direction:column;text-align:center}footer .links a{margin:0 12px}}
 </style>
 </head>
 <body>
 
 <nav>
   <div class="wrap">
-    <img src="assets/logo.png" alt="Genesis Architect">
-    <div class="links">
-      <a href="#how">How it works</a>
-      <a href="#compare">Free vs Pro</a>
-      <a href="#pricing">Pricing</a>
-      <a class="cta btn btn-primary" style="padding:9px 18px;font-size:14px" href="#pricing">Get Pro</a>
+    <a class="brand" href="#top"><img src="assets/logo.png" alt="Genesis Architect"></a>
+    <div class="navlinks">
+      <a class="lnk" href="#why">Why</a>
+      <a class="lnk" href="#how">Process</a>
+      <a class="lnk" href="#compare">Free / Pro</a>
+      <a class="lnk" href="#pricing">Pricing</a>
+      <a class="btn btn-blue" href="#pricing" style="padding:10px 18px;font-size:13.5px">Get Pro</a>
     </div>
   </div>
 </nav>
 
-<header class="hero">
+<header class="hero" id="top">
   <div class="wrap">
-    <h1>Research first. <span class="grad">Build once.</span></h1>
-    <p class="sub">Genesis Architect scans real GitHub failures from similar projects before you write a line of code, then scaffolds a working project with the fixes already built in.</p>
-    <div class="cta-row">
-      <a class="btn btn-primary" href="#pricing">Get Pro &mdash; from $9/mo</a>
-      <a class="btn btn-ghost" href="https://github.com/maioio/genesis-architect" target="_blank" rel="noopener">View on GitHub</a>
+    <div class="meta">
+      <span class="l">Open-core developer tool</span>
+      <span class="l">Est. 2026 &mdash; v5.4</span>
     </div>
-    <p class="note">Free core on PyPI: <code class="k">pip install genesis-architect</code></p>
+    <h1>Research first.<br><span class="it">Build</span> once.</h1>
+    <div class="lower">
+      <p class="desc">Genesis Architect reads the failures other developers already hit &mdash; mined from real GitHub issues &mdash; then scaffolds your project with those fixes already in place. You skip the bugs you were about to write.</p>
+      <div class="actions">
+        <div class="cta-row">
+          <a class="btn btn-blue" href="#pricing">Get Pro
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </a>
+          <a class="btn" href="https://github.com/maioio/genesis-architect" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.7.5.5 5.7.5 12c0 5.1 3.3 9.4 7.9 10.9.6.1.8-.3.8-.6v-2c-3.2.7-3.9-1.5-3.9-1.5-.5-1.3-1.3-1.7-1.3-1.7-1.1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.7 1.3 3.4 1 .1-.8.4-1.3.7-1.6-2.6-.3-5.3-1.3-5.3-5.7 0-1.3.5-2.3 1.2-3.1-.1-.3-.5-1.5.1-3.1 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0C17.3 4.7 18.3 5 18.3 5c.6 1.6.2 2.8.1 3.1.8.8 1.2 1.8 1.2 3.1 0 4.4-2.7 5.4-5.3 5.7.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6 4.6-1.5 7.9-5.8 7.9-10.9C23.5 5.7 18.3.5 12 .5z"/></svg>
+            View source
+          </a>
+        </div>
+        <span class="install"><b>$ pip install genesis-architect</b>
+          <button class="copybtn" onclick="navigator.clipboard.writeText('pip install genesis-architect')" aria-label="Copy">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="15" height="15"><rect x="9" y="9" width="11" height="11"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+          </button>
+        </span>
+      </div>
+    </div>
   </div>
 </header>
 
-<div class="proof">
-  <div class="wrap row">
-    <div class="stat"><b>4</b><span>languages: Python, TS, Go, Rust</span></div>
-    <div class="stat"><b>4+</b><span>research sources, not just GitHub</span></div>
-    <div class="stat"><b>MIT</b><span>open-core, free to start</span></div>
+<div class="ticker" aria-hidden="true">
+  <div class="run">
+    <span><b>4</b> languages &mdash; Python, TS, Go, Rust</span>
+    <span><b>4+</b> research sources, not just GitHub</span>
+    <span><b>100%</b> of cited issues verified by CI</span>
+    <span><b>MIT</b> open core, free to start</span>
+    <span><b>4</b> languages &mdash; Python, TS, Go, Rust</span>
+    <span><b>4+</b> research sources, not just GitHub</span>
+    <span><b>100%</b> of cited issues verified by CI</span>
+    <span><b>MIT</b> open core, free to start</span>
   </div>
 </div>
 
-<section class="block" id="why">
+<section id="why">
   <div class="wrap">
-    <p class="eyebrow">Why Genesis</p>
-    <h2 class="sec">Most projects fail by repeating known mistakes</h2>
-    <p class="lead">Other generators produce templates with zero knowledge of what broke in production. Genesis learns from the developers who built the same thing before you.</p>
-    <div class="grid">
-      <div class="card"><div class="ic">&#128270;</div><h3>Real failures, not guesses</h3><p>Mines actual GitHub Issues from similar repos to find the recurring pitfalls.</p></div>
-      <div class="card"><div class="ic">&#128296;</div><h3>Fixes built in</h3><p>Scaffolds your project with the mitigations already wired into the code.</p></div>
-      <div class="card"><div class="ic">&#9889;</div><h3>Working MVP, fast</h3><p>From idea to a running, tested project structure in minutes.</p></div>
+    <div class="head">
+      <span class="idx">01 / Why</span>
+      <div class="r">
+        <h2>Most projects fail by repeating solved mistakes.</h2>
+        <p class="lead">Template generators know nothing about what broke in production. Genesis learns from the developers who shipped the same thing before you.</p>
+      </div>
+    </div>
+    <div class="rows">
+      <div class="row">
+        <div class="n">(a)</div>
+        <h3>Real failures, not guesses</h3>
+        <p>It mines actual GitHub issues from similar repositories to surface the failures that keep recurring across projects.</p>
+      </div>
+      <div class="row">
+        <div class="n">(b)</div>
+        <h3>Fixes built in</h3>
+        <p>Your scaffold ships with the mitigations already wired into the code &mdash; not appended as a checklist you will ignore.</p>
+      </div>
+      <div class="row">
+        <div class="n">(c)</div>
+        <h3>A working MVP, fast</h3>
+        <p>From an idea to a running, tested project structure in minutes. Twelve real files, zero empty stubs.</p>
+      </div>
     </div>
   </div>
 </section>
 
-<section class="block" id="how" style="background:var(--soft)">
+<section id="how">
   <div class="wrap">
-    <p class="eyebrow">How it works</p>
-    <h2 class="sec">Four steps to a safer start</h2>
-    <p class="lead"></p>
-    <div class="steps">
-      <div class="step"><div class="n">1</div><h4>Describe it</h4><p>Tell Genesis what you want to build.</p></div>
-      <div class="step"><div class="n">2</div><h4>It researches</h4><p>Scans similar repos and real issues.</p></div>
-      <div class="step"><div class="n">3</div><h4>Finds pitfalls</h4><p>Ranks the failures that matter most.</p></div>
-      <div class="step"><div class="n">4</div><h4>Builds it</h4><p>Scaffolds with the fixes in place.</p></div>
+    <div class="head">
+      <span class="idx">02 / Process</span>
+      <div class="r"><h2>Four steps to a safer start.</h2></div>
+    </div>
+    <div class="flow">
+      <div class="fstep"><div class="fn">STEP 01</div><h4>Describe it</h4><p>Tell Genesis what you want to build, in plain language.</p></div>
+      <div class="fstep"><div class="fn">STEP 02</div><h4>It researches</h4><p>Scans similar repos and their real, closed issues.</p></div>
+      <div class="fstep"><div class="fn">STEP 03</div><h4>Finds pitfalls</h4><p>Ranks the failures that matter most for your stack.</p></div>
+      <div class="fstep"><div class="fn">STEP 04</div><h4>Builds it</h4><p>Scaffolds a working project with the fixes in place.</p></div>
     </div>
   </div>
 </section>
 
-<section class="block" id="compare">
+<section id="compare">
   <div class="wrap">
-    <p class="eyebrow">Free vs Pro</p>
-    <h2 class="sec">Start free. Upgrade for the deep research.</h2>
-    <p class="lead">The free core is a complete, usable scaffolder. Pro adds the intelligence layer.</p>
-    <div class="cmp">
+    <div class="head">
+      <span class="idx">03 / Free &amp; Pro</span>
+      <div class="r">
+        <h2>Start free. Upgrade for the deep research.</h2>
+        <p class="lead">The free core is a complete, usable scaffolder. Pro adds the multi-source intelligence layer.</p>
+      </div>
+    </div>
+    <div class="cmpwrap">
       <table>
-        <thead><tr><th>Feature</th><th>Free</th><th>Pro</th></tr></thead>
-        <tbody>
-          <tr><td>Full scaffolder (Python, TS, Go, Rust)</td><td class="yes">&#10003;</td><td class="yes">&#10003;</td></tr>
-          <tr><td>CI/CD, security defaults, templates</td><td class="yes">&#10003;</td><td class="yes">&#10003;</td></tr>
-          <tr><td>Top 3 GitHub pitfalls per project</td><td class="yes">&#10003;</td><td class="yes">&#10003;</td></tr>
-          <tr><td>Multi-source research (GitHub, Reddit, YouTube, Instagram)</td><td class="dash">&mdash;</td><td class="yes">&#10003;</td></tr>
-          <tr><td>Cross-source pitfall ranking</td><td class="dash">&mdash;</td><td class="yes">&#10003;</td></tr>
-          <tr><td>Video-to-pitfall extraction</td><td class="dash">&mdash;</td><td class="yes">&#10003;</td></tr>
-          <tr><td>Package-registry + CVE validation</td><td class="dash">&mdash;</td><td class="yes">&#10003;</td></tr>
-          <tr><td>Cross-session memory</td><td class="dash">&mdash;</td><td class="yes">&#10003;</td></tr>
-          <tr><td>Recovery scan for existing codebases</td><td class="dash">&mdash;</td><td class="yes">&#10003;</td></tr>
-        </tbody>
+        <thead><tr><th>Capability</th><th>Free</th><th>Pro</th></tr></thead>
+        <tbody id="cmpbody"></tbody>
       </table>
     </div>
   </div>
 </section>
 
-<section class="block" id="pricing" style="background:var(--soft)">
+<section id="pricing">
   <div class="wrap">
-    <p class="eyebrow">Pricing</p>
-    <h2 class="sec">Founder's pricing &mdash; first 50 customers</h2>
-    <p class="lead">These 50 founders keep this price for life. After that, standard pricing is $19/mo or $190/yr.</p>
-    <div class="price-grid">
-      <div class="plan">
-        <h3>Free</h3>
-        <div class="amt">$0</div>
-        <div class="alt">forever</div>
-        <ul>
-          <li>Full scaffolder, 4 languages</li>
-          <li>CI/CD + security defaults</li>
-          <li>Top 3 GitHub pitfalls</li>
-        </ul>
-        <a class="btn btn-ghost" href="https://github.com/maioio/genesis-architect" target="_blank" rel="noopener">Install free</a>
-      </div>
-      <div class="plan pro">
-        <div class="badge">Founder's price &middot; first 50</div>
-        <h3>Pro</h3>
-        <div class="amt">$9<span>/month</span></div>
-        <div class="alt">or $90/year (2 months free)</div>
-        <ul>
-          <li>Everything in Free</li>
-          <li>Multi-source research</li>
-          <li>Cross-source ranking + video-to-pitfall</li>
-          <li>CVE validation + cross-session memory</li>
-          <li>Recovery scan</li>
-        </ul>
-        <a class="btn btn-primary" href="https://eshetmaio.gumroad.com/l/dduhm" target="_blank" rel="noopener">Subscribe monthly &mdash; $9</a>
-        <a class="btn btn-deep" style="width:100%;margin-top:10px" href="https://eshetmaio.gumroad.com/l/kzbpct" target="_blank" rel="noopener">Get yearly &mdash; $90</a>
+    <div class="head">
+      <span class="idx">04 / Pricing</span>
+      <div class="r">
+        <h2>Founder&rsquo;s pricing. First 50 only.</h2>
+        <p class="lead">These 50 founders keep this price for life. After that, standard pricing is $19/mo or $190/yr.</p>
       </div>
     </div>
-    <p class="founder">Pro installs alongside the free core and activates automatically. Works as a Claude Code skill and a CLI.</p>
+    <div style="padding-top:50px">
+    <div class="pricing">
+      <div class="plan free">
+        <div class="pn">Free</div>
+        <div class="amt">$0 <span>/ forever</span></div>
+        <div class="alt">The complete open-core scaffolder.</div>
+        <ul>
+          <li><span class="b">+</span> Full scaffolder &mdash; Python, TS, Go, Rust</li>
+          <li><span class="b">+</span> CI/CD &amp; security defaults</li>
+          <li><span class="b">+</span> Top 3 GitHub pitfalls per project</li>
+        </ul>
+        <div class="acts">
+          <a class="btn" href="https://github.com/maioio/genesis-architect" target="_blank" rel="noopener">Install free</a>
+        </div>
+      </div>
+      <div class="plan pro">
+        <div class="fbadge">FIRST 50 ONLY</div>
+        <div class="pn">Pro</div>
+        <div class="amt">$9 <span>/ month</span></div>
+        <div class="alt">or $90 / year &mdash; two months free.</div>
+        <ul>
+          <li><span class="b">+</span> Everything in Free</li>
+          <li><span class="b">+</span> Multi-source research (GitHub, Reddit, YouTube, Instagram)</li>
+          <li><span class="b">+</span> Cross-source ranking &amp; video-to-pitfall</li>
+          <li><span class="b">+</span> CVE validation &amp; cross-session memory</li>
+          <li><span class="b">+</span> Recovery scan for existing codebases</li>
+        </ul>
+        <div class="acts">
+          <a class="btn btn-blue" href="https://eshetmaio.gumroad.com/l/dduhm" target="_blank" rel="noopener">Subscribe monthly &mdash; $9</a>
+          <a class="btn" href="https://eshetmaio.gumroad.com/l/kzbpct" target="_blank" rel="noopener">Get yearly &mdash; $90</a>
+        </div>
+      </div>
+    </div>
+    <p class="pfoot">// Installs alongside the free core and activates automatically &mdash; Claude Code skill &amp; CLI</p>
+    </div>
   </div>
 </section>
 
-<section class="final">
+<section style="border-bottom:none">
   <div class="wrap">
-    <h2>Stop repeating other people's bugs.</h2>
-    <p>Install the free core in seconds, or unlock the full research engine with Pro.</p>
-    <a class="btn btn-primary" href="#pricing">Get Pro</a>
+    <div class="closer">
+      <h2>Stop repeating <span class="it">other people&rsquo;s</span> bugs.</h2>
+      <p>Install the free core in seconds, or unlock the full research engine with Pro.</p>
+      <div class="cta-row">
+        <a class="btn btn-blue" href="#pricing">Get Pro &mdash; from $9/mo</a>
+        <a class="btn" href="https://github.com/maioio/genesis-architect" target="_blank" rel="noopener">Star on GitHub</a>
+      </div>
+    </div>
   </div>
 </section>
 
 <footer>
   <div class="wrap">
-    <a href="https://github.com/maioio/genesis-architect" target="_blank" rel="noopener">GitHub</a>
-    <a href="https://eshetmaio.gumroad.com/l/kzbpct" target="_blank" rel="noopener">Buy Pro</a>
-    <a href="mailto:maio.eshet@gmail.com">Contact</a>
-    <p style="margin-top:14px">&copy; 2026 Genesis Architect. Open-core. Built by maio Eshet.</p>
+    <div class="fl">
+      <img src="assets/logo_white.png" alt="Genesis Architect">
+      <span>&copy; 2026 &mdash; open-core &mdash; built by maio Eshet</span>
+    </div>
+    <div class="links">
+      <a href="https://github.com/maioio/genesis-architect" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://eshetmaio.gumroad.com/l/kzbpct" target="_blank" rel="noopener">Buy Pro</a>
+      <a href="mailto:maio.eshet@gmail.com">Contact</a>
+    </div>
   </div>
 </footer>
 
+<script>
+  var Y = '<span class="mk y">&#9632;</span>';
+  var N = '<span class="mk n">&middot;</span>';
+  var rows = [
+    ["Full scaffolder (Python, TS, Go, Rust)", 1, 1],
+    ["CI/CD, security defaults, templates", 1, 1],
+    ["Top 3 GitHub pitfalls per project", 1, 1],
+    ["Multi-source research (GitHub, Reddit, YouTube, Instagram)", 0, 1],
+    ["Cross-source pitfall ranking", 0, 1],
+    ["Video-to-pitfall extraction", 0, 1],
+    ["Package-registry + CVE validation", 0, 1],
+    ["Cross-session memory", 0, 1],
+    ["Recovery scan for existing codebases", 0, 1]
+  ];
+  document.getElementById('cmpbody').innerHTML = rows.map(function(r){
+    return '<tr><td>'+r[0]+'</td><td>'+(r[1]?Y:N)+'</td><td>'+(r[2]?Y:N)+'</td></tr>';
+  }).join('');
+</script>
 </body>
 </html>

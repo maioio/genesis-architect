@@ -305,12 +305,13 @@ Run `genesis upgrade` any time to see what is unlocked.
 
 ### Get Pro
 
-Founder's pricing for early adopters (price goes up as the tool grows):
+**Founder's pricing - first 50 customers only:**
 
 - **$9/month** per developer, or
 - **$90/year** (two months free)
 
-Early adopters keep this price for life.
+These 50 founders keep this price for life. After 50 seats, Pro moves to
+standard pricing ($19/month or $190/year).
 
 1. Buy a license: [GET PRO](YOUR-GUMROAD-LINK)
 2. You receive a license key and access to the Pro package.

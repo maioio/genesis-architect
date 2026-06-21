@@ -1,5 +1,11 @@
 <div align="center">
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/logos/genesis_architect_white_on_black_300dpi.png">
+  <source media="(prefers-color-scheme: light)" srcset="assets/logos/genesis_architect_blue_300dpi.png">
+  <img src="assets/logos/genesis_architect_blue_300dpi.png" alt="Genesis Architect" width="220">
+</picture>
+
 # Genesis Architect
 
 **Most projects fail because developers repeat mistakes that were already solved in other repositories.**
@@ -280,20 +286,25 @@ Development Partner rules do not expire after the scaffold. They remain active t
 ## Free vs Pro
 
 Genesis Architect is open-core. The free package below is a complete,
-usable tool. Pro adds the deep research intelligence layer.
+usable tool. Free researches GitHub. Pro researches the whole internet.
 
 | Capability | Free | Pro |
 |------------|:----:|:---:|
 | Full scaffolder (Python, TS, Go, Rust) | yes | yes |
 | CI/CD, security defaults, templates | yes | yes |
-| Top 3 GitHub pitfalls per project | yes | yes |
-| Multi-source pitfall ranking | - | yes |
-| Video-to-pitfall (YouTube, Reddit) | - | yes |
-| Package-registry validation (PyPI, npm, crates) | - | yes |
+| GitHub pitfall research (repos + issues) | yes | yes |
+| Multi-source research: GitHub + Reddit + YouTube | - | yes |
+| Instagram research for visual and design projects | - | yes |
+| Cross-source ranking (a pitfall in 3 places ranks first) | - | yes |
+| Video-to-pitfall (watches the talk, extracts the fix) | - | yes |
+| Package-registry + CVE validation (PyPI, npm, crates) | - | yes |
 | Cross-session memory | - | yes |
 | Recovery scan for existing projects | - | yes |
 
-Pro installs alongside the free core and lights up automatically:
+Pro runs every research call across GitHub, Reddit, and YouTube in parallel by
+default, escalates to deep scraping only when it adds signal, and adds Instagram
+for visual projects. It installs alongside the free core and lights up
+automatically:
 
 ```bash
 pip install genesis-architect-pro

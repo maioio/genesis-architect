@@ -8,7 +8,7 @@ Genesis Architect scans GitHub before you write code. It finds the common failur
 that real developers hit building the same thing - then generates a scaffold with those mitigations already built in.
 
 [![CI](https://img.shields.io/github/actions/workflow/status/maioio/genesis-architect/ci.yml?branch=main&style=for-the-badge&label=CI)](https://github.com/maioio/genesis-architect/actions)
-[![Version](https://img.shields.io/badge/version-5.1.1-blue?style=for-the-badge)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-5.4.1-blue?style=for-the-badge)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-MIT-green?style=for-the-badge)](LICENSE)
 [![Claude Code](https://img.shields.io/badge/Claude_Code-skill-orange?style=for-the-badge)](https://github.com/anthropics/claude-code)
 [![Known Vulnerabilities](https://snyk.io/test/github/maioio/genesis-architect/badge.svg?style=for-the-badge)](https://snyk.io/test/github/maioio/genesis-architect)
@@ -274,6 +274,35 @@ Development Partner rules do not expire after the scaffold. They remain active t
 | Secret Zero | `.env.example` with generation hint, validated at startup |
 | Secret scanning CI | Every push scanned - build fails on exposed credentials |
 | SAST analysis CI | Static analysis catches injection and path traversal on every push |
+
+---
+
+## Free vs Pro
+
+Genesis Architect is open-core. The free package below is a complete,
+usable tool. Pro adds the deep research intelligence layer.
+
+| Capability | Free | Pro |
+|------------|:----:|:---:|
+| Full scaffolder (Python, TS, Go, Rust) | yes | yes |
+| CI/CD, security defaults, templates | yes | yes |
+| Top 3 GitHub pitfalls per project | yes | yes |
+| Multi-source pitfall ranking | - | yes |
+| Video-to-pitfall (YouTube, Reddit) | - | yes |
+| Package-registry validation (PyPI, npm, crates) | - | yes |
+| Cross-session memory | - | yes |
+| Recovery scan for existing projects | - | yes |
+
+Pro installs alongside the free core and lights up automatically:
+
+```bash
+pip install genesis-architect-pro
+export GENESIS_PRO_LICENSE=<your-key>
+genesis upgrade   # check status
+```
+
+Run `genesis upgrade` any time to see what is unlocked. Learn more or get
+a license at the project page.
 
 ---
 

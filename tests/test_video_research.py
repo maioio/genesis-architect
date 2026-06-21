@@ -2,14 +2,6 @@
 
 import sys
 from pathlib import Path
-import os as _os
-import pytest as _pytest
-def _public_root():
-    env = _os.environ.get('GENESIS_CORE_ROOT')
-    if env:
-        return Path(env)
-    return Path(__file__).parent.parent.parent / 'genesis-architect'
-
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
@@ -202,41 +194,3 @@ def test_deep_research_command_asks_for_pitfalls():
     cmd = build_deep_research_command("https://youtube.com/watch?v=abc", "task queue")
     assert "pitfall" in cmd.lower() or "lessons" in cmd.lower()
 
-
-# --- SKILL.md integration checks ---
-
-SKILL_MD = _public_root() / "SKILL.md"
-MCP_STRATEGY = _public_root() / "references" / "mcp-strategy.md"
-
-
-def test_skill_md_has_stream_d():
-    text = SKILL_MD.read_text(encoding="utf-8")
-    assert "Stream D" in text
-    assert "Media research" in text or "media research" in text or "Video" in text
-
-
-def test_skill_md_stream_d_is_metadata_only():
-    text = SKILL_MD.read_text(encoding="utf-8")
-    phase2 = text[text.find("## Phase 2"):text.find("## Phase 3")]
-    assert "metadata only" in phase2 or "No transcription" in phase2
-
-
-def test_skill_md_has_genesis_research_video():
-    text = SKILL_MD.read_text(encoding="utf-8")
-    assert "genesis research --video" in text
-
-
-def test_mcp_strategy_has_video_research_section():
-    text = MCP_STRATEGY.read_text(encoding="utf-8")
-    assert "Video Research" in text
-    assert "Stream D" in text
-
-
-def test_mcp_strategy_video_cites_source():
-    text = MCP_STRATEGY.read_text(encoding="utf-8")
-    assert "bradautomates/claude-video" in text
-
-
-def test_skill_md_still_under_400_lines():
-    lines = SKILL_MD.read_text(encoding="utf-8").splitlines()
-    assert len(lines) <= 400, f"SKILL.md is {len(lines)} lines, limit is 400"

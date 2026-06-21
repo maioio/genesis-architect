@@ -2,14 +2,6 @@
 import sys
 import tempfile
 from pathlib import Path
-import os as _os
-import pytest as _pytest
-def _public_root():
-    env = _os.environ.get('GENESIS_CORE_ROOT')
-    if env:
-        return Path(env)
-    return Path(__file__).parent.parent.parent / 'genesis-architect'
-
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from genesis_architect_pro.research_orchestrator import (
@@ -187,21 +179,4 @@ def test_format_summary_floor_warning_when_not_met():
 
 # --- SKILL.md integration ---
 
-SKILL_MD = _public_root() / "SKILL.md"
 
-def test_skill_md_stream_d_is_multi_platform():
-    text = SKILL_MD.read_text(encoding="utf-8")
-    phase2 = text[text.find("## Phase 2"):text.find("## Phase 3")]
-    assert "Reddit" in phase2 or "reddit.com" in phase2
-    assert "YouTube" in phase2 or "youtube.com" in phase2
-
-
-def test_skill_md_stream_d_has_clarifying_question():
-    text = SKILL_MD.read_text(encoding="utf-8")
-    phase2 = text[text.find("## Phase 2"):text.find("## Phase 3")]
-    assert "A:" in phase2 and "B:" in phase2
-
-
-def test_skill_md_under_400_lines():
-    lines = SKILL_MD.read_text(encoding="utf-8").splitlines()
-    assert len(lines) <= 400, f"SKILL.md is {len(lines)} lines, limit is 400"

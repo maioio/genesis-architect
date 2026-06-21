@@ -133,7 +133,6 @@ def test_skill_md_no_em_dashes():
 
 # --- OSINT system structural tests ---
 
-MCP_STRATEGY = Path(__file__).parent.parent / "references" / "mcp-strategy.md"
 OSINT_DOC = Path(__file__).parent.parent / "references" / "OPEN_SOURCE_INTELLIGENCE.md"
 
 
@@ -147,45 +146,9 @@ def test_skill_md_phase2_mentions_package_registries():
     assert "crates.io" in section, "Phase 2 Ecosystem Velocity Scoring must mention crates.io"
 
 
-def test_mcp_strategy_has_normalized_schema():
-    text = MCP_STRATEGY.read_text(encoding="utf-8")
-    assert "Normalized Result Schema" in text
-    assert "confidence" in text
-    assert "signal_type" in text
-
-
-def test_mcp_strategy_has_source_selection_rules():
-    text = MCP_STRATEGY.read_text(encoding="utf-8")
-    assert "Source Selection Rules" in text
-    assert "Always query" in text
-    assert "Never query" in text
-
-
-def test_mcp_strategy_has_ranking_rules():
-    text = MCP_STRATEGY.read_text(encoding="utf-8")
-    assert "Ranking Rules" in text
-    assert "corroboration" in text
-    assert "Recency" in text
-
-
-def test_mcp_strategy_has_adapter_interface():
-    text = MCP_STRATEGY.read_text(encoding="utf-8")
-    assert "Adapter Interface" in text
-    assert "available()" in text
-
-
-def test_mcp_strategy_has_package_registry_adapters():
-    text = MCP_STRATEGY.read_text(encoding="utf-8")
-    assert "Package Registry Adapters" in text
-    assert "PyPI" in text
-    assert "npm" in text
-    assert "crates.io" in text
-
-
-def test_mcp_strategy_gitlab_is_stub_only():
-    text = MCP_STRATEGY.read_text(encoding="utf-8")
-    assert "GitLab" in text
-    assert "stub" in text.lower() or "future" in text.lower()
+# Note: tests asserting the internal research schema, ranking rules, and
+# adapter interface were removed. That content is part of the Pro moat and
+# is documented privately, not in the public mcp-strategy.md.
 
 
 def test_open_source_intelligence_doc_exists():

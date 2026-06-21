@@ -56,8 +56,19 @@
   /* NAV */
   nav{position:sticky;top:0;z-index:50;background:rgba(251,251,249,.85);backdrop-filter:blur(8px);
     border-bottom:1px solid var(--rule)}
-  nav .wrap{display:flex;align-items:center;justify-content:space-between;height:78px}
-  .brand img{height:52px;display:block}
+  nav .wrap{display:flex;align-items:center;justify-content:space-between;height:84px}
+  .brand img{height:64px;display:block;transition:transform .18s ease}
+  .brand:hover img{transform:scale(1.04)}
+  @media(max-width:620px){nav .wrap{height:72px}.brand img{height:52px}}
+
+  /* visible focus rings for keyboard nav (a11y) */
+  a:focus-visible,.btn:focus-visible,.copybtn:focus-visible{
+    outline:2.5px solid var(--blue-2);outline-offset:3px;border-radius:2px}
+
+  /* copied! toast feedback on the install line */
+  .copied{font-family:'IBM Plex Mono';font-size:12px;color:var(--blue);
+    opacity:0;transition:opacity .2s ease;margin-left:4px}
+  .copied.show{opacity:1}
   .navlinks{display:flex;align-items:center;gap:30px}
   .navlinks a.lnk{font-size:14px;font-weight:500;color:var(--ink);position:relative}
   .navlinks a.lnk::after{content:"";position:absolute;left:0;bottom:-3px;width:0;height:1.5px;background:var(--blue-2);transition:.2s}
@@ -215,9 +226,10 @@
           </a>
         </div>
         <span class="install"><b>$ pip install genesis-architect</b>
-          <button class="copybtn" onclick="navigator.clipboard.writeText('pip install genesis-architect')" aria-label="Copy">
+          <button class="copybtn" id="copybtn" aria-label="Copy install command">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="15" height="15"><rect x="9" y="9" width="11" height="11"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
           </button>
+          <span class="copied" id="copied">copied</span>
         </span>
       </div>
     </div>
@@ -390,6 +402,21 @@
   document.getElementById('cmpbody').innerHTML = rows.map(function(r){
     return '<tr><td>'+r[0]+'</td><td>'+(r[1]?Y:N)+'</td><td>'+(r[2]?Y:N)+'</td></tr>';
   }).join('');
+
+  // copy-to-clipboard with visible feedback
+  var cb = document.getElementById('copybtn');
+  var cd = document.getElementById('copied');
+  function flash(){ cd.classList.add('show'); setTimeout(function(){cd.classList.remove('show');}, 1800); }
+  if(cb){cb.addEventListener('click', function(){
+    var txt='pip install genesis-architect';
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(txt).then(flash).catch(flash);
+    } else {
+      // fallback for insecure contexts
+      var ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);
+      ta.select();try{document.execCommand('copy');}catch(e){}document.body.removeChild(ta);flash();
+    }
+  });}
 </script>
 </body>
 </html>

@@ -313,7 +313,7 @@ Run `genesis upgrade` any time to see what is unlocked.
 These 50 founders keep this price for life. After 50 seats, Pro moves to
 standard pricing ($19/month or $190/year).
 
-1. Buy a license: [GET PRO](YOUR-GUMROAD-LINK)
+1. Buy a license: [Yearly - $90](https://eshetmaio.gumroad.com/l/kzbpct) or [Monthly - $9](https://eshetmaio.gumroad.com/l/dduhm)
 2. You receive a license key and access to the Pro package.
 3. Install and activate:
 

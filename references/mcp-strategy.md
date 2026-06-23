@@ -114,9 +114,16 @@ Never transcribe during Phase 2 baseline.
 ### Companion Mode - deep analysis
 
 Triggered only by `genesis research --video <url>`.
-Prerequisites check: `python scripts/video_research.py check`
-- Requires: yt-dlp, ffmpeg, GROQ_API_KEY (preferred) or OPENAI_API_KEY
-- Config file: `~/.config/watch/.env`
+Auto-setup (Pro): call `video_research.ensure_watch_ready()` before analysis. It
+auto-installs yt-dlp + ffmpeg via the /watch skill's setup.py (winget/brew/pip,
+silent - the user does nothing). It returns `ready`, `key_provider`, and, if a
+transcription key is still missing, `action_needed` with exact next steps.
+- Transcription key precedence (resolve_transcription_key): `GENESIS_WHISPER_KEY`
+  (managed quota, free tier then billed) -> `GROQ_API_KEY` (BYOK, free) -> `OPENAI_API_KEY`.
+- The key is the one piece that cannot be auto-provisioned on the client: a
+  managed key needs a Genesis proxy, a BYOK key must be created by the user.
+  Never embed a managed key in the shipped package.
+- Config file fallback: `~/.config/watch/.env`
 
 On success, invoke `/watch` with this question template:
 > "Analyze this video for: (1) architecture decisions and their rationale, (2) pitfalls and mistakes mentioned, (3) lessons learned about [topic]. Extract specific, actionable insights."

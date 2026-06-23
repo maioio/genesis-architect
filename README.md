@@ -31,9 +31,14 @@ that real developers hit building the same thing - then generates a scaffold wit
 [![Eval accuracy](https://img.shields.io/badge/eval_accuracy-100%25-brightgreen?style=flat-square)](evals/test_queries.json)
 [![Stars](https://img.shields.io/github/stars/maioio/genesis-architect?style=social)](https://github.com/maioio/genesis-architect/stargazers)
 
-[![Get Pro](https://img.shields.io/badge/Get_Pro-%249%2Fmo-0083FE?style=flat-square&logo=gumroad&logoColor=white)](https://eshetmaio.gumroad.com/l/dduhm)
 [![GitHub Sponsors](https://img.shields.io/badge/Sponsor-%23EA4AAA?style=flat-square&logo=github-sponsors)](https://github.com/sponsors/maioio)
 [![Buy Me a Coffee](https://img.shields.io/badge/Buy_Me_a_Coffee-%23FFDD00?style=flat-square&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/maioio)
+
+<br/>
+
+### [⚡ Get Pro - $9/mo →](https://eshetmaio.gumroad.com/l/dduhm)
+
+<sub>Multi-source research across GitHub, Reddit & YouTube. First 50 founders, locked for life.</sub>
 
 <br/>
 

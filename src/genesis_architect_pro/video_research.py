@@ -124,11 +124,16 @@ def build_youtube_queries(vision: str) -> list[str]:
 
 
 def build_reddit_queries(vision: str) -> list[str]:
-    """Exa queries targeting Reddit dev communities."""
+    """Exa queries targeting Reddit dev communities.
+
+    Note: quoting the whole vision AND pinning site:reddit.com is too narrow and
+    often returns nothing. We keep one site-scoped query for precision and add a
+    broader unquoted query that still favors Reddit, so we get results either way.
+    """
     return [
-        f'"{vision}" pitfalls lessons learned site:reddit.com',
-        f'"{vision}" architecture advice site:reddit.com/r/programming OR site:reddit.com/r/devops OR site:reddit.com/r/softwarearchitecture',
-        f'"{vision}" what I wish I knew site:reddit.com',
+        f'{vision} pitfalls lessons learned reddit',
+        f'{vision} architecture advice site:reddit.com',
+        f'{vision} "what I wish I knew" reddit experience',
     ]
 
 
@@ -461,6 +466,12 @@ def watch_setup_guidance() -> str:
             "                           then set GROQ_API_KEY=<key>\n"
             "    Or OpenAI:             set OPENAI_API_KEY=<key>\n"
             "  Keys can also go in ~/.config/watch/.env"
+        )
+
+    if is_win and not p["ffmpeg"]:
+        steps.append(
+            "\nNote (Windows): after installing, open a NEW terminal so the "
+            "updated PATH takes effect - the current session won't see ffmpeg yet."
         )
 
     steps.append(

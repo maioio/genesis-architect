@@ -324,6 +324,7 @@ def check_watch_prerequisites() -> dict:
     return {
         "yt_dlp": shutil.which("yt-dlp") is not None,
         "ffmpeg": shutil.which("ffmpeg") is not None,
+        "genesis_key": bool(_load_env_key("GENESIS_WHISPER_KEY")),
         "groq_key": bool(_load_env_key("GROQ_API_KEY")),
         "openai_key": bool(_load_env_key("OPENAI_API_KEY")),
     }
@@ -331,7 +332,142 @@ def check_watch_prerequisites() -> dict:
 
 def is_watch_skill_available() -> bool:
     p = check_watch_prerequisites()
-    return p["yt_dlp"] and p["ffmpeg"] and (p["groq_key"] or p["openai_key"])
+    has_key = p["genesis_key"] or p["groq_key"] or p["openai_key"]
+    return p["yt_dlp"] and p["ffmpeg"] and has_key
+
+
+def resolve_transcription_key() -> tuple[str, str]:
+    """Pick the Whisper key to use, honoring the hybrid precedence.
+
+    Order:
+      1. GENESIS_WHISPER_KEY - managed quota via Genesis (free tier, then billed).
+      2. GROQ_API_KEY        - user's own Groq key (BYOK, recommended free path).
+      3. OPENAI_API_KEY      - user's own OpenAI key (BYOK).
+
+    Returns (provider, key). provider is one of: genesis | groq | openai | none.
+    The caller never sees a raw managed key in logs - only the provider name
+    should be surfaced to the user.
+    """
+    genesis = _load_env_key("GENESIS_WHISPER_KEY")
+    if genesis:
+        return ("genesis", genesis)
+    groq = _load_env_key("GROQ_API_KEY")
+    if groq:
+        return ("groq", groq)
+    openai = _load_env_key("OPENAI_API_KEY")
+    if openai:
+        return ("openai", openai)
+    return ("none", "")
+
+
+def ensure_watch_ready(auto_install: bool = True) -> dict:
+    """Make video transcription work with zero user steps where possible.
+
+    Tools (yt-dlp, ffmpeg) are installed automatically by delegating to the
+    /watch skill's own setup.py (which knows winget/brew/pip per platform).
+    The user never has to know about this.
+
+    The transcription KEY is the one thing that cannot be auto-provisioned on
+    the client: a managed key (GENESIS_WHISPER_KEY) requires a Genesis proxy,
+    and a BYOK key must be created by the user. So this returns a clear status
+    instead of pretending. See resolve_transcription_key().
+
+    Returns:
+      {"tools_ready": bool, "key_provider": str, "ready": bool,
+       "installed": [..], "action_needed": str}
+    """
+    import subprocess
+    import sys
+    from pathlib import Path
+
+    result = {
+        "tools_ready": False,
+        "key_provider": "none",
+        "ready": False,
+        "installed": [],
+        "action_needed": "",
+    }
+
+    pre = check_watch_prerequisites()
+    tools_ok = pre["yt_dlp"] and pre["ffmpeg"]
+
+    # Auto-install missing tools via the watch skill's setup.py (silent).
+    if not tools_ok and auto_install:
+        setup = Path.home() / ".claude" / "skills" / "watch" / "scripts" / "setup.py"
+        if setup.exists():
+            try:
+                proc = subprocess.run(
+                    [sys.executable, str(setup)],
+                    capture_output=True, text=True, timeout=300,
+                )
+                if proc.returncode == 0:
+                    result["installed"] = [
+                        t for t in ("yt-dlp", "ffmpeg")
+                        if not pre[t.replace("-", "_")]
+                    ]
+                pre = check_watch_prerequisites()  # re-check after install
+                tools_ok = pre["yt_dlp"] and pre["ffmpeg"]
+            except (subprocess.TimeoutExpired, OSError):
+                pass  # fall through to guidance below
+
+    result["tools_ready"] = tools_ok
+    provider, _ = resolve_transcription_key()
+    result["key_provider"] = provider
+    result["ready"] = tools_ok and provider != "none"
+
+    if not result["ready"]:
+        result["action_needed"] = watch_setup_guidance()
+    return result
+
+
+def watch_setup_guidance() -> str:
+    """Human-readable setup steps for whatever is missing. Empty if all ready.
+
+    Genesis calls this before deep video analysis. If a dependency is missing,
+    it shows these steps instead of failing silently or pretending it ran.
+    """
+    import sys
+
+    p = check_watch_prerequisites()
+    if p["yt_dlp"] and p["ffmpeg"] and (p["genesis_key"] or p["groq_key"] or p["openai_key"]):
+        return ""
+
+    is_win = sys.platform.startswith("win")
+    is_mac = sys.platform == "darwin"
+    steps: list[str] = ["Video transcription needs a few one-time setup steps:\n"]
+
+    if not p["yt_dlp"]:
+        if is_win:
+            steps.append("- yt-dlp:  winget install yt-dlp  (or: pip install -U yt-dlp)")
+        elif is_mac:
+            steps.append("- yt-dlp:  brew install yt-dlp")
+        else:
+            steps.append("- yt-dlp:  pip install -U yt-dlp")
+
+    if not p["ffmpeg"]:
+        if is_win:
+            steps.append("- ffmpeg:  winget install Gyan.FFmpeg")
+        elif is_mac:
+            steps.append("- ffmpeg:  brew install ffmpeg")
+        else:
+            steps.append("- ffmpeg:  sudo apt install ffmpeg  (Debian/Ubuntu)")
+
+    if not (p["genesis_key"] or p["groq_key"] or p["openai_key"]):
+        steps.append(
+            "- Transcription key (pick one):\n"
+            "    Free tier (managed):  set GENESIS_WHISPER_KEY=<your-genesis-key>\n"
+            "    Bring your own (free): get a key at https://console.groq.com\n"
+            "                           then set GROQ_API_KEY=<key>\n"
+            "    Or OpenAI:             set OPENAI_API_KEY=<key>\n"
+            "  Keys can also go in ~/.config/watch/.env"
+        )
+
+    steps.append(
+        "\nWithout these, Genesis will use caption-only transcription where "
+        "available, and tell you when a video has no captions - it will not "
+        "fabricate a transcript."
+    )
+    return "\n".join(steps)
 
 
 def _load_env_key(key: str) -> str:

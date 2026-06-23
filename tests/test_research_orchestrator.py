@@ -4,6 +4,17 @@ import tempfile
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
+import pytest
+
+
+@pytest.fixture(autouse=True)
+def _licensed(monkeypatch):
+    """Orchestrator is a licensed Pro feature. These tests assert behavior, not
+    the gate (the gate itself is covered by test_license.py), so grant a license
+    for their duration."""
+    monkeypatch.setattr("genesis_architect_pro.license.is_licensed", lambda: True)
+
+
 from genesis_architect_pro.research_orchestrator import (
     ResearchSummary,
     RepoResult,

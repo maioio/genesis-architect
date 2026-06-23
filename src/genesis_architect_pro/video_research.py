@@ -399,6 +399,7 @@ def ensure_watch_ready(auto_install: bool = True) -> dict:
                 proc = subprocess.run(
                     [sys.executable, str(setup)],
                     capture_output=True, text=True, timeout=300,
+                    encoding="utf-8", errors="replace",
                 )
                 if proc.returncode == 0:
                     result["installed"] = [

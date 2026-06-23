@@ -200,6 +200,14 @@ def merge_streams(
 # ---------------------------------------------------------------------------
 
 def format_summary(summary: ResearchSummary) -> str:
+    """Render the research summary for the user.
+
+    Graceful degradation contract: every section is gated by `if`, so a source
+    that returned nothing (e.g. Reddit when Apify is offline) simply does not
+    appear. We never show "source unavailable" or a failure line to the user -
+    the summary stays clean and is built only from sources that actually
+    produced results. Never fabricate a section to fill a gap.
+    """
     lines = []
 
     # Header

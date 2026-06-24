@@ -211,7 +211,13 @@ The fast tier is cheap: no paid scrapers, no API keys beyond what is already con
 - Reddit thread scrape (Apify) - escalate when the fast tier returns fewer than 3 high/medium pitfall candidates, OR the user asks to "go deeper" on a Reddit result.
 - Instagram (Apify) - escalate only when the project is visual: UI, mobile app, game, design tool, brand. Skip entirely for CLIs, APIs, infra, libraries. Detect from vision text: `app`, `UI`, `design`, `game`, `mobile`, `frontend`, `brand`, `visual`.
 
-Routing for the heavy tier follows the global rules: Reddit and Instagram go through **Apify first, Playwright fallback. Never Firecrawl** (fails on these domains). Never auto-run the heavy tier on trivial projects - the overhead exceeds the value.
+Routing for the heavy tier: Reddit and Instagram are blocked by Exa and the
+built-in web search, so use **`firecrawl_search`** for them (verified live: it
+returns real reddit.com and instagram.com results, ~2 credits/query). Feed its
+results through `video_research.firecrawl_to_exa_shape()` before
+`parse_exa_results()`. Apify/Playwright remain options for deeper thread scraping
+when firecrawl_search is not enough. Never auto-run the heavy tier on trivial
+projects - the overhead exceeds the value.
 
 **Free tier:** GitHub + Exa only. No YouTube/Reddit/Instagram defaults. This is the Pro differentiator.
 

@@ -194,3 +194,26 @@ def test_deep_research_command_asks_for_pitfalls():
     cmd = build_deep_research_command("https://youtube.com/watch?v=abc", "task queue")
     assert "pitfall" in cmd.lower() or "lessons" in cmd.lower()
 
+
+
+# --- firecrawl -> exa-shape adapter (Reddit/Instagram channel) ---
+
+def test_firecrawl_to_exa_shape_maps_description_to_text():
+    from genesis_architect_pro.video_research import firecrawl_to_exa_shape
+    fc = [{"url": "https://www.reddit.com/r/x/comments/1/abc", "title": "T",
+           "description": "D", "position": 1}]
+    out = firecrawl_to_exa_shape(fc)
+    assert out[0]["url"].startswith("https://www.reddit.com")
+    assert out[0]["text"] == "D"
+    assert out[0]["snippet"] == "D"
+
+
+def test_firecrawl_reddit_results_become_signals():
+    from genesis_architect_pro.video_research import (
+        firecrawl_to_exa_shape, parse_exa_results,
+    )
+    fc = [{"url": "https://www.reddit.com/r/FastAPI/comments/1/x",
+           "title": "Celery pitfalls lessons learned", "description": "what I wish I knew"}]
+    signals = parse_exa_results(firecrawl_to_exa_shape(fc), "FastAPI", platforms=("reddit",))
+    assert len(signals) == 1
+    assert signals[0].platform == "reddit"

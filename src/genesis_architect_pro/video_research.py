@@ -172,12 +172,36 @@ def _make_question(vision: str) -> str:
     )
 
 
+def firecrawl_to_exa_shape(firecrawl_results: list[dict]) -> list[dict]:
+    """Adapt firecrawl_search results to the shape parse_exa_results expects.
+
+    Why this exists: Exa and the built-in web search both refuse reddit.com and
+    instagram.com. firecrawl_search reaches both (verified live), so it is the
+    working channel for Reddit and Instagram research. Its result objects use
+    `description` where Exa uses `text`, so we normalize here.
+
+    firecrawl item: {"url", "title", "description", "position"}
+    -> exa-shaped:   {"url", "title", "text", "snippet"}
+    """
+    out = []
+    for r in firecrawl_results:
+        out.append({
+            "url": r.get("url", ""),
+            "title": r.get("title", ""),
+            "text": r.get("description", ""),
+            "snippet": r.get("description", ""),
+        })
+    return out
+
+
 def parse_exa_results(exa_results: list[dict], vision: str,
                       platforms: tuple[str, ...] = ("youtube", "reddit", "instagram")
                       ) -> list[MediaSignal]:
     """
-    Convert raw Exa results from any platform into MediaSignal objects.
-    Filters to requested platforms only.
+    Convert raw Exa-shaped results from any platform into MediaSignal objects.
+    Filters to requested platforms only. For Reddit/Instagram, feed results
+    from firecrawl_search through firecrawl_to_exa_shape() first (Exa blocks
+    those domains; firecrawl reaches them).
     """
     signals = []
     for r in exa_results:

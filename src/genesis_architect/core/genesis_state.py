@@ -341,6 +341,47 @@ def require_phase6_smoke(project_dir: str) -> int:
 
 
 # ---------------------------------------------------------------------------
+# Architecture score gate (PRO - appended to score_history.jsonl)
+# ---------------------------------------------------------------------------
+
+def write_score(project_dir: str, total: int, modularity: float, coupling: float,
+                cohesion: float, layering: float, profile: str = "default") -> int:
+    """Append an architecture score record to .genesis/score_history.jsonl."""
+    d = genesis_dir(project_dir)
+    d.mkdir(parents=True, exist_ok=True)
+    record = {
+        "timestamp": datetime.now(UTC).isoformat(),
+        "total": total,
+        "modularity": modularity,
+        "coupling": coupling,
+        "cohesion": cohesion,
+        "layering": layering,
+        "profile": profile,
+    }
+    history_path = d / "score_history.jsonl"
+    with open(history_path, "a", encoding="utf-8") as f:
+        f.write(json.dumps(record) + "\n")
+    print(f"Score recorded: {total}/100 (profile={profile}) -> {history_path}")
+    return 0
+
+
+def get_score_history(project_dir: str) -> list[dict]:
+    """Return all historical score records."""
+    history_path = genesis_dir(project_dir) / "score_history.jsonl"
+    if not history_path.exists():
+        return []
+    records = []
+    for line in history_path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if line:
+            try:
+                records.append(json.loads(line))
+            except json.JSONDecodeError:
+                pass
+    return records
+
+
+# ---------------------------------------------------------------------------
 # Tests passing gate (unchanged)
 # ---------------------------------------------------------------------------
 
@@ -448,6 +489,20 @@ def main():
     tpr = sub.add_parser("require-tests-passing")
     tpr.add_argument("project_dir")
 
+    # write-score
+    scw = sub.add_parser("write-score")
+    scw.add_argument("project_dir")
+    scw.add_argument("--total", type=int, required=True)
+    scw.add_argument("--modularity", type=float, default=0.0)
+    scw.add_argument("--coupling", type=float, default=0.0)
+    scw.add_argument("--cohesion", type=float, default=0.0)
+    scw.add_argument("--layering", type=float, default=0.0)
+    scw.add_argument("--profile", default="default")
+
+    # get-score-history
+    sch = sub.add_parser("get-score-history")
+    sch.add_argument("project_dir")
+
     args = parser.parse_args()
 
     if args.command == "write-evidence-pack":
@@ -482,6 +537,14 @@ def main():
         sys.exit(write_tests_passing(args.project_dir))
     elif args.command == "require-tests-passing":
         sys.exit(require_tests_passing(args.project_dir))
+    elif args.command == "write-score":
+        sys.exit(write_score(
+            args.project_dir, args.total, args.modularity,
+            args.coupling, args.cohesion, args.layering, args.profile,
+        ))
+    elif args.command == "get-score-history":
+        history = get_score_history(args.project_dir)
+        print(json.dumps(history, indent=2))
 
 
 if __name__ == "__main__":

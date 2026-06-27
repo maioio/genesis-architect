@@ -61,3 +61,12 @@ dist/
 
 # Local Claude settings - not for public repo
 .claude/settings.json
+
+# Genesis Architect security additions
+*.pem
+*.key
+*.p12
+venv/
+node_modules/
+.secrets
+secrets/

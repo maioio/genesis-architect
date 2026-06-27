@@ -464,16 +464,17 @@ class TestSubcommandStubs:
         err = capsys.readouterr().err
         assert "planned" in err.lower() or "not yet implemented" in err.lower()
 
-    def test_cmd_harden_returns_nonzero(self, capsys):
+    def test_cmd_harden_returns_zero_on_success(self, capsys):
+        # cmd_harden is now fully implemented — it should succeed (rc=0)
         from genesis_architect.core.genesis_subcommands import cmd_harden
         rc = cmd_harden(".")
-        assert rc == 1
+        assert rc == 0
 
-    def test_cmd_harden_mentions_planned(self, capsys):
+    def test_cmd_harden_outputs_completion(self, capsys):
         from genesis_architect.core.genesis_subcommands import cmd_harden
         cmd_harden(".")
         err = capsys.readouterr().err
-        assert "planned" in err.lower() or "not yet implemented" in err.lower()
+        assert "harden" in err.lower() or "complete" in err.lower() or "hardening" in err.lower()
 
     def test_main_research_exits_1(self):
         from genesis_architect.core.genesis_subcommands import main
@@ -482,9 +483,10 @@ class TestSubcommandStubs:
                 main()
         assert exc.value.code == 1
 
-    def test_main_harden_exits_1(self):
+    def test_main_harden_exits_0(self):
+        # harden is fully implemented — CLI should exit 0
         from genesis_architect.core.genesis_subcommands import main
         with mock.patch("sys.argv", ["genesis_subcommands.py", "harden", "."]):
             with pytest.raises(SystemExit) as exc:
                 main()
-        assert exc.value.code == 1
+        assert exc.value.code == 0

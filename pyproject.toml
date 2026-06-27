@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "genesis-architect-pro"
-version = "5.4.1"
-description = "Genesis Architect Pro - multi-source research, pitfall ranking, video-to-pitfall, and cross-session memory. Requires a license."
+version = "6.0.0"
+description = "Genesis Architect Pro - architecture analysis, anti-pattern detection, security hardening, C4 diagrams, and deep research intelligence. Requires a license."
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [

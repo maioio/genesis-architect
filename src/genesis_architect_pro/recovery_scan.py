@@ -7,6 +7,7 @@ import json
 import re
 import subprocess
 import sys
+import warnings
 from pathlib import Path
 
 
@@ -109,6 +110,96 @@ def dead_file_candidates(project_dir: Path) -> list[str]:
     return dead[:20]  # cap at 20 to avoid noise
 
 
+def sync_model_from_graph(project_dir: Path, graph: dict) -> dict:
+    """
+    Populate `.genesis/model.json` from the current import graph.
+
+    Behaviour
+    ---------
+    - If `model.json` does not exist, create it with one ModelNode per module
+      in the graph (kind="component", name=relative path).
+    - If `model.json` already has nodes that came from graph sync (vagrant=False,
+      kind="component"), leave it untouched — the user may have authored it.
+    - Never touch `planned.json`.
+    - On any error (corrupt file, I/O failure), emit a warning and return a
+      status dict with ``synced=False`` and the warning message; the caller
+      continues normally.
+
+    Returns a status dict with keys:
+      synced (bool)        — True if model.json was written this call
+      node_count (int)     — nodes in the committed model after the call
+      diverged (bool)      — True if planned.json exists and differs from committed
+      warning (str | None) — non-fatal warning message, or None
+    """
+    try:
+        from genesis_architect_pro.model_store import (
+            ModelStore, ArchModel, ModelNode,
+        )
+
+        store = ModelStore(project_dir)
+
+        # Load current committed model (empty ArchModel if missing)
+        try:
+            committed = store.load_committed()
+        except Exception as exc:  # noqa: BLE001
+            msg = f"ModelStore: could not load committed model: {exc}"
+            warnings.warn(msg, RuntimeWarning, stacklevel=2)
+            return {"synced": False, "node_count": 0, "diverged": False, "warning": msg}
+
+        synced = False
+        modules: dict = graph.get("modules", {})
+
+        # Only auto-populate on first run (no existing nodes)
+        if not committed.nodes and modules:
+            language = graph.get("language", "unknown")
+            for mod_path, mod_data in modules.items():
+                node = ModelNode(
+                    id=mod_path,
+                    kind="component",
+                    name=mod_path,
+                    technology=language,
+                    description=(
+                        f"fan_in={mod_data.get('fan_in', 0)}, "
+                        f"fan_out={mod_data.get('fan_out', 0)}, "
+                        f"lines={mod_data.get('lines', 0)}"
+                    ),
+                    # vagrant=False: these are committed (code-backed) observations
+                    vagrant=False,
+                )
+                committed.nodes.append(node)
+
+            try:
+                store.save_committed(committed)
+                synced = True
+            except Exception as exc:  # noqa: BLE001
+                msg = f"ModelStore: could not save committed model: {exc}"
+                warnings.warn(msg, RuntimeWarning, stacklevel=2)
+                return {
+                    "synced": False,
+                    "node_count": len(committed.nodes),
+                    "diverged": False,
+                    "warning": msg,
+                }
+
+        # Check divergence (cheap structural signature comparison)
+        try:
+            diverged = store.is_planned_diverged()
+        except Exception:  # noqa: BLE001
+            diverged = False
+
+        return {
+            "synced": synced,
+            "node_count": len(committed.nodes),
+            "diverged": diverged,
+            "warning": None,
+        }
+
+    except Exception as exc:  # noqa: BLE001
+        msg = f"ModelStore integration error (recovery continues): {exc}"
+        warnings.warn(msg, RuntimeWarning, stacklevel=2)
+        return {"synced": False, "node_count": 0, "diverged": False, "warning": str(exc)}
+
+
 def scan(project_dir: Path) -> dict:
     """Run all fragility scans and return combined JSON."""
     hotspots = fix_commit_hotspots(project_dir)
@@ -119,14 +210,97 @@ def scan(project_dir: Path) -> dict:
 
     version_drift_detected = len(set(versions.values())) > 1 if versions else False
 
-    return {
+    # Model sync — additive, never raises; failures surface in model_sync["warning"]
+    try:
+        from genesis_architect_pro.import_graph import load_or_build
+        graph = load_or_build(project_dir)
+        model_sync = sync_model_from_graph(project_dir, graph)
+    except Exception as exc:  # noqa: BLE001
+        model_sync = {
+            "synced": False, "node_count": 0, "diverged": False,
+            "warning": f"model sync skipped: {exc}",
+        }
+
+    # Model diff — additive, never raises
+    try:
+        from genesis_architect_pro.model_store import ModelStore
+        _store = ModelStore(project_dir)
+        model_diff = _store.model_diff().to_dict()
+    except Exception as exc:  # noqa: BLE001
+        model_diff = {
+            "has_changes": False, "summary": f"diff skipped: {exc}",
+            "added_nodes": [], "removed_nodes": [], "changed_nodes": [],
+            "added_links": [], "removed_links": [], "changed_links": [],
+            "responsibility_changes": [],
+        }
+
+    # Drift flags — additive, read-only, never raises
+    try:
+        from genesis_architect_pro.drift_detector import compute_drift_flags
+        drift_flags = compute_drift_flags(project_dir).to_dict()
+    except Exception as exc:  # noqa: BLE001
+        drift_flags = {
+            "vagrant_candidates": [],
+            "stale_candidates": [],
+            "confidence": 0.0,
+            "basis": f"drift detection skipped: {exc}",
+            "warnings": [],
+        }
+
+    # Source anchoring — additive, read-only, never raises
+    try:
+        from genesis_architect_pro.source_anchor import anchor_from_store
+        source_anchors = anchor_from_store(project_dir).to_dict()
+    except Exception as exc:  # noqa: BLE001
+        source_anchors = {
+            "anchors_by_responsibility": {},
+            "anchored_count": 0,
+            "unanchored_count": 0,
+            "total_responsibilities": 0,
+            "warnings": [f"source anchoring skipped: {exc}"],
+        }
+
+    # Drift score — additive, read-only, never raises
+    try:
+        from genesis_architect_pro.drift_scorer import compute_drift_score
+        drift_score = compute_drift_score(project_dir).to_dict()
+    except Exception as exc:  # noqa: BLE001
+        drift_score = {
+            "overall_score": 0.0,
+            "risk_level": "none",
+            "confidence": 0.0,
+            "basis": f"drift scoring skipped: {exc}",
+            "per_node_scores": [],
+            "top_risk_nodes": [],
+            "warnings": [],
+        }
+
+    scan_result = {
         "fix_commit_hotspots": hotspots,
         "external_url_count": urls,
         "version_sources": versions,
         "doc_version": dv,
         "version_drift": version_drift_detected,
         "dead_file_candidates": dead,
+        "model_sync": model_sync,
+        "model_diff": model_diff,
+        "drift_flags": drift_flags,
+        "source_anchors": source_anchors,
+        "drift_score": drift_score,
     }
+
+    # Recovery report — additive, read-only, never raises
+    try:
+        from genesis_architect_pro.recovery_report import generate_report
+        scan_result["recovery_report"] = generate_report(scan_result).to_dict()
+    except Exception as exc:  # noqa: BLE001
+        scan_result["recovery_report"] = {
+            "executive_summary": f"report generation skipped: {exc}",
+            "project_risk_level": "none",
+            "warnings": [str(exc)],
+        }
+
+    return scan_result
 
 
 def main() -> int:

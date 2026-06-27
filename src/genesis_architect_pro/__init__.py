@@ -17,6 +17,31 @@ from genesis_architect_pro.fragility_classifier import classify_all
 from genesis_architect_pro.refactoring_planner import generate_plan
 from genesis_architect_pro.c4_generator import generate_c4_doc
 from genesis_architect_pro.security_templates import generate_security_docs
+from genesis_architect_pro.dependency_index import (
+    DependencyIndex, AffectedScope,
+    build_dependency_index, compute_affected_scope,
+)
+from genesis_architect_pro.model_store import (
+    ModelStore, ArchModel, ModelNode, ModelLink, ModelGroup, ModelResponsibility,
+    ModelDiff, NodeChange, ResponsibilityChange, LinkChange,
+)
+from genesis_architect_pro.drift_detector import (
+    DriftFlags, VagrantCandidate, StaleCandidate,
+    detect_drift, compute_drift_flags,
+)
+from genesis_architect_pro.drift_scorer import (
+    DriftScorerConfig, NodeDriftScore, DriftScore,
+    score_drift, compute_drift_score,
+)
+from genesis_architect_pro.recovery_report import (
+    RecoveryReport, ArchitectureHealth, DriftSummary,
+    Recommendation, ReportMetadata,
+    generate_report, generate_report_for_project,
+)
+from genesis_architect_pro.source_anchor import (
+    AnchorEntry, AnchorResult, AnchorReport, PersistResult,
+    anchor_responsibilities, anchor_from_store, persist_anchors,
+)
 
 __all__ = [
     "require_license", "LicenseError", "__version__",
@@ -27,4 +52,18 @@ __all__ = [
     "generate_plan",
     "generate_c4_doc",
     "generate_security_docs",
+    "DependencyIndex", "AffectedScope",
+    "build_dependency_index", "compute_affected_scope",
+    "ModelStore", "ArchModel", "ModelNode", "ModelLink",
+    "ModelGroup", "ModelResponsibility",
+    "ModelDiff", "NodeChange", "ResponsibilityChange", "LinkChange",
+    "DriftFlags", "VagrantCandidate", "StaleCandidate",
+    "detect_drift", "compute_drift_flags",
+    "DriftScorerConfig", "NodeDriftScore", "DriftScore",
+    "score_drift", "compute_drift_score",
+    "RecoveryReport", "ArchitectureHealth", "DriftSummary",
+    "Recommendation", "ReportMetadata",
+    "generate_report", "generate_report_for_project",
+    "AnchorEntry", "AnchorResult", "AnchorReport", "PersistResult",
+    "anchor_responsibilities", "anchor_from_store", "persist_anchors",
 ]

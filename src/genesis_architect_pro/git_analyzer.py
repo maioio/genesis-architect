@@ -21,7 +21,8 @@ import json
 import re
 import subprocess
 import sys
-from datetime import UTC, datetime, timedelta
+from dataclasses import dataclass, field
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 
 
@@ -47,18 +48,34 @@ def _is_git_repo(project_path: Path) -> bool:
     return result.returncode == 0
 
 
+@dataclass
+class WeeklySnapshot:
+    """Per-week project activity summary."""
+    week_start: str       # ISO date of Monday (YYYY-MM-DD)
+    commits: int = 0
+    churn_lines: int = 0  # additions + deletions from --numstat
+    active_files: int = 0
+
+
+def _to_monday(dt: datetime) -> str:
+    """Return the ISO date string of the Monday for the week containing dt."""
+    monday = dt.date() - timedelta(days=dt.weekday())
+    return monday.isoformat()
+
+
 def _git_log(project_path: Path, days: int) -> list[dict]:
     """
-    Run git log with --stat for the last N days.
-    Returns list of {hash, subject, files_changed: [filename]}.
+    Run git log with --numstat for the last N days.
+    Returns list of {hash, author, subject, date_iso, files: [filename],
+                     additions: int, deletions: int}.
     """
     since = (datetime.now(UTC) - timedelta(days=days)).strftime("%Y-%m-%d")
     result = subprocess.run(
         [
             "git", "log",
             f"--since={since}",
-            "--format=%H|%s",
-            "--name-only",
+            "--format=%H|%an|%aI|%s",
+            "--numstat",
             "--no-merges",
         ],
         cwd=str(project_path),
@@ -78,11 +95,29 @@ def _git_log(project_path: Path, days: int) -> list[dict]:
                 commits.append(current)
                 current = None
             continue
-        if "|" in line and len(line.split("|", 1)[0]) == 40:
-            parts = line.split("|", 1)
-            current = {"hash": parts[0], "subject": parts[1] if len(parts) > 1 else "", "files": []}
+        # Header line: 40-char hash | author | ISO date | subject
+        parts = line.split("|", 3)
+        if len(parts) >= 2 and len(parts[0]) == 40:
+            current = {
+                "hash": parts[0],
+                "author": parts[1] if len(parts) > 1 else "",
+                "date_iso": parts[2] if len(parts) > 2 else "",
+                "subject": parts[3] if len(parts) > 3 else "",
+                "files": [],
+                "additions": 0,
+                "deletions": 0,
+            }
         elif current is not None:
-            current["files"].append(line)
+            # numstat line: "<add>\t<del>\tfilename"  (binary shows "-")
+            numstat_parts = line.split("\t", 2)
+            if len(numstat_parts) == 3:
+                add_str, del_str, fname = numstat_parts
+                current["files"].append(fname)
+                try:
+                    current["additions"] += int(add_str)
+                    current["deletions"] += int(del_str)
+                except ValueError:
+                    pass  # binary file: add/del == "-"
     if current is not None:
         commits.append(current)
     return commits
@@ -142,14 +177,20 @@ def per_module_churn(project_path: str | Path, days: int = 90) -> dict[str, dict
     # Per-file counters
     file_commits: dict[str, int] = {}
     file_fix_commits: dict[str, int] = {}
+    file_authors: dict[str, set[str]] = {}
 
     for commit in commits:
         is_fix = bool(FIX_PATTERNS.search(commit["subject"]))
+        author = commit.get("author", "")
         for f in commit["files"]:
             f = f.replace("\\", "/")
             file_commits[f] = file_commits.get(f, 0) + 1
             if is_fix:
                 file_fix_commits[f] = file_fix_commits.get(f, 0) + 1
+            if f not in file_authors:
+                file_authors[f] = set()
+            if author:
+                file_authors[f].add(author)
 
     # Build result
     result: dict[str, dict] = {}
@@ -160,6 +201,7 @@ def per_module_churn(project_path: str | Path, days: int = 90) -> dict[str, dict
         n_fix = file_fix_commits.get(rel_path, 0)
         fix_ratio = n_fix / n_commits if n_commits > 0 else 0.0
         days_since = _last_touched(root, rel_path)
+        authors = sorted(file_authors.get(rel_path, set()))
 
         result[rel_path] = {
             "commits": n_commits,
@@ -167,9 +209,103 @@ def per_module_churn(project_path: str | Path, days: int = 90) -> dict[str, dict
             "fix_ratio": round(fix_ratio, 3),
             "last_touched_days": days_since,
             "churn_level": _classify_churn(n_commits, fix_ratio, days_since),
+            "authors": authors,
+            "bus_factor": len(authors),
         }
 
     return result
+
+
+def build_timeline(commits: list[dict], period_weeks: int = 12) -> list[WeeklySnapshot]:
+    """
+    Build a week-by-week activity timeline.
+
+    Fills every week in the period with zero entries so there are no gaps.
+    Weeks are sorted ascending by week_start.
+
+    commits: output from _git_log()
+    period_weeks: number of most-recent weeks to include
+    """
+    now = datetime.now(UTC)
+    # Generate all weeks in the period (Monday dates), most recent last
+    weeks: list[str] = []
+    for i in range(period_weeks - 1, -1, -1):
+        week_dt = now - timedelta(weeks=i)
+        weeks.append(_to_monday(week_dt))
+    # Deduplicate while preserving order
+    seen: set[str] = set()
+    ordered_weeks: list[str] = []
+    for w in weeks:
+        if w not in seen:
+            seen.add(w)
+            ordered_weeks.append(w)
+
+    snap: dict[str, WeeklySnapshot] = {w: WeeklySnapshot(week_start=w) for w in ordered_weeks}
+
+    for commit in commits:
+        date_iso = commit.get("date_iso", "")
+        if not date_iso:
+            continue
+        try:
+            # ISO 8601 with timezone: "2026-06-01T14:32:00+03:00"
+            commit_dt = datetime.fromisoformat(date_iso)
+        except ValueError:
+            continue
+        week_key = _to_monday(commit_dt)
+        if week_key not in snap:
+            continue  # outside the requested window
+        s = snap[week_key]
+        s.commits += 1
+        s.churn_lines += commit.get("additions", 0) + commit.get("deletions", 0)
+        s.active_files += len(commit.get("files", []))
+
+    return [snap[w] for w in ordered_weeks]
+
+
+def render_sparkline(snapshots: list[WeeklySnapshot], metric: str = "commits",
+                     width: int = 20) -> str:
+    """
+    Render an ASCII sparkline for the given metric over the snapshot list.
+
+    metric: "commits" | "churn_lines" | "active_files"
+    width: number of characters in the output (one per time bucket)
+    Returns a single-line string using Unicode block elements.
+    """
+    _BLOCKS = " ▁▂▃▄▅▆▇█"
+
+    if not snapshots:
+        return " " * width
+
+    values = [getattr(s, metric, 0) for s in snapshots]
+
+    # Resample to `width` buckets
+    n = len(values)
+    if n == width:
+        buckets = values
+    elif n < width:
+        # Stretch: repeat each value proportionally
+        buckets = []
+        for i in range(width):
+            src_idx = int(i * n / width)
+            buckets.append(values[src_idx])
+    else:
+        # Compress: average groups
+        buckets = []
+        for i in range(width):
+            start = int(i * n / width)
+            end = int((i + 1) * n / width)
+            group = values[start:end] if start < end else [values[start]]
+            buckets.append(sum(group) / len(group))
+
+    max_val = max(buckets) if buckets else 0
+    chars = []
+    for v in buckets:
+        if max_val == 0:
+            chars.append(_BLOCKS[0])
+        else:
+            idx = int(round(v / max_val * (len(_BLOCKS) - 1)))
+            chars.append(_BLOCKS[idx])
+    return "".join(chars)
 
 
 def print_churn_report(churn: dict[str, dict]) -> None:
@@ -187,8 +323,9 @@ def print_churn_report(churn: dict[str, dict]) -> None:
     if high:
         print("\nHigh-churn files (most fragile):")
         for f, d in sorted(high, key=lambda x: -x[1]["fix_ratio"])[:10]:
+            bus = d.get("bus_factor", len(d.get("authors", [])))
             print(f"  {d['churn_level']:6s}  commits={d['commits']:3d}  "
-                  f"fix_ratio={d['fix_ratio']:.2f}  {f}")
+                  f"fix_ratio={d['fix_ratio']:.2f}  bus={bus}  {f}")
 
     if stale:
         print(f"\nStale files (not touched in 90+ days): {len(stale)} files")
@@ -205,12 +342,27 @@ def main() -> None:
     parser.add_argument("project_path", nargs="?", default=".")
     parser.add_argument("--days", type=int, default=90)
     parser.add_argument("--json", action="store_true")
+    parser.add_argument("--timeline", action="store_true",
+                        help="Print weekly commit timeline with sparkline")
     args = parser.parse_args()
 
     churn = per_module_churn(args.project_path, days=args.days)
 
     if args.json:
         print(json.dumps(churn, indent=2))
+    elif args.timeline:
+        root = Path(args.project_path).resolve()
+        if _is_git_repo(root):
+            commits = _git_log(root, args.days)
+            timeline = build_timeline(commits, period_weeks=min(args.days // 7, 12))
+            sparkline = render_sparkline(timeline)
+            print(f"\nWeekly commit timeline (last {args.days} days):")
+            print(f"  {sparkline}")
+            for snap in timeline[-8:]:
+                print(f"  {snap.week_start}  commits={snap.commits:3d}  "
+                      f"churn={snap.churn_lines:5d}  files={snap.active_files:3d}")
+        else:
+            print("Not a git repository.")
     else:
         print_churn_report(churn)
 

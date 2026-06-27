@@ -55,6 +55,9 @@ class RefactorStep:
     operations: list[RefactorOperation] = field(default_factory=list)
     complexity: str = "MEDIUM"    # LOW | MEDIUM | HIGH
     score_impact: int = 0         # estimated score points gained
+    # Step 2: confidence annotations (additive, backward-compatible)
+    confidence: float = 0.8      # 0.0–1.0 certainty that this step is needed
+    confidence_basis: str = ""   # short explanation of confidence level
 
     def to_dict(self) -> dict:
         d = asdict(self)
@@ -80,6 +83,36 @@ class RefactoringPlan:
 
 
 # ---------------------------------------------------------------------------
+# Confidence helpers
+# ---------------------------------------------------------------------------
+
+def _step_confidence(priority: str, anti_pattern: AntiPattern | None = None) -> tuple[float, str]:
+    """
+    Return (confidence, basis) for a refactoring step.
+
+    If the triggering anti-pattern carries its own confidence, inherit it
+    as a floor and boost slightly (step confidence <= detection confidence).
+    Otherwise derive from priority tier.
+    """
+    base_map = {"CRITICAL": 0.95, "HIGH": 0.85, "MEDIUM": 0.75, "LOW": 0.60}
+    base = base_map.get(priority, 0.75)
+
+    if anti_pattern is not None:
+        ap_conf = getattr(anti_pattern, "confidence", base)
+        ap_basis = getattr(anti_pattern, "basis", "")
+        # Cap step confidence at the detection confidence
+        conf = round(min(base, ap_conf), 2)
+        basis = f"derived from {priority} anti-pattern detection (ap_confidence={ap_conf})"
+        if ap_basis:
+            basis += f"; {ap_basis}"
+    else:
+        conf = base
+        basis = f"rule-based estimate for {priority} priority step"
+
+    return conf, basis
+
+
+# ---------------------------------------------------------------------------
 # Rule generators
 # ---------------------------------------------------------------------------
 
@@ -89,11 +122,13 @@ def _rule_hub_splitter(patterns: list[AntiPattern], step_id_start: int) -> list[
     for i, p in enumerate(hubs[:5]):  # cap at 5
         fi = p.metrics.get("fan_in", 0)
         dependents = p.affected_modules[:5]
+        priority = "CRITICAL" if fi > 20 else "HIGH"
+        conf, basis = _step_confidence(priority, p)
         step = RefactorStep(
             id=step_id_start + i,
             tier=1,
             rule="hub-splitter",
-            priority="CRITICAL" if fi > 20 else "HIGH",
+            priority=priority,
             title=f"Split hub file: {p.file}",
             why=p.description,
             operations=[
@@ -118,6 +153,8 @@ def _rule_hub_splitter(patterns: list[AntiPattern], step_id_start: int) -> list[
             ],
             complexity="HIGH",
             score_impact=min(12, fi // 2),
+            confidence=conf,
+            confidence_basis=basis,
         )
         steps.append(step)
     return steps
@@ -128,11 +165,13 @@ def _rule_god_class_splitter(patterns: list[AntiPattern], step_id_start: int) ->
     gods = [p for p in patterns if p.type == "god-class"]
     for i, p in enumerate(gods[:5]):
         fo = p.metrics.get("fan_out", 0)
+        priority = "CRITICAL" if fo > 30 else "HIGH"
+        conf, basis = _step_confidence(priority, p)
         step = RefactorStep(
             id=step_id_start + i,
             tier=1,
             rule="god-class-splitter",
-            priority="CRITICAL" if fo > 30 else "HIGH",
+            priority=priority,
             title=f"Split god class: {p.file}",
             why=p.description,
             operations=[
@@ -154,6 +193,8 @@ def _rule_god_class_splitter(patterns: list[AntiPattern], step_id_start: int) ->
             ],
             complexity="HIGH",
             score_impact=min(15, fo // 2),
+            confidence=conf,
+            confidence_basis=basis,
         )
         steps.append(step)
     return steps
@@ -164,6 +205,7 @@ def _rule_cycle_breaker(patterns: list[AntiPattern], step_id_start: int) -> list
     cycles = [p for p in patterns if p.type == "circular-dep"]
     for i, p in enumerate(cycles[:5]):
         cycle = p.metrics.get("cycle", [])
+        conf, basis = _step_confidence("CRITICAL", p)
         step = RefactorStep(
             id=step_id_start + i,
             tier=1,
@@ -193,6 +235,8 @@ def _rule_cycle_breaker(patterns: list[AntiPattern], step_id_start: int) -> list
             ],
             complexity="MEDIUM",
             score_impact=8,
+            confidence=conf,
+            confidence_basis=basis,
         )
         steps.append(step)
     return steps
@@ -202,6 +246,10 @@ def _rule_dead_code_removal(patterns: list[AntiPattern], step_id_start: int) -> 
     steps = []
     dead = [p for p in patterns if p.type == "dead-code" and p.metrics.get("lines", 0) > 20]
     if dead:
+        # Use the least-confident dead-code detection as the floor for the step
+        min_conf = min((getattr(p, "confidence", 0.80) for p in dead), default=0.80)
+        conf = round(min(0.75, min_conf), 2)
+        basis = f"dead-code rule, MEDIUM priority; {len(dead)} orphan module(s) detected"
         step = RefactorStep(
             id=step_id_start,
             tier=2,
@@ -219,6 +267,8 @@ def _rule_dead_code_removal(patterns: list[AntiPattern], step_id_start: int) -> 
             ],
             complexity="LOW",
             score_impact=3,
+            confidence=conf,
+            confidence_basis=basis,
         )
         steps.append(step)
     return steps
@@ -228,6 +278,8 @@ def _rule_layer_violation_fix(patterns: list[AntiPattern], step_id_start: int) -
     steps = []
     violations = [p for p in patterns if p.type == "leaky-abstraction"]
     if violations:
+        conf, basis = _step_confidence("HIGH")
+        basis = f"layer-violation rule, HIGH priority; {len(violations)} violation(s) detected"
         step = RefactorStep(
             id=step_id_start,
             tier=2,
@@ -252,6 +304,8 @@ def _rule_layer_violation_fix(patterns: list[AntiPattern], step_id_start: int) -
             ],
             complexity="MEDIUM",
             score_impact=6,
+            confidence=conf,
+            confidence_basis=basis,
         )
         steps.append(step)
     return steps

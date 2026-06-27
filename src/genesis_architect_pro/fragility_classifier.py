@@ -24,7 +24,10 @@ import sys
 from dataclasses import dataclass, field, asdict
 from pathlib import Path
 
-from genesis_architect_pro.import_graph import load_or_build
+# import_graph is a pure primitive - import directly from free core.
+from genesis_architect.core.import_graph import load_or_build
+# antipattern detect_all must be the Pro version (7 detectors incl. advanced),
+# so this stays on the Pro module.
 from genesis_architect_pro.antipattern_detector import detect_all, AntiPattern
 from genesis_architect_pro.git_analyzer import per_module_churn
 

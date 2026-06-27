@@ -1,0 +1,206 @@
+<!DOCTYPE html><html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Genesis Architect — In the beginning, there was someone else's bug.</title>
+<meta name="description" content="Genesis reads the failures other developers already closed, then builds the fix into your project on day zero.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400..600;1,9..144,400..500&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f4f2ec;        /* warm off-white, like the award sites */
+    --paper2:#ebe8df;
+    --ink:#16140f;          /* near-black warm ink */
+    --ink2:#4a463d;
+    --muted:#7c776b;
+    --line:#dcd8cd;
+    --line2:#cac4b5;
+    --accent:#0b62f5;       /* the brand blue, single accent */
+    --accent-ink:#0a52cf;
+    --term:#16140f;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  ::selection{background:var(--accent);color:#fff}
+  html{scroll-behavior:smooth}
+  body{font-family:'Geist',-apple-system,sans-serif;background:var(--paper);color:var(--ink);line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+  .serif{font-family:'Fraunces',Georgia,serif}
+  .mono{font-family:'Geist Mono',monospace}
+  a{color:inherit;text-decoration:none}
+  .wrap{max-width:1120px;margin:0 auto;padding:0 36px}
+  @media(max-width:620px){.wrap{padding:0 22px}}
+  /* film-grain texture — a craft signature, very subtle */
+  body::before{content:"";position:fixed;inset:0;z-index:9999;pointer-events:none;opacity:.025;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+  /* reveal */
+  .rv{opacity:0;transform:translateY(20px);transition:opacity .9s cubic-bezier(.16,.84,.34,1),transform .9s cubic-bezier(.16,.84,.34,1)}
+  .rv.in{opacity:1;transform:none}
+  @media(prefers-reduced-motion:reduce){.rv{opacity:1;transform:none;transition:none}}
+  /* buttons */
+  .btn{display:inline-flex;align-items:center;gap:9px;font-weight:500;font-size:15px;padding:13px 24px;border-radius:999px;cursor:pointer;transition:.2s cubic-bezier(.2,.7,.2,1);border:1px solid var(--ink)}
+  .btn svg{width:15px;height:15px;transition:transform .2s}
+  .btn.p{background:var(--ink);color:var(--paper)}.btn.p:hover{background:var(--accent);border-color:var(--accent)}.btn.p:hover svg{transform:translateX(3px)}
+  .btn.g{background:transparent;color:var(--ink);border-color:var(--line2)}.btn.g:hover{border-color:var(--ink)}
+  a:focus-visible,.btn:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+  /* NAV */
+  nav{position:sticky;top:0;z-index:50;background:rgba(244,242,236,.8);backdrop-filter:blur(12px) saturate(1.2);border-bottom:1px solid var(--line)}
+  nav .wrap{display:flex;align-items:center;justify-content:space-between;height:80px}
+  nav img{height:54px;display:block}
+  .nl{display:flex;gap:32px;align-items:center}
+  .nl a.k{font-size:14px;color:var(--ink2);font-weight:500;position:relative}
+  .nl a.k::after{content:"";position:absolute;left:0;bottom:-4px;width:0;height:1px;background:var(--ink);transition:width .25s}
+  .nl a.k:hover::after{width:100%}
+  @media(max-width:780px){.nl a.k{display:none}}
+  /* HERO — typography as the hero, editorial */
+  .hero{padding:96px 0 80px;position:relative}
+  .versemark{font-family:'Geist Mono';font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-bottom:38px;display:flex;align-items:center;gap:14px}
+  .versemark::before{content:"";width:40px;height:1px;background:var(--line2)}
+  h1{font-family:'Fraunces';font-weight:400;font-size:clamp(46px,8.5vw,108px);line-height:.98;letter-spacing:-.025em;max-width:14ch}
+  h1 .em{font-style:italic;color:var(--accent)}
+  h1 .blk{font-weight:600}
+  .hero .lower{margin-top:48px;display:grid;grid-template-columns:1fr auto;gap:40px;align-items:end}
+  @media(max-width:820px){.hero .lower{grid-template-columns:1fr;gap:30px}}
+  .hero .lede{font-size:clamp(18px,2.1vw,22px);color:var(--ink2);max-width:42ch;line-height:1.55}
+  .hero .actions{display:flex;flex-direction:column;gap:16px;align-items:flex-start}
+  .hero .cta{display:flex;gap:12px;flex-wrap:wrap}
+  .hero .inst{font-family:'Geist Mono';font-size:13.5px;color:var(--muted);display:flex;align-items:center;gap:9px;border-bottom:1px dashed var(--line2);padding-bottom:6px}
+  .cp{cursor:pointer;border:none;background:none;color:var(--muted);padding:0;display:flex}.cp:hover{color:var(--accent)}
+  .cpd{font-size:12px;color:var(--accent);opacity:0;transition:.2s}
+  /* the "in the beginning" terminal — framed like a manuscript */
+  .scene{margin-top:64px;border-top:1px solid var(--line);padding-top:48px;display:grid;grid-template-columns:.85fr 1.15fr;gap:48px;align-items:center}
+  @media(max-width:820px){.scene{grid-template-columns:1fr;gap:28px}}
+  .scene .note{font-family:'Fraunces';font-style:italic;font-size:24px;line-height:1.5;color:var(--ink2)}
+  .scene .note b{font-style:normal;font-weight:500;color:var(--ink)}
+  .term{background:var(--term);border-radius:14px;overflow:hidden;box-shadow:0 1px 0 rgba(0,0,0,.04),0 40px 80px rgba(22,20,15,.18)}
+  .term .bar{display:flex;align-items:center;gap:7px;padding:14px 18px;border-bottom:1px solid rgba(255,255,255,.06)}
+  .term .bar i{width:11px;height:11px;border-radius:50%}.term .bar .r{background:#ff5f57}.term .bar .y{background:#febc2e}.term .bar .g{background:#28c840}
+  .term .bar span{margin-left:8px;font-family:'Geist Mono';font-size:12px;color:#7c7468}
+  .term .body{padding:22px;font-family:'Geist Mono';font-size:13px;line-height:2;color:#d6d1c6;white-space:pre-wrap;min-height:230px}
+  .term .body .pr{color:#5a9dff}.term .body .o{color:#8b857a}.term .body .ok{color:#7ec96f}.term .body .w{color:#e8b056}
+  .cur{display:inline-block;width:7px;height:14px;background:#5a9dff;vertical-align:-2px;animation:bl 1.1s steps(1) infinite}
+  @keyframes bl{50%{opacity:0}}
+  /* SECTIONS */
+  section{padding:104px 0;position:relative}
+  .sec-mark{font-family:'Geist Mono';font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);display:flex;align-items:center;gap:13px}
+  .sec-mark::before{content:"";width:28px;height:1px;background:var(--accent)}
+  h2{font-family:'Fraunces';font-weight:400;font-size:clamp(32px,5vw,58px);line-height:1.04;letter-spacing:-.02em;margin-top:18px;max-width:16ch}
+  h2 .em{font-style:italic;color:var(--accent)}
+  .lead{color:var(--ink2);font-size:19px;margin-top:18px;max-width:46ch;line-height:1.55}
+  /* verses (the why) — numbered like scripture, no cards */
+  .verses{margin-top:64px;border-top:1px solid var(--line)}
+  .verse{display:grid;grid-template-columns:90px 1fr 1.3fr;gap:40px;align-items:baseline;padding:40px 0;border-bottom:1px solid var(--line)}
+  @media(max-width:760px){.verse{grid-template-columns:1fr;gap:10px}}
+  .verse .v{font-family:'Fraunces';font-style:italic;font-size:26px;color:var(--accent)}
+  .verse h3{font-family:'Fraunces';font-weight:500;font-size:25px;letter-spacing:-.01em}
+  .verse p{color:var(--ink2);font-size:17px;line-height:1.6}
+  /* compare — editorial ledger */
+  .cmp{margin-top:56px;border-top:2px solid var(--ink)}
+  table{width:100%;border-collapse:collapse}
+  th{text-align:left;font-family:'Geist Mono';font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:500;padding:18px 0}
+  th:nth-child(2),th:nth-child(3){text-align:center;width:120px}th:nth-child(3){color:var(--accent)}
+  td{padding:17px 0;border-top:1px solid var(--line);font-size:16px}td:first-child{color:var(--ink)}td:nth-child(2),td:nth-child(3){text-align:center}
+  .y{color:var(--accent);font-size:9px;vertical-align:middle}.n{color:var(--line2)}
+  /* pricing — two plaques */
+  .pg{margin-top:56px;display:grid;grid-template-columns:1fr 1.08fr;gap:24px;align-items:start}
+  @media(max-width:680px){.pg{grid-template-columns:1fr}}
+  .pl{border:1px solid var(--line2);border-radius:18px;padding:38px;background:rgba(255,255,255,.35)}
+  .pl.pro{border-color:var(--ink);background:var(--ink);color:var(--paper);padding:46px 40px}
+  .pl .pn{font-family:'Geist Mono';font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+  .pl.pro .pn{color:#a8a296}
+  .pl .bdg{display:inline-block;font-family:'Geist Mono';font-size:11px;color:var(--accent);border:1px solid var(--accent);padding:5px 11px;border-radius:999px;margin-bottom:18px}
+  .pl .amt{font-family:'Fraunces';font-weight:400;font-size:58px;letter-spacing:-.02em;margin:16px 0 2px;line-height:1}.pl.pro .amt{font-size:68px}
+  .pl .amt span{font-family:'Geist';font-size:16px;color:var(--muted);font-weight:400}.pl.pro .amt span{color:#a8a296}
+  .pl .alt{color:var(--muted);font-size:15px;margin-bottom:26px}
+  .pl ul{list-style:none;margin:0 0 30px;display:flex;flex-direction:column;gap:13px}
+  .pl li{font-size:15px;display:flex;gap:12px;align-items:baseline}.pl li .x{color:var(--accent);font-size:9px}
+  .pl .btn{width:100%;justify-content:center}
+  .pl.pro .btn.p{background:var(--accent);border-color:var(--accent);color:#fff}.pl.pro .btn.p:hover{background:#fff;color:var(--ink)}
+  .pl.pro .btn.g{border-color:rgba(255,255,255,.3);color:var(--paper)}.pl.pro .btn.g:hover{border-color:#fff}
+  .pl .stk{display:flex;flex-direction:column;gap:11px}
+  /* closer */
+  .closer{text-align:center;padding:120px 0}
+  .closer h2{font-size:clamp(36px,7vw,84px);max-width:18ch;margin:0 auto;line-height:1}
+  .closer .cta{margin-top:40px;display:flex;gap:13px;justify-content:center;flex-wrap:wrap}
+  footer{border-top:1px solid var(--line);padding:44px 0;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:18px}
+  footer img{height:36px}
+  footer .fl{font-family:'Geist Mono';font-size:12px;color:var(--muted)}
+  footer .links a{font-size:14px;color:var(--ink2);margin-left:24px}footer .links a:hover{color:var(--ink)}
+  @media(max-width:560px){footer{flex-direction:column;text-align:center}footer .links a{margin:0 12px}}
+</style></head><body>
+<nav><div class="wrap"><a href="#top"><img src="assets/logo.png" alt="Genesis Architect"></a>
+<div class="nl"><a class="k" href="#why">The idea</a><a class="k" href="#cmp">Free / Pro</a><a class="k" href="#pricing">Pricing</a><a class="k" href="https://github.com/maioio/genesis-architect">GitHub</a><a class="btn p" href="#pricing" style="padding:9px 18px;font-size:14px">Get Pro</a></div></div></nav>
+
+<header class="hero" id="top"><div class="wrap">
+<div class="versemark rv">Genesis · 1:1 · open-core dev tool</div>
+<h1 class="serif rv">In the beginning,<br>there was <span class="em">someone<br>else's</span> <span class="blk">bug.</span></h1>
+<div class="lower">
+<p class="lede rv">Genesis reads the failures other developers already closed &mdash; from real GitHub issues &mdash; and builds the fix into your project on the very first commit.</p>
+<div class="actions rv">
+<div class="cta"><a class="btn p" href="#pricing">Begin with Pro
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+<a class="btn g" href="https://github.com/maioio/genesis-architect">Read the source</a></div>
+<span class="inst">$ pip install genesis-architect
+<button class="cp" id="cp" aria-label="Copy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="14" height="14"><rect x="9" y="9" width="11" height="11"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button>
+<span class="cpd mono" id="cpd">copied</span></span>
+</div></div>
+<div class="scene rv">
+<p class="note serif">And Genesis looked upon the repos that came before,<br>and saw what broke. <b>And it wrote the fix first.</b></p>
+<div class="term"><div class="bar"><i class="r"></i><i class="y"></i><i class="g"></i><span>~/genesis &middot; day zero</span></div>
+<div class="body" id="tt"></div></div>
+</div>
+</div></header>
+
+<section id="why"><div class="wrap">
+<span class="sec-mark rv">The idea</span>
+<h2 class="serif rv">Most projects repeat a sin <span class="em">already atoned for.</span></h2>
+<p class="lead rv">Template generators know nothing of what broke in production. Genesis learns from the developers who shipped the same thing before you &mdash; and spares you their mistakes.</p>
+<div class="verses">
+<div class="verse rv"><div class="v serif">i.</div><h3 class="serif">Real failures, not guesses</h3><p>It mines actual GitHub issues from repositories like yours. Every pitfall is cited to a real, closed issue, and re-verified by CI on every build.</p></div>
+<div class="verse rv"><div class="v serif">ii.</div><h3 class="serif">The fix, already written</h3><p>Mitigations arrive wired into the scaffold itself &mdash; not appended as a checklist you'll scroll past and forget by Friday.</p></div>
+<div class="verse rv"><div class="v serif">iii.</div><h3 class="serif">A world in twelve files</h3><p>From an idea to a running, tested project in minutes. Twelve real files. Not a folder of TODO comments and good intentions.</p></div>
+</div>
+</div></section>
+
+<section id="cmp"><div class="wrap">
+<span class="sec-mark rv">Free &amp; Pro</span>
+<h2 class="serif rv">The free core is the whole tool. <span class="em">Pro is the whole internet.</span></h2>
+<div class="cmp rv"><table><thead><tr><th>Capability</th><th>Free</th><th>Pro</th></tr></thead><tbody id="tb"></tbody></table></div>
+</div></section>
+
+<section id="pricing"><div class="wrap">
+<span class="sec-mark rv">Pricing</span>
+<h2 class="serif rv">Founder's price. <span class="em">The first fifty,</span> locked for life.</h2>
+<p class="lead rv">After fifty seats it rises to $19/mo. The ones who showed up at the beginning never pay more.</p>
+<div class="pg">
+<div class="pl rv"><div class="pn">Free</div><div class="amt serif">$0 <span>/ forever</span></div><div class="alt">The complete open-core scaffolder.</div>
+<ul><li><span class="x">&#9679;</span> Full scaffolder &middot; Python, TS, Go, Rust</li><li><span class="x">&#9679;</span> CI/CD &amp; security defaults</li><li><span class="x">&#9679;</span> Top 3 GitHub pitfalls per project</li></ul>
+<a class="btn g" href="https://github.com/maioio/genesis-architect">Install free</a></div>
+<div class="pl pro rv"><span class="bdg">First 50 &middot; locked for life</span><div class="pn">Pro</div><div class="amt serif">$9 <span>/ month</span></div><div class="alt">or $90 / year &mdash; two months free.</div>
+<ul><li><span class="x">&#9679;</span> Everything in Free</li><li><span class="x">&#9679;</span> Multi-source research &mdash; GitHub, Reddit, YouTube, Instagram</li><li><span class="x">&#9679;</span> Cross-source ranking + video-to-pitfall</li><li><span class="x">&#9679;</span> Package-registry + CVE validation</li><li><span class="x">&#9679;</span> Cross-session memory + recovery scan</li></ul>
+<div class="stk"><a class="btn p" href="https://eshetmaio.gumroad.com/l/dduhm">Subscribe &mdash; $9/mo</a><a class="btn g" href="https://eshetmaio.gumroad.com/l/kzbpct">Yearly &mdash; $90</a></div></div>
+</div></div></section>
+
+<section class="closer"><div class="wrap">
+<h2 class="serif rv">Stop repeating <span class="em">other people's</span> bugs.</h2>
+<div class="cta rv"><a class="btn p" href="#pricing">Begin with Pro &mdash; $9/mo</a><a class="btn g" href="https://github.com/maioio/genesis-architect">Star on GitHub</a></div>
+</div></section>
+
+<footer><div class="wrap" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:18px;width:100%">
+<div style="display:flex;align-items:center;gap:13px"><img src="assets/logo.png" alt="Genesis Architect"><span class="fl">&copy; 2026 &middot; open-core &middot; built by maio eshet</span></div>
+<div class="links"><a href="https://github.com/maioio/genesis-architect">GitHub</a><a href="https://eshetmaio.gumroad.com/l/kzbpct">Buy Pro</a><a href="mailto:maio.eshet@gmail.com">Contact</a></div>
+</div></footer>
+
+<script>
+var Y='<span class="y">&#9679;</span>',N='<span class="n">&mdash;</span>';
+var r=[["Full scaffolder (Python, TS, Go, Rust)",1,1],["CI/CD, security defaults, templates",1,1],["Top 3 GitHub pitfalls per project",1,1],["Multi-source research (GitHub, Reddit, YouTube, IG)",0,1],["Cross-source pitfall ranking",0,1],["Video-to-pitfall extraction",0,1],["Package-registry + CVE validation",0,1],["Cross-session memory",0,1],["Recovery scan for existing codebases",0,1]];
+document.getElementById('tb').innerHTML=r.map(function(x){return '<tr><td>'+x[0]+'</td><td>'+(x[1]?Y:N)+'</td><td>'+(x[2]?Y:N)+'</td></tr>'}).join('');
+// copy
+var cp=document.getElementById('cp'),cpd=document.getElementById('cpd');
+function fl(){cpd.style.opacity='1';setTimeout(function(){cpd.style.opacity='0'},1600)}
+cp.addEventListener('click',function(){var t='pip install genesis-architect';if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(fl).catch(fl)}else{fl()}});
+// reveals
+var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target)}})},{threshold:.14});
+document.querySelectorAll('.rv').forEach(function(el,i){el.style.transitionDelay=(Math.min(i,5)*70)+'ms';io.observe(el)});
+// terminal — the day-zero scene
+var lines=[{t:'$ genesis init "a python cli for logs"',c:'pr',d:34},{t:'…and it surveyed 18 repos that came before',c:'o',d:18},{t:'…and it read the issues they had closed',c:'o',d:18},{t:'✓ 4 confirmed pitfalls revealed',c:'ok',d:20},{t:'! path traversal — seen in 3 of 5',c:'w',d:18},{t:'! logic bound inside the cli callback',c:'w',d:18},{t:'…and it wrote the fixes into the code',c:'o',d:18},{t:'✓ a project, formed · 12 files · 0 stubs',c:'ok',d:22}];
+var el=document.getElementById('tt');function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;')}
+function run(){el.innerHTML='';var li=0;function line(){if(li>=lines.length){var c=document.createElement('span');c.className='cur';el.appendChild(c);return}var L=lines[li],sp=document.createElement('div');sp.className=L.c;el.appendChild(sp);var i=0;(function ch(){if(i<=L.t.length){sp.innerHTML=esc(L.t.slice(0,i));i++;setTimeout(ch,L.d)}else{li++;setTimeout(line,li===1?300:160)}})();}line();}
+if(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches){el.innerHTML=lines.map(function(L){return '<div class="'+L.c+'">'+esc(L.t)+'</div>'}).join('')}else{setTimeout(run,700)}
+</script></body></html>

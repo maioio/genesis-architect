@@ -19,3 +19,25 @@ pro_license
 .vscode/
 .idea/
 *.swp
+
+# Local dev artifacts (not part of repo)
+.claude/
+.playwright-mcp/
+_private/
+validation/
+config.yml
+skills-lock.json
+genesis_architect_logos/
+docs/security/
+
+# Genesis scaffold outputs that landed here
+a_cli_podcast_downlo/
+
+# Binary / personal files
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.pdf
+*.zip
+*.docx

@@ -1,0 +1,34 @@
+# Changelog / Versioning
+
+Genesis follows semantic versioning. Pro and Free are versioned independently;
+Pro depends on a compatible Free core.
+
+## Updating
+
+- **pip:** `pip install -U genesis-architect-pro` — the changelog is surfaced.
+- **desktop (future):** the Tauri updater handles signed releases, opt-in, with
+  rollback. Updates are never applied silently mid-task.
+
+## Recent capabilities (Pro v6.x — "AI Engineering Partner")
+
+The v2 evolution added the intelligence layer on top of the architecture engines:
+
+- **Decision Engine** + engine adapters — orchestrates the real engines through
+  the lifecycle, with dependency ordering and graceful degradation.
+- **Knowledge Graph Engine** — cross-source connective intelligence
+  (`.genesis/knowledge/graph.json`).
+- **Learning Engine** — per-project research-strategy learning with honest
+  confidence.
+- **Product Intelligence** — anonymous, opt-in, default-off telemetry.
+- **First-run readiness** — the no-setup customer doctor + offline reporting.
+- **Knowledge-graph-backed recovery** — do-not-touch zones cross-referenced with
+  live CVEs.
+
+Earlier v6.0 added the 8 codebase-intelligence engines (import graph,
+architecture scorer, anti-pattern detector, drift detection, dependency index,
+recovery report, git intelligence, security templates).
+
+## Stability
+
+Every release runs the full test suite (1,300+ tests) plus the architecture gate
+and security checks before publishing. No release ships with failing tests.

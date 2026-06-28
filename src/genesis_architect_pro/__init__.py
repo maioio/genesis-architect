@@ -42,6 +42,11 @@ from genesis_architect_pro.source_anchor import (
     AnchorEntry, AnchorResult, AnchorReport, PersistResult,
     anchor_responsibilities, anchor_from_store, persist_anchors,
 )
+from genesis_architect_pro.product_intelligence import (
+    TelemetryConfig, CONSENT_PROMPT,
+    set_consent, revoke_consent, is_enabled, needs_consent_prompt,
+    record_event, read_events, describe_payload, clear_events,
+)
 
 __all__ = [
     "require_license", "LicenseError", "__version__",
@@ -66,4 +71,7 @@ __all__ = [
     "generate_report", "generate_report_for_project",
     "AnchorEntry", "AnchorResult", "AnchorReport", "PersistResult",
     "anchor_responsibilities", "anchor_from_store", "persist_anchors",
+    "TelemetryConfig", "CONSENT_PROMPT",
+    "set_consent", "revoke_consent", "is_enabled", "needs_consent_prompt",
+    "record_event", "read_events", "describe_payload", "clear_events",
 ]

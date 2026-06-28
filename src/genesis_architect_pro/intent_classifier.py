@@ -21,8 +21,8 @@ from genesis_architect_pro.gde_types import GDEMode, Intent
 # Thresholds
 # ---------------------------------------------------------------------------
 
-CLARIFY_THRESHOLD = 0.50   # below this → attach clarifying questions
-AMBIGUITY_MARGIN = 0.15    # if top two modes within this margin → COMMITTEE
+CLARIFY_THRESHOLD = 0.25   # below this → attach clarifying questions
+AMBIGUITY_MARGIN = 0.10    # if top two modes within this margin → COMMITTEE
 MIN_CONFIDENCE = 0.10      # floor returned even on zero signal match
 
 
@@ -53,6 +53,11 @@ _MODE_SIGNALS: dict[GDEMode, list[tuple[str, float]]] = {
         (r"\bwhat is wrong", 1.0),
         (r"\bcheck.*project", 0.5),
         (r"\baudit\b", 0.7),
+        (r"\bidentify.*drift", 1.0),
+        (r"\bidentify.*fragil", 1.0),
+        (r"\bidentify.*issue", 0.7),
+        (r"\bhealth.*check", 0.9),
+        (r"\bcodebase.*health", 0.9),
     ],
     GDEMode.RESEARCH: [
         (r"\bresearch\b", 1.0),
@@ -87,6 +92,9 @@ _MODE_SIGNALS: dict[GDEMode, list[tuple[str, float]]] = {
         (r"\bsimplif", 0.6),
         (r"\bplan.*refactor", 1.0),
         (r"\brefactoring.*plan", 1.0),
+        (r"\breduce.*coupling", 0.9),
+        (r"\bcoupling\b", 0.7),
+        (r"\bgod.*class", 0.9),
     ],
     GDEMode.GATE: [
         (r"\bgate\b", 1.0),
@@ -132,6 +140,11 @@ _MODE_SIGNALS: dict[GDEMode, list[tuple[str, float]]] = {
         (r"\brelease.*notes", 0.8),
         (r"\bapi.*doc", 0.9),
         (r"\bdocstring", 0.8),
+        (r"\bc4\b", 1.0),
+        (r"\barchitecture.*diagram", 1.0),
+        (r"\bgenerate.*diagram", 0.9),
+        (r"\bdiagram\b", 0.8),
+        (r"\bmermaid\b", 0.9),
     ],
     GDEMode.COMMITTEE: [
         (r"\bcommittee\b", 1.0),

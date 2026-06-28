@@ -174,7 +174,7 @@ Gate policy is a static table — not scattered in orchestration code. Verified 
 - Verified round-trip: session_id, confidence (0.73), and risk_level all preserved exactly
 - Sessions are resumable after interruption
 
-#### One-command usage
+#### One-command usage (Python API)
 ```python
 from genesis_architect_pro import GenesisDecisionEngine
 from pathlib import Path
@@ -182,6 +182,33 @@ from pathlib import Path
 gde = GenesisDecisionEngine(project_dir=Path("."))
 report = gde.run("diagnose the project and identify drift")
 # Returns: SessionReport with mode, confidence, gate_report, engine_results, decision_log
+
+# APPROVE stage — inspect pending writes before committing
+request = gde.approve(report)
+print(request.summary)
+
+# COMMIT stage — execute approved writes atomically
+from genesis_architect_pro.gde_types import ApprovalDecision, ApprovalChoice
+decision = ApprovalDecision(session_id=report.session_id, choice=ApprovalChoice.APPROVE)
+result = gde.commit(report, decision)
+```
+
+#### CLI usage
+```bash
+# Full GDE session — analyses the project, prompts for approval before writing
+genesis decide "diagnose the project and identify drift"
+
+# Classification only — which mode would this trigger?
+genesis decide --classify-only "generate C4 diagrams for the codebase"
+
+# Non-interactive auto-approve (CI/scripting)
+genesis decide --yes "run a full recovery scan"
+
+# Analysis only — no writes, no approval prompt
+genesis decide --no-commit "check compliance before we proceed"
+
+# Print the last session's decision log
+genesis explain
 ```
 
 #### Market position (verified)
@@ -284,6 +311,14 @@ engines (not aspirational):
 ## New CLI commands (unlocked by Pro license)
 
 ```bash
+# Genesis Decision Engine
+genesis decide "diagnose the project and identify drift"   # Full session
+genesis decide --classify-only "generate C4 diagrams"     # Intent only — no execution
+genesis decide --yes "run a full recovery scan"            # Auto-approve (CI mode)
+genesis decide --no-commit "check compliance"              # Analysis only
+genesis explain                                            # Print last decision log
+
+# Direct engine commands
 genesis score .                           # Architecture score 0-100
 genesis score . --profile microservices   # Score with specific adaptive profile
 genesis antipattern .                     # Detect all 7 anti-patterns
@@ -361,10 +396,15 @@ no-setup install — i.e. a full **AI Engineering Partner**, not just an analyze
 **Genesis Decision Engine**
 - Type any instruction in plain English — GDE routes it to the right engines automatically
 - No LLM required for routing — deterministic, sub-millisecond, always consistent
+- 8 production engines wired and running: import graph, scorer, anti-patterns, fragility, recovery, refactoring, C4, security
+- Parallel execution: independent engines run concurrently within each phase
 - 12-gate approval policy — 2 gates can never be bypassed, even by you
+- APPROVE → COMMIT lifecycle: inspect pending writes before anything touches disk
+- Atomic writes: all file operations use tmp→rename — no partial writes on crash
 - Confidence score on every session — know exactly how reliable the output is
 - Full decision log — every choice recorded, always auditable
 - Crash-safe session persistence — resume exactly where you left off
+- `genesis decide "<instruction>"` CLI — one command, full pipeline with approval prompt
 - Only tool in the market with all 5 decision-engine capabilities (verified against 11 competitors)
 
 **AI Engineering Partner (NEW in v6.2)**

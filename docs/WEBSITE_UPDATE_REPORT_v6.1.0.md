@@ -1,11 +1,37 @@
-# Genesis Architect PRO — v6.1.0 Update Report
-> For the website agent: update the Pro page/pricing section to reflect these new capabilities.
+# Genesis Architect PRO — Website Update Report
+> For the website agent: update the Pro page/pricing/docs section to reflect these capabilities.
+> **This is the living source of truth for what to publish on the site. It is kept up to date as the product evolves — always check the "Last updated" date and the "🆕 NEW" banner before a site refresh.**
+
+---
+
+## 🆕 NEW in v6.2.0 (publish these)
+> The newest additions since the last site update. Lead the announcement with these.
+
+- **Knowledge Graph Engine** — cross-source connective intelligence. Links code,
+  CVEs, decisions, risks, and field findings into one queryable graph. Answers
+  questions no competitor can: *"which do-not-touch zone has an open CVE?"*
+  **This is the flagship differentiator — neither competing tool has it.**
+- **Decision Engine wiring (engine adapters)** — the GDE now drives the *real*
+  engines end-to-end (architecture → anti-pattern → recovery / knowledge-graph),
+  with dependency ordering and graceful degradation. Not a skeleton — verified
+  end-to-end on a live project.
+- **Learning Engine** — Genesis learns which research strategy works for each
+  task kind and improves over time, with honest confidence (never overclaims
+  from one sample).
+- **Product Intelligence (telemetry)** — anonymous, opt-in, **default-OFF**.
+  Privacy enforced in code (a sanitizer blocks any leak of code/paths/secrets),
+  not by trust. Survived an adversarial privacy review.
+- **No-setup customer readiness** — backs the four-step promise
+  (Download → Install → License → Work) with a `doctor` check and honest
+  offline/degraded reporting. **No Docker, ever, for customers.**
+- **Customer documentation (26 pages)** — the full "Read the docs" technical
+  layer, grounded in shipped engines. Ready to link from the homepage.
 
 ---
 
 ## Version bump
-- **Was:** v5.4.1
-- **Now:** v6.1.0
+- **Was:** v6.1.0
+- **Now:** v6.2.0
 
 ---
 
@@ -173,6 +199,88 @@ Every competing tool either uses an LLM to interpret intent (slow, nondeterminis
 
 ---
 
+### Part C — AI Engineering Partner layer (v6.2.0)
+
+Five new engines that turn Genesis from a codebase analyzer into a full AI
+Engineering Partner. All Pro-only, all tested.
+
+#### 9. Knowledge Graph Engine ⭐ flagship
+Links everything Genesis knows about a project into one directed, queryable graph.
+- **Node types:** module, anti-pattern, drift, CVE, package, risk, decision,
+  evidence, field-finding, test.
+- **Edges carry confidence** (0–1) + an optional evidence reference — a link with
+  no basis is low-confidence by construction (honesty clause).
+- **Connective queries** across sources, e.g.
+  `cve → package → module` intersected with `risk → module` to find
+  **do-not-touch zones that have an open CVE**.
+- Additive + deterministic; persisted to `.genesis/knowledge/graph.json`.
+- **Market position:** neither scryer nor architect — nor any of the 11 surveyed
+  competitors — has cross-source connective intelligence. Hardest capability to
+  copy.
+
+#### 10. Decision Engine — real engine wiring
+The GDE now orchestrates the actual analysis engines, not a skeleton.
+- Thin **engine adapters** bridge each real engine (architecture scorer,
+  anti-pattern detector, recovery, security, knowledge graph) to the GDE runner.
+- Correct dependency ordering: `recovery` requires `architecture`;
+  `knowledge_graph` requires `antipattern`.
+- **Graceful degradation:** an unavailable engine or empty source returns a
+  low-confidence, degraded result with a warning — never a crash, never fabricated
+  data.
+- Verified **end-to-end**: real engines run through the real planner + runner on a
+  sample project; the registry validates clean (deps satisfied, no cycles).
+
+#### 11. Learning Engine
+Genesis improves which research strategy it picks, over time.
+- Records outcomes per task kind (bug / architecture / security / migration / …)
+  and recommends the best-performing research profile.
+- **Honest confidence:** `low` until ≥3 samples (`medium`) / ≥8 (`high`).
+  A perfect rate from one sample is never "high".
+- Two scopes: **per-project** (immediate feedback) and **cross-project** (only via
+  anonymous, consented telemetry — never from your code).
+- Writes a `lessons_learned.md` digest.
+
+#### 12. Product Intelligence (telemetry)
+Anonymous, opt-in product feedback — the loop that shows which engines earn their
+keep.
+- **Default OFF.** No pre-checked opt-in. Nothing recorded until you consent.
+- **Anonymous only** (random install id; never account/machine/project/path).
+- **Revocable**, and you can **see exactly what is stored**.
+- **Never collected:** code, file paths, project names, secrets, prompts.
+- Enforced by a fail-closed **sanitizer** in code (drops paths/secrets/free-text/
+  unknown event shapes), not by trust. Survived an adversarial privacy review.
+- With telemetry off, the product is fully functional — it is never a gate.
+
+#### 13. No-setup customer readiness (packaging)
+Backs the four-step customer promise with code.
+- `doctor` check: the **license is the only required step**; everything else is
+  optional and never blocks.
+- **Honest offline mode:** local analysis (graph, score, anti-patterns, C4, drift,
+  recovery, gate, knowledge graph) works fully offline; network-backed research is
+  marked *unavailable*, never faked.
+- Self-heal for optional deps (e.g. ffmpeg) — explicit, opt-in, one prompt.
+- **No Docker, Python infra, Node, DB, Redis, or MCP server** is ever a customer
+  step.
+
+#### 📚 Customer documentation (26 pages)
+The full "Read the docs" technical layer, ready to publish, grounded in shipped
+engines (not aspirational):
+- Part I — the partner, five principles, the 15-step Thinking Loop, Free vs Pro
+- Part II — Research Intelligence, Developer Field Intelligence, Evidence Packs,
+  Source Registry + 9 profiles
+- Part III — every engine page (what it does, Free/Pro, worked example, output)
+- Part IV — recovery + CI-gate workflows
+- Part V — install/license, privacy, offline
+- Part VI — `.genesis/` file reference, changelog
+- Plus `LANDING_HANDOFF.md` — approved homepage copy (removes "pitfall finder"
+  framing; drops Instagram-as-source).
+
+> ⚠️ Honesty note for the site: the **UI Engine (Floating Assistant + Full
+> Canvas)** is **planned, not shipped**. If mentioned on the site, mark it
+> "coming soon" — do not present it as available.
+
+---
+
 ## New CLI commands (unlocked by Pro license)
 
 ```bash
@@ -217,7 +325,10 @@ genesis harden .                          # Generate STRIDE + OWASP + secrets sc
 
 **Before v6:** Pro = deeper research + memory persistence
 
-**After v6.1:** Pro = deeper research + memory + full codebase intelligence layer + central decision brain
+**After v6.2:** Pro = deeper research + memory + full codebase intelligence layer
++ central decision brain (now wired to the real engines) + **cross-source
+Knowledge Graph** + continuous Learning + anonymous Product Intelligence +
+no-setup install — i.e. a full **AI Engineering Partner**, not just an analyzer.
 
 ### Headline angle
 
@@ -229,6 +340,11 @@ genesis harden .                          # Generate STRIDE + OWASP + secrets sc
 > And now with the Genesis Decision Engine: one plain-English instruction routes
 > automatically to the right engines, in the right order, with built-in safety gates
 > that can never be bypassed.
+>
+> New: a cross-source **Knowledge Graph** connects your code, security CVEs, risk
+> zones and decisions — so Genesis can tell you which "do-not-touch" module has a
+> live vulnerability. It **learns** which research strategy works for your work,
+> and installs in four steps with **no Docker, ever**.
 
 ### Feature bullets for the Pro pricing page
 
@@ -251,6 +367,31 @@ genesis harden .                          # Generate STRIDE + OWASP + secrets sc
 - Crash-safe session persistence — resume exactly where you left off
 - Only tool in the market with all 5 decision-engine capabilities (verified against 11 competitors)
 
+**AI Engineering Partner (NEW in v6.2)**
+- **Knowledge Graph** — links code, CVEs, risks and decisions; finds do-not-touch zones that have an open CVE (nothing else on the market does this)
+- **Learning Engine** — gets better at choosing research strategies for your work, with honest confidence
+- **Anonymous Product Intelligence** — opt-in, default-off, privacy enforced in code
+- **Four-step install, no Docker** — Download → Install → License → Work
+- **Works offline** — all local analysis runs with no network; online sources are honestly marked when unavailable
+- **26-page documentation** — the full technical "Read the docs" layer
+
 ---
 
-*Report generated 2026-06-28 | Genesis Architect PRO v6.1.0*
+## 🔁 Maintenance protocol (for the assistant — do not delete)
+
+This report is the **living source of truth** for site updates. Keep it current:
+
+- **Update this file in the SAME change** whenever a customer-visible capability
+  ships (new engine, new CLI command, pricing/positioning change, a planned
+  feature becoming available, or a removed feature).
+- On each update: bump the **version**, refresh the **🆕 NEW** banner (move the
+  now-published items into the body), and set **Last updated** below.
+- **Site-refresh cadence:** review at least **every 2 weeks**, and always after a
+  capability ships. If ≥14 days have passed since "Last updated" while work
+  continued, proactively remind the user that the site is due for a refresh.
+- **Honesty rule:** never list a capability here as available unless it is
+  actually shipped + tested. Planned features are marked "coming soon".
+
+---
+
+*Last updated: 2026-06-28 | Genesis Architect PRO v6.2.0 | Next site review due: 2026-07-12*

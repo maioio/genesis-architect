@@ -201,7 +201,30 @@ def sync_model_from_graph(project_dir: Path, graph: dict) -> dict:
 
 
 def scan(project_dir: Path) -> dict:
-    """Run all fragility scans and return combined JSON."""
+    """Run all Recovery Intelligence engines and return a combined result dict.
+
+    Returned keys
+    -------------
+    fix_commit_hotspots   dict[str, int]  — files ranked by fix-commit frequency
+    external_url_count    dict[str, int]  — files ranked by hardcoded URL count
+    version_sources       dict[str, str]  — version string per manifest file
+    doc_version           str | None      — version extracted from README/CHANGELOG
+    version_drift         bool            — True when manifest versions disagree
+    dead_file_candidates  list[str]       — files with no detected import references
+    model_sync            dict            — result of syncing committed model from graph
+    model_diff            dict            — structural diff between committed and planned
+    drift_flags           dict            — vagrant + stale candidates from drift_detector
+    source_anchors        dict            — responsibility → code-location mappings
+    anchor_persist_result dict            — result of persisting new anchors to model_store
+    architecture_score    float | None    — 0-100 score from architecture_scorer
+    architecture_profile  str             — adaptive profile used for scoring
+    anti_patterns         list[dict]      — detected anti-patterns (kind/file/confidence/severity/basis)
+    drift_score           dict            — numeric drift score with per-node breakdown
+    recovery_report       dict            — full RecoveryReport.to_dict() output
+
+    All keys are always present. Every engine is wrapped in try/except; failures
+    surface as warning strings inside the relevant sub-dict rather than exceptions.
+    """
     hotspots = fix_commit_hotspots(project_dir)
     urls = external_url_count(project_dir)
     versions = version_drift(project_dir)
@@ -247,10 +270,39 @@ def scan(project_dir: Path) -> dict:
             "warnings": [],
         }
 
-    # Source anchoring — additive, read-only, never raises
+    # Architecture score — additive, read-only, never raises
+    try:
+        from genesis_architect_pro.architecture_scorer import score_project
+        _arch = score_project(project_dir)
+        architecture_score = _arch.get("total")
+        architecture_profile = _arch.get("profile", "default")
+    except Exception as exc:  # noqa: BLE001
+        architecture_score = None
+        architecture_profile = "default"
+
+    # Anti-pattern detection — additive, read-only, never raises
+    try:
+        from genesis_architect_pro.antipattern_detector import detect_all
+        _ap_report = detect_all(project_dir)
+        anti_patterns = [
+            {
+                "kind": ap.type,
+                "file": ap.file,
+                "confidence": getattr(ap, "confidence", 0.60),
+                "severity": ap.severity.lower() if ap.severity else "medium",
+                "basis": getattr(ap, "basis", "static analysis"),
+            }
+            for ap in (getattr(_ap_report, "patterns", []) or [])
+        ]
+    except Exception as exc:  # noqa: BLE001
+        anti_patterns = []
+
+    # Source anchoring — compute object first so it can be optionally persisted below
+    _anchor_report = None
     try:
         from genesis_architect_pro.source_anchor import anchor_from_store
-        source_anchors = anchor_from_store(project_dir).to_dict()
+        _anchor_report = anchor_from_store(project_dir)
+        source_anchors = _anchor_report.to_dict()
     except Exception as exc:  # noqa: BLE001
         source_anchors = {
             "anchors_by_responsibility": {},
@@ -260,10 +312,34 @@ def scan(project_dir: Path) -> dict:
             "warnings": [f"source anchoring skipped: {exc}"],
         }
 
+    # Persist source anchors — safe, additive, never raises.
+    # Only writes when new anchors are found; idempotent on re-run.
+    anchor_persist_result: dict = {"added": 0, "skipped": 0, "saved": False, "warnings": []}
+    try:
+        if _anchor_report is not None and _anchor_report.total_responsibilities > 0:
+            from genesis_architect_pro.model_store import ModelStore as _MS
+            from genesis_architect_pro.source_anchor import persist_anchors as _pa
+            _persist_result = _pa(_anchor_report, _MS(project_dir))
+            anchor_persist_result = _persist_result.to_dict()
+    except Exception as exc:  # noqa: BLE001
+        anchor_persist_result["warnings"].append(f"anchor persistence skipped: {exc}")
+
+    # Decay forecast — optional temporal signal fed into drift scorer.
+    # Requires ≥3 historical score records; absent forecast is not an error.
+    _decay_forecast = None
+    try:
+        from genesis_architect_pro.architecture_scorer import load_score_history
+        from genesis_architect_pro.decay_regressor import forecast_from_history
+        _history = load_score_history(project_dir)
+        if len(_history) >= 3:
+            _decay_forecast = forecast_from_history(_history)
+    except Exception:  # noqa: BLE001
+        pass
+
     # Drift score — additive, read-only, never raises
     try:
         from genesis_architect_pro.drift_scorer import compute_drift_score
-        drift_score = compute_drift_score(project_dir).to_dict()
+        drift_score = compute_drift_score(project_dir, forecast=_decay_forecast).to_dict()
     except Exception as exc:  # noqa: BLE001
         drift_score = {
             "overall_score": 0.0,
@@ -286,6 +362,10 @@ def scan(project_dir: Path) -> dict:
         "model_diff": model_diff,
         "drift_flags": drift_flags,
         "source_anchors": source_anchors,
+        "anchor_persist_result": anchor_persist_result,
+        "architecture_score": architecture_score,
+        "architecture_profile": architecture_profile,
+        "anti_patterns": anti_patterns,
         "drift_score": drift_score,
     }
 

@@ -26,6 +26,7 @@ Priority 1 (critical)  — vagrant nodes with confidence ≥ 0.75
 Priority 2 (high)      — stale responsibilities with confidence ≥ 0.70
 Priority 3 (high)      — anti-patterns rated critical/high
 Priority 4 (medium)    — unanchored responsibilities (>50% unanchored)
+Priority 4 (medium)    — no planned model present (quick win)
 Priority 5 (medium)    — fix-commit hotspots (churn ≥ 3 commits)
 Priority 6 (low)       — stale responsibilities with confidence < 0.70
 Priority 7 (low)       — dead-file candidates
@@ -53,8 +54,6 @@ import json
 import textwrap
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
-
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -337,16 +336,6 @@ def _render_markdown(report: RecoveryReport) -> str:
 # Internal helpers
 # ---------------------------------------------------------------------------
 
-def _safe_get(d: dict, *keys: str, default: Any = None) -> Any:
-    """Nested dict access with a default; never raises."""
-    cur = d
-    for k in keys:
-        if not isinstance(cur, dict):
-            return default
-        cur = cur.get(k, default)
-    return cur
-
-
 def _arch_label(score: float | None) -> str:
     if score is None:
         return "unavailable"
@@ -355,14 +344,6 @@ def _arch_label(score: float | None) -> str:
     if score >= 50:
         return "fair"
     return "poor"
-
-
-def _confidence_label(c: float) -> str:
-    if c >= 0.75:
-        return "high"
-    if c >= 0.50:
-        return "medium"
-    return "low"
 
 
 # ---------------------------------------------------------------------------
@@ -590,6 +571,58 @@ def _version_drift_recommendations(scan: dict, warnings: list[str]) -> list[Reco
     return recs
 
 
+def _missing_plan_recommendations(scan: dict, warnings: list[str]) -> list[Recommendation]:
+    """Emit one recommendation when planned.json is absent (model_sync.diverged=False + no planned)."""
+    recs: list[Recommendation] = []
+    model_sync: dict = scan.get("model_sync") or {}
+    if not isinstance(model_sync, dict):
+        return recs
+    # planned.json is absent iff diverged=False AND synced=True (or synced=False with no file)
+    # But the clearest signal: node_count > 0 and model_sync has no explicit planned model flag.
+    # We detect it via drift_flags basis string containing "no planned model"
+    drift_flags: dict = scan.get("drift_flags") or {}
+    if not isinstance(drift_flags, dict):
+        return recs
+    basis = str(drift_flags.get("basis", ""))
+    # drift_detector emits "planned.json absent" when planned_was_missing=True
+    has_no_planned = (
+        "planned.json absent" in basis.lower()
+        or "no planned model" in basis.lower()
+        or "planned_was_missing" in basis.lower()
+    )
+    # _CONF_NO_PLANNED constant in drift_detector is 0.35; use < 0.45 as a wider guard
+    conf = float(drift_flags.get("confidence", 1.0))
+    if not has_no_planned and conf >= 0.45:
+        return recs
+
+    node_count = int(model_sync.get("node_count", 0))
+    if node_count == 0 and not has_no_planned:
+        return recs  # truly empty project — no recommendation needed
+
+    recs.append(Recommendation(
+        priority=4,
+        category="no-planned-model",
+        title="No planned architecture model found",
+        reason=(
+            "The project has no planned.json file. Genesis cannot compute drift "
+            "or validate planned intent against the committed model."
+        ),
+        evidence=(
+            f"drift_detector basis: \"{_truncate(basis, 120)}\". "
+            f"Committed model has {node_count} node(s); planned model is absent."
+        ),
+        confidence=0.90,
+        suggested_action=(
+            "Run `genesis plan init` to create a planned model, "
+            "then add planned responsibilities for each node."
+        ),
+        affected=[],
+        risk_zone=False,
+        quick_win=True,
+    ))
+    return recs
+
+
 def _truncate(s: str, n: int) -> str:
     return s if len(s) <= n else s[:n - 1] + "…"
 
@@ -674,7 +707,8 @@ def generate_report(scan_output: dict) -> RecoveryReport:
         "fix_commit_hotspots", "external_url_count", "version_sources",
         "doc_version", "version_drift", "dead_file_candidates",
         "model_sync", "model_diff", "drift_flags", "drift_score",
-        "source_anchors",
+        "source_anchors", "anchor_persist_result",
+        "architecture_score", "architecture_profile", "anti_patterns",
     ]
     present  = [k for k in all_expected if k in scan_output]
     missing  = [k for k in all_expected if k not in scan_output]
@@ -787,6 +821,11 @@ def generate_report(scan_output: dict) -> RecoveryReport:
         all_recs.extend(_version_drift_recommendations(scan_output, warnings_out))
     except Exception as exc:  # noqa: BLE001
         warnings_out.append(f"version-drift recommendations skipped: {exc}")
+
+    try:
+        all_recs.extend(_missing_plan_recommendations(scan_output, warnings_out))
+    except Exception as exc:  # noqa: BLE001
+        warnings_out.append(f"missing-plan recommendations skipped: {exc}")
 
     recs_sorted = _sort_recommendations(all_recs)
 

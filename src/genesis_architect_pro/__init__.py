@@ -9,6 +9,22 @@ Requires a valid license and the free genesis-architect core package.
 
 __version__ = "6.0.0"
 
+from genesis_architect_pro.decision_engine import GenesisDecisionEngine, run_session
+from genesis_architect_pro.intent_classifier import classify
+from genesis_architect_pro.gde_types import (
+    GDEMode, LifecycleStage, EngineCategory, EngineStatus,
+    GateAction, GateOutcome, ApprovalChoice,
+    EngineDescriptor, EngineResult, WriteOperation,
+    GateResult, GateReport, ApprovalRequest, ApprovalDecision,
+    CommitResult, DecisionEntry, Intent, ExecutionPlan,
+    SessionContext, SessionReport,
+)
+from genesis_architect_pro.engine_registry import EngineRegistry, RegistryError, get_default_registry, register
+from genesis_architect_pro.gde_session import save_session, load_session, delete_session, append_decision_log, read_decision_log, session_file_exists
+from genesis_architect_pro.gde_planner import build_plan
+from genesis_architect_pro.gde_runner import run_plan
+from genesis_architect_pro.gde_gate_engine import evaluate_gates
+
 from genesis_architect_pro.license import require_license, LicenseError
 from genesis_architect_pro.import_graph import build_graph, load_or_build
 from genesis_architect_pro.architecture_scorer import score_project, score_label
@@ -49,6 +65,20 @@ from genesis_architect_pro.product_intelligence import (
 )
 
 __all__ = [
+    # GDE — central brain
+    "GenesisDecisionEngine", "run_session",
+    "classify",
+    "GDEMode", "LifecycleStage", "EngineCategory", "EngineStatus",
+    "GateAction", "GateOutcome", "ApprovalChoice",
+    "EngineDescriptor", "EngineResult", "WriteOperation",
+    "GateResult", "GateReport", "ApprovalRequest", "ApprovalDecision",
+    "CommitResult", "DecisionEntry", "Intent", "ExecutionPlan",
+    "SessionContext", "SessionReport",
+    "EngineRegistry", "RegistryError", "get_default_registry", "register",
+    "save_session", "load_session", "delete_session",
+    "append_decision_log", "read_decision_log", "session_file_exists",
+    "build_plan", "run_plan", "evaluate_gates",
+    # Existing exports
     "require_license", "LicenseError", "__version__",
     "build_graph", "load_or_build",
     "score_project", "score_label",

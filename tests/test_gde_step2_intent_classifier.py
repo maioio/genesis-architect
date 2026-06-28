@@ -281,12 +281,9 @@ class TestAmbiguityEscalation:
 
 
 class TestBackwardCompatibility:
-    def test_not_in_init_yet(self):
+    def test_in_init(self):
         import genesis_architect_pro as pkg
-
-        assert not hasattr(pkg, "classify"), (
-            "classify() should NOT be in __init__ until Step 6"
-        )
+        assert hasattr(pkg, "classify"), "classify() added to __init__ in Step 6"
 
     def test_importable_directly(self):
         from genesis_architect_pro.intent_classifier import classify as c

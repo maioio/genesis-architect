@@ -833,11 +833,10 @@ class TestBackwardCompatibility:
         assert callable(generate_report_for_project)
         assert callable(compute_drift_score)
 
-    def test_gde_types_not_yet_in_init(self) -> None:
-        # Step 1 intentionally does NOT add GDE types to __init__.
-        # They will be added in Step 6 once the GDE entry point exists.
+    def test_gde_types_in_init(self) -> None:
+        # Step 6 added GenesisDecisionEngine to __init__.
         import genesis_architect_pro as pkg
-        assert not hasattr(pkg, "GenesisDecisionEngine")
+        assert hasattr(pkg, "GenesisDecisionEngine")
 
     def test_new_modules_importable_directly(self) -> None:
         from genesis_architect_pro import gde_types, engine_registry, gde_session

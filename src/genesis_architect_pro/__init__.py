@@ -63,6 +63,11 @@ from genesis_architect_pro.product_intelligence import (
     set_consent, revoke_consent, is_enabled, needs_consent_prompt,
     record_event, read_events, describe_payload, clear_events,
 )
+from genesis_architect_pro.learning_engine import (
+    Outcome, ProfileStat, Recommendation as LearningRecommendation, KNOWN_PROFILES,
+    record_outcome, read_outcomes, rank_profiles, recommend_profile,
+    summarize_lessons, write_lessons,
+)
 
 __all__ = [
     # GDE — central brain
@@ -104,4 +109,7 @@ __all__ = [
     "TelemetryConfig", "CONSENT_PROMPT",
     "set_consent", "revoke_consent", "is_enabled", "needs_consent_prompt",
     "record_event", "read_events", "describe_payload", "clear_events",
+    "Outcome", "ProfileStat", "LearningRecommendation", "KNOWN_PROFILES",
+    "record_outcome", "read_outcomes", "rank_profiles", "recommend_profile",
+    "summarize_lessons", "write_lessons",
 ]

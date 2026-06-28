@@ -29,13 +29,17 @@ from genesis_architect_pro.gde_session import (
     save_session,
 )
 from genesis_architect_pro.gde_types import (
+    ApprovalChoice,
     ApprovalDecision,
+    ApprovalRequest,
+    CommitResult,
     DecisionEntry,
     GDEMode,
     Intent,
     LifecycleStage,
     SessionContext,
     SessionReport,
+    WriteOperation,
 )
 from genesis_architect_pro.intent_classifier import classify
 
@@ -127,6 +131,184 @@ class GenesisDecisionEngine:
     def classify_intent(self, user_input: str) -> Intent:
         """Classify user input without running a full session."""
         return classify(user_input)
+
+    def approve(self, report: SessionReport) -> ApprovalRequest:
+        """Build an ApprovalRequest from a completed session report.
+
+        The caller inspects the request and decides which write operations
+        to approve, then calls commit() with an ApprovalDecision.
+
+        APPROVE stage fires only when the gate outcome is not HARD_BLOCK.
+        If there are no pending write operations, returns an empty request
+        (the subsequent commit() call will be a no-op).
+
+        Args:
+            report: The SessionReport returned by run().
+
+        Returns:
+            ApprovalRequest summarising pending writes and gate status.
+
+        Raises:
+            RuntimeError: If the session has a HARD_BLOCK gate — commit would
+                be rejected anyway, so callers should not reach APPROVE.
+        """
+        from genesis_architect_pro.gde_types import GateOutcome
+
+        if report.gate_report.overall == GateOutcome.HARD_BLOCK:
+            hard = [g.gate_id for g in report.gate_report.hard_blocks]
+            raise RuntimeError(
+                f"Cannot approve: session has HARD_BLOCK gate(s): {hard}. "
+                "These are non-overridable. The session must be discarded."
+            )
+
+        ctx = load_session(self.project_dir)
+        pending = ctx.pending_write_operations if ctx else []
+
+        gate_summary = report.gate_report.overall.value
+        write_summary = (
+            f"{len(pending)} write operation(s) pending"
+            if pending
+            else "No write operations pending"
+        )
+        summary = (
+            f"Session {report.session_id[:8]}… | "
+            f"mode={report.mode.value} | "
+            f"confidence={report.overall_confidence:.2f} | "
+            f"gate={gate_summary} | "
+            f"{write_summary}"
+        )
+
+        return ApprovalRequest(
+            session_id=report.session_id,
+            pending_writes=list(pending),
+            gate_report=report.gate_report,
+            overall_confidence=report.overall_confidence,
+            summary=summary,
+        )
+
+    def commit(
+        self,
+        report: SessionReport,
+        decision: ApprovalDecision,
+    ) -> CommitResult:
+        """Execute approved write operations atomically.
+
+        COMMIT stage:
+        - APPROVE choice: executes all approved_operation_ids from pending_writes
+        - REJECT choice: discards all writes, clears session
+        - DEFER choice: does nothing, leaves session file intact for later
+        - PARTIAL choice: executes only operation_ids listed in decision.approved_operation_ids
+
+        Hard-blocked gates cannot be overridden: commit() will return a failed
+        CommitResult rather than executing writes.
+
+        Args:
+            report: The SessionReport returned by run().
+            decision: The user's ApprovalDecision.
+
+        Returns:
+            CommitResult with lists of committed and rolled-back operation_ids.
+        """
+        import json
+        from genesis_architect_pro.gde_types import GateOutcome
+
+        result = CommitResult(session_id=decision.session_id)
+
+        # Hard blocks are unconditional — never execute
+        if report.gate_report.overall == GateOutcome.HARD_BLOCK:
+            hard = [g.gate_id for g in report.gate_report.hard_blocks]
+            result.errors.append(f"HARD_BLOCK gates present: {hard}. No writes executed.")
+            result.success = False
+            return result
+
+        # REJECT or DEFER — no writes
+        if decision.choice == ApprovalChoice.REJECT:
+            ctx = load_session(self.project_dir)
+            if ctx:
+                ctx.pending_write_operations.clear()
+                save_session(ctx, self.project_dir)
+            result.success = True
+            return result
+
+        if decision.choice == ApprovalChoice.DEFER:
+            result.success = True
+            return result
+
+        # APPROVE or PARTIAL — execute writes
+        ctx = load_session(self.project_dir)
+        pending: list[WriteOperation] = ctx.pending_write_operations if ctx else []
+
+        if decision.choice == ApprovalChoice.APPROVE:
+            to_commit = pending
+        else:  # PARTIAL
+            approved_ids = set(decision.approved_operation_ids)
+            to_commit = [op for op in pending if op.operation_id in approved_ids]
+            not_approved = [op for op in pending if op.operation_id not in approved_ids]
+            result.rolled_back.extend(op.operation_id for op in not_approved)
+
+        for op in to_commit:
+            try:
+                self._execute_write_operation(op)
+                result.committed.append(op.operation_id)
+            except Exception as exc:
+                result.errors.append(f"{op.operation_id}: {exc}")
+                result.rolled_back.append(op.operation_id)
+
+        # Log commit decision
+        if ctx:
+            ctx.stage = LifecycleStage.COMMIT
+            self._log(
+                ctx,
+                "COMMIT_EXECUTED",
+                "user",
+                f"choice={decision.choice.value}",
+                f"committed={len(result.committed)} rolled_back={len(result.rolled_back)}",
+            )
+            ctx.pending_write_operations.clear()
+            save_session(ctx, self.project_dir)
+            for entry in ctx.decision_log[-1:]:
+                append_decision_log(entry, self.project_dir)
+
+        result.success = not result.errors
+        return result
+
+    def _execute_write_operation(self, op: WriteOperation) -> None:
+        """Write op.payload to op.target_path under project_dir.
+
+        Supports str, bytes, and dict (serialised as JSON) payloads.
+        Creates parent directories automatically. Uses atomic tmp-rename.
+        """
+        import json
+        import tempfile
+
+        target = self.project_dir / op.target_path
+        target.parent.mkdir(parents=True, exist_ok=True)
+
+        if op.payload is None:
+            return
+
+        if isinstance(op.payload, bytes):
+            content = op.payload
+            mode = "wb"
+        elif isinstance(op.payload, str):
+            content = op.payload.encode()
+            mode = "wb"
+        elif isinstance(op.payload, dict):
+            content = json.dumps(op.payload, indent=2).encode()
+            mode = "wb"
+        else:
+            content = str(op.payload).encode()
+            mode = "wb"
+
+        # Atomic write via tmp → rename
+        tmp_path = target.with_suffix(target.suffix + ".tmp")
+        try:
+            tmp_path.write_bytes(content)
+            tmp_path.replace(target)
+        except Exception:
+            if tmp_path.exists():
+                tmp_path.unlink(missing_ok=True)
+            raise
 
     # ------------------------------------------------------------------
     # Internal helpers

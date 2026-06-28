@@ -72,6 +72,9 @@ from genesis_architect_pro.knowledge_graph import (
     KnowledgeGraph, Node, Edge, NODE_TYPES, REL_TYPES,
     load_graph, save_graph, build_from_project,
 )
+from genesis_architect_pro.engine_adapters import (
+    ADAPTERS, BUILTIN_DESCRIPTORS, register_builtin_engines,
+)
 
 __all__ = [
     # GDE — central brain
@@ -118,4 +121,5 @@ __all__ = [
     "summarize_lessons", "write_lessons",
     "KnowledgeGraph", "Node", "Edge", "NODE_TYPES", "REL_TYPES",
     "load_graph", "save_graph", "build_from_project",
+    "ADAPTERS", "BUILTIN_DESCRIPTORS", "register_builtin_engines",
 ]

@@ -13,6 +13,23 @@
 ## 🆕 NEW in v6.4.0 (publish these)
 > The newest additions since the last site update. Lead the announcement with these.
 
+- **Rich CLI TUI** — `genesis decide` now renders with panels, a live progress
+  spinner, color-coded gate status, engine results table, and an interactive
+  approval prompt. Graceful plain-text fallback when rich is not installed
+  (`pip install genesis-architect-pro[tui]`).
+- **All 7 GDE modes fully wired** — RESEARCH, BUILD, and COMMITTEE were
+  previously stubs with 0 engines. Now:
+  - RESEARCH: source_registry → field_intelligence → evidence_pack (3 engines)
+  - BUILD: build_scaffold delegates to the free core scaffolder (1 engine)
+  - COMMITTEE: full analysis pass (import_graph → scorer → anti-pattern →
+    fragility) + committee_analysis synthesis with divergence detection (5 engines)
+- **Intent classifier calibration** — all 7 modes now classify correctly on
+  natural-language phrases with healthy confidence; RESEARCH/BUILD/COMMITTEE
+  signals expanded with real practitioner phrases.
+- **Landing page v6.3.0 update** — `docs/index.html` updated with new Pro engines
+  section, GDE 7-stage pipeline diagram, GDE vs 11 competitors table, and
+  terminal demo showing `genesis decide` output instead of `genesis init`.
+
 - **Memory Engine + Decision Journal** — per-project memory as plain Markdown
   under `.genesis/` (project memory, decision log, research history, ADRs, known
   risks, lessons). Every significant decision is journaled with alternatives,
@@ -470,6 +487,10 @@ This report is the **living source of truth** for site updates. Keep it current:
 ---
 
 *Last updated: 2026-06-29 | Genesis Architect PRO v6.4.0 | Next site review due: 2026-07-13*
+
+> **Session additions (2026-06-29):** Rich TUI, all 7 GDE modes wired (13 engines),
+> intent classifier calibration, landing page Pro/GDE sections, README rewrite.
+> 1,441 tests passing. pyproject.toml v6.4.0.
 
 > **Pricing confirmed (2026-06-29):** Founder $9/mo or $90/yr (2 months free),
 > first 50 seats locked for life; then $19/mo or $190/yr. Live on the site.

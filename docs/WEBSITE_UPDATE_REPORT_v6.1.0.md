@@ -2,6 +2,12 @@
 > For the website agent: update the Pro page/pricing/docs section to reflect these capabilities.
 > **This is the living source of truth for what to publish on the site. It is kept up to date as the product evolves — always check the "Last updated" date and the "🆕 NEW" banner before a site refresh.**
 
+> ✅ **MILESTONE — v6.4.0 shipped (2026-06-29).** The full "AI Engineering
+> Partner" build phase (the v2 spec) is complete and pushed to the private
+> remote (`pro/main`). All 19 engines + the UI Engine are implemented and tested
+> (1,441 tests passing). Nothing from the spec remains open. **The site is ready
+> for a refresh against this report.** See `docs/pro/PHASE_v2_CLOSURE.md`.
+
 ---
 
 ## 🆕 NEW in v6.4.0 (publish these)

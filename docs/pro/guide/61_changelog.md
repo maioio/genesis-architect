@@ -11,6 +11,16 @@ Pro depends on a compatible Free core.
 
 ## Recent capabilities (Pro v6.x — "AI Engineering Partner")
 
+**v6.3** added the research-truth layer:
+
+- **Research Source Registry** — a ranked, configurable catalog of 25+ sources;
+  new sources can be added per-project without changing the engine. See
+  [Source Registry](13_source_registry.md).
+- **Reddit Answers workflow** — Developer Field Intelligence with a binding
+  verification rule. See [Field Intelligence](11_field_intelligence.md).
+- **Evidence Packs** — honest, source-ranked proof behind every recommendation.
+  See [Evidence Packs](12_evidence_packs.md).
+
 The v2 evolution added the intelligence layer on top of the architecture engines:
 
 - **Decision Engine** + engine adapters — orchestrates the real engines through

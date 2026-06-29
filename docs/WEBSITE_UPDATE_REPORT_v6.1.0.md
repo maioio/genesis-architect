@@ -4,8 +4,24 @@
 
 ---
 
-## 🆕 NEW in v6.2.0 (publish these)
+## 🆕 NEW in v6.3.0 (publish these)
 > The newest additions since the last site update. Lead the announcement with these.
+
+- **Research Source Registry** — Genesis researches from a ranked, configurable
+  catalog of 25+ sources (official docs, source, security DBs, packages, Q&A,
+  developer field, learning). Sources are ranked by authority × evidence weight,
+  and **new sources can be added per-project without changing the engine**.
+- **Reddit Answers workflow** — Developer Field Intelligence now mines real
+  practitioner pain ("problems / not working / production issues / vs X / worth
+  it / migration"), then **verifies every claim against engineering-truth
+  sources** before it influences advice. Field signal is never treated as final
+  truth.
+- **Evidence Packs** — every significant recommendation now ships with a proof
+  pack: the sources consulted (with reliability), an **honest confidence grade**
+  (never "high" without an authoritative source; contradictions lower it), and
+  unreachable sources marked *unavailable* rather than faked.
+
+### Earlier in v6.2.0 (still new-ish — keep featured)
 
 - **Knowledge Graph Engine** — cross-source connective intelligence. Links code,
   CVEs, decisions, risks, and field findings into one queryable graph. Answers
@@ -30,8 +46,8 @@
 ---
 
 ## Version bump
-- **Was:** v6.1.0
-- **Now:** v6.2.0
+- **Was:** v6.2.0
+- **Now:** v6.3.0
 
 ---
 
@@ -434,4 +450,4 @@ This report is the **living source of truth** for site updates. Keep it current:
 
 ---
 
-*Last updated: 2026-06-28 | Genesis Architect PRO v6.2.0 | Next site review due: 2026-07-12*
+*Last updated: 2026-06-29 | Genesis Architect PRO v6.3.0 | Next site review due: 2026-07-13*

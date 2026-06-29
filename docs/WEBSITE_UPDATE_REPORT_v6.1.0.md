@@ -2,11 +2,27 @@
 > For the website agent: update the Pro page/pricing/docs section to reflect these capabilities.
 > **This is the living source of truth for what to publish on the site. It is kept up to date as the product evolves — always check the "Last updated" date and the "🆕 NEW" banner before a site refresh.**
 
-> ✅ **MILESTONE — v6.4.0 shipped (2026-06-29).** The full "AI Engineering
-> Partner" build phase (the v2 spec) is complete and pushed to the private
-> remote (`pro/main`). All 19 engines + the UI Engine are implemented and tested
-> (1,441 tests passing). Nothing from the spec remains open. **The site is ready
-> for a refresh against this report.** See `docs/pro/PHASE_v2_CLOSURE.md`.
+> ✅ **MILESTONE — v6.4.0 complete (2026-06-29).** All engines, modes, and UI
+> fully built and tested. **1,441 tests passing. 13 GDE engines. 7/7 modes wired.
+> Rich CLI TUI. Nothing open.** All work is on the private remote `pro/main`.
+
+---
+
+## 🌐 Site sync status (check this when editing the landing page)
+
+| Surface | File | Version | Status |
+|---------|------|:-------:|--------|
+| Free landing | `docs/index.html` | v6.4.0 | ✅ in sync |
+| Pro page | `docs/pro.html` | v6.4.0 | ✅ in sync |
+| This report | (source of truth) | v6.4.0 | ✅ current |
+
+**Live URLs:** Pro site = GitHub Pages of the private `genesis-architect-pro`
+repo. Public free landing (origin) uses `docs/pro/guide/LANDING_HANDOFF.md`.
+
+When you edit the landing page, keep this table honest: bump the version + flip
+status to "⏳ needs sync" for anything that drifts from this report, then back to
+"✅ in sync" once published. Never publish a capability not listed below as
+shipped.
 
 ---
 
@@ -26,9 +42,10 @@
 - **Intent classifier calibration** — all 7 modes now classify correctly on
   natural-language phrases with healthy confidence; RESEARCH/BUILD/COMMITTEE
   signals expanded with real practitioner phrases.
-- **Landing page v6.3.0 update** — `docs/index.html` updated with new Pro engines
-  section, GDE 7-stage pipeline diagram, GDE vs 11 competitors table, and
-  terminal demo showing `genesis decide` output instead of `genesis init`.
+- **Two-page site (v6.4.0)** — `docs/index.html` is the Free landing page
+  ("Research First. Build Once."); `docs/pro.html` is the Pro page (AI Engineering
+  Partner) with all 13 engine cards, the GDE pipeline, GDE vs 11 competitors, and
+  the founder pricing section. Both at v6.4.0.
 
 - **Memory Engine + Decision Journal** — per-project memory as plain Markdown
   under `.genesis/` (project memory, decision log, research history, ADRs, known
@@ -354,9 +371,10 @@ engines (not aspirational):
 - Plus `LANDING_HANDOFF.md` — approved homepage copy (removes "pitfall finder"
   framing; drops Instagram-as-source).
 
-> ⚠️ Honesty note for the site: the **UI Engine (Floating Assistant + Full
-> Canvas)** is **planned, not shipped**. If mentioned on the site, mark it
-> "coming soon" — do not present it as available.
+> ✅ Update (v6.4.0): the **UI Engine (Floating Assistant + Canvas Workspace)** is
+> now **shipped** — built as a zero-setup self-contained HTML workspace
+> (`ui_workspace.py`). It is safe to present as available on the site. (A native
+> Tauri desktop shell remains optional future polish.)
 
 ---
 
@@ -412,7 +430,7 @@ genesis harden .                          # Generate STRIDE + OWASP + secrets sc
 
 **Before v6:** Pro = deeper research + memory persistence
 
-**After v6.2:** Pro = deeper research + memory + full codebase intelligence layer
+**After v6.4:** Pro = deeper research + memory + full codebase intelligence layer
 + central decision brain (now wired to the real engines) + **cross-source
 Knowledge Graph** + continuous Learning + anonymous Product Intelligence +
 no-setup install — i.e. a full **AI Engineering Partner**, not just an analyzer.
@@ -459,9 +477,14 @@ no-setup install — i.e. a full **AI Engineering Partner**, not just an analyze
 - `genesis decide "<instruction>"` CLI — one command, full pipeline with approval prompt
 - Only tool in the market with all 5 decision-engine capabilities (verified against 11 competitors)
 
-**AI Engineering Partner (NEW in v6.2)**
+**AI Engineering Partner**
 - **Knowledge Graph** — links code, CVEs, risks and decisions; finds do-not-touch zones that have an open CVE (nothing else on the market does this)
 - **Learning Engine** — gets better at choosing research strategies for your work, with honest confidence
+- **Research Source Registry** — 25+ ranked sources, extensible per-project without code
+- **Reddit Answers workflow** — verified field intelligence (never treated as final truth)
+- **Evidence Packs** — proof behind every recommendation, with honest confidence
+- **Memory + Decision Journal** — per-project `.genesis/*.md` memory; every decision journaled
+- **Floating Assistant + Canvas** — zero-setup visual workspace (no Node/build/server)
 - **Anonymous Product Intelligence** — opt-in, default-off, privacy enforced in code
 - **Four-step install, no Docker** — Download → Install → License → Work
 - **Works offline** — all local analysis runs with no network; online sources are honestly marked when unavailable
@@ -494,5 +517,6 @@ This report is the **living source of truth** for site updates. Keep it current:
 
 > **Pricing confirmed (2026-06-29):** Founder $9/mo or $90/yr (2 months free),
 > first 50 seats locked for life; then $19/mo or $190/yr. Live on the site.
-> **v2 build phase closed** — see `docs/pro/PHASE_v2_CLOSURE.md`. UI Engine is the
-> only deferred item (separate round, by decision).
+> **v2 build phase closed** — see `docs/pro/PHASE_v2_CLOSURE.md`. **Nothing from
+> the spec remains open** (Memory + UI engines shipped in v6.4.0). All work is on
+> the private remote `pro/main`.

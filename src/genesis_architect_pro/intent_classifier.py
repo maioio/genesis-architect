@@ -62,6 +62,8 @@ _MODE_SIGNALS: dict[GDEMode, list[tuple[str, float]]] = {
     GDEMode.RESEARCH: [
         (r"\bresearch\b", 1.0),
         (r"\binvestigat", 0.9),
+        (r"\bbest.*practice", 0.9),
+        (r"\bpitfall", 0.9),
         (r"\bcompar", 0.7),
         (r"\blearn\b", 0.6),
         (r"\bstudy\b", 0.6),
@@ -77,6 +79,10 @@ _MODE_SIGNALS: dict[GDEMode, list[tuple[str, float]]] = {
         (r"\btrend\b", 0.6),
         (r"\bbenchmark\b", 0.7),
         (r"\bexample\b", 0.4),
+        (r"\bfield.*intelligence\b", 1.0),
+        (r"\bevidence\b", 0.7),
+        (r"\bsources?\b", 0.5),
+        (r"\bsurvey\b", 0.7),
     ],
     GDEMode.REFACTOR: [
         (r"\brefactor\b", 1.0),
@@ -113,6 +119,10 @@ _MODE_SIGNALS: dict[GDEMode, list[tuple[str, float]]] = {
     GDEMode.BUILD: [
         (r"\bbuild\b", 1.0),
         (r"\bscaffold\b", 1.0),
+        (r"\binit\b", 0.9),
+        (r"\bnew.*project\b", 1.0),
+        (r"\bcreate.*project\b", 1.0),
+        (r"\bstart.*project\b", 0.9),
         (r"\bcreate\b", 0.6),
         (r"\bgenerat", 0.7),
         (r"\bnew.*module\b", 0.8),
@@ -124,6 +134,8 @@ _MODE_SIGNALS: dict[GDEMode, list[tuple[str, float]]] = {
         (r"\bwrite.*code", 0.7),
         (r"\bboilerplate\b", 0.8),
         (r"\btemplate\b", 0.6),
+        (r"\bproject.*from.*scratch\b", 1.0),
+        (r"\bsetup.*project\b", 0.9),
     ],
     GDEMode.DOCUMENT: [
         (r"\bdocument\b", 1.0),
@@ -149,6 +161,10 @@ _MODE_SIGNALS: dict[GDEMode, list[tuple[str, float]]] = {
     GDEMode.COMMITTEE: [
         (r"\bcommittee\b", 1.0),
         (r"\bmulti.*perspective", 0.9),
+        (r"\bsecond.*opinion\b", 1.0),
+        (r"\bget.*perspective", 1.0),
+        (r"\ball.*angle", 0.9),
+        (r"\bdivergen", 0.8),
         (r"\bcomplex\b", 0.5),
         (r"\buncertain\b", 0.7),
         (r"\bnot sure\b", 0.6),
@@ -157,6 +173,12 @@ _MODE_SIGNALS: dict[GDEMode, list[tuple[str, float]]] = {
         (r"\bshould i\b", 0.5),
         (r"\bhelp me decide\b", 0.8),
         (r"\bwhat.*should\b", 0.5),
+        (r"\bmultiple.*view", 1.0),
+        (r"\bviewpoint", 1.0),
+        (r"\bpros.*cons\b", 0.9),
+        (r"\btrade.*off", 0.9),
+        (r"\bmicroservice.*vs\b", 0.9),
+        (r"\bwhether.*to.*use\b", 0.7),
     ],
 }
 

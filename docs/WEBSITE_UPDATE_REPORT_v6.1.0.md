@@ -451,3 +451,8 @@ This report is the **living source of truth** for site updates. Keep it current:
 ---
 
 *Last updated: 2026-06-29 | Genesis Architect PRO v6.3.0 | Next site review due: 2026-07-13*
+
+> **Pricing confirmed (2026-06-29):** Founder $9/mo or $90/yr (2 months free),
+> first 50 seats locked for life; then $19/mo or $190/yr. Live on the site.
+> **v2 build phase closed** — see `docs/pro/PHASE_v2_CLOSURE.md`. UI Engine is the
+> only deferred item (separate round, by decision).

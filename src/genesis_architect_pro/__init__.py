@@ -76,6 +76,16 @@ from genesis_architect_pro.gde_knowledge_graph_adapter import (
     gde_run_knowledge_graph, register_knowledge_graph,
     KNOWLEDGE_GRAPH_DESCRIPTOR,
 )
+from genesis_architect_pro.source_registry import (
+    Source, SourceRegistry, load_registry, add_project_source,
+)
+from genesis_architect_pro.field_intelligence import (
+    FieldFinding, FieldReport, REDDIT_ANSWERS_TEMPLATES,
+    build_reddit_answers_queries, verify_finding, run_field_workflow,
+)
+from genesis_architect_pro.evidence_pack import (
+    EvidenceItem, EvidencePack, build_evidence_pack, save_evidence_pack,
+)
 from genesis_architect_pro.first_run import (
     Readiness, Check, CUSTOMER_FLOW,
     check_readiness, doctor_report, offline_capability_report,
@@ -129,6 +139,10 @@ __all__ = [
     "load_graph", "save_graph", "build_from_project",
     "gde_run_knowledge_graph", "register_knowledge_graph",
     "KNOWLEDGE_GRAPH_DESCRIPTOR",
+    "Source", "SourceRegistry", "load_registry", "add_project_source",
+    "FieldFinding", "FieldReport", "REDDIT_ANSWERS_TEMPLATES",
+    "build_reddit_answers_queries", "verify_finding", "run_field_workflow",
+    "EvidenceItem", "EvidencePack", "build_evidence_pack", "save_evidence_pack",
     "Readiness", "Check", "CUSTOMER_FLOW",
     "check_readiness", "doctor_report", "offline_capability_report",
     "ensure_optional_dep",

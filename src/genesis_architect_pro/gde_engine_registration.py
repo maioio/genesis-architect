@@ -47,7 +47,7 @@ _DESCRIPTORS: list[EngineDescriptor] = [
         is_optional=False,
         write_operations=[],
         timeout_seconds=60,
-        modes=[GDEMode.RECOVERY, GDEMode.REFACTOR, GDEMode.GATE, GDEMode.DOCUMENT],
+        modes=[GDEMode.RECOVERY, GDEMode.REFACTOR, GDEMode.GATE, GDEMode.DOCUMENT, GDEMode.COMMITTEE],
     ),
 
     # 2. Architecture Scorer — requires import graph
@@ -63,7 +63,7 @@ _DESCRIPTORS: list[EngineDescriptor] = [
         is_optional=True,
         write_operations=["score_history"],
         timeout_seconds=30,
-        modes=[GDEMode.RECOVERY, GDEMode.REFACTOR, GDEMode.GATE],
+        modes=[GDEMode.RECOVERY, GDEMode.REFACTOR, GDEMode.GATE, GDEMode.COMMITTEE],
     ),
 
     # 3. Anti-Pattern Detector — requires import graph
@@ -79,7 +79,7 @@ _DESCRIPTORS: list[EngineDescriptor] = [
         is_optional=True,
         write_operations=[],
         timeout_seconds=30,
-        modes=[GDEMode.RECOVERY, GDEMode.REFACTOR, GDEMode.GATE],
+        modes=[GDEMode.RECOVERY, GDEMode.REFACTOR, GDEMode.GATE, GDEMode.COMMITTEE],
     ),
 
     # 4. Fragility Classifier — requires both scorer and antipattern
@@ -95,7 +95,7 @@ _DESCRIPTORS: list[EngineDescriptor] = [
         is_optional=True,
         write_operations=["fragility_map_md"],
         timeout_seconds=45,
-        modes=[GDEMode.RECOVERY, GDEMode.REFACTOR, GDEMode.GATE],
+        modes=[GDEMode.RECOVERY, GDEMode.REFACTOR, GDEMode.GATE, GDEMode.COMMITTEE],
     ),
 
     # 5. Recovery Report — final RECOVERY output; requires all analysis
@@ -160,6 +160,92 @@ _DESCRIPTORS: list[EngineDescriptor] = [
         write_operations=["stride_md", "owasp_md"],
         timeout_seconds=30,
         modes=[GDEMode.GATE, GDEMode.DOCUMENT],
+    ),
+
+    # --- RESEARCH mode ---
+
+    # 9. Source Registry — load research source catalog
+    EngineDescriptor(
+        id="source_registry",
+        name="Source Registry",
+        module=_ADAPTER_MODULE,
+        entry_point="gde_run_source_registry",
+        category=EngineCategory.ANALYSIS,
+        input_keys=["project_dir"],
+        output_keys=["registry", "source_count"],
+        requires=[],
+        is_optional=True,
+        write_operations=[],
+        timeout_seconds=10,
+        modes=[GDEMode.RESEARCH],
+    ),
+
+    # 10. Field Intelligence — Reddit Answers developer sentiment
+    EngineDescriptor(
+        id="field_intelligence",
+        name="Field Intelligence",
+        module=_ADAPTER_MODULE,
+        entry_point="gde_run_field_intelligence",
+        category=EngineCategory.ANALYSIS,
+        input_keys=["project_dir", "instruction"],
+        output_keys=["findings", "verified_count", "queries"],
+        requires=["source_registry"],
+        is_optional=True,
+        write_operations=[],
+        timeout_seconds=60,
+        modes=[GDEMode.RESEARCH],
+    ),
+
+    # 11. Evidence Pack — consolidate findings into a structured evidence pack
+    EngineDescriptor(
+        id="evidence_pack",
+        name="Evidence Pack",
+        module=_ADAPTER_MODULE,
+        entry_point="gde_run_evidence_pack",
+        category=EngineCategory.REPORT,
+        input_keys=["project_dir", "findings", "registry"],
+        output_keys=["pack_path", "item_count"],
+        requires=["field_intelligence"],
+        is_optional=True,
+        write_operations=["evidence_pack_json"],
+        timeout_seconds=15,
+        modes=[GDEMode.RESEARCH],
+    ),
+
+    # --- BUILD mode ---
+
+    # 12. Build Scaffold — invoke genesis-architect free core scaffolder
+    EngineDescriptor(
+        id="build_scaffold",
+        name="Build Scaffold",
+        module=_ADAPTER_MODULE,
+        entry_point="gde_run_build_scaffold",
+        category=EngineCategory.REPORT,
+        input_keys=["project_dir", "instruction"],
+        output_keys=["scaffold_path", "vision"],
+        requires=[],
+        is_optional=False,
+        write_operations=["project_scaffold"],
+        timeout_seconds=120,
+        modes=[GDEMode.BUILD],
+    ),
+
+    # --- COMMITTEE mode ---
+
+    # 13. Committee Analysis — multi-perspective synthesis (runs after analysis engines)
+    EngineDescriptor(
+        id="committee_analysis",
+        name="Committee Analysis",
+        module=_ADAPTER_MODULE,
+        entry_point="gde_run_committee_analysis",
+        category=EngineCategory.REPORT,
+        input_keys=["project_dir"],
+        output_keys=["perspectives", "perspective_count", "divergent_lenses", "report_path"],
+        requires=["fragility_classifier"],
+        is_optional=True,
+        write_operations=["committee_report_md"],
+        timeout_seconds=30,
+        modes=[GDEMode.COMMITTEE],
     ),
 ]
 

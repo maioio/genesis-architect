@@ -401,3 +401,144 @@ class TestCLI:
         import tempfile
         rc = main(["decide", "--classify-only", "diagnose", "--dir", "/nonexistent/path/xyz"])
         assert rc == 1
+
+
+# ---------------------------------------------------------------------------
+# New mode wiring — RESEARCH, BUILD, COMMITTEE
+# ---------------------------------------------------------------------------
+
+
+class TestNewModeWiring:
+    def test_all_7_modes_have_engines(self):
+        """All GDE modes must have at least one engine registered."""
+        import genesis_architect_pro.gde_engine_registration
+        from genesis_architect_pro.engine_registry import get_default_registry
+        from genesis_architect_pro.gde_types import GDEMode
+
+        reg = get_default_registry()
+        for mode in GDEMode:
+            groups = reg.parallel_groups_for_mode(mode)
+            n = sum(len(g) for g in groups)
+            assert n >= 1, f"Mode {mode.value} has no engines registered"
+
+    def test_13_engines_total(self):
+        import genesis_architect_pro.gde_engine_registration
+        from genesis_architect_pro.engine_registry import get_default_registry
+
+        reg = get_default_registry()
+        assert len(reg._descriptors) >= 13
+
+    def test_research_mode_phases(self):
+        import genesis_architect_pro.gde_engine_registration
+        from genesis_architect_pro.engine_registry import get_default_registry
+        from genesis_architect_pro.gde_types import GDEMode
+
+        reg = get_default_registry()
+        groups = reg.parallel_groups_for_mode(GDEMode.RESEARCH)
+        ids = {d.id for phase in groups for d in phase}
+        assert "source_registry" in ids
+        assert "field_intelligence" in ids
+        assert "evidence_pack" in ids
+
+    def test_build_mode_has_scaffold_engine(self):
+        import genesis_architect_pro.gde_engine_registration
+        from genesis_architect_pro.engine_registry import get_default_registry
+        from genesis_architect_pro.gde_types import GDEMode
+
+        reg = get_default_registry()
+        groups = reg.parallel_groups_for_mode(GDEMode.BUILD)
+        ids = {d.id for phase in groups for d in phase}
+        assert "build_scaffold" in ids
+
+    def test_committee_mode_includes_analysis_and_synthesis(self):
+        import genesis_architect_pro.gde_engine_registration
+        from genesis_architect_pro.engine_registry import get_default_registry
+        from genesis_architect_pro.gde_types import GDEMode
+
+        reg = get_default_registry()
+        groups = reg.parallel_groups_for_mode(GDEMode.COMMITTEE)
+        ids = {d.id for phase in groups for d in phase}
+        assert "import_graph" in ids
+        assert "committee_analysis" in ids
+
+    def test_source_registry_adapter_handles_exception(self):
+        from genesis_architect_pro.gde_engine_adapters import gde_run_source_registry
+        from genesis_architect_pro.gde_types import GDEMode, SessionContext
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            ctx = SessionContext(mode=GDEMode.RESEARCH)
+            ctx.project_dir = Path(tmp)
+            result = gde_run_source_registry(ctx)
+            assert isinstance(result, dict)
+            assert "_confidence" in result
+
+    def test_field_intelligence_adapter_handles_exception(self):
+        from genesis_architect_pro.gde_engine_adapters import gde_run_field_intelligence
+        from genesis_architect_pro.gde_types import GDEMode, SessionContext
+        import tempfile
+        from unittest.mock import patch
+
+        with tempfile.TemporaryDirectory() as tmp:
+            ctx = SessionContext(mode=GDEMode.RESEARCH)
+            ctx.project_dir = Path(tmp)
+            ctx.instruction = "test tool"
+
+            with patch("genesis_architect_pro.field_intelligence.run_field_workflow",
+                       side_effect=RuntimeError("network unavailable")):
+                result = gde_run_field_intelligence(ctx)
+
+            assert isinstance(result, dict)
+            assert result["_confidence"] <= 0.5
+            assert result["findings"] == []
+
+    def test_committee_adapter_returns_perspectives(self):
+        from genesis_architect_pro.gde_engine_adapters import gde_run_committee_analysis
+        from genesis_architect_pro.gde_types import GDEMode, SessionContext, EngineResult, EngineStatus
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            ctx = SessionContext(mode=GDEMode.COMMITTEE)
+            ctx.project_dir = Path(tmp)
+            # No engine results — should still return without crashing
+            result = gde_run_committee_analysis(ctx)
+            assert isinstance(result, dict)
+            assert "perspectives" in result
+            assert "perspective_count" in result
+            assert isinstance(result["_confidence"], float)
+
+    def test_committee_adapter_with_upstream_results(self):
+        from genesis_architect_pro.gde_engine_adapters import gde_run_committee_analysis
+        from genesis_architect_pro.gde_types import (
+            GDEMode, SessionContext, EngineResult, EngineStatus
+        )
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            ctx = SessionContext(mode=GDEMode.COMMITTEE)
+            ctx.project_dir = Path(tmp)
+
+            # Inject a fake upstream engine result
+            ctx.engine_results["architecture_scorer"] = EngineResult(
+                engine_id="architecture_scorer",
+                status=EngineStatus.SUCCESS,
+                output={"score": 72, "score_label": "Good"},
+                confidence=0.9,
+            )
+
+            result = gde_run_committee_analysis(ctx)
+            assert result["perspective_count"] >= 1
+            assert any(p["lens"] == "Architecture" for p in result["perspectives"])
+
+    def test_build_scaffold_adapter_missing_vision(self):
+        from genesis_architect_pro.gde_engine_adapters import gde_run_build_scaffold
+        from genesis_architect_pro.gde_types import GDEMode, SessionContext
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            ctx = SessionContext(mode=GDEMode.BUILD)
+            ctx.project_dir = Path(tmp)
+            ctx.instruction = ""  # no vision
+            result = gde_run_build_scaffold(ctx)
+            assert result["_confidence"] <= 0.3
+            assert "BUILD mode requires" in result["_warnings"][0]

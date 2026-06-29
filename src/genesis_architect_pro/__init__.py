@@ -86,10 +86,18 @@ from genesis_architect_pro.field_intelligence import (
 from genesis_architect_pro.evidence_pack import (
     EvidenceItem, EvidencePack, build_evidence_pack, save_evidence_pack,
 )
+from genesis_architect_pro.memory_engine import (
+    MEMORY_FILES, DecisionJournalEntry, init_memory, record_decision,
+    record_research, record_risk, record_adr, record_lesson,
+    set_project_memory, read_memory, memory_status,
+)
 from genesis_architect_pro.first_run import (
     Readiness, Check, CUSTOMER_FLOW,
     check_readiness, doctor_report, offline_capability_report,
     ensure_optional_dep,
+)
+from genesis_architect_pro.ui_workspace import (
+    WorkspaceState, collect_state, render_workspace, write_workspace,
 )
 
 __all__ = [
@@ -143,7 +151,11 @@ __all__ = [
     "FieldFinding", "FieldReport", "REDDIT_ANSWERS_TEMPLATES",
     "build_reddit_answers_queries", "verify_finding", "run_field_workflow",
     "EvidenceItem", "EvidencePack", "build_evidence_pack", "save_evidence_pack",
+    "MEMORY_FILES", "DecisionJournalEntry", "init_memory", "record_decision",
+    "record_research", "record_risk", "record_adr", "record_lesson",
+    "set_project_memory", "read_memory", "memory_status",
     "Readiness", "Check", "CUSTOMER_FLOW",
     "check_readiness", "doctor_report", "offline_capability_report",
     "ensure_optional_dep",
+    "WorkspaceState", "collect_state", "render_workspace", "write_workspace",
 ]

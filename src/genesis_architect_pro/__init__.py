@@ -72,8 +72,9 @@ from genesis_architect_pro.knowledge_graph import (
     KnowledgeGraph, Node, Edge, NODE_TYPES, REL_TYPES,
     load_graph, save_graph, build_from_project,
 )
-from genesis_architect_pro.engine_adapters import (
-    ADAPTERS, BUILTIN_DESCRIPTORS, register_builtin_engines,
+from genesis_architect_pro.gde_knowledge_graph_adapter import (
+    gde_run_knowledge_graph, register_knowledge_graph,
+    KNOWLEDGE_GRAPH_DESCRIPTOR,
 )
 from genesis_architect_pro.first_run import (
     Readiness, Check, CUSTOMER_FLOW,
@@ -126,7 +127,8 @@ __all__ = [
     "summarize_lessons", "write_lessons",
     "KnowledgeGraph", "Node", "Edge", "NODE_TYPES", "REL_TYPES",
     "load_graph", "save_graph", "build_from_project",
-    "ADAPTERS", "BUILTIN_DESCRIPTORS", "register_builtin_engines",
+    "gde_run_knowledge_graph", "register_knowledge_graph",
+    "KNOWLEDGE_GRAPH_DESCRIPTOR",
     "Readiness", "Check", "CUSTOMER_FLOW",
     "check_readiness", "doctor_report", "offline_capability_report",
     "ensure_optional_dep",

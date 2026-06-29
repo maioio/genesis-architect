@@ -266,10 +266,15 @@ class EngineRegistry:
 #: The global registry instance used by the GDE at runtime.
 #: Tests should create their own EngineRegistry() instances to stay isolated.
 _default_registry: EngineRegistry = EngineRegistry()
+_registration_loaded: bool = False
 
 
 def get_default_registry() -> EngineRegistry:
-    """Return the module-level default EngineRegistry instance."""
+    """Return the module-level default EngineRegistry, auto-loading descriptors on first call."""
+    global _registration_loaded
+    if not _registration_loaded:
+        _registration_loaded = True
+        import genesis_architect_pro.gde_engine_registration  # noqa: F401
     return _default_registry
 
 

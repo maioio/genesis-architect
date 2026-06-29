@@ -11,6 +11,14 @@ Pro depends on a compatible Free core.
 
 ## Recent capabilities (Pro v6.x — "AI Engineering Partner")
 
+**v6.4** completed the partner experience:
+
+- **Memory Engine + Decision Journal** — per-project Markdown memory under
+  `.genesis/` (project memory, decision log, research history, ADRs, known risks,
+  lessons). See [Memory + Learning](24_memory_learning.md).
+- **UI Engine** — Floating Assistant + Canvas Workspace as a zero-setup
+  self-contained HTML view of the engine outputs.
+
 **v6.3** added the research-truth layer:
 
 - **Research Source Registry** — a ranked, configurable catalog of 25+ sources;

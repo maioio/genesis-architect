@@ -4,7 +4,11 @@
 > (the 7-agent plan + 19-engine spec + coverage checklist). This records what was
 > delivered against that spec.
 
-**Closed:** 2026-06-29 · **Version:** v6.3.0 · **Tests:** 1,415 passing
+**Closed:** 2026-06-29 · **Version:** v6.4.0 · **Tests:** 1,441 passing
+**Update (2026-06-29):** the two previously-deferred items are now DONE — Memory
+Engine (the `.genesis/*.md` journal + Decision Journal) and the UI Engine
+(Floating Assistant + Canvas, as a zero-setup self-contained HTML workspace).
+**Nothing from the HTML spec remains open.**
 
 ---
 
@@ -22,7 +26,8 @@
 | Recovery Engine | ✅ | `recovery_report.py`, `recovery_scan.py` |
 | Memory (Markdown, per-project) | ✅ | `cross_session_memory.py`, `model_store.py` |
 | Product Intelligence (anonymous opt-in) | ✅ | `product_intelligence.py` |
-| UI (Floating + Canvas) | ⏸️ deferred | by user decision — separate round (needs stack choice) |
+| UI (Floating + Canvas) | ✅ | `ui_workspace.py` — zero-setup self-contained HTML workspace |
+| Memory Engine (`.genesis/*.md` + Decision Journal) | ✅ | `memory_engine.py` |
 | Landing page (simple, premium) | ✅ | `docs/index.html` (v6.3.0) |
 | 30–50 page documentation | ✅ | `docs/pro/guide/` (26 pages) |
 | Packaging without customer Docker | ✅ | `first_run.py` + packaging docs |
@@ -55,13 +60,18 @@ Implementation (via `gde_planner`/`gde_runner` + research orchestrator).
   single wiring. The unique Knowledge Graph adapter was ported forward
   (`gde_knowledge_graph_adapter.py`, opt-in).
 
-## Open items (by user decision, not gaps)
+## Open items
 
-1. **UI Engine** (Floating Assistant + Full Canvas) — deferred to a separate
-   round; needs a Tauri/web stack decision + design work.
+1. **UI Engine** — ✅ DONE (v6.4.0). Built as a zero-setup self-contained HTML
+   workspace (`ui_workspace.py`): Floating Assistant + Canvas, rendered from
+   `.genesis/` artifacts, no Node/build/server. A future Tauri desktop shell can
+   embed the same artifact — but nothing is blocked on it.
 2. **Public landing page** — the separate free-repo (origin) site; copy is ready
-   in `docs/pro/guide/LANDING_HANDOFF.md`. The Pro site (`docs/index.html`,
-   private repo) is done.
+   in `docs/pro/guide/LANDING_HANDOFF.md`. The Pro site (`docs/pro.html`, private
+   repo) is done.
+
+**Nothing from the HTML spec remains open.** Optional future polish only:
+a native Tauri desktop shell, and Collaboration as a distinct engine.
 
 ## Pricing (confirmed by user, 2026-06-29)
 

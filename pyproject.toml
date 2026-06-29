@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "genesis-architect-pro"
-version = "6.3.0"
+version = "6.4.0"
 description = "Genesis Architect Pro - architecture analysis, anti-pattern detection, security hardening, C4 diagrams, deep research intelligence, and a decision engine for every mode. Requires a license."
 readme = "README.md"
 requires-python = ">=3.11"

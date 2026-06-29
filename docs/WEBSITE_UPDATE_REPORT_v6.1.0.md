@@ -4,8 +4,21 @@
 
 ---
 
-## 🆕 NEW in v6.3.0 (publish these)
+## 🆕 NEW in v6.4.0 (publish these)
 > The newest additions since the last site update. Lead the announcement with these.
+
+- **Memory Engine + Decision Journal** — per-project memory as plain Markdown
+  under `.genesis/` (project memory, decision log, research history, ADRs, known
+  risks, lessons). Every significant decision is journaled with alternatives,
+  evidence, confidence, and "what would change it" — a decision with no entry is
+  treated as not made.
+- **UI Engine — Floating Assistant + Canvas Workspace** — a premium visual layer
+  with **zero setup**: a single self-contained HTML workspace (no Node, no build,
+  no server, no Docker) rendered from the engine outputs. Floating status panel +
+  full canvas (score, knowledge graph, CVEs, drift, risk zones). Opens in any
+  browser; the same artifact a future desktop app embeds.
+
+### Earlier in v6.3.0 (still featured)
 
 - **Research Source Registry** — Genesis researches from a ranked, configurable
   catalog of 25+ sources (official docs, source, security DBs, packages, Q&A,
@@ -46,8 +59,8 @@
 ---
 
 ## Version bump
-- **Was:** v6.2.0
-- **Now:** v6.3.0
+- **Was:** v6.3.0
+- **Now:** v6.4.0
 
 ---
 
@@ -450,7 +463,7 @@ This report is the **living source of truth** for site updates. Keep it current:
 
 ---
 
-*Last updated: 2026-06-29 | Genesis Architect PRO v6.3.0 | Next site review due: 2026-07-13*
+*Last updated: 2026-06-29 | Genesis Architect PRO v6.4.0 | Next site review due: 2026-07-13*
 
 > **Pricing confirmed (2026-06-29):** Founder $9/mo or $90/yr (2 months free),
 > first 50 seats locked for life; then $19/mo or $190/yr. Live on the site.

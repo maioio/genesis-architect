@@ -4,9 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Genesis Architect — Research First. Build Once.</title>
-<meta name="description" content="The open-source scaffolder that checks GitHub issues and active forks before writing a single line of code. pip install genesis-architect">
+<meta name="description" content="The only AI tool that analyzes your existing codebase before touching a file. Architecture score, anti-pattern map, refactoring plan, C4 diagrams, and a decision engine that never guesses.">
 <meta property="og:title" content="Genesis Architect — Research First. Build Once.">
-<meta property="og:description" content="Scans 15–20 real GitHub repos and mines their Issues before scaffolding your project.">
+<meta property="og:description" content="Scans 15–20 real GitHub repos and mines their Issues. Pro adds architecture analysis, Knowledge Graph, and a 7-mode decision engine.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
@@ -114,6 +114,7 @@ nav{position:sticky;top:0;z-index:500;display:flex;align-items:center;justify-co
 .feat h3{font-size:15px;font-weight:700;color:var(--head);margin-bottom:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .feat p{font-size:13px;color:var(--dim);line-height:1.65}
 .badge{font-size:9px;font-weight:700;letter-spacing:.5px;padding:2px 7px;border-radius:100px;background:rgba(91,142,240,.12);border:1px solid rgba(91,142,240,.3);color:#a5c4ff}
+.badge-pro{background:rgba(155,123,247,.14);border-color:rgba(155,123,247,.35);color:#c4a8ff}
 
 /* COMPARE */
 .table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:16px}
@@ -168,7 +169,9 @@ footer a:hover{color:var(--acc)}
   <div class="nav-logo"><div class="nav-gem">G</div>Genesis Architect</div>
   <ul class="nav-links">
     <a href="#pipeline">How it works</a>
-    <a href="#features">Features</a>
+    <a href="#features">Free</a>
+    <a href="#pro-engines">Pro</a>
+    <a href="#gde">Decision Engine</a>
     <a href="#compare">vs. Others</a>
     <a href="#install">Install</a>
   </ul>
@@ -181,9 +184,9 @@ footer a:hover{color:var(--acc)}
 <section class="hero">
   <div class="hero-grid"></div>
   <div class="hero-bloom"></div>
-  <div class="eyebrow"><span class="eyebrow-pulse"></span>Open Source &nbsp;·&nbsp; v2.6.0 &nbsp;·&nbsp; MIT License</div>
-  <h1>The scaffolder that reads<br><span class="g">real GitHub issues</span><br>before writing a line.</h1>
-  <p class="hero-sub">Scans 15–20 production repos, mines their closed issues and active forks, then builds a scaffold that already knows the traps.</p>
+  <div class="eyebrow"><span class="eyebrow-pulse"></span>Open Source Core &nbsp;·&nbsp; v6.3.0 &nbsp;·&nbsp; MIT License</div>
+  <h1>The AI partner that reads<br><span class="g">your codebase first</span><br>before touching a file.</h1>
+  <p class="hero-sub">Free: scans 15–20 production repos and mines closed issues before scaffolding. Pro: scores your architecture, maps every file STABLE / FRAGILE / VOLATILE, and routes any instruction through 13 engines — no LLM guess.</p>
   <div class="hero-actions">
     <a class="btn btn-primary" href="#install">Get started free →</a>
     <a class="btn btn-outline" href="https://github.com/maioio/genesis-architect">View on GitHub</a>
@@ -202,27 +205,27 @@ footer a:hover{color:var(--acc)}
         <div class="td" style="background:#ff5f57"></div>
         <div class="td" style="background:#febc2e"></div>
         <div class="td" style="background:#28c840"></div>
-        <span class="term-title">genesis init "a FastAPI task queue with Celery and Redis"</span>
+        <span class="term-title">genesis decide "diagnose the project and identify drift"</span>
       </div>
-      <div class="term-body">
-<div><span class="tp">$ </span><span class="tc">genesis init</span> <span class="ts">"a FastAPI task queue with Celery and Redis"</span></div>
+      <div class="term-body" id="term-body">
+<div><span class="tp">$ </span><span class="tc">genesis decide</span> <span class="ts">"diagnose the project and identify drift"</span></div>
 <div>&nbsp;</div>
-<div><span class="ph">[ Phase 2 ]</span> <span class="tlb">Scanning GitHub ecosystem...</span></div>
-<div>&nbsp;&nbsp;<span class="tok">✓</span> <span class="thi">tiangolo/fastapi</span> <span class="tcm">— 4.1k closed issues scanned</span></div>
-<div>&nbsp;&nbsp;<span class="tok">✓</span> <span class="thi">celery/celery</span> <span class="tcm">— 2.8k closed issues scanned</span></div>
-<div>&nbsp;&nbsp;<span class="tok">✓</span> <span class="thi">redis/redis-py</span> <span class="tcm">— analyzing top 3 active forks</span></div>
+<div><span class="ph">[ INTAKE ]</span> <span class="tlb">Classified:</span> <span class="tok">RECOVERY</span> <span class="tcm">— confidence 0.56</span></div>
+<div><span class="ph">[ PLAN   ]</span> <span class="tlb">4 phases, 5 engines, 2 parallel groups</span></div>
 <div>&nbsp;</div>
-<div><span class="ph">[ Phase 4 ]</span> <span class="tlb">Pitfall synthesis</span></div>
-<div>&nbsp;&nbsp;<span class="twn">⚠</span> <span class="tlb">Redis connection pool exhaustion under load</span> <span class="tcm">— 23 issues</span></div>
-<div>&nbsp;&nbsp;<span class="twn">⚠</span> <span class="tlb">Celery task retry storm on Redis timeout</span> <span class="tcm">— 17 issues</span></div>
-<div>&nbsp;&nbsp;<span class="twn">⚠</span> <span class="tlb">FastAPI background task memory leak (0.100.x)</span> <span class="tcm">— patched in fork</span></div>
+<div><span class="ph">[ EXECUTE ]</span></div>
+<div>&nbsp;&nbsp;<span class="tok">✓</span> <span class="thi">import_graph</span> <span class="tcm">— 284 nodes, 3 circular deps detected</span></div>
+<div>&nbsp;&nbsp;<span class="tok">✓</span> <span class="thi">architecture_scorer</span> <span class="tcm">— 64/100 (Needs Attention)</span></div>
+<div>&nbsp;&nbsp;<span class="tok">✓</span> <span class="thi">antipattern_detector</span> <span class="tcm">— 2 CRITICAL, 4 HIGH patterns</span></div>
+<div>&nbsp;&nbsp;<span class="tok">✓</span> <span class="thi">fragility_classifier</span> <span class="tcm">— 7 VOLATILE, 12 FRAGILE, 31 STABLE</span></div>
+<div>&nbsp;&nbsp;<span class="tok">✓</span> <span class="thi">recovery_report</span> <span class="tcm">— risk: MEDIUM</span></div>
 <div>&nbsp;</div>
-<div><span class="ph">[ Phase 6 ]</span> <span class="tlb">Generating scaffold...</span></div>
-<div>&nbsp;&nbsp;<span class="tok">✓</span> <span class="tlb">docker-compose.yml</span> <span class="tcm">— Redis + worker + Flower monitoring</span></div>
-<div>&nbsp;&nbsp;<span class="tok">✓</span> <span class="tlb">app/core/celery.py</span> <span class="tcm">— max_connections=20, retry_backoff=True</span></div>
-<div>&nbsp;&nbsp;<span class="tok">✓</span> <span class="tlb">tests/test_tasks.py</span> <span class="tcm">— smoke test, asserts exit 0</span></div>
+<div><span class="ph">[ GATE   ]</span> <span class="twn">WARN</span> <span class="tcm">— 2 soft blocks, overridable</span></div>
+<div>&nbsp;&nbsp;<span class="twn">!</span> <span class="tlb">CONFIDENCE_LOW</span> <span class="tcm">— session confidence 0.64 (threshold 0.70)</span></div>
 <div>&nbsp;</div>
-<div><span class="tok">✓ Done</span> <span class="tlb">— scaffold ready. Pitfalls pre-wired. 0 known traps.</span> <span class="tblink"></span></div>
+<div><span class="ph">[ REPORT ]</span> <span class="tlb">Confidence: 0.64 &nbsp; Risk: MEDIUM &nbsp; Gate: WARN</span></div>
+<div>&nbsp;</div>
+<div><span class="tok">✓ Ready</span> <span class="tlb">— PROJECT_RECOVERY_REPORT.md written.</span> <span class="tblink"></span></div>
       </div>
     </div>
   </div>
@@ -230,11 +233,11 @@ footer a:hover{color:var(--acc)}
 
 <div class="sec" style="padding-top:0"><div class="sec-inner">
   <div class="stats reveal">
+    <div class="stat"><span class="stat-n">1<em>,</em>415</span><div class="stat-l">Tests passing</div></div>
+    <div class="stat"><span class="stat-n">13</span><div class="stat-l">Pro engines</div></div>
+    <div class="stat"><span class="stat-n">7</span><div class="stat-l">GDE modes</div></div>
+    <div class="stat"><span class="stat-n">12</span><div class="stat-l">Gate policies</div></div>
     <div class="stat"><span class="stat-n">15<em>–</em>20</span><div class="stat-l">Repos scanned</div></div>
-    <div class="stat"><span class="stat-n">50</span><div class="stat-l">Issues per repo</div></div>
-    <div class="stat"><span class="stat-n">3</span><div class="stat-l">Active forks</div></div>
-    <div class="stat"><span class="stat-n">8</span><div class="stat-l">Workflow phases</div></div>
-    <div class="stat"><span class="stat-n">316</span><div class="stat-l">Tests passing</div></div>
     <div class="stat"><span class="stat-n">500</span><div class="stat-l">Vault entries</div></div>
   </div>
 </div></div>
@@ -252,35 +255,64 @@ footer a:hover{color:var(--acc)}
 </div></section>
 
 <section class="sec sec-alt" id="features"><div class="sec-inner">
-  <div class="stag">What's inside</div>
+  <div class="stag">Free core</div>
   <h2 class="sh">Not a template.<br>A research pipeline.</h2>
   <p class="sp">Built for developers who've been burned by boilerplate that doesn't survive contact with production.</p>
   <div class="feats reveal">
     <div class="feat"><span class="feat-icon">🔬</span><h3>Real Issue Mining</h3><p>Reads closed bug issues from production repos. Finds the feedparser hang, the Redis connection leak, the Celery task that silently drops — before you write the code.</p></div>
-    <div class="feat"><span class="feat-icon">🍴</span><h3>Smart Fork Analysis <span class="badge">NEW</span></h3><p>Finds the top 3 active forks ranked by merged PRs in the last 6 months — not stars. Extracts bug fixes and incorporates them into your pitfall list.</p></div>
-    <div class="feat"><span class="feat-icon">🗄️</span><h3>Knowledge Vault <span class="badge">NEW</span></h3><p>Caches solutions locally with 6-month TTL and LRU eviction at 500 entries. Runs fast on repeat projects. Falls back to Stack Overflow on cache miss.</p></div>
-    <div class="feat"><span class="feat-icon">💬</span><h3>Natural Language Choices <span class="badge">NEW</span></h3><p>Say "I want the simple one" instead of typing A. Genesis maps natural language to architecture choices — no memorizing option letters.</p></div>
-    <div class="feat"><span class="feat-icon">🤖</span><h3>Companion Mode <span class="badge">NEW</span></h3><p>Run <code style="color:#a5c4ff;font-family:var(--mono)">genesis companion</code> after scaffolding. Stays active, answers questions, detects when you've moved on.</p></div>
+    <div class="feat"><span class="feat-icon">🍴</span><h3>Smart Fork Analysis</h3><p>Finds the top 3 active forks ranked by merged PRs in the last 6 months — not stars. Extracts bug fixes and incorporates them into your pitfall list.</p></div>
+    <div class="feat"><span class="feat-icon">🗄️</span><h3>Knowledge Vault</h3><p>Caches solutions locally with 6-month TTL and LRU eviction at 500 entries. Runs fast on repeat projects. Falls back to Stack Overflow on cache miss.</p></div>
+    <div class="feat"><span class="feat-icon">💬</span><h3>Natural Language Choices</h3><p>Say "I want the simple one" instead of typing A. Genesis maps natural language to architecture choices — no memorizing option letters.</p></div>
+    <div class="feat"><span class="feat-icon">🤖</span><h3>Companion Mode</h3><p>Run <code style="color:#a5c4ff;font-family:var(--mono)">genesis companion</code> after scaffolding. Stays active, answers questions, detects when you've moved on.</p></div>
     <div class="feat"><span class="feat-icon">🔌</span><h3>Works with any LLM</h3><p>Claude, GPT-4, Gemini, Ollama — all supported via LiteLLM. Set your key once with <code style="color:#a5c4ff;font-family:var(--mono)">genesis config set LLM_API_KEY</code>.</p></div>
+  </div>
+</div></section>
+
+<section class="sec" id="pro-engines"><div class="sec-inner">
+  <div class="stag">Pro — codebase intelligence</div>
+  <h2 class="sh">Point it at any repo.<br>Get a full health report.</h2>
+  <p class="sp">8 engines running pure graph analysis — no LLM required. Architecture score, fragility map, refactoring plan, C4 diagrams, and a Knowledge Graph that links code to CVEs.</p>
+  <div class="feats reveal">
+    <div class="feat"><span class="feat-icon">📊</span><h3>Architecture Scorer <span class="badge">PRO</span></h3><p>0–100 score across Modularity, Coupling, Cohesion, Layering. 6 adaptive profiles. Trend history in <code style="color:#a5c4ff;font-family:var(--mono)">.genesis/score_history.jsonl</code>.</p></div>
+    <div class="feat"><span class="feat-icon">🕸️</span><h3>Anti-Pattern Detector <span class="badge">PRO</span></h3><p>7 structural anti-patterns: God Class, Hub File, Circular Deps, Dead Code, Feature Envy, Leaky Abstraction, Shotgun Surgery. Pure graph — no LLM.</p></div>
+    <div class="feat"><span class="feat-icon">🔥</span><h3>Fragility Classifier <span class="badge">PRO</span></h3><p>VOLATILE / FRAGILE / STABLE per module. Combines anti-patterns + git churn + test coverage. Outputs <code style="color:#a5c4ff;font-family:var(--mono)">FRAGILITY_MAP.md</code> with GO / HOLD / REWRITE.</p></div>
+    <div class="feat"><span class="feat-icon">📋</span><h3>Refactoring Planner <span class="badge">PRO</span></h3><p>Tier-1 critical first, tier-2 improvements after. Each step includes operations, complexity estimate, and projected score impact.</p></div>
+    <div class="feat"><span class="feat-icon">🗺️</span><h3>C4 Diagrams <span class="badge">PRO</span></h3><p>Levels 1–3: System Context, Containers, Components. Mermaid output — renders natively on GitHub. Auto-detects databases, auth, queues, payments.</p></div>
+    <div class="feat"><span class="feat-icon">🔗</span><h3>Knowledge Graph <span class="badge">PRO</span></h3><p>Links code, CVEs, risks, and decisions into one queryable graph. Answers: <em>"which do-not-touch zone has an open CVE?"</em> No other tool does this.</p></div>
+  </div>
+</div></section>
+
+<section class="sec sec-alt" id="gde"><div class="sec-inner">
+  <div class="stag">Genesis Decision Engine</div>
+  <h2 class="sh">One command. Seven modes.<br>Twelve safety gates.</h2>
+  <p class="sp">The GDE routes any plain-English instruction to the right engines — deterministically, without an LLM guess. Two gates can never be bypassed.</p>
+  <div class="pipeline reveal">
+    <div class="pipe"><div class="pipe-num">Stage 01</div><span class="pipe-icon">📥</span><h3>INTAKE</h3><p>Classify intent from free text. Signal-based, sub-millisecond. No LLM call.</p></div>
+    <div class="pipe"><div class="pipe-num">Stage 02</div><span class="pipe-icon">🗺️</span><h3>PLAN</h3><p>Topological sort across engines. Parallel grouping for concurrent execution.</p></div>
+    <div class="pipe"><div class="pipe-num">Stage 03</div><span class="pipe-icon">⚙️</span><h3>EXECUTE</h3><p>Engines run phase by phase. Optional engines degrade gracefully on failure.</p></div>
+    <div class="pipe" style="background:rgba(91,142,240,.04);border-left:2px solid var(--acc)"><div class="pipe-num">Stage 04</div><span class="pipe-icon">🚦</span><h3>GATE</h3><p>12 named gates. 2 hard blocks that can never be overridden by any flag.</p></div>
+    <div class="pipe"><div class="pipe-num">Stage 05</div><span class="pipe-icon">📋</span><h3>REPORT</h3><p>Confidence score, risk level, decision log. Session persists — resume anytime.</p></div>
+    <div class="pipe" style="background:rgba(91,142,240,.04);border-left:2px solid var(--acc)"><div class="pipe-num">Stage 06</div><span class="pipe-icon">✅</span><h3>APPROVE</h3><p>Inspect all pending write operations before any file is touched.</p></div>
+    <div class="pipe"><div class="pipe-num">Stage 07</div><span class="pipe-icon">💾</span><h3>COMMIT</h3><p>Atomic tmp → rename writes. Parent directories auto-created.</p></div>
   </div>
 </div></section>
 
 <section class="sec" id="compare"><div class="sec-inner">
   <div class="stag">Market position</div>
-  <h2 class="sh">Genesis vs. The Ecosystem</h2>
-  <p class="sp">Every tool answers a different question. Genesis is the only one that reads from production failures before it builds.</p>
+  <h2 class="sh">Genesis GDE vs. 11 Competitors</h2>
+  <p class="sp">Verified against Cursor, Cline, Aider, GitHub Copilot Workspace, Sweep, Cody, Continue, Devin, SWE-agent, OpenHands, AutoCodeRover.</p>
   <div class="table-wrap reveal">
     <table>
-      <thead><tr><th>Capability</th><th class="col-g">Genesis Architect</th><th>Yeoman</th><th>Cookiecutter</th><th>create-react-app</th></tr></thead>
+      <thead><tr><th>Decision Engine Capability</th><th class="col-g">Genesis GDE</th><th>All 11 others</th></tr></thead>
       <tbody>
-        <tr class="row-hi"><td>Scans real GitHub repos before build</td><td><span class="ck">✓</span> 15–20 repos</td><td><span class="cx">—</span></td><td><span class="cx">—</span></td><td><span class="cx">—</span></td></tr>
-        <tr class="row-hi"><td>Extracts pitfalls from GitHub Issues</td><td><span class="ck">✓</span> 50 issues/repo</td><td><span class="cx">—</span></td><td><span class="cx">—</span></td><td><span class="cx">—</span></td></tr>
-        <tr class="row-hi"><td>Analyzes active forks by merged PRs</td><td><span class="ck">✓</span> top 3 forks</td><td><span class="cx">—</span></td><td><span class="cx">—</span></td><td><span class="cx">—</span></td></tr>
-        <tr><td>Scaffold with tests + CI/CD</td><td><span class="ck">✓</span> smoke test required</td><td><span class="cp">~ templates only</span></td><td><span class="cp">~ templates only</span></td><td><span class="ck">✓</span> React only</td></tr>
-        <tr><td>Stays active after scaffold</td><td><span class="ck">✓</span> companion mode</td><td><span class="cx">—</span></td><td><span class="cx">—</span></td><td><span class="cx">—</span></td></tr>
-        <tr><td>Local solution cache (TTL)</td><td><span class="ck">✓</span> 6-month TTL</td><td><span class="cx">—</span></td><td><span class="cx">—</span></td><td><span class="cx">—</span></td></tr>
-        <tr><td>Works with any LLM provider</td><td><span class="ck">✓</span> LiteLLM</td><td><span class="cx">—</span></td><td><span class="cx">—</span></td><td><span class="cx">—</span></td></tr>
-        <tr><td>Language support</td><td><span class="ck">✓</span> Python, JS, TS, Go, more</td><td><span class="ck">✓</span> any</td><td><span class="ck">✓</span> any</td><td><span class="cx">—</span> React only</td></tr>
+        <tr class="row-hi"><td>Intent classification — free text → execution mode, no LLM</td><td><span class="ck">✓</span> signal-based, sub-ms</td><td><span class="cx">—</span> LLM or slash commands</td></tr>
+        <tr class="row-hi"><td>Engine routing by classified intent</td><td><span class="ck">✓</span> topological sort, parallel</td><td><span class="cx">—</span></td></tr>
+        <tr class="row-hi"><td>Static approval gate policy table</td><td><span class="ck">✓</span> 12 named gates, 2 non-overridable</td><td><span class="cx">—</span> binary yes/no at best</td></tr>
+        <tr class="row-hi"><td>Session confidence score</td><td><span class="ck">✓</span> per-engine penalty model</td><td><span class="cx">—</span></td></tr>
+        <tr class="row-hi"><td>Persistent decision log</td><td><span class="ck">✓</span> append-only JSONL</td><td><span class="cx">—</span></td></tr>
+        <tr><td>Codebase architecture analysis</td><td><span class="ck">✓</span> 8 engines, pure graph</td><td><span class="cp">~ limited / context-window only</span></td></tr>
+        <tr><td>Cross-source Knowledge Graph</td><td><span class="ck">✓</span> code + CVEs + risks + decisions</td><td><span class="cx">—</span></td></tr>
+        <tr><td>Privacy — telemetry default</td><td><span class="ck">✓</span> off by default, opt-in only</td><td><span class="cp">~ varies</span></td></tr>
       </tbody>
     </table>
   </div>
@@ -291,19 +323,20 @@ footer a:hover{color:var(--acc)}
   <h2 class="sh">Up and running<br>in 2 minutes.</h2>
   <p class="sp">Two ways in. Pick what fits your workflow.</p>
   <div class="install-panel reveal">
-    <div class="ilabel">Option 1 — pip (standalone)</div>
+    <div class="ilabel">Free — pip</div>
     <div class="code-block"><span class="c-k">pip install genesis-architect</span>
 <span class="c-k">genesis config set</span> LLM_API_KEY <span class="c-s">your-api-key</span>
 <span class="c-k">genesis init</span> <span class="c-s">"a FastAPI task queue with Celery and Redis"</span></div>
-    <div class="ilabel">Option 2 — Claude Code skill</div>
-    <div class="code-block"><span class="c-c"># Clone into your Claude skills directory</span>
-<span class="c-k">git clone</span> https://github.com/maioio/genesis-architect ~/.claude/skills/genesis-architect
+    <div class="ilabel">Pro — pip</div>
+    <div class="code-block"><span class="c-k">pip install</span> <span class="c-s">genesis-architect-pro</span>
+<span class="c-k">genesis license activate</span> <span class="c-s">YOUR-LICENSE-KEY</span>
+<span class="c-c"># Analyze any existing codebase</span>
+<span class="c-k">genesis decide</span> <span class="c-s">"diagnose the project and identify drift"</span>
+<span class="c-k">genesis decide</span> <span class="c-s">"generate C4 architecture diagrams"</span> <span class="c-c">--no-commit</span></div>
+    <div class="ilabel">As a Claude Code skill</div>
+    <div class="code-block"><span class="c-k">git clone</span> https://github.com/maioio/genesis-architect ~/.claude/skills/genesis-architect
 <span class="c-c"># Then describe what you want to build</span>
 <span class="c-k">genesis init</span> <span class="c-s">a Python CLI for analyzing log files</span></div>
-    <div class="ilabel">After scaffold — companion mode</div>
-    <div class="code-block"><span class="c-k">genesis companion</span>              <span class="c-c"># active research partner</span>
-<span class="c-c"># "how do I handle Redis connection drops?"</span>
-<span class="c-c"># Say "done" to exit</span></div>
   </div>
   <div style="text-align:center;margin-top:40px">
     <a class="btn btn-primary" href="https://github.com/maioio/genesis-architect">View full docs on GitHub →</a>
@@ -322,7 +355,7 @@ footer a:hover{color:var(--acc)}
 </div></section>
 
 <footer>
-  <p>Genesis Architect &nbsp;·&nbsp; by <a href="https://github.com/maioio">Maio Eshet</a> &nbsp;·&nbsp; MIT License &nbsp;·&nbsp; v2.6.0</p>
+  <p>Genesis Architect &nbsp;·&nbsp; by <a href="https://github.com/maioio">Maio Eshet</a> &nbsp;·&nbsp; Free core MIT &nbsp;·&nbsp; v6.3.0</p>
   <div class="footer-links">
     <a href="https://github.com/maioio/genesis-architect/blob/main/CHANGELOG.md">Changelog</a>
     <a href="https://github.com/maioio/genesis-architect/issues">Issues</a>

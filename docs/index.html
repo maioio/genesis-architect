@@ -3,641 +3,342 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Genesis Architect — AI Engineering Partner</title>
-<meta name="description" content="The only AI tool that analyzes your existing codebase — not just new projects. Architecture score, anti-pattern detection, refactoring plans, C4 diagrams, and a decision engine that never guesses.">
-<meta property="og:title" content="Genesis Architect — AI Engineering Partner">
-<meta property="og:description" content="Architecture score, anti-pattern detection, refactoring plans, C4 diagrams, and a decision engine that routes any plain-English instruction to the right engines — no LLM required for routing.">
-<meta property="og:image" content="https://maioio.github.io/genesis-architect/assets/og.png">
+<title>Genesis Architect — Research First. Build Once.</title>
+<meta name="description" content="The open-source scaffolder that checks GitHub issues and active forks before writing a single line of code. pip install genesis-architect">
+<meta property="og:title" content="Genesis Architect — Research First. Build Once.">
+<meta property="og:description" content="Scans 15–20 real GitHub repos and mines their Issues before scaffolding your project.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --bg: #0d0f14;
-    --surface: #161922;
-    --surface2: #1e2330;
-    --border: #2a3045;
-    --purple: #7c6af7;
-    --blue: #4fc3f7;
-    --mint: #64ffda;
-    --red: #ff6b6b;
-    --gold: #ffd166;
-    --green: #4caf87;
-    --white: #e8eaf0;
-    --dim: #8892a4;
-    --muted: #4a5568;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--white); line-height: 1.6; }
-  a { color: var(--purple); text-decoration: none; }
-  a:hover { color: var(--mint); }
+:root {
+  --ink:#080a0e; --paper:#0d1017; --lift:#141922; --raise:#1a2030;
+  --rim:#232d42; --line:#2b3650; --muted:#3d4f6e; --dim:#5e7291;
+  --soft:#8da3c0; --body:#c2d0e6; --head:#e4ecf8;
+  --acc:#5b8ef0; --acc2:#3ecf8e;
+  --acc-glow:rgba(91,142,240,0.15); --acc-rim:rgba(91,142,240,0.35);
+  --amber:#f59e0b;
+  --mono:'JetBrains Mono',monospace; --sans:'Inter',system-ui,sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:var(--sans);background:var(--paper);color:var(--body);line-height:1.65;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+a{color:var(--acc);text-decoration:none}
+a:hover{color:#80aaff}
 
-  /* NAV */
-  nav { position: sticky; top: 0; background: rgba(13,15,20,0.95); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); padding: 0 5%; height: 56px; display: flex; align-items: center; justify-content: space-between; z-index: 100; }
-  .nav-brand { font-weight: 800; font-size: 16px; color: var(--purple); display: flex; align-items: center; gap: 10px; }
-  .nav-logo { width: 30px; height: 30px; background: linear-gradient(135deg, var(--purple), var(--blue)); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px; }
-  .nav-links { display: flex; gap: 24px; }
-  .nav-links a { color: var(--dim); font-size: 14px; transition: color .2s; }
-  .nav-links a:hover { color: var(--white); }
-  .nav-cta { background: var(--purple); color: white !important; padding: 7px 16px; border-radius: 8px; font-weight: 600; font-size: 13px; transition: opacity .2s; }
-  .nav-cta:hover { opacity: 0.85; color: white !important; }
+/* noise overlay */
+body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+  opacity:.025;mix-blend-mode:screen}
 
-  /* HERO */
-  .hero { padding: 100px 5% 80px; text-align: center; position: relative; overflow: hidden; }
-  .hero::before { content: ''; position: absolute; top: -200px; left: 50%; transform: translateX(-50%); width: 700px; height: 700px; background: radial-gradient(circle, #7c6af712 0%, transparent 65%); pointer-events: none; }
-  .hero-badge { display: inline-block; background: #7c6af720; border: 1px solid #7c6af750; color: var(--purple); padding: 5px 14px; border-radius: 20px; font-size: 12px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 24px; }
-  .hero h1 { font-size: clamp(32px, 5vw, 64px); font-weight: 900; line-height: 1.1; margin-bottom: 24px; max-width: 860px; margin-left: auto; margin-right: auto; }
-  .hero h1 em { font-style: normal; background: linear-gradient(135deg, #fff 20%, #7c6af7 60%, #4fc3f7 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-  .hero p { font-size: 18px; color: var(--dim); max-width: 620px; margin: 0 auto 40px; }
-  .hero-ctas { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 48px; }
-  .btn-primary { background: var(--purple); color: white; padding: 13px 28px; border-radius: 10px; font-weight: 700; font-size: 15px; transition: transform .2s, opacity .2s; display: inline-block; }
-  .btn-primary:hover { transform: translateY(-2px); opacity: 0.9; color: white; }
-  .btn-secondary { background: var(--surface); border: 1px solid var(--border); color: var(--white); padding: 13px 28px; border-radius: 10px; font-weight: 600; font-size: 15px; transition: border-color .2s; display: inline-block; }
-  .btn-secondary:hover { border-color: var(--purple); color: var(--white); }
+/* NAV */
+nav{position:sticky;top:0;z-index:500;display:flex;align-items:center;justify-content:space-between;padding:0 clamp(16px,4vw,72px);height:56px;background:rgba(13,16,23,.92);backdrop-filter:blur(24px) saturate(160%);border-bottom:1px solid var(--rim)}
+.nav-logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:15px;letter-spacing:-.4px;color:var(--head)}
+.nav-gem{width:26px;height:26px;border-radius:7px;background:linear-gradient(135deg,var(--acc) 0%,#9b7bf7 100%);display:grid;place-items:center;font-family:var(--mono);font-size:12px;font-weight:700;color:#fff;flex-shrink:0}
+.nav-links{display:flex;gap:24px;list-style:none}
+.nav-links a{font-size:13.5px;font-weight:500;color:var(--dim);transition:color .15s}
+.nav-links a:hover{color:var(--head)}
+.nav-right{display:flex;align-items:center;gap:10px}
+.btn-nav-pro{font-size:13px;font-weight:600;padding:7px 16px;border-radius:8px;border:1px solid var(--acc-rim);color:var(--acc);background:var(--acc-glow);transition:all .15s;white-space:nowrap}
+.btn-nav-pro:hover{background:rgba(91,142,240,.25);color:#80aaff;border-color:var(--acc)}
+.btn-nav-gh{font-size:13px;font-weight:600;padding:7px 16px;border-radius:8px;background:var(--acc);color:#fff;transition:filter .15s,transform .15s;white-space:nowrap}
+.btn-nav-gh:hover{filter:brightness(1.1);transform:translateY(-1px);color:#fff}
 
-  /* INSTALL QUICK */
-  .install-quick { background: #090b0f; border: 1px solid var(--border); border-radius: 12px; padding: 16px 24px; font-family: 'Courier New', monospace; font-size: 14px; display: inline-flex; align-items: center; gap: 12px; margin: 0 auto; }
-  .install-quick .prompt { color: var(--muted); }
-  .install-quick .cmd { color: var(--mint); }
-  .install-quick .copy-btn { background: var(--surface2); border: 1px solid var(--border); color: var(--dim); padding: 4px 10px; border-radius: 6px; font-size: 11px; cursor: pointer; font-family: inherit; transition: all .2s; }
-  .install-quick .copy-btn:hover { border-color: var(--purple); color: var(--white); }
+/* HERO */
+.hero{position:relative;overflow:hidden;padding:clamp(80px,12vw,140px) clamp(16px,4vw,72px) clamp(64px,8vw,100px);text-align:center}
+.hero-grid{position:absolute;inset:0;background-image:linear-gradient(var(--rim) 1px,transparent 1px),linear-gradient(90deg,var(--rim) 1px,transparent 1px);background-size:56px 56px;mask-image:radial-gradient(ellipse 72% 72% at 50% 40%,black 20%,transparent 100%);opacity:.14}
+.hero-bloom{position:absolute;top:-120px;left:50%;transform:translateX(-50%);width:900px;height:560px;pointer-events:none;background:radial-gradient(ellipse,rgba(91,142,240,.1) 0%,transparent 65%)}
+.eyebrow{display:inline-flex;align-items:center;gap:7px;padding:5px 14px 5px 10px;background:var(--lift);border:1px solid var(--rim);border-radius:100px;margin-bottom:26px;font-size:11.5px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--soft);position:relative}
+.eyebrow-pulse{width:6px;height:6px;border-radius:50%;background:var(--acc2);box-shadow:0 0 7px var(--acc2);animation:pulse 2.2s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.3}}
+.hero h1{font-size:clamp(38px,6.5vw,76px);font-weight:900;line-height:1.04;letter-spacing:-2.5px;color:var(--head);max-width:900px;margin:0 auto 20px;position:relative}
+.hero h1 .g{background:linear-gradient(135deg,var(--acc) 10%,#a78bfa 60%,var(--acc2) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero-sub{font-size:clamp(16px,2vw,20px);color:var(--dim);max-width:560px;margin:0 auto 44px;line-height:1.7;position:relative}
+.hero-actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-bottom:48px;position:relative}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:13px 28px;border-radius:10px;font-size:15px;font-weight:600;transition:all .15s;cursor:pointer;border:none}
+.btn-primary{background:var(--acc);color:#fff}
+.btn-primary:hover{filter:brightness(1.1);transform:translateY(-2px);color:#fff;box-shadow:0 8px 32px rgba(91,142,240,.35)}
+.btn-outline{background:var(--lift);border:1px solid var(--rim);color:var(--body)}
+.btn-outline:hover{border-color:var(--acc-rim);color:var(--head);background:var(--raise)}
+.install-pill{display:inline-flex;align-items:center;gap:14px;background:var(--ink);border:1px solid var(--line);border-radius:10px;padding:12px 20px;font-family:var(--mono);font-size:13.5px;position:relative;max-width:100%}
+.install-pill::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--acc);border-radius:3px 0 0 3px}
+.ip-prompt{color:var(--muted);padding-left:4px}
+.ip-cmd{color:var(--acc2)}
+.ip-copy{background:var(--raise);border:1px solid var(--line);color:var(--dim);padding:4px 12px;border-radius:6px;font-size:11px;font-family:var(--sans);cursor:pointer;transition:all .15s;white-space:nowrap}
+.ip-copy:hover{border-color:var(--acc);color:var(--acc)}
 
-  /* STATS */
-  .stats-strip { padding: 0 5% 60px; }
-  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 14px; max-width: 960px; margin: 0 auto; }
-  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px 12px; text-align: center; }
-  .stat-n { font-size: 32px; font-weight: 900; display: block; color: var(--mint); }
-  .stat-l { font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; }
+/* TERMINAL */
+.term-wrap{max-width:860px;margin:0 auto}
+.term{background:#07090d;border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:0 0 0 1px var(--rim),0 40px 100px rgba(0,0,0,.65),0 0 120px rgba(91,142,240,.04)}
+.term-chrome{display:flex;align-items:center;gap:8px;padding:13px 18px;background:var(--lift);border-bottom:1px solid var(--line)}
+.td{width:12px;height:12px;border-radius:50%}
+.term-title{font-family:var(--mono);font-size:11.5px;color:var(--muted);margin-left:8px}
+.term-body{padding:22px 26px;font-family:var(--mono);font-size:12.5px;line-height:1.95;min-height:310px}
+.tp{color:var(--muted)}.tc{color:var(--head)}.ts{color:var(--amber)}
+.ph{color:var(--acc);font-weight:700}.tok{color:var(--acc2)}
+.twn{color:var(--amber)}.tlb{color:var(--dim)}.thi{color:#a5c4ff}.tcm{color:var(--muted)}
+.tblink{display:inline-block;width:7px;height:13px;background:var(--acc);vertical-align:text-bottom;animation:blink 1.1s step-end infinite}
+@keyframes blink{50%{opacity:0}}
 
-  /* SECTIONS */
-  .section-label { font-size: 11px; letter-spacing: 3px; text-transform: uppercase; color: var(--purple); font-weight: 700; margin-bottom: 10px; text-align: center; }
-  .section-title { font-size: clamp(26px, 4vw, 40px); font-weight: 800; text-align: center; margin-bottom: 12px; }
-  .section-sub { text-align: center; color: var(--dim); font-size: 16px; margin-bottom: 48px; max-width: 600px; margin-left: auto; margin-right: auto; }
+/* SECTIONS */
+.sec{padding:clamp(60px,8vw,100px) clamp(16px,4vw,72px)}
+.sec-inner{max-width:1080px;margin:0 auto}
+.stag{font-size:11px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--acc);margin-bottom:10px}
+.sh{font-size:clamp(26px,4vw,44px);font-weight:800;letter-spacing:-1.2px;color:var(--head);line-height:1.12;margin-bottom:12px}
+.sp{font-size:16px;color:var(--dim);max-width:520px;line-height:1.75;margin-bottom:50px}
+.sec-alt{background:var(--lift);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
 
-  /* HOW IT WORKS */
-  .how-section { padding: 80px 5%; }
-  .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0; max-width: 960px; margin: 0 auto; }
-  .step { padding: 28px; position: relative; }
-  .step:not(:last-child)::after { content: '→'; position: absolute; right: -8px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 20px; }
-  .step-num { font-size: 11px; font-weight: 700; color: var(--purple); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 12px; }
-  .step-icon { font-size: 32px; margin-bottom: 12px; }
-  .step h3 { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
-  .step p { font-size: 13px; color: var(--dim); }
+/* STATS */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.stat{background:var(--lift);padding:26px 16px;text-align:center}
+.stat-n{display:block;font-family:var(--mono);font-size:32px;font-weight:700;letter-spacing:-1.5px;color:var(--head)}
+.stat-n em{font-style:normal;color:var(--acc)}
+.stat-l{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;margin-top:5px}
 
-  /* FEATURES */
-  .features { padding: 80px 5%; background: var(--surface); }
-  .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; max-width: 1060px; margin: 0 auto; }
-  .feature-card { background: var(--bg); border: 1px solid var(--border); border-radius: 16px; padding: 28px; transition: border-color .2s, transform .2s; }
-  .feature-card:hover { border-color: var(--purple); transform: translateY(-3px); }
-  .feature-card.pro-card { border-color: #7c6af740; background: #7c6af708; }
-  .feature-card.pro-card:hover { border-color: var(--purple); }
-  .feature-icon { font-size: 28px; margin-bottom: 14px; }
-  .feature-card h3 { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
-  .feature-card p { font-size: 14px; color: var(--dim); line-height: 1.6; }
-  .feature-new { display: inline-block; background: #64ffda18; border: 1px solid #64ffda40; color: var(--mint); padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 700; margin-left: 8px; vertical-align: middle; }
-  .feature-pro { display: inline-block; background: #7c6af718; border: 1px solid #7c6af740; color: var(--purple); padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 700; margin-left: 8px; vertical-align: middle; }
+/* PIPELINE */
+.pipeline{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.pipe{background:var(--paper);padding:28px 22px;transition:background .18s}
+.pipe:hover{background:var(--lift)}
+.pipe-num{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
+.pipe-icon{font-size:22px;margin-bottom:10px;display:block}
+.pipe h3{font-size:14px;font-weight:700;color:var(--head);margin-bottom:6px}
+.pipe p{font-size:12.5px;color:var(--dim);line-height:1.6}
 
-  /* GDE SECTION */
-  .gde-section { padding: 80px 5%; }
-  .gde-pipeline { display: flex; gap: 0; max-width: 960px; margin: 48px auto 0; align-items: stretch; flex-wrap: wrap; justify-content: center; }
-  .gde-stage { background: var(--surface); border: 1px solid var(--border); padding: 20px 18px; flex: 1; min-width: 110px; max-width: 160px; text-align: center; position: relative; }
-  .gde-stage:not(:last-child)::after { content: '→'; position: absolute; right: -14px; top: 50%; transform: translateY(-50%); color: var(--purple); font-size: 18px; z-index: 1; }
-  .gde-stage:first-child { border-radius: 12px 0 0 12px; }
-  .gde-stage:last-child { border-radius: 0 12px 12px 0; }
-  .gde-stage-name { font-size: 11px; font-weight: 800; color: var(--purple); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 6px; }
-  .gde-stage-desc { font-size: 11px; color: var(--dim); line-height: 1.4; }
-  .gde-gate { background: #7c6af710; border-color: var(--purple); }
+/* FEATURES */
+.feats{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.feat{background:var(--paper);padding:30px 26px;transition:background .18s;position:relative;overflow:hidden}
+.feat::after{content:'';position:absolute;top:0;left:24px;right:24px;height:1.5px;background:var(--acc);transform:scaleX(0);transform-origin:left;transition:transform .25s ease}
+.feat:hover{background:var(--lift)}
+.feat:hover::after{transform:scaleX(1)}
+.feat-icon{font-size:24px;margin-bottom:14px;display:block}
+.feat h3{font-size:15px;font-weight:700;color:var(--head);margin-bottom:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.feat p{font-size:13px;color:var(--dim);line-height:1.65}
+.badge{font-size:9px;font-weight:700;letter-spacing:.5px;padding:2px 7px;border-radius:100px;background:rgba(91,142,240,.12);border:1px solid rgba(91,142,240,.3);color:#a5c4ff}
 
-  /* GATE TABLE */
-  .gate-table-wrap { max-width: 760px; margin: 40px auto 0; }
-  .gate-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  .gate-table th { background: var(--surface2); padding: 10px 14px; text-align: left; color: var(--dim); font-weight: 700; font-size: 11px; border: 1px solid var(--border); letter-spacing: 0.5px; text-transform: uppercase; }
-  .gate-table td { padding: 10px 14px; border: 1px solid var(--border); background: var(--surface); }
-  .gate-table tr:hover td { background: var(--surface2); }
-  .hard-block { color: var(--red); font-weight: 700; }
-  .soft-block { color: var(--gold); }
-  .warn-gate { color: var(--dim); }
-  .never-badge { background: #ff6b6b20; border: 1px solid #ff6b6b40; color: var(--red); padding: 2px 7px; border-radius: 4px; font-size: 10px; font-weight: 700; }
+/* COMPARE */
+.table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:16px}
+table{width:100%;border-collapse:collapse;font-size:13.5px;min-width:600px}
+thead th{padding:13px 18px;background:var(--lift);text-align:left;font-weight:600;font-size:11.5px;color:var(--dim);border-bottom:1px solid var(--line)}
+thead th.col-g{color:var(--acc);background:rgba(91,142,240,.06)}
+tbody td{padding:12px 18px;border-bottom:1px solid var(--rim);color:var(--body)}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover td{background:var(--lift)}
+.row-hi td{background:rgba(91,142,240,.03)}
+.row-hi td:nth-child(2){border-left:2px solid var(--acc)}
+.ck{color:var(--acc2);font-weight:600}.cx{color:var(--muted)}.cp{color:var(--amber)}
 
-  /* COMPARE */
-  .compare-section { padding: 80px 5%; }
-  .compare-table { width: 100%; border-collapse: collapse; font-size: 13px; max-width: 960px; margin: 0 auto; }
-  .compare-table th { background: var(--surface2); padding: 14px 16px; text-align: left; font-size: 12px; font-weight: 700; color: var(--dim); border: 1px solid var(--border); letter-spacing: 0.5px; }
-  .compare-table th.genesis { color: var(--purple); background: #7c6af710; }
-  .compare-table td { padding: 12px 16px; border: 1px solid var(--border); background: var(--surface); font-size: 13px; }
-  .compare-table tr:hover td { background: var(--surface2); }
-  .ck { color: var(--green); font-weight: 700; }
-  .cx { color: var(--muted); }
-  .cp { color: var(--gold); }
-  .highlight-row td { background: #7c6af708 !important; }
-  .highlight-row td:nth-child(2) { border-left: 3px solid var(--purple) !important; }
+/* INSTALL */
+.install-panel{background:var(--ink);border:1px solid var(--line);border-radius:16px;padding:36px clamp(20px,4vw,44px);position:relative;overflow:hidden}
+.install-panel::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent 10%,var(--acc) 50%,transparent 90%)}
+.ilabel{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--muted);margin-bottom:10px;margin-top:26px}
+.ilabel:first-child{margin-top:0}
+.code-block{background:var(--paper);border:1px solid var(--rim);border-radius:10px;padding:18px 22px;font-family:var(--mono);font-size:13px;line-height:2;overflow-x:auto}
+.c-c{color:var(--muted)}.c-k{color:var(--acc2)}.c-s{color:var(--amber)}
 
-  /* PRICING */
-  .pricing-section { padding: 80px 5%; background: var(--surface); }
-  .pricing-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; max-width: 780px; margin: 0 auto; }
-  .pricing-card { background: var(--bg); border: 1px solid var(--border); border-radius: 20px; padding: 36px 32px; }
-  .pricing-card.pro { border-color: var(--purple); background: #7c6af705; position: relative; }
-  .pricing-card.pro::before { content: 'MOST POWERFUL'; position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: var(--purple); color: white; font-size: 10px; font-weight: 800; padding: 4px 12px; border-radius: 20px; letter-spacing: 2px; white-space: nowrap; }
-  .plan-name { font-size: 13px; font-weight: 800; color: var(--dim); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px; }
-  .plan-price { font-size: 44px; font-weight: 900; margin-bottom: 4px; }
-  .plan-price span { font-size: 16px; color: var(--dim); font-weight: 400; }
-  .plan-sub { color: var(--dim); font-size: 13px; margin-bottom: 28px; }
-  .plan-features { list-style: none; margin-bottom: 32px; }
-  .plan-features li { font-size: 14px; padding: 7px 0; border-bottom: 1px solid var(--border); color: var(--dim); display: flex; align-items: flex-start; gap: 10px; }
-  .plan-features li:last-child { border-bottom: none; }
-  .plan-features .fi { color: var(--green); font-weight: 700; flex-shrink: 0; margin-top: 1px; }
-  .plan-features .fx { color: var(--muted); flex-shrink: 0; margin-top: 1px; }
-  .plan-features li em { color: var(--white); font-style: normal; }
-  .plan-cta { display: block; text-align: center; padding: 13px 28px; border-radius: 10px; font-weight: 700; font-size: 15px; transition: all .2s; }
-  .plan-cta.free-cta { background: var(--surface2); border: 1px solid var(--border); color: var(--white); }
-  .plan-cta.free-cta:hover { border-color: var(--purple); }
-  .plan-cta.pro-cta { background: var(--purple); color: white; }
-  .plan-cta.pro-cta:hover { opacity: 0.9; transform: translateY(-1px); }
+/* PRO BANNER */
+.pro-banner{background:linear-gradient(135deg,#0f1829 0%,#0d1520 100%);border:1px solid rgba(91,142,240,.25);border-radius:20px;padding:clamp(40px,5vw,64px) clamp(24px,4vw,64px);text-align:center;position:relative;overflow:hidden}
+.pro-banner::before{content:'';position:absolute;top:-80px;left:50%;transform:translateX(-50%);width:600px;height:300px;background:radial-gradient(ellipse,rgba(91,142,240,.12) 0%,transparent 70%);pointer-events:none}
+.pro-banner h2{font-size:clamp(24px,4vw,38px);font-weight:800;letter-spacing:-1px;color:var(--head);margin-bottom:12px;position:relative}
+.pro-banner p{font-size:16px;color:var(--dim);max-width:540px;margin:0 auto 32px;position:relative}
+.pro-banner-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;position:relative}
+.btn-pro{background:linear-gradient(135deg,var(--acc) 0%,#9b7bf7 100%);color:#fff;padding:14px 32px;border-radius:10px;font-size:15px;font-weight:700;transition:all .15s;display:inline-block}
+.btn-pro:hover{filter:brightness(1.1);transform:translateY(-2px);color:#fff;box-shadow:0 10px 36px rgba(91,142,240,.4)}
 
-  /* INSTALL */
-  .install-section { padding: 80px 5%; max-width: 760px; margin: 0 auto; }
-  .code-block { background: #090b0f; border: 1px solid var(--border); border-radius: 12px; padding: 24px 28px; font-family: 'Courier New', monospace; font-size: 14px; line-height: 2; overflow-x: auto; margin-bottom: 28px; }
-  .code-block .c { color: #4a6280; }
-  .code-block .cmd { color: var(--mint); }
-  .code-block .flag { color: var(--purple); }
-  .code-block .str { color: var(--gold); }
+/* FOOTER */
+footer{text-align:center;padding:44px clamp(16px,4vw,72px);border-top:1px solid var(--rim);color:var(--muted);font-size:13px}
+footer a{color:var(--dim);transition:color .15s}
+footer a:hover{color:var(--acc)}
+.footer-links{display:flex;gap:22px;justify-content:center;flex-wrap:wrap;margin-top:10px}
 
-  /* DEMO */
-  .demo-section { padding: 60px 5%; max-width: 960px; margin: 0 auto; }
-  .demo-frame { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; box-shadow: 0 24px 64px #00000060; }
-  .demo-bar { background: var(--surface2); padding: 10px 16px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--border); }
-  .demo-dot { width: 12px; height: 12px; border-radius: 50%; }
-  .demo-title { font-size: 12px; color: var(--dim); margin-left: 8px; font-family: 'Courier New', monospace; }
-  .demo-content { background: #090b0f; min-height: 280px; display: flex; align-items: center; justify-content: center; }
-  .demo-content img { width: 100%; display: block; }
+/* REVEAL */
+.reveal{opacity:0;transform:translateY(18px);transition:opacity .5s ease,transform .5s ease}
+.reveal.in{opacity:1;transform:none}
 
-  /* FOOTER */
-  footer { text-align: center; padding: 48px 5%; border-top: 1px solid var(--border); color: var(--muted); font-size: 13px; }
-  footer a { color: var(--purple); }
-
-  /* DIVIDER */
-  .section-divider { height: 1px; background: var(--border); max-width: 960px; margin: 0 auto; }
-
-  @media (max-width: 640px) {
-    .hero h1 { font-size: 30px; }
-    nav .nav-links { display: none; }
-    .steps { grid-template-columns: 1fr; }
-    .step::after { display: none; }
-    .install-quick { flex-direction: column; font-size: 13px; }
-    .gde-pipeline { flex-direction: column; }
-    .gde-stage { border-radius: 8px !important; min-width: unset; max-width: unset; }
-    .gde-stage::after { display: none !important; }
-  }
+@media(max-width:640px){
+  .nav-links{display:none}
+  .hero h1{letter-spacing:-1.2px}
+  .install-pill{flex-direction:column;align-items:flex-start;gap:8px}
+  .btn-nav-pro{display:none}
+}
 </style>
 </head>
 <body>
 
 <nav>
-  <div class="nav-brand">
-    <div class="nav-logo">G</div>
-    Genesis Architect
-  </div>
-  <div class="nav-links">
-    <a href="#how">How it works</a>
+  <div class="nav-logo"><div class="nav-gem">G</div>Genesis Architect</div>
+  <ul class="nav-links">
+    <a href="#pipeline">How it works</a>
     <a href="#features">Features</a>
-    <a href="#gde">Decision Engine</a>
-    <a href="#pricing">Pricing</a>
+    <a href="#compare">vs. Others</a>
     <a href="#install">Install</a>
+  </ul>
+  <div class="nav-right">
+    <a class="btn-nav-pro" href="pro.html">Pro →</a>
+    <a class="btn-nav-gh" href="https://github.com/maioio/genesis-architect">Star on GitHub</a>
   </div>
-  <a class="nav-cta" href="https://github.com/maioio/genesis-architect">Star on GitHub →</a>
 </nav>
 
-<!-- HERO -->
 <section class="hero">
-  <div class="hero-badge">Open Source Core · v6.3.0 · MIT License</div>
-  <h1>The AI partner that <em>analyzes your codebase</em><br>before it touches a single file.</h1>
-  <p>Architecture score. Anti-pattern map. Refactoring plan. C4 diagrams. A decision engine that routes any plain-English instruction to the right engines — deterministically, without an LLM guess.</p>
-  <div class="hero-ctas">
-    <a class="btn-primary" href="#install">Get started free →</a>
-    <a class="btn-secondary" href="#pricing">View Pro</a>
+  <div class="hero-grid"></div>
+  <div class="hero-bloom"></div>
+  <div class="eyebrow"><span class="eyebrow-pulse"></span>Open Source &nbsp;·&nbsp; v2.6.0 &nbsp;·&nbsp; MIT License</div>
+  <h1>The scaffolder that reads<br><span class="g">real GitHub issues</span><br>before writing a line.</h1>
+  <p class="hero-sub">Scans 15–20 production repos, mines their closed issues and active forks, then builds a scaffold that already knows the traps.</p>
+  <div class="hero-actions">
+    <a class="btn btn-primary" href="#install">Get started free →</a>
+    <a class="btn btn-outline" href="https://github.com/maioio/genesis-architect">View on GitHub</a>
   </div>
-  <div class="install-quick">
-    <span class="prompt">$</span>
-    <span class="cmd">pip install genesis-architect</span>
-    <button class="copy-btn" onclick="navigator.clipboard.writeText('pip install genesis-architect');this.textContent='Copied!';setTimeout(()=>this.textContent='Copy',1500)">Copy</button>
-  </div>
-</section>
-
-<!-- STATS -->
-<div class="stats-strip">
-  <div class="stats-grid">
-    <div class="stat-card"><span class="stat-n">1 405</span><span class="stat-l">Tests passing</span></div>
-    <div class="stat-card"><span class="stat-n">25+</span><span class="stat-l">Engines</span></div>
-    <div class="stat-card"><span class="stat-n">7</span><span class="stat-l">GDE modes</span></div>
-    <div class="stat-card"><span class="stat-n">12</span><span class="stat-l">Gate policies</span></div>
-    <div class="stat-card"><span class="stat-n">11</span><span class="stat-l">Competitors analyzed</span></div>
-    <div class="stat-card"><span class="stat-n">5</span><span class="stat-l">Languages</span></div>
-  </div>
-</div>
-
-<!-- HOW IT WORKS -->
-<section class="how-section" id="how">
-  <div class="section-label">How it works</div>
-  <h2 class="section-title">Understand first. Act second.</h2>
-  <p class="section-sub">Every other AI tool guesses. Genesis reads your actual codebase — then decides what to do, in what order, with built-in safety gates.</p>
-  <div class="steps">
-    <div class="step">
-      <div class="step-num">Step 1</div>
-      <div class="step-icon">🗣️</div>
-      <h3>Type anything</h3>
-      <p>Describe what you want in plain English. The Decision Engine classifies your intent without calling an LLM.</p>
-    </div>
-    <div class="step">
-      <div class="step-num">Step 2</div>
-      <div class="step-icon">🔬</div>
-      <h3>Analyze the codebase</h3>
-      <p>Import graph, architecture score, anti-patterns, fragility — the right engines run in the right order, in parallel where safe.</p>
-    </div>
-    <div class="step">
-      <div class="step-num">Step 3</div>
-      <div class="step-icon">🚦</div>
-      <h3>Gate before writing</h3>
-      <p>12 named gates evaluate the plan. Two can never be bypassed. Nothing touches disk until you approve.</p>
-    </div>
-    <div class="step">
-      <div class="step-num">Step 4</div>
-      <div class="step-icon">📋</div>
-      <h3>Report + commit</h3>
-      <p>Every decision is logged. Every write is atomic. The session persists — resume exactly where you left off.</p>
-    </div>
+  <div class="install-pill">
+    <span class="ip-prompt">$</span>
+    <span class="ip-cmd">pip install genesis-architect</span>
+    <button class="ip-copy" onclick="navigator.clipboard.writeText('pip install genesis-architect');this.textContent='Copied!';setTimeout(()=>this.textContent='Copy',1800)">Copy</button>
   </div>
 </section>
 
-<!-- DEMO -->
-<div class="demo-section">
-  <div class="demo-frame">
-    <div class="demo-bar">
-      <div class="demo-dot" style="background:#ff5f57"></div>
-      <div class="demo-dot" style="background:#febc2e"></div>
-      <div class="demo-dot" style="background:#28c840"></div>
-      <span class="demo-title">terminal — genesis decide "diagnose the project and identify drift"</span>
-    </div>
-    <div class="demo-content">
-      <img src="assets/demo.gif" alt="Genesis Architect in action" onerror="this.style.display='none'">
-    </div>
-  </div>
-</div>
-
-<!-- FREE FEATURES -->
-<section class="features" id="features">
-  <div class="section-label">Free core</div>
-  <h2 class="section-title">Research first. Build once.</h2>
-  <p class="section-sub">The free tier scans GitHub repos, mines Issues, and scaffolds production-ready projects from real failure data — before you write a line of code.</p>
-  <div class="features-grid">
-    <div class="feature-card">
-      <div class="feature-icon">🔬</div>
-      <h3>Real Issue Mining</h3>
-      <p>Reads closed bug issues from 15–20 production repos. Finds the Redis connection leak, the Celery silent drop, the feedparser hang — before you build.</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon">🍴</div>
-      <h3>Smart Fork Analysis</h3>
-      <p>Finds the top 3 active forks ranked by merged PRs in the last 6 months — not stars. Extracts their bug fixes into your pitfall list.</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon">🗄️</div>
-      <h3>Knowledge Vault</h3>
-      <p>Caches solutions locally with a 6-month TTL and LRU eviction at 500 entries. Fast on repeat projects. Falls back to Stack Overflow on cache miss.</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon">💬</div>
-      <h3>Natural Language Choices</h3>
-      <p>Say "I want the simple one" instead of typing A. Genesis maps natural language to architecture choices — no memorizing option letters.</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon">🤖</div>
-      <h3>Companion Mode</h3>
-      <p>Run <code style="font-family:monospace;color:var(--mint)">genesis companion</code> after scaffolding. Stays active, answers questions about your project, detects when you've moved on.</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon">🔌</div>
-      <h3>Any LLM Provider</h3>
-      <p>Claude, GPT-4, Gemini, Ollama — all supported via LiteLLM. Set your key once and it works everywhere.</p>
+<div class="sec" style="padding-top:0"><div class="sec-inner">
+  <div class="term-wrap reveal">
+    <div class="term">
+      <div class="term-chrome">
+        <div class="td" style="background:#ff5f57"></div>
+        <div class="td" style="background:#febc2e"></div>
+        <div class="td" style="background:#28c840"></div>
+        <span class="term-title">genesis init "a FastAPI task queue with Celery and Redis"</span>
+      </div>
+      <div class="term-body">
+<div><span class="tp">$ </span><span class="tc">genesis init</span> <span class="ts">"a FastAPI task queue with Celery and Redis"</span></div>
+<div>&nbsp;</div>
+<div><span class="ph">[ Phase 2 ]</span> <span class="tlb">Scanning GitHub ecosystem...</span></div>
+<div>&nbsp;&nbsp;<span class="tok">✓</span> <span class="thi">tiangolo/fastapi</span> <span class="tcm">— 4.1k closed issues scanned</span></div>
+<div>&nbsp;&nbsp;<span class="tok">✓</span> <span class="thi">celery/celery</span> <span class="tcm">— 2.8k closed issues scanned</span></div>
+<div>&nbsp;&nbsp;<span class="tok">✓</span> <span class="thi">redis/redis-py</span> <span class="tcm">— analyzing top 3 active forks</span></div>
+<div>&nbsp;</div>
+<div><span class="ph">[ Phase 4 ]</span> <span class="tlb">Pitfall synthesis</span></div>
+<div>&nbsp;&nbsp;<span class="twn">⚠</span> <span class="tlb">Redis connection pool exhaustion under load</span> <span class="tcm">— 23 issues</span></div>
+<div>&nbsp;&nbsp;<span class="twn">⚠</span> <span class="tlb">Celery task retry storm on Redis timeout</span> <span class="tcm">— 17 issues</span></div>
+<div>&nbsp;&nbsp;<span class="twn">⚠</span> <span class="tlb">FastAPI background task memory leak (0.100.x)</span> <span class="tcm">— patched in fork</span></div>
+<div>&nbsp;</div>
+<div><span class="ph">[ Phase 6 ]</span> <span class="tlb">Generating scaffold...</span></div>
+<div>&nbsp;&nbsp;<span class="tok">✓</span> <span class="tlb">docker-compose.yml</span> <span class="tcm">— Redis + worker + Flower monitoring</span></div>
+<div>&nbsp;&nbsp;<span class="tok">✓</span> <span class="tlb">app/core/celery.py</span> <span class="tcm">— max_connections=20, retry_backoff=True</span></div>
+<div>&nbsp;&nbsp;<span class="tok">✓</span> <span class="tlb">tests/test_tasks.py</span> <span class="tcm">— smoke test, asserts exit 0</span></div>
+<div>&nbsp;</div>
+<div><span class="tok">✓ Done</span> <span class="tlb">— scaffold ready. Pitfalls pre-wired. 0 known traps.</span> <span class="tblink"></span></div>
+      </div>
     </div>
   </div>
-</section>
+</div></div>
 
-<!-- PRO FEATURES -->
-<section class="features" id="pro-features" style="background: var(--bg); border-top: 1px solid var(--border);">
-  <div class="section-label" style="color: var(--purple);">Pro — codebase intelligence</div>
-  <h2 class="section-title">Point it at any repo.<br>Get a full health report in 30 seconds.</h2>
-  <p class="section-sub">Pro adds a full codebase analysis layer. No LLM required for the analysis — pure graph computation, git history, and static policy.</p>
-  <div class="features-grid">
-    <div class="feature-card pro-card">
-      <div class="feature-icon">📊</div>
-      <h3>Architecture Scorer <span class="feature-pro">PRO</span></h3>
-      <p>0–100 score across 4 dimensions: Modularity, Coupling, Cohesion, Layering. 6 adaptive profiles. Trend history in <code style="color:var(--mint);font-size:12px">.genesis/score_history.jsonl</code>.</p>
-    </div>
-    <div class="feature-card pro-card">
-      <div class="feature-icon">🕸️</div>
-      <h3>Anti-Pattern Detector <span class="feature-pro">PRO</span></h3>
-      <p>7 structural anti-patterns: God Class, Hub File, Circular Deps, Dead Code, Feature Envy, Leaky Abstraction, Shotgun Surgery. Pure graph analysis — no LLM.</p>
-    </div>
-    <div class="feature-card pro-card">
-      <div class="feature-icon">🔥</div>
-      <h3>Fragility Classifier <span class="feature-pro">PRO</span></h3>
-      <p>VOLATILE / FRAGILE / STABLE per module. Combines anti-patterns + git churn + test coverage. Outputs <code style="color:var(--mint);font-size:12px">FRAGILITY_MAP.md</code> with GO / HOLD / REWRITE.</p>
-    </div>
-    <div class="feature-card pro-card">
-      <div class="feature-icon">📋</div>
-      <h3>Refactoring Planner <span class="feature-pro">PRO</span></h3>
-      <p>Tier-1 critical issues first, tier-2 improvements after. Each step includes operations, complexity, and projected score impact. Outputs <code style="color:var(--mint);font-size:12px">REFACTORING_PLAN.md</code>.</p>
-    </div>
-    <div class="feature-card pro-card">
-      <div class="feature-icon">🗺️</div>
-      <h3>C4 Architecture Generator <span class="feature-pro">PRO</span></h3>
-      <p>Levels 1–3: System Context, Containers, Components. Mermaid output — renders natively on GitHub. Auto-detects databases, auth, queues, payments.</p>
-    </div>
-    <div class="feature-card pro-card">
-      <div class="feature-icon">🛡️</div>
-      <h3>Security Templates <span class="feature-pro">PRO</span></h3>
-      <p>STRIDE threat model (all 6 categories) + OWASP Top 10 checklist, tailored to your project type. Items auto-marked N/A when not applicable.</p>
-    </div>
-    <div class="feature-card pro-card">
-      <div class="feature-icon">🔗</div>
-      <h3>Knowledge Graph <span class="feature-new">NEW</span> <span class="feature-pro">PRO</span></h3>
-      <p>Links code, CVEs, risks, and decisions into one queryable graph. Answers: <em>"which do-not-touch zone has an open CVE?"</em> No other tool does this.</p>
-    </div>
-    <div class="feature-card pro-card">
-      <div class="feature-icon">🧠</div>
-      <h3>Learning Engine <span class="feature-pro">PRO</span></h3>
-      <p>Genesis learns which research strategy works best for your work and improves over time. Honest confidence: never overclaims from one sample.</p>
-    </div>
-    <div class="feature-card pro-card">
-      <div class="feature-icon">📚</div>
-      <h3>Research Source Registry <span class="feature-new">NEW</span> <span class="feature-pro">PRO</span></h3>
-      <p>Researches from a ranked catalog of 25+ sources — official docs, source, security DBs, packages, Q&amp;A, developer field. Ranked by authority × evidence weight; add your own sources without touching code.</p>
-    </div>
-    <div class="feature-card pro-card">
-      <div class="feature-icon">💬</div>
-      <h3>Reddit Answers Workflow <span class="feature-new">NEW</span> <span class="feature-pro">PRO</span></h3>
-      <p>Mines real practitioner pain — <em>"problems / not working / production issues / worth it / migration"</em> — then verifies every claim against engineering-truth sources. Field signal is never treated as final truth.</p>
-    </div>
-    <div class="feature-card pro-card">
-      <div class="feature-icon">📑</div>
-      <h3>Evidence Packs <span class="feature-new">NEW</span> <span class="feature-pro">PRO</span></h3>
-      <p>Every recommendation ships with proof: the sources consulted (with reliability), an honest confidence grade (never "high" without an authoritative source), and contradictions surfaced — not hidden.</p>
-    </div>
+<div class="sec" style="padding-top:0"><div class="sec-inner">
+  <div class="stats reveal">
+    <div class="stat"><span class="stat-n">15<em>–</em>20</span><div class="stat-l">Repos scanned</div></div>
+    <div class="stat"><span class="stat-n">50</span><div class="stat-l">Issues per repo</div></div>
+    <div class="stat"><span class="stat-n">3</span><div class="stat-l">Active forks</div></div>
+    <div class="stat"><span class="stat-n">8</span><div class="stat-l">Workflow phases</div></div>
+    <div class="stat"><span class="stat-n">316</span><div class="stat-l">Tests passing</div></div>
+    <div class="stat"><span class="stat-n">500</span><div class="stat-l">Vault entries</div></div>
   </div>
-</section>
+</div></div>
 
-<!-- GDE SECTION -->
-<section class="gde-section" id="gde">
-  <div class="section-label">Genesis Decision Engine</div>
-  <h2 class="section-title">One command. Seven modes.<br>Twelve safety gates.</h2>
-  <p class="section-sub">The GDE is the central brain of Genesis PRO. Type anything in plain English — it classifies your intent and routes to the right engines without an LLM call.</p>
-
-  <div class="gde-pipeline">
-    <div class="gde-stage">
-      <div class="gde-stage-name">INTAKE</div>
-      <div class="gde-stage-desc">Classify intent from free text, sub-ms</div>
-    </div>
-    <div class="gde-stage">
-      <div class="gde-stage-name">PLAN</div>
-      <div class="gde-stage-desc">Topological sort, parallel grouping</div>
-    </div>
-    <div class="gde-stage">
-      <div class="gde-stage-name">EXECUTE</div>
-      <div class="gde-stage-desc">Engines run per-phase, in parallel</div>
-    </div>
-    <div class="gde-stage gde-gate">
-      <div class="gde-stage-name">GATE</div>
-      <div class="gde-stage-desc">12 named gates evaluated</div>
-    </div>
-    <div class="gde-stage">
-      <div class="gde-stage-name">REPORT</div>
-      <div class="gde-stage-desc">Confidence score + decision log</div>
-    </div>
-    <div class="gde-stage gde-gate">
-      <div class="gde-stage-name">APPROVE</div>
-      <div class="gde-stage-desc">Inspect pending writes</div>
-    </div>
-    <div class="gde-stage">
-      <div class="gde-stage-name">COMMIT</div>
-      <div class="gde-stage-desc">Atomic tmp→rename writes</div>
-    </div>
+<section class="sec" id="pipeline"><div class="sec-inner">
+  <div class="stag">How it works</div>
+  <h2 class="sh">Research first. Then build.</h2>
+  <p class="sp">Every other scaffolder starts from a template. Genesis starts from production data.</p>
+  <div class="pipeline reveal">
+    <div class="pipe"><div class="pipe-num">Phase 01</div><span class="pipe-icon">🔍</span><h3>Scan real repos</h3><p>Finds 15–20 GitHub repos building exactly what you described. Ranks by stars and active fork activity.</p></div>
+    <div class="pipe"><div class="pipe-num">Phase 02</div><span class="pipe-icon">⚠️</span><h3>Mine closed issues</h3><p>Reads up to 50 closed bug issues per repo. Extracts recurring errors, security patches, architecture regrets.</p></div>
+    <div class="pipe"><div class="pipe-num">Phase 03</div><span class="pipe-icon">🧬</span><h3>Synthesize ecosystem</h3><p>Builds the "wise average" — what successful projects converge on — not a copy of one repo.</p></div>
+    <div class="pipe"><div class="pipe-num">Phase 04</div><span class="pipe-icon">🏗️</span><h3>Generate + validate</h3><p>Creates scaffold with tests and CI/CD. Runs smoke test. Never declares success without exit code 0.</p></div>
   </div>
+</div></section>
 
-  <div class="gate-table-wrap">
-    <p style="color:var(--dim);font-size:13px;margin-bottom:16px;text-align:center;">Gate policy — static table, not scattered in orchestration code</p>
-    <table class="gate-table">
-      <thead>
-        <tr>
-          <th>Gate</th>
-          <th>Type</th>
-          <th>Overridable</th>
-          <th>Trigger</th>
-        </tr>
-      </thead>
+<section class="sec sec-alt" id="features"><div class="sec-inner">
+  <div class="stag">What's inside</div>
+  <h2 class="sh">Not a template.<br>A research pipeline.</h2>
+  <p class="sp">Built for developers who've been burned by boilerplate that doesn't survive contact with production.</p>
+  <div class="feats reveal">
+    <div class="feat"><span class="feat-icon">🔬</span><h3>Real Issue Mining</h3><p>Reads closed bug issues from production repos. Finds the feedparser hang, the Redis connection leak, the Celery task that silently drops — before you write the code.</p></div>
+    <div class="feat"><span class="feat-icon">🍴</span><h3>Smart Fork Analysis <span class="badge">NEW</span></h3><p>Finds the top 3 active forks ranked by merged PRs in the last 6 months — not stars. Extracts bug fixes and incorporates them into your pitfall list.</p></div>
+    <div class="feat"><span class="feat-icon">🗄️</span><h3>Knowledge Vault <span class="badge">NEW</span></h3><p>Caches solutions locally with 6-month TTL and LRU eviction at 500 entries. Runs fast on repeat projects. Falls back to Stack Overflow on cache miss.</p></div>
+    <div class="feat"><span class="feat-icon">💬</span><h3>Natural Language Choices <span class="badge">NEW</span></h3><p>Say "I want the simple one" instead of typing A. Genesis maps natural language to architecture choices — no memorizing option letters.</p></div>
+    <div class="feat"><span class="feat-icon">🤖</span><h3>Companion Mode <span class="badge">NEW</span></h3><p>Run <code style="color:#a5c4ff;font-family:var(--mono)">genesis companion</code> after scaffolding. Stays active, answers questions, detects when you've moved on.</p></div>
+    <div class="feat"><span class="feat-icon">🔌</span><h3>Works with any LLM</h3><p>Claude, GPT-4, Gemini, Ollama — all supported via LiteLLM. Set your key once with <code style="color:#a5c4ff;font-family:var(--mono)">genesis config set LLM_API_KEY</code>.</p></div>
+  </div>
+</div></section>
+
+<section class="sec" id="compare"><div class="sec-inner">
+  <div class="stag">Market position</div>
+  <h2 class="sh">Genesis vs. The Ecosystem</h2>
+  <p class="sp">Every tool answers a different question. Genesis is the only one that reads from production failures before it builds.</p>
+  <div class="table-wrap reveal">
+    <table>
+      <thead><tr><th>Capability</th><th class="col-g">Genesis Architect</th><th>Yeoman</th><th>Cookiecutter</th><th>create-react-app</th></tr></thead>
       <tbody>
-        <tr>
-          <td><strong>PLAN_WRITE</strong></td>
-          <td><span class="hard-block">Hard block</span></td>
-          <td><span class="never-badge">NEVER</span></td>
-          <td>Any write targeting <code style="color:var(--mint);font-size:12px">planned.json</code></td>
-        </tr>
-        <tr>
-          <td><strong>RULES_FAIL</strong></td>
-          <td><span class="hard-block">Hard block</span></td>
-          <td><span class="never-badge">NEVER</span></td>
-          <td>Rules engine hard failure</td>
-        </tr>
-        <tr>
-          <td>CONFIDENCE_LOW</td>
-          <td><span class="soft-block">Soft block</span></td>
-          <td>Yes</td>
-          <td>Session confidence &lt; 0.40</td>
-        </tr>
-        <tr>
-          <td>DRIFT_CRITICAL</td>
-          <td><span class="soft-block">Soft block</span></td>
-          <td>Yes</td>
-          <td>Drift score &gt; 80</td>
-        </tr>
-        <tr>
-          <td>SECURITY_RISK</td>
-          <td><span class="soft-block">Soft block</span></td>
-          <td>Yes</td>
-          <td>Engine reports security risk</td>
-        </tr>
-        <tr>
-          <td>WRITE_SCOPE</td>
-          <td><span class="warn-gate">Warning</span></td>
-          <td>Yes</td>
-          <td>Any pending write operations</td>
-        </tr>
-        <tr>
-          <td>DEGRADED_MODE</td>
-          <td><span class="warn-gate">Warning</span></td>
-          <td>Yes</td>
-          <td>Session confidence &lt; 0.60</td>
-        </tr>
+        <tr class="row-hi"><td>Scans real GitHub repos before build</td><td><span class="ck">✓</span> 15–20 repos</td><td><span class="cx">—</span></td><td><span class="cx">—</span></td><td><span class="cx">—</span></td></tr>
+        <tr class="row-hi"><td>Extracts pitfalls from GitHub Issues</td><td><span class="ck">✓</span> 50 issues/repo</td><td><span class="cx">—</span></td><td><span class="cx">—</span></td><td><span class="cx">—</span></td></tr>
+        <tr class="row-hi"><td>Analyzes active forks by merged PRs</td><td><span class="ck">✓</span> top 3 forks</td><td><span class="cx">—</span></td><td><span class="cx">—</span></td><td><span class="cx">—</span></td></tr>
+        <tr><td>Scaffold with tests + CI/CD</td><td><span class="ck">✓</span> smoke test required</td><td><span class="cp">~ templates only</span></td><td><span class="cp">~ templates only</span></td><td><span class="ck">✓</span> React only</td></tr>
+        <tr><td>Stays active after scaffold</td><td><span class="ck">✓</span> companion mode</td><td><span class="cx">—</span></td><td><span class="cx">—</span></td><td><span class="cx">—</span></td></tr>
+        <tr><td>Local solution cache (TTL)</td><td><span class="ck">✓</span> 6-month TTL</td><td><span class="cx">—</span></td><td><span class="cx">—</span></td><td><span class="cx">—</span></td></tr>
+        <tr><td>Works with any LLM provider</td><td><span class="ck">✓</span> LiteLLM</td><td><span class="cx">—</span></td><td><span class="cx">—</span></td><td><span class="cx">—</span></td></tr>
+        <tr><td>Language support</td><td><span class="ck">✓</span> Python, JS, TS, Go, more</td><td><span class="ck">✓</span> any</td><td><span class="ck">✓</span> any</td><td><span class="cx">—</span> React only</td></tr>
       </tbody>
     </table>
   </div>
+</div></section>
 
-  <div style="max-width:760px;margin:40px auto 0;">
-    <p style="color:var(--dim);font-size:13px;margin-bottom:12px;font-weight:600;text-transform:uppercase;letter-spacing:1px;">CLI usage</p>
-    <div class="code-block">
-<span class="cmd">genesis decide</span> <span class="str">"diagnose the project and identify drift"</span>    <span class="c"># full session</span>
-<span class="cmd">genesis decide</span> <span class="flag">--classify-only</span> <span class="str">"generate C4 diagrams"</span>    <span class="c"># intent only</span>
-<span class="cmd">genesis decide</span> <span class="flag">--yes</span> <span class="str">"run a full recovery scan"</span>              <span class="c"># auto-approve (CI)</span>
-<span class="cmd">genesis decide</span> <span class="flag">--no-commit</span> <span class="str">"check compliance"</span>               <span class="c"># analysis only</span>
-<span class="cmd">genesis explain</span>                                                    <span class="c"># print decision log</span>
+<section class="sec sec-alt" id="install"><div class="sec-inner">
+  <div class="stag">Get started</div>
+  <h2 class="sh">Up and running<br>in 2 minutes.</h2>
+  <p class="sp">Two ways in. Pick what fits your workflow.</p>
+  <div class="install-panel reveal">
+    <div class="ilabel">Option 1 — pip (standalone)</div>
+    <div class="code-block"><span class="c-k">pip install genesis-architect</span>
+<span class="c-k">genesis config set</span> LLM_API_KEY <span class="c-s">your-api-key</span>
+<span class="c-k">genesis init</span> <span class="c-s">"a FastAPI task queue with Celery and Redis"</span></div>
+    <div class="ilabel">Option 2 — Claude Code skill</div>
+    <div class="code-block"><span class="c-c"># Clone into your Claude skills directory</span>
+<span class="c-k">git clone</span> https://github.com/maioio/genesis-architect ~/.claude/skills/genesis-architect
+<span class="c-c"># Then describe what you want to build</span>
+<span class="c-k">genesis init</span> <span class="c-s">a Python CLI for analyzing log files</span></div>
+    <div class="ilabel">After scaffold — companion mode</div>
+    <div class="code-block"><span class="c-k">genesis companion</span>              <span class="c-c"># active research partner</span>
+<span class="c-c"># "how do I handle Redis connection drops?"</span>
+<span class="c-c"># Say "done" to exit</span></div>
+  </div>
+  <div style="text-align:center;margin-top:40px">
+    <a class="btn btn-primary" href="https://github.com/maioio/genesis-architect">View full docs on GitHub →</a>
+  </div>
+</div></section>
+
+<section class="sec"><div class="sec-inner">
+  <div class="pro-banner reveal">
+    <h2>Need to analyze an <em style="font-style:normal;background:linear-gradient(135deg,var(--acc),#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">existing codebase</em>?</h2>
+    <p>Genesis PRO scores your architecture 0–100, maps every file as VOLATILE / FRAGILE / STABLE, generates a prioritized refactoring plan, C4 diagrams, and a security checklist — all in under 30 seconds. No LLM required for the analysis.</p>
+    <div class="pro-banner-btns">
+      <a class="btn-pro" href="pro.html">Explore Genesis PRO →</a>
+      <a class="btn btn-outline" href="https://github.com/maioio/genesis-architect">Free version →</a>
     </div>
   </div>
-</section>
-
-<!-- COMPARE -->
-<section class="compare-section" id="compare">
-  <div class="section-label">Market position</div>
-  <h2 class="section-title">Genesis vs. 11 Competitors</h2>
-  <p class="section-sub">Verified against Cursor, Cline, Aider, GitHub Copilot Workspace, Sweep, Cody, Continue, Devin, SWE-agent, OpenHands, AutoCodeRover.</p>
-  <table class="compare-table">
-    <thead>
-      <tr>
-        <th>Decision Engine Capability</th>
-        <th class="genesis">Genesis GDE</th>
-        <th>All 11 others</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr class="highlight-row">
-        <td>Intent classification — free text → execution mode</td>
-        <td><span class="ck">✓</span> signal-based, sub-ms, no LLM</td>
-        <td><span class="cx">✗</span> LLM or manual slash commands</td>
-      </tr>
-      <tr class="highlight-row">
-        <td>Engine routing by classified intent</td>
-        <td><span class="ck">✓</span> topological sort, parallel</td>
-        <td><span class="cx">✗</span></td>
-      </tr>
-      <tr class="highlight-row">
-        <td>Static approval gate policy table</td>
-        <td><span class="ck">✓</span> 12 named gates, 2 non-overridable</td>
-        <td><span class="cx">✗</span> binary yes/no at best</td>
-      </tr>
-      <tr class="highlight-row">
-        <td>Session confidence score</td>
-        <td><span class="ck">✓</span> per-engine penalty model</td>
-        <td><span class="cx">✗</span></td>
-      </tr>
-      <tr class="highlight-row">
-        <td>Persistent decision log</td>
-        <td><span class="ck">✓</span> append-only JSONL</td>
-        <td><span class="cx">✗</span></td>
-      </tr>
-      <tr>
-        <td>Codebase architecture analysis</td>
-        <td><span class="ck">✓</span> 8 engines, pure graph</td>
-        <td><span class="cp">~ limited / context-window only</span></td>
-      </tr>
-      <tr>
-        <td>Cross-source Knowledge Graph</td>
-        <td><span class="ck">✓</span> code + CVEs + risks + decisions</td>
-        <td><span class="cx">✗</span></td>
-      </tr>
-      <tr>
-        <td>Privacy — telemetry default</td>
-        <td><span class="ck">✓</span> off by default, opt-in</td>
-        <td><span class="cp">~ varies</span></td>
-      </tr>
-    </tbody>
-  </table>
-</section>
-
-<!-- PRICING -->
-<section class="pricing-section" id="pricing">
-  <div class="section-label">Pricing</div>
-  <h2 class="section-title">Start free. Scale to Pro.</h2>
-  <p class="section-sub">The core scaffolder is free and open-source forever. Pro adds the codebase intelligence layer and the Decision Engine.</p>
-  <div class="pricing-grid">
-    <div class="pricing-card">
-      <div class="plan-name">Free</div>
-      <div class="plan-price">$0<span> / forever</span></div>
-      <div class="plan-sub">Open source · MIT License</div>
-      <ul class="plan-features">
-        <li><span class="fi">✓</span> <span>Scan 15–20 real GitHub repos</span></li>
-        <li><span class="fi">✓</span> <span>Mine Issues + active forks</span></li>
-        <li><span class="fi">✓</span> <span>Project scaffolding with tests + CI/CD</span></li>
-        <li><span class="fi">✓</span> <span>Knowledge Vault (500 entries, 6-month TTL)</span></li>
-        <li><span class="fi">✓</span> <span>Companion Mode</span></li>
-        <li><span class="fi">✓</span> <span>Any LLM provider (LiteLLM)</span></li>
-        <li><span class="fi">✓</span> <span>Python, JS, TS, Go, Rust scaffolds</span></li>
-        <li><span class="fx">–</span> <span>Codebase analysis engines</span></li>
-        <li><span class="fx">–</span> <span>Genesis Decision Engine</span></li>
-      </ul>
-      <a class="plan-cta free-cta" href="https://github.com/maioio/genesis-architect">Install free →</a>
-    </div>
-    <div class="pricing-card pro">
-      <div class="plan-name">Pro <span class="feature-new">FOUNDER</span></div>
-      <div class="plan-price">$9<span> / month</span></div>
-      <div class="plan-sub">or $90 / year (2 months free) · first 50 seats locked for life</div>
-      <div class="plan-sub" style="color:var(--muted);font-size:12px;">Then $19 / month · $190 / year · License key · pip install genesis-architect-pro</div>
-      <ul class="plan-features">
-        <li><span class="fi">✓</span> <span><em>Everything in Free</em></span></li>
-        <li><span class="fi">✓</span> <span><em>Architecture Scorer</em> — 0–100, trend history</span></li>
-        <li><span class="fi">✓</span> <span><em>Anti-Pattern Detector</em> — 7 types, no LLM</span></li>
-        <li><span class="fi">✓</span> <span><em>Fragility Map</em> — VOLATILE / FRAGILE / STABLE per file</span></li>
-        <li><span class="fi">✓</span> <span><em>Refactoring Planner</em> — tier-1 critical first</span></li>
-        <li><span class="fi">✓</span> <span><em>C4 Diagrams</em> — Mermaid, levels 1–3</span></li>
-        <li><span class="fi">✓</span> <span><em>Security Templates</em> — STRIDE + OWASP Top 10</span></li>
-        <li><span class="fi">✓</span> <span><em>Knowledge Graph</em> — code + CVEs + risks</span></li>
-        <li><span class="fi">✓</span> <span><em>Genesis Decision Engine</em> — 7 modes, 12 gates</span></li>
-        <li><span class="fi">✓</span> <span><em>genesis decide</em> CLI</span></li>
-        <li><span class="fi">✓</span> <span><em>Learning Engine</em> — improves over time</span></li>
-        <li><span class="fi">✓</span> <span><em>Research Source Registry</em> — 25+ ranked sources, extensible</span></li>
-        <li><span class="fi">✓</span> <span><em>Reddit Answers</em> — field intelligence, verified</span></li>
-        <li><span class="fi">✓</span> <span><em>Evidence Packs</em> — proof + honest confidence</span></li>
-        <li><span class="fi">✓</span> <span>Works fully offline (local analysis)</span></li>
-        <li><span class="fi">✓</span> <span>26-page technical documentation</span></li>
-      </ul>
-      <a class="plan-cta pro-cta" href="https://github.com/maioio/genesis-architect">Get Pro →</a>
-    </div>
-  </div>
-  <p style="text-align:center;color:var(--dim);font-size:13px;margin-top:28px;">No Docker. No database. No MCP server. Download → Install → License → Work.</p>
-</section>
-
-<!-- INSTALL -->
-<section class="install-section" id="install">
-  <div class="section-label" style="text-align:left;">Get started</div>
-  <h2 class="section-title" style="text-align:left;margin-bottom:32px;">Up and running in 2 minutes</h2>
-
-  <p style="color:var(--dim);font-size:13px;margin-bottom:8px;font-weight:600;text-transform:uppercase;letter-spacing:1px;">Free — pip</p>
-  <div class="code-block">
-<span class="cmd">pip install genesis-architect</span>
-<span class="cmd">genesis config set</span> LLM_API_KEY <span class="str">your-api-key</span>
-<span class="cmd">genesis init</span> <span class="str">"a FastAPI task queue with Celery and Redis"</span>
-  </div>
-
-  <p style="color:var(--dim);font-size:13px;margin-bottom:8px;font-weight:600;text-transform:uppercase;letter-spacing:1px;">Pro — pip</p>
-  <div class="code-block">
-<span class="cmd">pip install genesis-architect-pro</span>
-<span class="cmd">genesis license activate</span> <span class="str">YOUR-LICENSE-KEY</span>
-<span class="c"># Analyze any existing codebase</span>
-<span class="cmd">genesis recover</span> .
-<span class="cmd">genesis decide</span> <span class="str">"diagnose the project and identify drift"</span>
-  </div>
-
-  <p style="color:var(--dim);font-size:13px;margin-bottom:8px;font-weight:600;text-transform:uppercase;letter-spacing:1px;">As a Claude Code skill</p>
-  <div class="code-block">
-<span class="cmd">git clone</span> https://github.com/maioio/genesis-architect ~/.claude/skills/genesis-architect
-<span class="c"># Then describe what you want to build</span>
-genesis init a Python CLI for analyzing log files
-  </div>
-
-  <div style="text-align:center;margin-top:40px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
-    <a class="btn-primary" href="https://github.com/maioio/genesis-architect">View on GitHub →</a>
-    <a class="btn-secondary" href="#pricing">Get Pro</a>
-  </div>
-</section>
+</div></section>
 
 <footer>
-  <p style="margin-bottom:8px;">Genesis Architect &nbsp;·&nbsp; by <a href="https://github.com/maioio">Maio Eshet</a> &nbsp;·&nbsp; Free core MIT &nbsp;·&nbsp; v6.3.0</p>
-  <p><a href="https://github.com/maioio/genesis-architect/blob/main/CHANGELOG.md">Changelog</a> &nbsp;·&nbsp; <a href="https://github.com/maioio/genesis-architect/issues">Issues</a> &nbsp;·&nbsp; <a href="https://github.com/maioio/genesis-architect/blob/main/docs/CUSTOMER_DOCS.md">Docs</a></p>
+  <p>Genesis Architect &nbsp;·&nbsp; by <a href="https://github.com/maioio">Maio Eshet</a> &nbsp;·&nbsp; MIT License &nbsp;·&nbsp; v2.6.0</p>
+  <div class="footer-links">
+    <a href="https://github.com/maioio/genesis-architect/blob/main/CHANGELOG.md">Changelog</a>
+    <a href="https://github.com/maioio/genesis-architect/issues">Issues</a>
+    <a href="https://github.com/maioio/genesis-architect/blob/main/CONTRIBUTING.md">Contributing</a>
+    <a href="pro.html">Genesis PRO</a>
+  </div>
 </footer>
 
+<script>
+const io = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+}, { threshold: 0.08, rootMargin: '0px 0px -30px 0px' });
+document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+document.querySelectorAll('.pipeline,.feats,.stats').forEach(g => {
+  [...g.children].forEach((c,i) => c.style.transitionDelay = `${i*55}ms`);
+});
+</script>
 </body>
 </html>

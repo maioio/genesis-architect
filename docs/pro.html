@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Genesis Architect PRO — AI Engineering Partner</title>
+<meta name="description" content="Genesis PRO analyzes your existing codebase: architecture score 0–100, risk map per file, refactoring plan, C4 diagrams, security checklist. All in under 30 seconds.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink:#080a0e; --paper:#0d1017; --lift:#141922; --raise:#1a2030;
+  --rim:#232d42; --line:#2b3650; --muted:#3d4f6e; --dim:#5e7291;
+  --soft:#8da3c0; --body:#c2d0e6; --head:#e4ecf8;
+  --acc:#5b8ef0; --acc2:#3ecf8e; --purple:#9b7bf7;
+  --acc-glow:rgba(91,142,240,0.15); --acc-rim:rgba(91,142,240,0.35);
+  --amber:#f59e0b; --red:#f87171;
+  --mono:'JetBrains Mono',monospace; --sans:'Inter',system-ui,sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:var(--sans);background:var(--paper);color:var(--body);line-height:1.65;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+a{color:var(--acc);text-decoration:none}
+a:hover{color:#80aaff}
+body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+  opacity:.025;mix-blend-mode:screen}
+
+/* NAV */
+nav{position:sticky;top:0;z-index:500;display:flex;align-items:center;justify-content:space-between;padding:0 clamp(16px,4vw,72px);height:56px;background:rgba(13,16,23,.92);backdrop-filter:blur(24px) saturate(160%);border-bottom:1px solid var(--rim)}
+.nav-logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:15px;letter-spacing:-.4px;color:var(--head)}
+.nav-gem{width:26px;height:26px;border-radius:7px;background:linear-gradient(135deg,var(--acc) 0%,var(--purple) 100%);display:grid;place-items:center;font-family:var(--mono);font-size:12px;font-weight:700;color:#fff;flex-shrink:0}
+.nav-pro-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:100px;background:linear-gradient(135deg,var(--acc),var(--purple));color:#fff;letter-spacing:.5px}
+.nav-links{display:flex;gap:24px;list-style:none}
+.nav-links a{font-size:13.5px;font-weight:500;color:var(--dim);transition:color .15s}
+.nav-links a:hover{color:var(--head)}
+.nav-right{display:flex;align-items:center;gap:10px}
+.btn-nav-free{font-size:13px;font-weight:600;padding:7px 16px;border-radius:8px;border:1px solid var(--rim);color:var(--dim);background:var(--lift);transition:all .15s;white-space:nowrap}
+.btn-nav-free:hover{border-color:var(--acc-rim);color:var(--head)}
+.btn-nav-cta{font-size:13px;font-weight:700;padding:7px 16px;border-radius:8px;background:linear-gradient(135deg,var(--acc),var(--purple));color:#fff;transition:filter .15s,transform .15s;white-space:nowrap}
+.btn-nav-cta:hover{filter:brightness(1.1);transform:translateY(-1px);color:#fff}
+
+/* HERO */
+.hero{position:relative;overflow:hidden;padding:clamp(80px,12vw,140px) clamp(16px,4vw,72px) clamp(64px,8vw,100px);text-align:center}
+.hero-grid{position:absolute;inset:0;background-image:linear-gradient(var(--rim) 1px,transparent 1px),linear-gradient(90deg,var(--rim) 1px,transparent 1px);background-size:56px 56px;mask-image:radial-gradient(ellipse 72% 72% at 50% 40%,black 20%,transparent 100%);opacity:.14}
+.hero-bloom{position:absolute;top:-120px;left:50%;transform:translateX(-50%);width:1000px;height:600px;pointer-events:none;background:radial-gradient(ellipse,rgba(155,123,247,.1) 0%,rgba(91,142,240,.06) 40%,transparent 70%)}
+.eyebrow{display:inline-flex;align-items:center;gap:7px;padding:5px 14px 5px 10px;background:var(--lift);border:1px solid var(--rim);border-radius:100px;margin-bottom:26px;font-size:11.5px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--soft);position:relative}
+.eyebrow-pulse{width:6px;height:6px;border-radius:50%;background:var(--purple);box-shadow:0 0 7px var(--purple);animation:pulse 2.2s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.3}}
+.hero h1{font-size:clamp(36px,6vw,72px);font-weight:900;line-height:1.04;letter-spacing:-2.5px;color:var(--head);max-width:900px;margin:0 auto 20px;position:relative}
+.hero h1 .g{background:linear-gradient(135deg,var(--acc) 10%,var(--purple) 60%,var(--acc2) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero-sub{font-size:clamp(16px,2vw,19px);color:var(--dim);max-width:600px;margin:0 auto 44px;line-height:1.7;position:relative}
+.hero-actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-bottom:20px;position:relative}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:13px 28px;border-radius:10px;font-size:15px;font-weight:600;transition:all .15s;cursor:pointer;border:none}
+.btn-pro-cta{background:linear-gradient(135deg,var(--acc),var(--purple));color:#fff}
+.btn-pro-cta:hover{filter:brightness(1.1);transform:translateY(-2px);color:#fff;box-shadow:0 8px 36px rgba(155,123,247,.4)}
+.btn-outline{background:var(--lift);border:1px solid var(--rim);color:var(--body)}
+.btn-outline:hover{border-color:var(--acc-rim);color:var(--head);background:var(--raise)}
+.hero-note{font-size:12.5px;color:var(--muted);position:relative}
+
+/* SECTIONS */
+.sec{padding:clamp(60px,8vw,100px) clamp(16px,4vw,72px)}
+.sec-inner{max-width:1080px;margin:0 auto}
+.stag{font-size:11px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--purple);margin-bottom:10px}
+.sh{font-size:clamp(26px,4vw,44px);font-weight:800;letter-spacing:-1.2px;color:var(--head);line-height:1.12;margin-bottom:12px}
+.sp{font-size:16px;color:var(--dim);max-width:520px;line-height:1.75;margin-bottom:50px}
+.sec-alt{background:var(--lift);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.sec-dark{background:var(--ink);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+
+/* COMMAND STRIP */
+.cmd-strip{background:var(--ink);border:1px solid var(--line);border-radius:14px;padding:24px 28px;font-family:var(--mono);font-size:13px;line-height:2;position:relative;overflow:hidden;max-width:760px;margin:0 auto}
+.cmd-strip::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent 5%,var(--purple) 50%,transparent 95%)}
+.c-p{color:var(--muted)}.c-k{color:var(--acc2)}.c-s{color:var(--amber)}.c-c{color:var(--muted)}.c-hi{color:#a5c4ff}
+
+/* ENGINE GRID */
+.engine-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.engine{background:var(--paper);padding:28px 24px;transition:background .18s;position:relative;overflow:hidden}
+.engine::after{content:'';position:absolute;top:0;left:22px;right:22px;height:1.5px;background:linear-gradient(90deg,var(--acc),var(--purple));transform:scaleX(0);transform-origin:left;transition:transform .25s ease}
+.engine:hover{background:var(--lift)}
+.engine:hover::after{transform:scaleX(1)}
+.engine-icon{font-size:22px;margin-bottom:12px;display:block}
+.engine-tag{font-size:9.5px;font-weight:700;letter-spacing:.5px;padding:2px 8px;border-radius:100px;border:1px solid;display:inline-block;margin-bottom:10px}
+.tag-free{background:rgba(62,207,142,.1);border-color:rgba(62,207,142,.3);color:var(--acc2)}
+.tag-pro{background:rgba(155,123,247,.12);border-color:rgba(155,123,247,.3);color:#c4adff}
+.engine h3{font-size:14.5px;font-weight:700;color:var(--head);margin-bottom:6px}
+.engine p{font-size:12.5px;color:var(--dim);line-height:1.6}
+
+/* GDE TABLE */
+.gde-table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:16px}
+table{width:100%;border-collapse:collapse;font-size:13px;min-width:560px}
+thead th{padding:12px 18px;background:var(--lift);text-align:left;font-weight:600;font-size:11px;color:var(--dim);border-bottom:1px solid var(--line);letter-spacing:.3px}
+thead th.col-g{color:var(--purple);background:rgba(155,123,247,.06)}
+tbody td{padding:11px 18px;border-bottom:1px solid var(--rim);color:var(--body);font-size:13px}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover td{background:var(--lift)}
+.row-hi td{background:rgba(155,123,247,.03)}
+.row-hi td:nth-child(2){border-left:2px solid var(--purple)}
+.ck{color:var(--acc2);font-weight:600}.cx{color:var(--muted)}
+
+/* GATE TABLE */
+.gate-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.gate{background:var(--paper);padding:18px 20px;display:flex;align-items:flex-start;gap:12px;transition:background .18s}
+.gate:hover{background:var(--lift)}
+.gate-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:5px}
+.gate-hard{background:var(--red);box-shadow:0 0 6px var(--red)}
+.gate-soft{background:var(--amber);box-shadow:0 0 6px var(--amber)}
+.gate-warn{background:var(--acc);box-shadow:0 0 6px var(--acc)}
+.gate-name{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--head);margin-bottom:3px}
+.gate-desc{font-size:12px;color:var(--dim)}
+
+/* KG HIGHLIGHT */
+.kg-card{background:linear-gradient(135deg,#0d1829 0%,#0f1520 100%);border:1px solid rgba(155,123,247,.3);border-radius:16px;padding:clamp(32px,4vw,52px) clamp(24px,4vw,52px);position:relative;overflow:hidden}
+.kg-card::before{content:'';position:absolute;top:-60px;right:-60px;width:300px;height:300px;background:radial-gradient(circle,rgba(155,123,247,.15) 0%,transparent 70%);pointer-events:none}
+.kg-card h3{font-size:clamp(20px,3vw,28px);font-weight:800;letter-spacing:-.8px;color:var(--head);margin-bottom:12px}
+.kg-card p{font-size:15px;color:var(--dim);line-height:1.7;max-width:560px;margin-bottom:24px}
+.kg-query{background:var(--ink);border:1px solid var(--line);border-radius:10px;padding:14px 18px;font-family:var(--mono);font-size:12.5px;color:#c4adff;line-height:1.8;display:inline-block}
+.kg-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--purple);margin-bottom:8px}
+
+/* INSTALL */
+.install-panel{background:var(--ink);border:1px solid var(--line);border-radius:16px;padding:36px clamp(20px,4vw,44px);position:relative;overflow:hidden}
+.install-panel::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent 5%,var(--purple) 50%,transparent 95%)}
+.ilabel{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--muted);margin-bottom:10px;margin-top:26px}
+.ilabel:first-child{margin-top:0}
+.code-block{background:var(--paper);border:1px solid var(--rim);border-radius:10px;padding:18px 22px;font-family:var(--mono);font-size:13px;line-height:2;overflow-x:auto}
+
+/* PRIVACY PILLS */
+.privacy-pills{display:flex;flex-wrap:wrap;gap:10px;margin-top:24px}
+.pp{display:flex;align-items:center;gap:7px;background:var(--lift);border:1px solid var(--rim);border-radius:100px;padding:6px 14px 6px 10px;font-size:12.5px;color:var(--body)}
+.pp-dot{width:6px;height:6px;border-radius:50%;background:var(--acc2);box-shadow:0 0 5px var(--acc2);flex-shrink:0}
+
+/* FOOTER */
+footer{text-align:center;padding:44px clamp(16px,4vw,72px);border-top:1px solid var(--rim);color:var(--muted);font-size:13px}
+footer a{color:var(--dim);transition:color .15s}
+footer a:hover{color:var(--acc)}
+.footer-links{display:flex;gap:22px;justify-content:center;flex-wrap:wrap;margin-top:10px}
+
+.reveal{opacity:0;transform:translateY(18px);transition:opacity .5s ease,transform .5s ease}
+.reveal.in{opacity:1;transform:none}
+
+@media(max-width:640px){
+  .nav-links{display:none}
+  .hero h1{letter-spacing:-1.2px}
+  .btn-nav-free{display:none}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">
+    <div class="nav-gem">G</div>
+    Genesis Architect
+    <span class="nav-pro-badge">PRO</span>
+  </div>
+  <ul class="nav-links">
+    <a href="#engines">Engines</a>
+    <a href="#gde">Decision Engine</a>
+    <a href="#knowledge">Knowledge Graph</a>
+    <a href="#pricing">Pricing</a>
+    <a href="#install">Install</a>
+  </ul>
+  <div class="nav-right">
+    <a class="btn-nav-free" href="index.html">Free version</a>
+    <a class="btn-nav-cta" href="#install">Get PRO →</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-bloom"></div>
+  <div class="eyebrow"><span class="eyebrow-pulse"></span>Genesis PRO &nbsp;·&nbsp; v6.3.0 &nbsp;·&nbsp; AI Engineering Partner</div>
+  <h1>Point it at any repo.<br><span class="g">Know everything in 30 seconds.</span></h1>
+  <p class="hero-sub">Architecture score 0–100. Risk map of every file. Prioritized refactoring plan. C4 diagrams. Security checklist. All without an LLM — pure graph analysis, deterministic, sub-second.</p>
+  <div class="hero-actions">
+    <a class="btn btn-pro-cta" href="#install">Get Genesis PRO →</a>
+    <a class="btn btn-outline" href="index.html">Free version</a>
+  </div>
+  <p class="hero-note">No Docker. No database. No MCP server. Download → Install → License → Work.</p>
+</section>
+
+<!-- COMMAND DEMO -->
+<div class="sec" style="padding-top:0"><div class="sec-inner">
+  <div class="cmd-strip reveal">
+<div><span class="c-p"># One command — full codebase health report</span></div>
+<div><span class="c-k">genesis recover</span> .</div>
+<div>&nbsp;</div>
+<div><span class="c-p"># Output:</span></div>
+<div>&nbsp;&nbsp;<span class="c-hi">Architecture score:</span> 67/100 (FAIR) <span class="c-p">↓ from 74 last week</span></div>
+<div>&nbsp;&nbsp;<span class="c-hi">Anti-patterns found:</span> 3 (1 CRITICAL — circular dep in auth/)</div>
+<div>&nbsp;&nbsp;<span class="c-hi">Fragility map:</span> 4 VOLATILE · 11 FRAGILE · 31 STABLE</div>
+<div>&nbsp;&nbsp;<span class="c-hi">Refactoring plan:</span> 2 tier-1 blocking · 5 tier-2 improvements</div>
+<div>&nbsp;&nbsp;<span class="c-hi">C4 diagrams:</span> written to docs/architecture/</div>
+<div>&nbsp;&nbsp;<span class="c-hi">Security:</span> STRIDE + OWASP checklist written to docs/security/</div>
+<div>&nbsp;&nbsp;<span class="c-p">→ PROJECT_RECOVERY_REPORT.md</span></div>
+  </div>
+</div></div>
+
+<!-- ENGINES -->
+<section class="sec" id="engines"><div class="sec-inner">
+  <div class="stag">Codebase Intelligence</div>
+  <h2 class="sh">13 engines. One command.</h2>
+  <p class="sp">Every engine runs without an LLM. Pure graph analysis — deterministic, auditable, never hallucinates.</p>
+  <div class="engine-grid reveal">
+    <div class="engine"><span class="engine-icon">🕸️</span><span class="engine-tag tag-pro">PRO</span><h3>Import Graph</h3><p>Multi-language dependency graph (Python, JS, TS, Go, Rust). Detects circular deps, dark modules, fan-in/fan-out. Maps every file to an architectural layer.</p></div>
+    <div class="engine"><span class="engine-icon">📐</span><span class="engine-tag tag-pro">PRO</span><h3>Architecture Scorer</h3><p>Scores any codebase 0–100 across 4 dimensions: Modularity, Coupling, Cohesion, Layering. 6 adaptive profiles. Tracks score history in <code style="color:#a5c4ff;font-size:11px">.genesis/score_history.jsonl</code>.</p></div>
+    <div class="engine"><span class="engine-icon">🚨</span><span class="engine-tag tag-pro">PRO</span><h3>Anti-Pattern Detector</h3><p>Detects 7 structural anti-patterns: God Class, Hub File, Circular Dependency, Dead Code, Feature Envy, Leaky Abstraction, Shotgun Surgery. Each with severity + suggested fix.</p></div>
+    <div class="engine"><span class="engine-icon">🔥</span><span class="engine-tag tag-pro">PRO</span><h3>Git Churn Analyzer</h3><p>Counts commits, fix-commits, and fix ratio per file. Classifies modules as HIGH / MEDIUM / LOW / STALE churn over a configurable time window (default: 90 days).</p></div>
+    <div class="engine"><span class="engine-icon">🗺️</span><span class="engine-tag tag-pro">PRO</span><h3>Fragility Classifier</h3><p>Combines anti-patterns + git churn + test existence. Every file gets VOLATILE / FRAGILE / STABLE + a GO / HOLD / REWRITE recommendation. Output: <code style="color:#a5c4ff;font-size:11px">FRAGILITY_MAP.md</code>.</p></div>
+    <div class="engine"><span class="engine-icon">📋</span><span class="engine-tag tag-pro">PRO</span><h3>Refactoring Planner</h3><p>Tier-1 blocking issues first, tier-2 improvements after. Each step: why, operations (CREATE / MODIFY / DELETE / MOVE), complexity, projected score impact. Output: <code style="color:#a5c4ff;font-size:11px">REFACTORING_PLAN.md</code>.</p></div>
+    <div class="engine"><span class="engine-icon">🏛️</span><span class="engine-tag tag-pro">PRO</span><h3>C4 Architecture Generator</h3><p>Level 1 (System Context), Level 2 (Containers), Level 3 (Components). Mermaid diagrams — render natively on GitHub. Auto-detects external systems: DB, auth, queue, payments, AI.</p></div>
+    <div class="engine"><span class="engine-icon">🛡️</span><span class="engine-tag tag-pro">PRO</span><h3>Security Templates</h3><p>STRIDE threat model (all 6 categories) + OWASP Top 10 checklist, tailored to your project type (api / cli / library). Items auto-marked N/A when not applicable.</p></div>
+    <div class="engine"><span class="engine-icon">🧠</span><span class="engine-tag tag-pro">PRO ⭐</span><h3>Knowledge Graph</h3><p>Links code, CVEs, risks, decisions, and field findings into one queryable graph. Finds do-not-touch zones that have an open CVE. Nothing else on the market does this.</p></div>
+    <div class="engine"><span class="engine-icon">📚</span><span class="engine-tag tag-pro">PRO</span><h3>Learning Engine</h3><p>Records which research strategy performs best per task kind. Honest confidence: low until ≥3 samples, medium until ≥8. Never overclaims from one result.</p></div>
+    <div class="engine"><span class="engine-icon">📚</span><span class="engine-tag tag-pro">PRO</span><h3>Research Source Registry</h3><p>A ranked catalog of 25+ sources — official docs, source, security DBs, packages, Q&amp;A, developer field, learning. Ranked by authority × evidence weight. Add your own sources per-project without touching code.</p></div>
+    <div class="engine"><span class="engine-icon">💬</span><span class="engine-tag tag-pro">PRO</span><h3>Reddit Answers Workflow</h3><p>Mines real practitioner pain — "problems / not working / production issues / worth it / migration" — then verifies every claim against engineering-truth sources. Field signal is never treated as final truth.</p></div>
+    <div class="engine"><span class="engine-icon">📑</span><span class="engine-tag tag-pro">PRO</span><h3>Evidence Packs</h3><p>Every recommendation ships with proof: sources consulted (with reliability), an honest confidence grade (never "high" without an authoritative source), and contradictions surfaced — not hidden.</p></div>
+    <div class="engine"><span class="engine-icon">🔬</span><span class="engine-tag tag-free">FREE</span><h3>Issue Mining</h3><p>Reads up to 50 closed bug issues per repo across 15–20 GitHub repos. Extracts recurring errors, security patches, and architecture regrets before you write a line.</p></div>
+    <div class="engine"><span class="engine-icon">🍴</span><span class="engine-tag tag-free">FREE</span><h3>Fork Analysis</h3><p>Ranks forks by merged PRs in the last 6 months — not stars. Top 3 active forks are analyzed for bug fixes that didn't make it upstream.</p></div>
+    <div class="engine"><span class="engine-icon">🗄️</span><span class="engine-tag tag-free">FREE</span><h3>Knowledge Vault</h3><p>Caches solutions locally — 6-month TTL, LRU eviction at 500 entries. Fast on repeat projects. Falls back to Stack Overflow on cache miss.</p></div>
+  </div>
+</div></section>
+
+<!-- GDE -->
+<section class="sec sec-alt" id="gde"><div class="sec-inner">
+  <div class="stag">Genesis Decision Engine</div>
+  <h2 class="sh">Type anything.<br>It routes automatically.</h2>
+  <p class="sp">The only tool in the market with all 5 decision-engine capabilities — verified against 11 competitors including Cursor, Cline, Aider, Devin, and GitHub Copilot Workspace.</p>
+
+  <div class="cmd-strip reveal" style="margin-bottom:40px">
+<div><span class="c-p"># Full session — analyses, approval gate, atomic write</span></div>
+<div><span class="c-k">genesis decide</span> <span class="c-s">"diagnose the project and identify drift"</span></div>
+<div>&nbsp;</div>
+<div><span class="c-p"># Classification only — which mode would this trigger?</span></div>
+<div><span class="c-k">genesis decide --classify-only</span> <span class="c-s">"generate C4 diagrams"</span></div>
+<div>&nbsp;</div>
+<div><span class="c-p"># Auto-approve for CI/scripting</span></div>
+<div><span class="c-k">genesis decide --yes</span> <span class="c-s">"run a full recovery scan"</span></div>
+<div>&nbsp;</div>
+<div><span class="c-p"># Print the last session's full decision log</span></div>
+<div><span class="c-k">genesis explain</span></div>
+  </div>
+
+  <div class="gde-table-wrap reveal" style="margin-bottom:40px">
+    <table>
+      <thead><tr><th>Capability</th><th class="col-g">Genesis GDE</th><th>All 11 competitors</th></tr></thead>
+      <tbody>
+        <tr class="row-hi"><td>Intent classification (free text → mode, no LLM)</td><td><span class="ck">✓</span> 7 modes, sub-ms</td><td><span class="cx">None</span></td></tr>
+        <tr class="row-hi"><td>Engine routing by classified intent</td><td><span class="ck">✓</span> topological sort</td><td><span class="cx">None</span></td></tr>
+        <tr class="row-hi"><td>Static approval gate policy table</td><td><span class="ck">✓</span> 12 named gates</td><td><span class="cx">None</span></td></tr>
+        <tr class="row-hi"><td>Session confidence score</td><td><span class="ck">✓</span> 1.0 → 0.10 floor</td><td><span class="cx">None</span></td></tr>
+        <tr class="row-hi"><td>Persistent decision log</td><td><span class="ck">✓</span> append-only JSONL</td><td><span class="cx">None</span></td></tr>
+        <tr><td>Parallel engine execution</td><td><span class="ck">✓</span> within each phase</td><td><span class="cx">None</span></td></tr>
+        <tr><td>Crash-safe session persistence</td><td><span class="ck">✓</span> tmp→rename atomic</td><td><span class="cx">None</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="stag" style="margin-bottom:14px">12 Approval Gates</div>
+  <div class="gate-grid reveal">
+    <div class="gate"><div class="gate-dot gate-hard"></div><div><div class="gate-name">PLAN_WRITE</div><div class="gate-desc">Hard block — never overridable. Fires on any write to planned.json.</div></div></div>
+    <div class="gate"><div class="gate-dot gate-hard"></div><div><div class="gate-name">RULES_FAIL</div><div class="gate-desc">Hard block — never overridable. Rules engine hard failure.</div></div></div>
+    <div class="gate"><div class="gate-dot gate-soft"></div><div><div class="gate-name">CONFIDENCE_LOW</div><div class="gate-desc">Soft block. Session confidence below 0.40.</div></div></div>
+    <div class="gate"><div class="gate-dot gate-soft"></div><div><div class="gate-name">DRIFT_CRITICAL</div><div class="gate-desc">Soft block. Drift score above 80.</div></div></div>
+    <div class="gate"><div class="gate-dot gate-soft"></div><div><div class="gate-name">SECURITY_RISK</div><div class="gate-desc">Soft block. Engine reports security risk.</div></div></div>
+    <div class="gate"><div class="gate-dot gate-soft"></div><div><div class="gate-name">POLICY_VIOLATION</div><div class="gate-desc">Soft block. Rules engine policy violation.</div></div></div>
+    <div class="gate"><div class="gate-dot gate-soft"></div><div><div class="gate-name">COMMIT_CONFLICT</div><div class="gate-desc">Soft block. Write op conflicts with committed model.</div></div></div>
+    <div class="gate"><div class="gate-dot gate-warn"></div><div><div class="gate-name">WRITE_SCOPE</div><div class="gate-desc">Warning. Any pending write operations.</div></div></div>
+    <div class="gate"><div class="gate-dot gate-warn"></div><div><div class="gate-name">REQUIRED_FAILED</div><div class="gate-desc">Warning. Any required engine failed.</div></div></div>
+    <div class="gate"><div class="gate-dot gate-warn"></div><div><div class="gate-name">DEGRADED_MODE</div><div class="gate-desc">Warning. Session confidence below 0.60.</div></div></div>
+    <div class="gate"><div class="gate-dot gate-warn"></div><div><div class="gate-name">NO_ENGINES</div><div class="gate-desc">Warning. Zero engines ran.</div></div></div>
+    <div class="gate"><div class="gate-dot gate-warn"></div><div><div class="gate-name">RESEARCH_STALE</div><div class="gate-desc">Warning. Research results flagged stale.</div></div></div>
+  </div>
+  <p style="font-size:12px;color:var(--muted);margin-top:12px"><span style="color:var(--red)">●</span> Hard block (never bypassable) &nbsp;&nbsp;<span style="color:var(--amber)">●</span> Soft block (overridable) &nbsp;&nbsp;<span style="color:var(--acc)">●</span> Warning</p>
+</div></section>
+
+<!-- KNOWLEDGE GRAPH -->
+<section class="sec" id="knowledge"><div class="sec-inner">
+  <div class="stag">Knowledge Graph Engine</div>
+  <h2 class="sh">Connect everything<br>Genesis knows.</h2>
+  <p class="sp">The flagship differentiator. Links code, CVEs, risks, and decisions into one queryable graph. No competitor has cross-source connective intelligence.</p>
+  <div class="kg-card reveal">
+    <h3>Find what no tool can find.</h3>
+    <p>The Knowledge Graph connects node types — module, anti-pattern, drift, CVE, package, risk, decision, evidence, field-finding, test — with confidence-weighted edges. Every link needs evidence; low-evidence links are low-confidence by construction.</p>
+    <div class="kg-label">Example query</div>
+    <div class="kg-query">cve → package → module<br>intersected with: risk → module<br><br>→ "Which do-not-touch zones have an open CVE?"</div>
+  </div>
+</div></section>
+
+<!-- PRIVACY -->
+<section class="sec sec-alt"><div class="sec-inner">
+  <div class="stag">Product Intelligence</div>
+  <h2 class="sh">Privacy enforced in code,<br>not by trust.</h2>
+  <p class="sp">Anonymous, opt-in telemetry — the loop that shows which engines earn their keep. Default OFF. Nothing recorded until you consent.</p>
+  <div class="privacy-pills reveal">
+    <div class="pp"><span class="pp-dot"></span>Default OFF — no pre-checked opt-in</div>
+    <div class="pp"><span class="pp-dot"></span>Anonymous random install ID only</div>
+    <div class="pp"><span class="pp-dot"></span>Never: code, paths, secrets, prompts</div>
+    <div class="pp"><span class="pp-dot"></span>Revocable at any time</div>
+    <div class="pp"><span class="pp-dot"></span>Sanitizer blocks leaks in code — not trust</div>
+    <div class="pp"><span class="pp-dot"></span>Fully functional with telemetry off</div>
+  </div>
+</div></section>
+
+<!-- PRICING -->
+<section class="sec" id="pricing"><div class="sec-inner">
+  <div class="stag">Pricing</div>
+  <h2 class="sh">Founder pricing.<br>First 50 seats, locked for life.</h2>
+  <p class="sp">One license key. No Docker, no database, no infrastructure. Verified offline — no account, no phone-home.</p>
+  <div class="kg-card reveal" style="max-width:520px;margin:0 auto;text-align:center">
+    <div class="engine-tag tag-pro" style="margin-bottom:16px">FOUNDER · FIRST 50 SEATS</div>
+    <div style="font-size:clamp(40px,7vw,64px);font-weight:900;letter-spacing:-2px;color:var(--head);line-height:1">$9<span style="font-size:20px;color:var(--dim);font-weight:600"> / month</span></div>
+    <div style="font-size:15px;color:var(--soft);margin:8px 0 4px">or <strong style="color:var(--head)">$90 / year</strong> — 2 months free</div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:24px">Locked for life. After the first 50 seats: $19 / month · $190 / year.</div>
+    <a class="btn btn-pro-cta" href="#install" style="width:100%;justify-content:center">Get Genesis PRO →</a>
+    <div style="font-size:12px;color:var(--muted);margin-top:14px">Free core stays free forever · MIT licensed</div>
+  </div>
+</div></section>
+
+<!-- INSTALL -->
+<section class="sec sec-dark" id="install"><div class="sec-inner">
+  <div class="stag">Get started</div>
+  <h2 class="sh">Four steps.<br>No Docker. Ever.</h2>
+  <p class="sp">Download → Install → License → Work. The <code style="color:#a5c4ff;font-size:14px">genesis doctor</code> check confirms your license is the only required step.</p>
+  <div class="install-panel reveal">
+    <div class="ilabel">Step 1 — Install</div>
+    <div class="code-block"><span class="c-k">pip install genesis-architect-pro</span></div>
+    <div class="ilabel">Step 2 — License</div>
+    <div class="code-block"><span class="c-k">genesis license activate</span> <span class="c-s">YOUR-LICENSE-KEY</span></div>
+    <div class="ilabel">Step 3 — Verify</div>
+    <div class="code-block"><span class="c-k">genesis doctor</span>
+<span class="c-p"># → License: ✓  |  Local engines: ✓  |  Network: optional</span></div>
+    <div class="ilabel">Step 4 — Analyze any repo</div>
+    <div class="code-block"><span class="c-k">genesis recover</span> /path/to/your/project
+<span class="c-k">genesis decide</span> <span class="c-s">"find all drift and security risks"</span>
+<span class="c-k">genesis harden</span> .    <span class="c-p"># STRIDE + OWASP + secrets scan</span></div>
+  </div>
+  <div style="text-align:center;margin-top:44px">
+    <a class="btn btn-pro-cta" href="https://github.com/maioio/genesis-architect-pro">Get Genesis PRO →</a>
+  </div>
+</div></section>
+
+<footer>
+  <p>Genesis Architect PRO &nbsp;·&nbsp; by <a href="https://github.com/maioio">Maio Eshet</a> &nbsp;·&nbsp; v6.3.0</p>
+  <div class="footer-links">
+    <a href="index.html">Free version</a>
+    <a href="https://github.com/maioio/genesis-architect">GitHub</a>
+    <a href="https://github.com/maioio/genesis-architect/blob/main/CHANGELOG.md">Changelog</a>
+    <a href="https://github.com/maioio/genesis-architect/issues">Issues</a>
+  </div>
+</footer>
+
+<script>
+const io = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+}, { threshold: 0.08, rootMargin: '0px 0px -30px 0px' });
+document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+document.querySelectorAll('.engine-grid,.gate-grid,.privacy-pills').forEach(g => {
+  [...g.children].forEach((c,i) => c.style.transitionDelay = `${i*40}ms`);
+});
+</script>
+</body>
+</html>

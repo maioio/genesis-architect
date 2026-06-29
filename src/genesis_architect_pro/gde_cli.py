@@ -121,7 +121,8 @@ def cmd_decide(args: argparse.Namespace) -> int:
         return 1
 
     print()
-    print(f"  Genesis Decision Engine — v6.1.0")
+    from genesis_architect_pro import __version__
+    print(f"  Genesis Decision Engine  v{__version__}")
     print(f"  Project: {project_dir}")
     print(f"  Input:   {args.instruction!r}")
     print()

@@ -58,6 +58,19 @@ shipped.
   full canvas (score, knowledge graph, CVEs, drift, risk zones). Opens in any
   browser; the same artifact a future desktop app embeds.
 
+### 🧭 Designed, coming next (do NOT list as shipped yet)
+
+- **Genesis Floating Assistant** — the flagship interaction layer: a system-wide
+  floating status bubble (dockable, draggable, always-on-top, snap-to-edge,
+  multi-monitor) that expands into a chat-first panel showing live engine state,
+  approvals, recommendations, and next actions, and hands off to the Canvas for
+  deep work. Configurable activity levels (Quiet / Balanced / Active / Expert),
+  privacy-safe context awareness (default-minimum signals, nothing leaves the
+  machine), WCAG 2.2 AA. **Status: full architecture + UX spec complete**
+  (`docs/pro/FLOATING_ASSISTANT_SPEC.md`); implementation scoped (MVP → v1 →
+  future), not yet built. On the site, present as **"coming soon"** — a teaser/
+  roadmap item, never as an available feature.
+
 ### Earlier in v6.3.0 (still featured)
 
 - **Research Source Registry** — Genesis researches from a ranked, configurable
@@ -509,7 +522,15 @@ This report is the **living source of truth** for site updates. Keep it current:
 
 ---
 
-*Last updated: 2026-06-29 | Genesis Architect PRO v6.4.0 | Next site review due: 2026-07-13*
+*Last updated: 2026-06-30 | Genesis Architect PRO v6.4.0 | Next site review due: 2026-07-14*
+
+> **Design milestone (2026-06-30):** Genesis Floating Assistant — full
+> architecture & UX spec complete (`docs/pro/FLOATING_ASSISTANT_SPEC.md`). This is
+> a DESIGN deliverable; on the site it is a "coming soon" roadmap item, not a
+> shipped feature. Implementation scope: MVP (bubble + chat panel + approvals,
+> driving the existing GDE) → v1 (snap/dock, context inspector, all activity
+> levels, notifications, multi-monitor, multi-engine view) → future (voice, IDE
+> embed, collaboration).
 
 > **Session additions (2026-06-29):** Rich TUI, all 7 GDE modes wired (13 engines),
 > intent classifier calibration, landing page Pro/GDE sections, README rewrite.

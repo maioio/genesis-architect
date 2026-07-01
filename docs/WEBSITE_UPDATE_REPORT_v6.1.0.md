@@ -60,16 +60,24 @@ shipped.
 
 ### 🧭 Designed, coming next (do NOT list as shipped yet)
 
-- **Genesis Floating Assistant** — the flagship interaction layer: a system-wide
-  floating status bubble (dockable, draggable, always-on-top, snap-to-edge,
-  multi-monitor) that expands into a chat-first panel showing live engine state,
-  approvals, recommendations, and next actions, and hands off to the Canvas for
-  deep work. Configurable activity levels (Quiet / Balanced / Active / Expert),
-  privacy-safe context awareness (default-minimum signals, nothing leaves the
-  machine), WCAG 2.2 AA. **Status: full architecture + UX spec complete**
-  (`docs/pro/FLOATING_ASSISTANT_SPEC.md`); implementation scoped (MVP → v1 →
-  future), not yet built. On the site, present as **"coming soon"** — a teaser/
-  roadmap item, never as an available feature.
+- **Genesis PRO Companion (Standalone App)** — the flagship next evolution:
+  a voice-capable, IDE-aware, proactive engineering partner built as a Tauri v2
+  standalone application. Surfaces the full GDE + Committee intelligence through
+  a floating bubble → panel → canvas surface hierarchy. Key capabilities in design:
+  - **Voice layer:** Push-to-talk (Alt+Space) + wake word ("Genesis, start" /
+    "ג'נסיס, תתחיל") — Hebrew + English + 5 more languages. Local STT (Whisper.cpp
+    large-v3-turbo) + local TTS (Kokoro English / Piper he_IL Hebrew). No cloud
+    dependency.
+  - **IDE Bridge:** Read-only VS Code + JetBrains sidecar. Line-level pattern
+    detection ("God Class detected on line 42 — run Committee?"). Context Engine
+    fetches only high-relevance snippets from the Knowledge Graph (Scryer-style).
+  - **Visual Diff Approval:** All GDE writes presented as a visual diff; user
+    approves/denies per-file before any commit.
+  - **Committee transparency profiles:** Free = final recommendation only; Pro =
+    full discussion panel with divergence map + voting record, streamed live.
+  - **Status:** Full architecture spec complete (`docs/pro/COMPANION_ARCHITECTURE.md`
+    + `FLOATING_ASSISTANT_SPEC.md`). Implementation not yet started. Present as
+    **"coming soon"** — never as an available feature.
 
 ### Earlier in v6.3.0 (still featured)
 
@@ -522,15 +530,21 @@ This report is the **living source of truth** for site updates. Keep it current:
 
 ---
 
-*Last updated: 2026-06-30 | Genesis Architect PRO v6.4.0 | Next site review due: 2026-07-14*
+*Last updated: 2026-07-01 | Genesis Architect PRO v6.4.0 | Next site review due: 2026-07-15*
 
-> **Design milestone (2026-06-30):** Genesis Floating Assistant — full
-> architecture & UX spec complete (`docs/pro/FLOATING_ASSISTANT_SPEC.md`). This is
-> a DESIGN deliverable; on the site it is a "coming soon" roadmap item, not a
-> shipped feature. Implementation scope: MVP (bubble + chat panel + approvals,
-> driving the existing GDE) → v1 (snap/dock, context inspector, all activity
-> levels, notifications, multi-monitor, multi-engine view) → future (voice, IDE
-> embed, collaboration).
+> **Design milestone (2026-07-01):** Genesis PRO Companion — full architecture spec
+> complete (`docs/pro/COMPANION_ARCHITECTURE.md`). Covers: Committee engine as
+> core primitive + Transparency Profiles, Tauri v2 standalone app shell,
+> voice layer (Whisper + Kokoro + Piper), IDE bridge (VS Code + JetBrains),
+> Visual Diff Approval, Context Engine (Scryer-style), STT/TTS decision matrix.
+> Informed by: Instagram reel (Vercel AI SDK 7 voice gateway — Vercel approach
+> rejected in favor of local-first; UX pattern adopted). Reddit field research
+> pending and will be added to §7 open questions.
+> This is a DESIGN deliverable — not yet implemented. "Coming soon" on the site.
+
+> **Bug fix (2026-07-01):** `get_default_registry()` now auto-loads engine
+> descriptors on first call (lazy import). Cold import previously returned 0
+> engines. 1,441 tests still passing.
 
 > **Session additions (2026-06-29):** Rich TUI, all 7 GDE modes wired (13 engines),
 > intent classifier calibration, landing page Pro/GDE sections, README rewrite.

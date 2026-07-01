@@ -10,6 +10,34 @@
 > into a chat-first panel on demand, surfaces live engine state / approvals /
 > recommendations through progressive disclosure, and opens the full Canvas only
 > when deep analysis is needed — always respectful of attention and privacy.
+>
+> **Distribution / IP:** Pro-only. This subsystem, its spec, and its future
+> implementation live exclusively in the **private** `genesis-architect-pro` repo
+> (visible only to paying licensees). It is **never** shipped to the public
+> free-core repo. It is the paid, alternative-tool interaction layer on top of the
+> engines — the same chat partnership as regular Genesis, in Pro, with more.
+
+## Visual reference (approved mockup)
+
+The approved reference mockup (provided by the owner) establishes the canonical
+look and confirms this spec covers every element. Key visual specifics locked from
+it, in addition to the sections below:
+- **Bubble default readout:** the compact bubble shows a live task label +
+  **percentage + engine count** (e.g., "Researching authentication issue… · 67% ·
+  3 engines running") with a slim progress bar — this is the default "at a glance"
+  signal (see §6).
+- **Panel left rail:** the expanded panel has a thin vertical **icon rail** (chat,
+  status/engines, model, security, committee/people, settings) for switching the
+  panel's active view (see component hierarchy).
+- **Panel body:** "Current Progress" list of engines with per-engine % and a
+  `Queued` state, a "Key Findings" block, and a **"View full details in Canvas"**
+  hand-off row (see §6, §9, §10).
+- **Bottom capability strip** (Smart Context · Live Status · Quick Actions ·
+  Notifications · Canvas Integration · Multi-Engine View) maps 1:1 to §3/§6/§7/§8/
+  §9/§10.
+- **Footer principle:** *"The Floating Assistant is the everyday interface. The
+  Canvas is for deep work. Genesis works in the background. You stay in control."*
+  — this is the product's north star for the subsystem (see §2 quiet-vs-help, §4).
 
 ---
 

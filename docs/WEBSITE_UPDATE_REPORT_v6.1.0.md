@@ -6,6 +6,11 @@
 > fully built and tested. **1,441 tests passing. 13 GDE engines. 7/7 modes wired.
 > Rich CLI TUI. Nothing open.** All work is on the private remote `pro/main`.
 
+> 🏗️ **ARCHITECTURE MILESTONE — v6.5.0 (2026-07-01).** Full architecture
+> specifications complete for the Genesis PRO Companion standalone app and the
+> Committee engine as a core GDE primitive. **Not yet shipped — design phase.**
+> Three new spec documents committed. See §🆕 NEW below.
+
 ---
 
 ## 🌐 Site sync status (check this when editing the landing page)
@@ -23,6 +28,32 @@ When you edit the landing page, keep this table honest: bump the version + flip
 status to "⏳ needs sync" for anything that drifts from this report, then back to
 "✅ in sync" once published. Never publish a capability not listed below as
 shipped.
+
+---
+
+## 🆕 NEW in v6.5.0 — Architecture Phase (do NOT publish as shipped yet)
+> These are design milestones. Architecture specs are complete and committed.
+> Implementation is scoped and ready to build. List as "coming soon" / roadmap.
+
+### Genesis PRO Companion — Standalone Application *(architecture complete)*
+- **Tauri v2 shell** — Python sidecar + React/Vite WebView. ~6 MB binary. No Electron.
+- **WebSocket streaming layer** — 20+ event types for real-time engine/gate/voice streaming
+- **Committee engine as core primitive** — 5-advisor anti-sycophancy debate, GDE-native routing
+- **Transparency Profiles** — FREE: final verdict only. PRO: full advisor cards + divergence map + voting record
+- **Voice layer** — Push-to-talk (Ctrl+Shift+G) + wake word ("Genesis, start" / "ג'נסיס, תתחיל")
+- **Local-first STT** — faster-whisper + ivrit.ai Hebrew model (Apache 2.0, 229ms streaming latency)
+- **Local-first TTS** — Kokoro-82M (English) + Meta MMS ONNX (Hebrew) — no cloud, no API keys
+- **Proactive voice notifications** — "Critical architecture drift detected" vocalized for CRITICAL events
+- **IDE bridge** — VS Code extension: cursor position → line-level God Class / VOLATILE / CVE hints
+- **Visual Diff Approval** — changes presented as diff in Canvas before any file is touched
+- **Context Engine (Scryer-style)** — Knowledge Graph + Import Graph fetch only high-relevance snippets for LLM engines
+- **Mid-conversation function calls** — entity pre-fetch while user speaks; response ready instantly (v2.0)
+
+### 🧭 Designed, not yet built (do NOT list as available)
+- Genesis PRO Companion app (Tauri shell): full architecture spec in `docs/pro/COMPANION_APP_ARCHITECTURE.md`
+- Committee engine native integration: spec in `docs/pro/COMMITTEE_ENGINE_ARCHITECTURE.md`
+- Voice layer (STT/TTS): decision matrix in `docs/pro/STT_TTS_DECISION_MATRIX.md`
+- IDE Bridge VS Code extension: designed, not yet coded
 
 ---
 

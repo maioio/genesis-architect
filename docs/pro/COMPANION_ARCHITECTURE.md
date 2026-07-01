@@ -372,9 +372,25 @@ Models download once to `~/.genesis/models/`. No server, no Docker.
 4. **Activity levels:** what is "Quiet" to a professional developer — no audio,
    or no proactive notifications at all? (Reddit research pending)
 
-*Question 4 will be updated when Reddit Answers research completes.*
+### 7.1 Reddit field research — status
 
----
+**Honesty note:** The Reddit Answers (`reddit.com/answers`) field research run for
+this document was **cut short by an account weekly-usage limit** before it returned
+verified findings. The four open questions above therefore remain **unvalidated by
+field data** and must not be presented as answered.
+
+The intended workflow (for when research resumes after the limit resets):
+- Query `reddit.com/answers/?q=...` via Apify (Reddit is blocked on Firecrawl —
+  see routing rules), trying multiple phrasings per the Developer Field
+  Intelligence workflow: "problems / not working / production issues / vs X /
+  worth it / latency / Hebrew support".
+- Every field finding is then **cross-verified against an engineering-truth source**
+  (official docs, benchmarks, model cards) before it influences any design decision.
+- Field signal is never treated as final truth (per the Evidence Packs contract).
+
+Until that completes, the STT/TTS matrix (§2, §6) stands on **model-card and
+benchmark evidence**, not field practitioner data. That is the honest confidence
+grade for this revision.
 
 ---
 

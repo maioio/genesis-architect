@@ -76,8 +76,13 @@ shipped.
   - **Committee transparency profiles:** Free = final recommendation only; Pro =
     full discussion panel with divergence map + voting record, streamed live.
   - **Status:** Full architecture spec complete (`docs/pro/COMPANION_ARCHITECTURE.md`
-    + `FLOATING_ASSISTANT_SPEC.md`). Implementation not yet started. Present as
-    **"coming soon"** — never as an available feature.
+    + `FLOATING_ASSISTANT_SPEC.md`; approved visual reference in `docs/pro/assets/`).
+    Implementation not yet started. Present as **"coming soon"** — never as an
+    available feature.
+  - **Pro-only + backed up:** this subsystem lives exclusively in the **private**
+    `genesis-architect-pro` repo (verified private on GitHub), visible only to
+    paying licensees — never the public free core. All work is committed and pushed
+    to `pro/main`.
 
 ### Earlier in v6.3.0 (still featured)
 
@@ -538,8 +543,11 @@ This report is the **living source of truth** for site updates. Keep it current:
 > voice layer (Whisper + Kokoro + Piper), IDE bridge (VS Code + JetBrains),
 > Visual Diff Approval, Context Engine (Scryer-style), STT/TTS decision matrix.
 > Informed by: Instagram reel (Vercel AI SDK 7 voice gateway — Vercel approach
-> rejected in favor of local-first; UX pattern adopted). Reddit field research
-> pending and will be added to §7 open questions.
+> rejected in favor of local-first; UX pattern adopted).
+> **Reddit field research was cut short by an account weekly-usage limit** and did
+> NOT return verified findings — §7 open questions remain unvalidated by field data
+> and the STT/TTS matrix stands on model-card/benchmark evidence only (honest
+> confidence grade). Do not present the voice quality claims as field-validated.
 > This is a DESIGN deliverable — not yet implemented. "Coming soon" on the site.
 
 > **Bug fix (2026-07-01):** `get_default_registry()` now auto-loads engine

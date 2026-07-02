@@ -688,6 +688,80 @@ def cmd_companion_serve(project_dir: Path) -> int:
     return 0
 
 
+def cmd_companion_ui(project_dir: Path, *, no_browser: bool = False) -> int:
+    """Launch the Floating Assistant end-to-end: start the full Companion backend,
+    generate the web UI wired to that server's port+token, open it, and block.
+
+    One command → a running floating assistant. Degrades honestly: if the
+    streaming server can't start (websockets missing), the UI still opens and
+    shows an offline state with the exact install hint.
+    """
+    import signal
+    import time
+    import webbrowser
+
+    from genesis_architect_pro.companion_ui import write_companion_html, DEFAULT_PORT
+
+    token = ""
+    ws_server = None
+    try:
+        from genesis_architect_pro.gde_companion import GateNotifier
+        from genesis_architect_pro.streaming.server import CompanionServer
+        from genesis_architect_pro.ide_bridge.server import IDEBridgeServer
+        from genesis_architect_pro.streaming import runner_patch
+        from genesis_architect_pro import gate_notifier_patch
+        from genesis_architect_pro.streaming.inbound import InboundRouter
+        from genesis_architect_pro.streaming.events import default_emitter
+
+        ws_server = CompanionServer(emitter=default_emitter)
+        ws_server.start_in_background()
+        runner_patch.install()
+        ide_bridge = IDEBridgeServer()
+        ide_bridge.start()
+        notifier = GateNotifier(project_name=project_dir.name or "Genesis")
+        gate_notifier_patch.install(notifier)
+        router = InboundRouter(project_dir=project_dir, emitter=default_emitter)
+        ws_server._on_message = router.handle  # type: ignore[attr-defined]
+        token = ws_server.token
+        port = ws_server.port
+        print(f"\n  Genesis Companion backend running (ws 127.0.0.1:{port}).")
+    except Exception as exc:  # noqa: BLE001
+        port = DEFAULT_PORT
+        print(f"\n  Backend not started ({exc}).")
+        print("  Opening the UI in offline mode. For live engines, install:")
+        print("    pip install genesis-architect-pro[streaming]\n")
+
+    ui_path = write_companion_html(project_dir, ws_port=port, ws_token=token)
+    if ui_path is None:
+        print("  error: could not write the UI file.", file=sys.stderr)
+        return 1
+    print(f"  Floating Assistant: {ui_path}")
+    if not no_browser:
+        webbrowser.open(ui_path.as_uri())
+        print("  Opened in your browser. Close this terminal (Ctrl+C) to stop.\n")
+
+    if ws_server is None:
+        return 0  # offline UI written; nothing to keep alive
+
+    stop = threading.Event()
+    signal.signal(signal.SIGINT, lambda *_: stop.set())
+    try:
+        signal.signal(signal.SIGTERM, lambda *_: stop.set())
+    except Exception:
+        pass
+    try:
+        while not stop.is_set():
+            time.sleep(0.5)
+    except KeyboardInterrupt:
+        pass
+    try:
+        ws_server.stop()
+    except Exception:
+        pass
+    print("\n  Companion stopped.")
+    return 0
+
+
 def cmd_companion(args: argparse.Namespace) -> int:
     """Start the health page server or print gate miss-rate stats."""
     from genesis_architect_pro.gde_companion import (
@@ -700,6 +774,10 @@ def cmd_companion(args: argparse.Namespace) -> int:
     if not project_dir.is_dir():
         print(f"  error: --dir '{project_dir}' is not a directory", file=sys.stderr)
         return 1
+
+    # --ui mode: start the backend AND open the Floating Assistant web UI wired to it
+    if getattr(args, "ui", False):
+        return cmd_companion_ui(project_dir, no_browser=getattr(args, "no_browser", False))
 
     # --serve mode: full Companion backend for Tauri
     if getattr(args, "serve", False):
@@ -856,6 +934,8 @@ def _build_parser() -> argparse.ArgumentParser:
                            help="Speak a phrase to verify the voice round-trip (he/en auto-detected)")
     companion.add_argument("--serve", action="store_true",
                            help="Start full Companion backend (WebSocket 47291 + IDE bridge 47292) for Tauri")
+    companion.add_argument("--ui", action="store_true",
+                           help="Launch the Floating Assistant: start the backend and open the web UI wired to it")
 
     sync = sub.add_parser("sync", help="Run the autonomous sync manager (gate + findings + auto-apply)")
     sync.add_argument("--dir", default=".", metavar="PATH",

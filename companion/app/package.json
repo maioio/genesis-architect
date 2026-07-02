@@ -1,0 +1,29 @@
+{
+  "name": "genesis-companion",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "tauri dev",
+    "build": "tauri build",
+    "preview": "vite preview",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2",
+    "@tauri-apps/plugin-positioner": "^2",
+    "@tauri-apps/plugin-store": "^2",
+    "@tauri-apps/plugin-shell": "^2",
+    "react": "^18",
+    "react-dom": "^18",
+    "zustand": "^5",
+    "zod": "^3"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "typescript": "^5",
+    "vite": "^6",
+    "@vitejs/plugin-react": "^4"
+  }
+}

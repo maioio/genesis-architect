@@ -1,0 +1,95 @@
+:root {
+  /* Background layers */
+  --bg:        #0d0f14;
+  --surface:   #161920;
+  --surface2:  #1e222d;
+  --surface3:  #252a38;
+  --border:    #2a2f3d;
+  --border2:   #353b4d;
+
+  /* Brand */
+  --accent:    #6c63ff;   /* Genesis purple */
+  --accent2:   #00d4aa;   /* teal — attention / done */
+  --accent-dim: rgba(108, 99, 255, 0.15);
+
+  /* Semantic */
+  --success:   #22c55e;
+  --warn:      #f59e0b;
+  --danger:    #ef4444;
+  --info:      #38bdf8;
+
+  /* Activity levels */
+  --idle:      #3d4259;
+  --thinking:  var(--accent);
+  --attention: var(--accent2);
+  --blocked:   var(--danger);
+
+  /* Text */
+  --text:      #e2e8f0;
+  --text2:     #94a3b8;
+  --muted:     #64748b;
+  --code:      #a78bfa;
+
+  /* Radii */
+  --r-sm:  4px;
+  --r-md:  8px;
+  --r-lg:  12px;
+  --r-xl:  16px;
+  --r-full: 9999px;
+
+  /* Shadows */
+  --shadow-bubble: 0 8px 32px rgba(0,0,0,0.6), 0 0 0 1px rgba(108,99,255,0.2);
+  --shadow-panel:  0 24px 64px rgba(0,0,0,0.7), 0 0 0 1px rgba(42,47,61,0.8);
+
+  /* Typography */
+  --font: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-mono: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+  --text-xs:  11px;
+  --text-sm:  13px;
+  --text-md:  15px;
+  --text-lg:  18px;
+
+  /* Transitions */
+  --t-fast:   120ms ease;
+  --t-normal: 200ms ease;
+  --t-slow:   350ms ease;
+}
+
+/* Reset */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: transparent;
+  color: var(--text);
+  font-family: var(--font);
+  font-size: var(--text-md);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: var(--r-full); }
+
+/* Activity animations */
+@keyframes pulse-thinking {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(108,99,255,0.4); }
+  50%       { opacity: 0.85; box-shadow: 0 0 0 8px rgba(108,99,255,0); }
+}
+
+@keyframes pulse-blocked {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.5); }
+  50%       { box-shadow: 0 0 0 10px rgba(239,68,68,0); }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}

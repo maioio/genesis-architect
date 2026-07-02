@@ -2,10 +2,21 @@
 > For the website agent: update the Pro page/pricing/docs section to reflect these capabilities.
 > **This is the living source of truth for what to publish on the site. It is kept up to date as the product evolves — always check the "Last updated" date and the "🆕 NEW" banner before a site refresh.**
 
-> ✅ **MILESTONE — v6.6.0 complete (2026-07-02).** Companion Intelligence Layer shipped.
-> **Committee Engine (anti-sycophancy, 28 tests), WebSocket Streaming Layer (20 event types, 21 tests),
-> IDE Bridge server + VS Code extension, VoicePipeline STT/TTS stub (52 tests). 1,569 tests passing.**
-> All work is on the private remote `pro/main`. See §🆕 NEW — v6.6.0 below.
+> ✅ **MILESTONE — v6.6.0 (2026-07-02).** Companion Intelligence Layer — code
+> complete + tested (1,569 tests). **Read the customer-readiness table below before
+> publishing anything about the Companion.** Not everything in this layer is
+> shippable-to-customer yet:
+> - **Committee Engine** — ✅ shippable now (pure-Python, works via CLI/API, 28 tests).
+> - **WebSocket Streaming Layer** — ⚙️ installable optional (`[streaming]` extra);
+>   code + 21 tests, but no client consumes it yet (needs the Tauri shell).
+> - **VoicePipeline (STT/TTS)** — ⚙️ code + 52 tests, but **degrades to no-op
+>   without models**; there is **no `--setup` model-download command yet**, so voice
+>   does NOT work end-to-end for a customer. Do **not** advertise voice as available.
+> - **IDE Bridge + VS Code extension** — 🚧 source only (`extension.ts`, not compiled,
+>   no `.vsix`, not published). A customer cannot install it. Design/roadmap only.
+> - **Tauri standalone app** — ❌ not started. `companion/` contains only the VS Code
+>   extension source. The "premium standalone application" does not exist yet.
+> All work is on the private remote `pro/main`. See the Customer-Readiness table below.
 
 > ✅ **MILESTONE — v6.5.1 complete (2026-07-02).** Companion Phase 0+1 shipped.
 > **Gate miss-rate instrumentation, OS notifications (plyer optional), health page
@@ -23,13 +34,51 @@
 
 ---
 
+## 🚦 Customer-Readiness Matrix (THE publish gate — read before touching the site)
+
+> A capability may be **code-complete and tested** yet **not usable by a paying
+> customer**. Only publish a feature as *available* if this table says ✅.
+
+| Capability | State | Can a customer USE it after `pip install` + license? |
+|---|---|---|
+| Analysis engines (17) — score, anti-patterns, fragility, C4, security, KG | ✅ Shipped | **Yes.** Core product. |
+| GDE — `genesis decide / recover / harden / memory / ui / explain` | ✅ Shipped | **Yes.** Full CLI + Rich TUI. |
+| Committee Engine (transparency profiles, anti-sycophancy) | ✅ Shipped | **Yes**, via CLI/API. |
+| `genesis companion` (health page + gate stats, Phase 0) | ✅ Shipped | **Yes.** Local health page. |
+| WebSocket Streaming Layer | ⚙️ Optional / no client | Installable (`[streaming]`), but nothing consumes it yet. |
+| Voice (STT/TTS, wake word "ג'נסיס, תתחיל") | 🚧 Not usable | **No.** Code degrades to no-op; **no model-download command exists**. |
+| IDE Bridge / VS Code extension | 🚧 Source only | **No.** Not compiled, no `.vsix`, not published. |
+| Tauri standalone desktop app | ❌ Not started | **No.** Does not exist. |
+
+**Publish rule:** the site may announce everything marked ✅ as *available today*.
+Everything marked ⚙️ / 🚧 / ❌ must be presented as **"coming soon" / roadmap** —
+never as a shipped feature. The live React site already marks Companion + voice as
+"Soon" (correct). Keep it that way until this table flips them to ✅.
+
+**To flip Voice to ✅** (the biggest gap): declare the models, add
+`genesis companion --setup` to download faster-whisper + Piper/Kokoro to
+`~/.genesis/models/`, and verify one real round-trip (mic → transcript → TTS) on a
+clean machine. Until then, voice is a demo, not a feature.
+
+---
+
 ## 🌐 Site sync status (check this when editing the landing page)
 
 | Surface | File | Version | Status |
 |---------|------|:-------:|--------|
-| Free landing | `docs/index.html` | v6.4.0 | ⏳ needs sync |
-| Pro page | `docs/pro.html` | v6.4.0 | ⏳ needs sync |
-| This report | (source of truth) | v6.6.1 | ✅ current |
+| Free landing (LIVE, React) | `genesis-react` → `main:docs/index.html` | v6.6.1 | ✅ in sync |
+| Pro page (static, NOT live) | `docs/pro.html` | v6.4.0 | ⚠️ not the live site — see note |
+| This report (source of truth) | this file | v6.6.1 | ✅ current |
+
+> **⚠️ Which file is actually live (read before editing the site):** the PUBLISHED
+> landing at https://maioio.github.io/genesis-architect/ is the **React app** built
+> from `C:\temp\genesis-react` (Vite), published to `main:docs/`. The static
+> `docs/index.html` / `docs/pro.html` in the `pro-v*` branches are a SEPARATE draft
+> and are NOT what visitors see. To publish: edit `genesis-react`, `npm run build`,
+> then copy `dist/` into a clean `git worktree` of `main` and push — NEVER push a
+> `pro-v*` branch to `main`. Current live section reflects **v6.6.1**: Knowledge
+> Graph (flagship), Committee Engine + Companion (marked "Soon"), decay forecast,
+> rules gate + import audit, 17-engine Decision Engine.
 
 **Live URLs:** Pro site = GitHub Pages of the private `genesis-architect-pro`
 repo. Public free landing (origin) uses `docs/pro/guide/LANDING_HANDOFF.md`.

@@ -276,7 +276,7 @@ body{font-family:var(--sans);background:transparent;color:var(--ink);-webkit-fon
 /*__CONFIG__*/
 const Companion = (() => {
   const cfg = window.GENESIS_CFG || {port:47291, token:'', theme:'light'};
-  let ws=null, engines={}, session={stage:'idle',conf:null,risk:null}, level='balanced';
+  let ws=null, engines={}, session={stage:'idle',conf:null,risk:null}, level='balanced', pendingGate=null;
 
   // Contextual quick actions (computed; not a static dump)
   const ACTIONS = [
@@ -305,18 +305,20 @@ const Companion = (() => {
   }
   function ring(cls){ el('ring').className='ring'+(cls?' '+cls:''); }
 
-  // ── inbound event handling (matches streaming/events.py MessageType) ──
+  // ── inbound event handling — wire format is {type, payload} (events.py) ──
   function handle(m){
-    const t=m.type||m.event, d=m.data||m.fields||m||{};
-    if(t==='engine.start'){ engines[d.engine]={name:d.engine,label:d.label||d.engine,pct:0,state:'run'}; renderStatus(); ring('active'); setStage('executing'); }
-    else if(t==='engine.progress'){ if(engines[d.engine]){engines[d.engine].pct=d.pct??d.progress??0; if(d.label)engines[d.engine].label=d.label;} renderStatus(); updateBubble(); }
-    else if(t==='engine.done'){ if(engines[d.engine]){engines[d.engine].state='done';engines[d.engine].pct=100;} renderStatus(); updateBubble(); }
-    else if(t==='engine.failed'){ if(engines[d.engine]){engines[d.engine].state='fail';} renderStatus(); ring('warn'); }
-    else if(t==='gate.approval_required'||t==='gate.fired'){ showApproval(d); ring('warn'); }
-    else if(t==='session.confidence'){ session.conf=d.confidence??d.conf; el('cConf').textContent=fmtConf(session.conf); }
-    else if(t==='session.done'){ setStage('finished'); ring('ok'); botMsg('Done. '+(d.summary||'')); }
-    else if(t==='committee.synthesis'){ botMsg('Committee: '+(d.recommendation||d.summary||'synthesis ready')); }
-    else if(t==='voice.transcript'){ el('input').value=d.text||''; }
+    const t=m.type, d=m.payload||{};
+    if(t==='engine.start'){ engines[d.engine]={name:d.engine,label:d.phase||d.engine,pct:0,state:'run'}; renderStatus(); ring('active'); setStage('executing'); if(d.risk_level){session.risk=d.risk_level;el('cRisk').textContent=d.risk_level;} }
+    else if(t==='engine.progress'){ if(engines[d.engine]){engines[d.engine].pct=d.pct??0; if(d.current_op)engines[d.engine].label=d.current_op;} renderStatus(); updateBubble(); }
+    else if(t==='engine.done'){ if(engines[d.engine]){engines[d.engine].state='done';engines[d.engine].pct=100;if(d.result_summary)engines[d.engine].label=d.result_summary;} renderStatus(); updateBubble(); }
+    else if(t==='engine.failed'){ if(engines[d.engine]){engines[d.engine].state='fail';engines[d.engine].label=d.error||'failed';} renderStatus(); ring('warn'); }
+    else if(t==='gate.approval_required'){ showApproval({detail:d.description||d.gate_name,gate:d.gate_name,diff:d.diff_preview}); ring('warn'); }
+    else if(t==='gate.fired'){ botMsg('Gate: '+esc(d.gate_name||'')+(d.overridable===false?' (hard block)':'')); }
+    else if(t==='session.confidence'){ session.conf=d.confidence; el('cConf').textContent=fmtConf(session.conf); if(d.risk_level){session.risk=d.risk_level;el('cRisk').textContent=d.risk_level;} }
+    else if(t==='session.done'){ setStage('finished'); ring('ok'); if(d.confidence!=null)el('cConf').textContent=fmtConf(d.confidence); botMsg('Done — '+(d.mode||'session')+' complete'+(d.risk_level?' · risk '+d.risk_level:'')+'.'); }
+    else if(t==='committee.synthesis'){ botMsg('Committee: '+(d.verdict||'synthesis ready')+(d.consensus_type?' ('+d.consensus_type+')':'')); }
+    else if(t==='committee.advisor_round'){ /* streamed advisor positions — shown in Status */ }
+    else if(t==='voice.transcript'){ el('input').value=d.text||d.transcript||''; }
     else if(t==='diff.ready'){ botMsg('A change is ready for your review — open the Canvas to approve.'); }
   }
   function fmtConf(c){ return c==null?'—':(c<=1?Math.round(c*100)+'%':c); }
@@ -348,6 +350,7 @@ const Companion = (() => {
   function setStage(s){ session.stage=s; el('cStage').textContent=s; }
 
   function showApproval(d){
+    pendingGate = d.gate || '';
     const feed=el('chatFeed');
     const div=document.createElement('div');
     div.className='approve';
@@ -366,17 +369,17 @@ const Companion = (() => {
   function send(){
     const inp=el('input'), txt=inp.value.trim(); if(!txt)return; inp.value='';
     userMsg(txt);
-    if(ws && ws.readyState===1){ ws.send(JSON.stringify({type:'user.intent',data:{text:txt}})); botMsg('On it — routing to the right engines. Watch Status for live progress.'); }
-    else{ botMsg('Offline — start the engine with <code>genesis companion</code>, then I\'ll run this live. (Your message is not lost.)'); }
+    if(ws && ws.readyState===1){ ws.send(JSON.stringify({type:'user.intent',payload:{instruction:txt}})); engines={}; renderStatus(); botMsg('On it — routing to the right engines. Watch Status for live progress.'); }
+    else{ botMsg('Offline — start the engine with <code>genesis companion --ui</code>, then I\'ll run this live. (Your message is not lost.)'); }
   }
-  function approve(ok){ if(ws&&ws.readyState===1){ ws.send(JSON.stringify({type:'user.approval',data:{approved:ok}})); } botMsg(ok?'Approved.':'Denied.'); }
+  function approve(ok){ if(ws&&ws.readyState===1){ ws.send(JSON.stringify({type:'user.approval',payload:{gate_name:pendingGate||'',decision:ok?'approve':'reject'}})); } pendingGate=null; botMsg(ok?'Approved.':'Denied.'); }
   function act(a){ el('input').value=a.intent; tab('chat'); send(); }
-  function setLevel(l){ level=l; document.querySelectorAll('#levels .lvl').forEach(x=>x.classList.toggle('on',x.dataset.lvl===l)); if(ws&&ws.readyState===1)ws.send(JSON.stringify({type:'user.intent',data:{text:'set activity level '+l}})); }
+  function setLevel(l){ level=l; document.querySelectorAll('#levels .lvl').forEach(x=>x.classList.toggle('on',x.dataset.lvl===l)); if(ws&&ws.readyState===1)ws.send(JSON.stringify({type:'user.intent',payload:{instruction:'set activity level '+l}})); }
   function theme(t){ document.documentElement.setAttribute('data-theme', t==='dark'?'dark':''); }
 
   function expand(){ el('bubble').classList.add('hidden'); el('panel').classList.add('open'); el('input').focus(); }
   function collapse(){ el('panel').classList.remove('open'); el('bubble').classList.remove('hidden'); }
-  function canvas(){ botMsg('Opening the Canvas for deep analysis…'); if(ws&&ws.readyState===1)ws.send(JSON.stringify({type:'user.intent',data:{text:'open canvas'}})); }
+  function canvas(){ botMsg('Opening the Canvas for deep analysis…'); if(ws&&ws.readyState===1)ws.send(JSON.stringify({type:'user.intent',payload:{instruction:'open canvas'}})); }
   function tab(v){ document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.dataset.view===v)); document.querySelectorAll('.view').forEach(x=>x.classList.remove('on')); el('v-'+v).classList.add('on'); }
 
   function initActions(){ const g=el('qaGrid'); ACTIONS.forEach(a=>{ const b=document.createElement('button'); b.className='qbtn'; b.innerHTML='<span class="qi">'+a.icon+'</span>'+a.label; b.onclick=()=>act(a); g.appendChild(b); }); }

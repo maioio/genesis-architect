@@ -40,6 +40,15 @@ class TestRender:
         assert "engine.start" in html and "engine.progress" in html
         assert "gate.approval_required" in html
 
+    def test_wire_format_matches_router(self):
+        # outbound must use {type, payload:{instruction}} and payload:{gate_name,
+        # decision} — the exact contract streaming/inbound.py reads.
+        html = render_companion_html()
+        assert "payload:{instruction:txt}" in html
+        assert "gate_name:pendingGate" in html and "decision:ok?'approve':'reject'" in html
+        # inbound reads m.payload (not m.data)
+        assert "m.payload" in html
+
     def test_has_quick_actions_and_activity_levels(self):
         html = render_companion_html()
         for a in ("recover this project", "run research", "ask the committee"):

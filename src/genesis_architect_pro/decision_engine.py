@@ -17,6 +17,7 @@ SessionContext (or resumes a saved one if resume=True).
 
 from __future__ import annotations
 
+import datetime
 from pathlib import Path
 
 from genesis_architect_pro.engine_registry import EngineRegistry, get_default_registry
@@ -34,7 +35,6 @@ from genesis_architect_pro.gde_types import (
     ApprovalRequest,
     CommitResult,
     DecisionEntry,
-    GDEMode,
     Intent,
     LifecycleStage,
     SessionContext,
@@ -164,6 +164,15 @@ class GenesisDecisionEngine:
         ctx = load_session(self.project_dir)
         pending = ctx.pending_write_operations if ctx else []
 
+        # Mark user interaction time on any block/ask gates that are being responded to
+        if ctx:
+            now = datetime.datetime.now(datetime.timezone.utc).isoformat()
+            ctx.last_user_interaction_at = now
+            for gate in report.gate_report.blocks + report.gate_report.hard_blocks:
+                if gate.presented_at and not gate.responded_at:
+                    gate.responded_at = now
+            save_session(ctx, self.project_dir)
+
         gate_summary = report.gate_report.overall.value
         write_summary = (
             f"{len(pending)} write operation(s) pending"
@@ -209,7 +218,6 @@ class GenesisDecisionEngine:
         Returns:
             CommitResult with lists of committed and rolled-back operation_ids.
         """
-        import json
         from genesis_architect_pro.gde_types import GateOutcome
 
         result = CommitResult(session_id=decision.session_id)
@@ -257,6 +265,7 @@ class GenesisDecisionEngine:
         # Log commit decision
         if ctx:
             ctx.stage = LifecycleStage.COMMIT
+            ctx.last_user_interaction_at = datetime.datetime.now(datetime.timezone.utc).isoformat()
             self._log(
                 ctx,
                 "COMMIT_EXECUTED",
@@ -279,7 +288,6 @@ class GenesisDecisionEngine:
         Creates parent directories automatically. Uses atomic tmp-rename.
         """
         import json
-        import tempfile
 
         target = self.project_dir / op.target_path
         target.parent.mkdir(parents=True, exist_ok=True)
@@ -328,6 +336,7 @@ class GenesisDecisionEngine:
             stage=LifecycleStage.INTAKE,
             project_dir=self.project_dir,
             intent=intent,
+            session_started_at=datetime.datetime.now(datetime.timezone.utc).isoformat(),
         )
         self._log(
             ctx,

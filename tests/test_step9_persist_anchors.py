@@ -38,7 +38,6 @@ import json
 import warnings
 from pathlib import Path
 
-import pytest
 
 from genesis_architect_pro.model_store import (
     ArchModel, ModelNode, ModelResponsibility, ModelStore,

@@ -14,7 +14,6 @@ from genesis_architect_pro.gde_runner import (
 from genesis_architect_pro.gde_types import (
     EngineCategory,
     EngineDescriptor,
-    EngineResult,
     EngineStatus,
     ExecutionPlan,
     GDEMode,
@@ -31,7 +30,6 @@ from genesis_architect_pro.gde_types import (
 # monkeypatching importlib.
 
 
-import importlib
 import sys
 import types
 

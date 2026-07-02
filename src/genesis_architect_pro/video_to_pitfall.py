@@ -17,7 +17,6 @@ Usage in Companion Mode:
 from __future__ import annotations
 
 import re
-import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -125,7 +124,7 @@ def _extract_timestamp(context: str) -> str:
 def _infer_mitigation_path(title: str, category: str) -> str:
     slug = _slug(title)
     if category == "security":
-        return f"src/utils/security.py"
+        return "src/utils/security.py"
     if category == "performance":
         return f"src/core/{slug}_optimized.py"
     return f"src/core/{slug}.py"

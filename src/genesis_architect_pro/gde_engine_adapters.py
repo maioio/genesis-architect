@@ -73,7 +73,6 @@ def gde_run_architecture_scorer(ctx: SessionContext) -> dict[str, Any]:
     from genesis_architect_pro.architecture_scorer import score_project
 
     project_dir = _project_dir(ctx)
-    graph = _output("import_graph", ctx).get("graph")
 
     try:
         result = score_project(project_dir)
@@ -90,11 +89,50 @@ def gde_run_architecture_scorer(ctx: SessionContext) -> dict[str, Any]:
     if isinstance(score, (int, float)) and score < 40:
         warnings.append(f"Architecture score critical: {score}/100")
 
+    # Load score history for decay forecast
+    history: list[dict] = []
+    score_history_path = project_dir / ".genesis" / "score_history.jsonl"
+    if score_history_path.exists():
+        import json as _json
+        for line in score_history_path.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if line:
+                try:
+                    history.append(_json.loads(line))
+                except Exception:
+                    pass
+
+    # Run decay forecast if enough history exists
+    decay_forecast: dict[str, Any] = {}
+    if len(history) >= 3:
+        try:
+            from genesis_architect_pro.decay_regressor import forecast_from_history
+            forecast = forecast_from_history(history)
+            if forecast is not None:
+                decay_forecast = {
+                    "weekly_delta": forecast.weekly_delta,
+                    "predicted_score_12w": forecast.predicted_score,
+                    "weeks_to_critical": (
+                        None if forecast.weeks_to_threshold == float("inf")
+                        else round(forecast.weeks_to_threshold, 1)
+                    ),
+                    "forecast_confidence": forecast.confidence,
+                    "summary": forecast.summary,
+                }
+                if forecast.weekly_delta < -0.5:
+                    warnings.append(
+                        f"Score declining {forecast.weekly_delta:+.2f} pts/week — "
+                        f"projected {forecast.predicted_score:.0f}/100 in 12 weeks"
+                    )
+        except Exception:
+            pass  # decay forecast is advisory; never block the scorer
+
     return {
         "score": score,
         "score_label": str(label),
         "dimensions": dimensions,
-        "history": [],
+        "history": history,
+        "decay_forecast": decay_forecast,
         "_confidence": 1.0,
         "_warnings": warnings,
     }
@@ -401,25 +439,24 @@ def gde_run_build_scaffold(ctx: SessionContext) -> dict[str, Any]:
 
 
 def gde_run_committee_analysis(ctx: SessionContext) -> dict[str, Any]:
-    """Run a multi-perspective analysis — recovery + gate + document in read-only mode.
+    """Run the 5-advisor Committee engine on the codebase analysis context.
 
-    The Committee mode runs all three analysis lenses (health, compliance, docs)
-    without committing any outputs, then surfaces the consolidated perspectives
-    for human judgment. It is a meta-engine: it collects results from upstream
-    engines that have already been run and synthesises a divergence report.
+    Builds a structured question from upstream engine results, then delegates
+    to the Committee engine (5 advisors, anti-sycophancy, transparency profiles).
+    Falls back to the legacy perspective aggregation if the Committee engine is
+    unavailable or ANTHROPIC_API_KEY is not set.
     """
+    import os
     project_dir = _project_dir(ctx)
-
-    perspectives: list[dict] = []
     warnings: list[str] = []
-    confidence = 1.0
 
-    # Collect results from any engines that ran upstream
+    # --- Collect upstream engine context ---
+    perspectives: list[dict] = []
     for engine_id, label in [
-        ("recovery_report", "Health"),
         ("architecture_scorer", "Architecture"),
         ("antipattern_detector", "Anti-Patterns"),
         ("fragility_classifier", "Fragility"),
+        ("recovery_report", "Health"),
         ("security_templates", "Security"),
     ]:
         result = ctx.engine_results.get(engine_id)
@@ -434,17 +471,89 @@ def gde_run_committee_analysis(ctx: SessionContext) -> dict[str, Any]:
             "warnings": getattr(result, "warnings", []),
         })
 
+    divergent = _find_divergence(perspectives)
+
+    # --- Try Committee engine (requires ANTHROPIC_API_KEY) ---
+    if os.environ.get("ANTHROPIC_API_KEY") and perspectives:
+        try:
+            from genesis_architect_pro.engines.committee import (
+                CommitteeContext,
+                CommitteeMode,
+                CommitteeRequest,
+                TransparencyProfile,
+                Urgency,
+                run_committee,
+            )
+            from genesis_architect_pro.engines.committee.journal import append_journal_entry
+
+            engine_summaries = {p["lens"]: p["summary"] for p in perspectives}
+            question = (
+                f"The codebase '{project_dir.name}' has been analyzed. "
+                f"Based on the engine results, what are the most critical issues "
+                f"to address, and in what order should they be tackled?"
+            )
+            if divergent:
+                question += (
+                    f" Note: the following lenses show divergent signals: {', '.join(divergent)}."
+                )
+
+            # Detect license tier from ctx session memory
+            license_tier = ctx.session_memory.get("license_tier", "free")
+            profile = (
+                TransparencyProfile.PRO
+                if license_tier == "pro"
+                else TransparencyProfile.FREE
+            )
+
+            request = CommitteeRequest(
+                question=question,
+                context=CommitteeContext(
+                    engine_outputs=engine_summaries,
+                    project_path=str(project_dir),
+                ),
+                mode=CommitteeMode.ARCHITECTURE,
+                urgency=Urgency.NORMAL,
+                transparency=profile,
+                max_rounds=2,
+            )
+
+            committee_result = run_committee(request)
+
+            # Journal entry (always, regardless of transparency)
+            try:
+                append_journal_entry(
+                    request=request,
+                    result=committee_result,
+                    session_id=ctx.session_id,
+                    project_dir=project_dir,
+                )
+            except Exception:
+                pass  # journal failure must never crash the engine
+
+            # Write report
+            report_path = project_dir / ".genesis" / "committee_report.md"
+            report_path.parent.mkdir(parents=True, exist_ok=True)
+            _write_committee_report(report_path, committee_result, perspectives, project_dir.name)
+
+            return {
+                "perspectives": perspectives,
+                "perspective_count": len(perspectives),
+                "divergent_lenses": divergent,
+                "report_path": str(report_path),
+                "committee_verdict": committee_result.verdict,
+                "committee_confidence": committee_result.confidence,
+                "committee_consensus": committee_result.consensus_type.value,
+                "_confidence": committee_result.confidence,
+                "_warnings": warnings,
+            }
+
+        except Exception as exc:
+            warnings.append(f"Committee engine unavailable, falling back: {exc}")
+
+    # --- Legacy fallback: perspective aggregation only ---
     if not perspectives:
         warnings.append("no upstream engine results to consolidate — run analysis engines first")
-        confidence = 0.2
 
-    # Check for diverging assessments
-    divergent = _find_divergence(perspectives)
-    if divergent:
-        warnings.append(f"divergent assessments detected across: {', '.join(divergent)}")
-        confidence -= 0.10
-
-    # Write consolidated report
     report_lines = [f"# Committee Analysis — {project_dir.name}\n"]
     for p in perspectives:
         report_lines.append(f"\n## {p['lens']} Perspective\n{p['summary']}")
@@ -458,14 +567,47 @@ def gde_run_committee_analysis(ctx: SessionContext) -> dict[str, Any]:
     except Exception as exc:
         warnings.append(f"could not write committee report: {exc}")
 
+    fallback_confidence = max(0.2, 1.0 - (0.10 * len(divergent)))
     return {
         "perspectives": perspectives,
         "perspective_count": len(perspectives),
         "divergent_lenses": divergent,
         "report_path": str(report_path),
-        "_confidence": max(0.2, confidence),
+        "_confidence": fallback_confidence,
         "_warnings": warnings,
     }
+
+
+def _write_committee_report(
+    path: "Path",  # noqa: F821
+    result: "CommitteeResult",  # noqa: F821
+    perspectives: list[dict],
+    project_name: str,
+) -> None:
+    lines = [f"# Committee Analysis — {project_name}\n"]
+    lines.append(f"**Verdict:** {result.verdict}\n")
+    lines.append(f"**Confidence:** {result.confidence:.0%} | **Consensus:** {result.consensus_type.value.upper()}\n")
+
+    if result.minority_view:
+        lines.append(f"\n> **Minority view:** {result.minority_view}\n")
+
+    lines.append("\n## Engine Inputs\n")
+    for p in perspectives:
+        lines.append(f"- **{p['lens']}:** {p['summary']}")
+
+    if result.advisor_positions:
+        lines.append("\n## Advisor Positions\n")
+        for pos in result.advisor_positions:
+            lines.append(f"### {pos.advisor} (confidence: {pos.confidence:.2f})")
+            lines.append(f"{pos.stance}\n")
+
+    if result.manufactured_warning:
+        lines.append(f"\n> ⚠️ {result.manufactured_warning}\n")
+
+    try:
+        path.write_text("\n".join(lines), encoding="utf-8")
+    except Exception:
+        pass
 
 
 def _summarize_output(engine_id: str, out: dict) -> str:
@@ -492,3 +634,164 @@ def _find_divergence(perspectives: list[dict]) -> list[str]:
     confs = [p["confidence"] for p in perspectives]
     avg = sum(confs) / len(confs)
     return [p["lens"] for p in perspectives if p["confidence"] < avg - 0.25]
+
+
+# ---------------------------------------------------------------------------
+# GATE mode — rules_engine adapter
+# ---------------------------------------------------------------------------
+
+
+def gde_run_rules_engine(ctx: SessionContext) -> dict[str, Any]:
+    """Run the architecture regression gate against .genesis/rules.json.
+
+    Reads the rules file, gathers facts from already-produced engine outputs
+    (score, anti-patterns, recovery risk) and evaluates every defined rule.
+    Returns PASS or FAIL with per-rule details.  Read-only — never mutates
+    project state.
+    """
+    from genesis_architect_pro.rules_engine import run_check, format_report
+
+    project_dir = _project_dir(ctx)
+    warnings: list[str] = []
+
+    try:
+        report = run_check(project_dir)
+    except Exception as exc:
+        return {
+            "_confidence": 0.3,
+            "_warnings": [f"rules_engine failed: {exc}"],
+            "rules_passed": False,
+            "rules_file": "",
+            "rule_count": 0,
+            "failed_rules": [],
+            "rules_report": "",
+        }
+
+    if not report.rules_file:
+        warnings.append("no .genesis/rules.json found — gate is open (no rules to enforce)")
+
+    failed = [r for r in report.results if not r.passed]
+    if failed:
+        warnings.extend([f"FAIL [{r.rule}]: {r.message}" for r in failed])
+
+    return {
+        "rules_passed": report.passed,
+        "rules_file": report.rules_file,
+        "rule_count": len(report.results),
+        "failed_rules": [r.rule for r in failed],
+        "rules_report": format_report(report),
+        "_confidence": 1.0,
+        "_warnings": warnings,
+    }
+
+
+# ---------------------------------------------------------------------------
+# GATE / RECOVERY mode — git_analyzer adapter
+# ---------------------------------------------------------------------------
+
+
+def gde_run_git_analyzer(ctx: SessionContext) -> dict[str, Any]:
+    """Analyze git history to classify module churn and bus factor.
+
+    Enriches fragility data with commit frequency, fix-ratio, and staleness.
+    Gracefully degrades when the project has no git history.
+    """
+    from genesis_architect_pro.git_analyzer import per_module_churn
+
+    project_dir = _project_dir(ctx)
+    warnings: list[str] = []
+
+    try:
+        churn = per_module_churn(project_dir, days=90)
+    except Exception as exc:
+        return {
+            "_confidence": 0.3,
+            "_warnings": [f"git_analyzer failed: {exc}"],
+            "churn_map": {},
+            "high_churn_count": 0,
+            "stale_count": 0,
+            "bus_factor_1_count": 0,
+        }
+
+    if not churn:
+        warnings.append("no git history found — churn data unavailable")
+        return {
+            "churn_map": {},
+            "high_churn_count": 0,
+            "stale_count": 0,
+            "bus_factor_1_count": 0,
+            "_confidence": 0.5,
+            "_warnings": warnings,
+        }
+
+    high = [f for f, d in churn.items() if d.get("churn_level") == "HIGH"]
+    stale = [f for f, d in churn.items() if d.get("churn_level") == "STALE"]
+    bus1 = [f for f, d in churn.items() if d.get("bus_factor", 2) <= 1]
+
+    if high:
+        warnings.append(f"{len(high)} high-churn module(s) — elevated regression risk")
+    if bus1:
+        warnings.append(f"{len(bus1)} module(s) with bus factor 1 — single point of knowledge")
+
+    return {
+        "churn_map": churn,
+        "high_churn_count": len(high),
+        "stale_count": len(stale),
+        "bus_factor_1_count": len(bus1),
+        "_confidence": 1.0,
+        "_warnings": warnings,
+    }
+
+
+# ---------------------------------------------------------------------------
+# GATE mode — import_audit adapter
+# ---------------------------------------------------------------------------
+
+
+def gde_run_import_audit(ctx: SessionContext) -> dict[str, Any]:
+    """Audit declared (model) vs actual (code) import edges — catches 'the diagram lies'.
+
+    Reads the committed model from .genesis/ and compares its declared links
+    against the real import graph.  Returns CONSISTENT or INCONSISTENT with
+    per-finding details.  Read-only — never mutates project state.
+    """
+    from genesis_architect_pro.import_audit import audit, format_report
+
+    project_dir = _project_dir(ctx)
+    warnings: list[str] = []
+
+    try:
+        report = audit(project_dir)
+    except Exception as exc:
+        return {
+            "_confidence": 0.3,
+            "_warnings": [f"import_audit failed: {exc}"],
+            "audit_consistent": None,
+            "declared_links": 0,
+            "actual_edges": 0,
+            "missing_count": 0,
+            "undeclared_count": 0,
+            "audit_notes": [],
+        }
+
+    if report.notes:
+        warnings.extend(report.notes)
+
+    if not report.consistent:
+        warnings.append(
+            f"import audit INCONSISTENT: "
+            f"{len(report.missing_imports)} missing, "
+            f"{len(report.undeclared_imports)} undeclared"
+        )
+
+    return {
+        "audit_consistent": report.consistent,
+        "declared_links": report.declared_links,
+        "actual_edges": report.actual_edges,
+        "missing_count": len(report.missing_imports),
+        "undeclared_count": len(report.undeclared_imports),
+        "audit_report": format_report(report),
+        "audit_notes": report.notes,
+        "_confidence": 1.0 if report.declared_links > 0 else 0.6,
+        "_warnings": warnings,
+    }

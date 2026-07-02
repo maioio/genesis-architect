@@ -4,8 +4,7 @@ Encodes Constitution 08: learns from outcomes (not project content), feeds back
 immediately, and is honest about confidence (low until enough evidence).
 """
 from genesis_architect_pro.learning_engine import (
-    KNOWN_PROFILES, Outcome, ProfileStat, Recommendation,
-    record_outcome, read_outcomes, rank_profiles, recommend_profile,
+    KNOWN_PROFILES, record_outcome, read_outcomes, rank_profiles, recommend_profile,
     summarize_lessons, write_lessons,
 )
 

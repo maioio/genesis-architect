@@ -2,11 +2,10 @@
 import json
 from pathlib import Path
 
-import pytest
 
 from genesis_architect_pro.rules_engine import (
     load_rules, evaluate, run_check, format_report, main,
-    CheckReport, RuleResult, _risk_rank,
+    _risk_rank,
 )
 
 

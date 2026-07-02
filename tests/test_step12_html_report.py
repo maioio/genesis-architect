@@ -28,7 +28,6 @@ from __future__ import annotations
 import json
 import re
 
-import pytest
 
 from genesis_architect_pro.recovery_report import generate_report, RecoveryReport
 

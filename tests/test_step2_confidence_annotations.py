@@ -13,7 +13,6 @@ import json
 import textwrap
 from pathlib import Path
 
-import pytest
 
 
 # ---------------------------------------------------------------------------
@@ -48,7 +47,7 @@ def _inject_graph(root: Path, graph: dict) -> None:
 def _god_class_graph(root: Path, fan_out: int = 20) -> dict:
     """Pre-built graph with one god class."""
     mods = {f"src/mod_{i}.py": {
-        "imports": [], "imported_by": [f"src/god.py"],
+        "imports": [], "imported_by": ["src/god.py"],
         "fan_out": 0, "fan_in": 1, "lines": 1,
         "is_entry_point": False, "layer": "unknown",
     } for i in range(fan_out)}

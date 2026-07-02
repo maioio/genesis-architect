@@ -23,11 +23,10 @@ import json
 import warnings
 from pathlib import Path
 
-import pytest
 
 from genesis_architect_pro.model_store import (
     ModelStore, ArchModel, ModelNode, ModelLink, ModelResponsibility,
-    ModelDiff, NodeChange, ResponsibilityChange, LinkChange, _compute_diff,
+    ModelDiff, NodeChange, ResponsibilityChange, _compute_diff,
 )
 from genesis_architect_pro.recovery_scan import scan
 

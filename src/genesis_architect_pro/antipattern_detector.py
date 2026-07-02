@@ -15,7 +15,6 @@ through the `extra_detectors` hook. Base detectors, data model, and reporting
 are re-exported from free core - zero duplication.
 """
 
-from pathlib import Path
 
 # Re-export base implementation from free core (data model, base detectors, API).
 from genesis_architect.core import antipattern_detector as _base

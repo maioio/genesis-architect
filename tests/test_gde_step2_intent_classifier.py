@@ -13,11 +13,9 @@ Coverage:
 
 from __future__ import annotations
 
-import pytest
 
 from genesis_architect_pro.gde_types import GDEMode, Intent
 from genesis_architect_pro.intent_classifier import (
-    AMBIGUITY_MARGIN,
     CLARIFY_THRESHOLD,
     MIN_CONFIDENCE,
     classify,
@@ -293,7 +291,6 @@ class TestBackwardCompatibility:
     def test_gde_types_still_intact(self):
         from genesis_architect_pro.gde_types import (
             GDEMode,
-            Intent,
             LifecycleStage,
             SessionContext,
         )

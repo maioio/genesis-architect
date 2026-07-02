@@ -16,7 +16,6 @@ dimension scorers re-exported from free core for the Pro test-suite.
 """
 
 import json
-from datetime import UTC, datetime
 from pathlib import Path
 
 # Re-export the free base implementation (dimension scorers, helpers, label, etc).

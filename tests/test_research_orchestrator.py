@@ -1,6 +1,5 @@
 """Tests for research_orchestrator module - no network, no disk I/O."""
 import sys
-import tempfile
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 

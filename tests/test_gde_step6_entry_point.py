@@ -15,8 +15,6 @@ from genesis_architect_pro.gde_types import (
     EngineDescriptor,
     GDEMode,
     Intent,
-    LifecycleStage,
-    SessionContext,
     SessionReport,
 )
 

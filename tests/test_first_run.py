@@ -4,7 +4,6 @@ Encodes the packaging promise (Constitution 13): license is the only required
 step; everything else is optional and never blocks; status checks never install
 or phone home; offline reporting is honest.
 """
-import os
 
 import pytest
 

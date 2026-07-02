@@ -31,7 +31,6 @@ from genesis_architect_pro.gde_types import (
     EngineResult,
     EngineStatus,
     ExecutionPlan,
-    GDEMode,
     LifecycleStage,
     SessionContext,
 )

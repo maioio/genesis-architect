@@ -51,7 +51,6 @@ An empty project (nothing in the scan) produces a valid "clean" report.
 from __future__ import annotations
 
 import json
-import textwrap
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -1110,30 +1109,30 @@ def _render_html(report: RecoveryReport) -> str:
 
     # ---- Recommendations ----
     rec_section = (
-        f'<div class="card"><h2>Recommendations</h2>'
+        '<div class="card"><h2>Recommendations</h2>'
         + _rec_cards(report.recommendations)
-        + f'</div>'
+        + '</div>'
     )
 
     # ---- Quick wins ----
     qw_section = (
-        f'<div class="card"><h2>&#9889; Quick Wins</h2>'
+        '<div class="card"><h2>&#9889; Quick Wins</h2>'
         + _rec_cards(report.quick_wins)
-        + f'</div>'
+        + '</div>'
     )
 
     # ---- Deep refactor candidates ----
     dr_section = (
-        f'<div class="card"><h2>Deep Refactor Candidates</h2>'
+        '<div class="card"><h2>Deep Refactor Candidates</h2>'
         + _rec_cards(report.deep_refactor_candidates)
-        + f'</div>'
+        + '</div>'
     )
 
     # ---- Risk zones ----
     rz_section = (
-        f'<div class="card"><h2>&#128679; Do-Not-Touch Risk Zones</h2>'
+        '<div class="card"><h2>&#128679; Do-Not-Touch Risk Zones</h2>'
         + _rec_cards(report.risk_zones)
-        + f'</div>'
+        + '</div>'
     )
 
     # ---- Evidence basis ----
@@ -1143,9 +1142,9 @@ def _render_html(report: RecoveryReport) -> str:
         for k, v in sorted(report.evidence_basis.items())
     )
     eb_section = (
-        f'<div class="card"><h2>Evidence Basis</h2>'
+        '<div class="card"><h2>Evidence Basis</h2>'
         + (eb_rows if eb_rows else '<p class="section-empty">No evidence recorded.</p>')
-        + f'</div>'
+        + '</div>'
     )
 
     # ---- Warnings ----
@@ -1154,9 +1153,9 @@ def _render_html(report: RecoveryReport) -> str:
         for w in report.warnings
     )
     warn_section = (
-        f'<div class="card"><h2>Warnings</h2>'
+        '<div class="card"><h2>Warnings</h2>'
         + (warn_html if warn_html else '<p class="section-empty">No warnings.</p>')
-        + f'</div>'
+        + '</div>'
     )
 
     # ---- Metadata ----
@@ -1174,7 +1173,7 @@ def _render_html(report: RecoveryReport) -> str:
         f'<b>Schema:</b> {_h(report.metadata.schema_version)}</p>'
         + (f'<h3>Scan keys present</h3><div class="meta-grid">{present_html}</div>' if present_html else "")
         + (f'<h3>Scan keys missing</h3><div class="meta-grid">{missing_html}</div>' if missing_html else "")
-        + f'</div>'
+        + '</div>'
     )
 
     # ---- Embedded JSON payload ----

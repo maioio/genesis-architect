@@ -15,15 +15,9 @@ from dataclasses import asdict
 from pathlib import Path
 
 from genesis_architect_pro.gde_types import (
-    ApprovalChoice,
-    ApprovalDecision,
-    CommitResult,
     DecisionEntry,
-    EngineCategory,
-    EngineDescriptor,
     EngineResult,
     EngineStatus,
-    ExecutionPlan,
     GateAction,
     GateOutcome,
     GateReport,
@@ -32,7 +26,6 @@ from genesis_architect_pro.gde_types import (
     Intent,
     LifecycleStage,
     SessionContext,
-    SessionReport,
     WriteOperation,
 )
 

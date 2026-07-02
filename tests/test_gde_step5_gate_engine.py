@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
 
 from genesis_architect_pro.gde_gate_engine import (
     _CONFIDENCE_BLOCK_THRESHOLD,
@@ -13,7 +12,6 @@ from genesis_architect_pro.gde_gate_engine import (
 from genesis_architect_pro.gde_types import (
     EngineResult,
     EngineStatus,
-    GateAction,
     GateOutcome,
     GateReport,
     SessionContext,

@@ -7,7 +7,6 @@
 
 from __future__ import annotations
 
-import sys
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 import tempfile
@@ -22,10 +21,9 @@ import pytest
 
 def _make_report(gate_outcome_str: str = "pass", pending_writes=None):
     """Build a minimal SessionReport-like object for testing."""
-    import genesis_architect_pro.gde_engine_registration  # ensure registered
     from genesis_architect_pro.gde_types import (
         GDEMode, LifecycleStage, GateReport, GateOutcome, GateResult, GateAction,
-        SessionReport, EngineResult, EngineStatus,
+        SessionReport,
     )
 
     outcome_map = {
@@ -68,25 +66,20 @@ class TestEngineRegistration:
     def test_import_does_not_crash(self):
         import genesis_architect_pro.gde_engine_registration  # noqa: F401
 
-    def test_all_8_engines_registered(self):
-        import genesis_architect_pro.gde_engine_registration
+    def test_core_engines_registered(self):
+        """All original 8 core engines must be registered (registry may have more)."""
         from genesis_architect_pro.engine_registry import get_default_registry
         reg = get_default_registry()
-        expected = {
+        required = {
             "import_graph", "architecture_scorer", "antipattern_detector",
             "fragility_classifier", "recovery_report", "refactoring_planner",
             "c4_generator", "security_templates",
         }
-        ordered = reg.ordered_for_mode
-        # just confirm each id is resolvable
-        from genesis_architect_pro.gde_types import GDEMode
-        for mode in [GDEMode.RECOVERY, GDEMode.REFACTOR, GDEMode.DOCUMENT, GDEMode.GATE]:
-            descs = reg.ordered_for_mode(mode)
-            for d in descs:
-                assert d.id in expected
+        registered_ids = set(reg.ids())
+        missing = required - registered_ids
+        assert not missing, f"Missing core engines: {missing}"
 
     def test_recovery_phase_order(self):
-        import genesis_architect_pro.gde_engine_registration
         from genesis_architect_pro.engine_registry import get_default_registry
         from genesis_architect_pro.gde_types import GDEMode
 
@@ -102,7 +95,6 @@ class TestEngineRegistration:
         assert flat.index("recovery_report") > flat.index("fragility_classifier")
 
     def test_import_graph_is_required(self):
-        import genesis_architect_pro.gde_engine_registration
         from genesis_architect_pro.engine_registry import get_default_registry
         from genesis_architect_pro.gde_types import GDEMode
 
@@ -111,7 +103,6 @@ class TestEngineRegistration:
         assert descs["import_graph"].is_optional is False
 
     def test_document_mode_includes_c4(self):
-        import genesis_architect_pro.gde_engine_registration
         from genesis_architect_pro.engine_registry import get_default_registry
         from genesis_architect_pro.gde_types import GDEMode
 
@@ -136,9 +127,7 @@ class TestEngineRegistration:
 
 class TestEngineAdapters:
     def _ctx(self):
-        import genesis_architect_pro.gde_engine_registration
         from genesis_architect_pro.gde_types import SessionContext, GDEMode
-        import tempfile
         ctx = SessionContext(mode=GDEMode.RECOVERY)
         ctx.project_dir = Path(tempfile.mkdtemp())
         return ctx
@@ -206,7 +195,6 @@ class TestEngineAdapters:
 class TestApproveCommit:
     def test_approve_raises_on_hard_block(self):
         from genesis_architect_pro import GenesisDecisionEngine
-        import tempfile
         gde = GenesisDecisionEngine(project_dir=Path(tempfile.mkdtemp()))
         report = _make_report("hard_block")
         with pytest.raises(RuntimeError, match="HARD_BLOCK"):
@@ -215,7 +203,6 @@ class TestApproveCommit:
     def test_approve_returns_approval_request_on_pass(self):
         from genesis_architect_pro import GenesisDecisionEngine
         from genesis_architect_pro.gde_types import ApprovalRequest
-        import tempfile
         project_dir = Path(tempfile.mkdtemp())
         gde = GenesisDecisionEngine(project_dir=project_dir)
         report = _make_report("pass")
@@ -227,7 +214,6 @@ class TestApproveCommit:
     def test_commit_reject_returns_success(self):
         from genesis_architect_pro import GenesisDecisionEngine
         from genesis_architect_pro.gde_types import ApprovalDecision, ApprovalChoice, CommitResult
-        import tempfile
         project_dir = Path(tempfile.mkdtemp())
         gde = GenesisDecisionEngine(project_dir=project_dir)
         report = _make_report("pass")
@@ -243,7 +229,6 @@ class TestApproveCommit:
     def test_commit_defer_returns_success_no_writes(self):
         from genesis_architect_pro import GenesisDecisionEngine
         from genesis_architect_pro.gde_types import ApprovalDecision, ApprovalChoice
-        import tempfile
         project_dir = Path(tempfile.mkdtemp())
         gde = GenesisDecisionEngine(project_dir=project_dir)
         report = _make_report("pass")
@@ -258,7 +243,6 @@ class TestApproveCommit:
     def test_commit_hard_block_returns_failed(self):
         from genesis_architect_pro import GenesisDecisionEngine
         from genesis_architect_pro.gde_types import ApprovalDecision, ApprovalChoice
-        import tempfile
         project_dir = Path(tempfile.mkdtemp())
         gde = GenesisDecisionEngine(project_dir=project_dir)
         report = _make_report("hard_block")
@@ -276,7 +260,6 @@ class TestApproveCommit:
         from genesis_architect_pro.gde_types import (
             ApprovalDecision, ApprovalChoice, SessionContext, WriteOperation, GDEMode,
         )
-        import tempfile
 
         with tempfile.TemporaryDirectory() as tmp:
             project_dir = Path(tmp)
@@ -306,7 +289,6 @@ class TestApproveCommit:
     def test_execute_write_operation_creates_file(self):
         from genesis_architect_pro import GenesisDecisionEngine
         from genesis_architect_pro.gde_types import WriteOperation
-        import tempfile
 
         with tempfile.TemporaryDirectory() as tmp:
             project_dir = Path(tmp)
@@ -324,7 +306,6 @@ class TestApproveCommit:
     def test_execute_write_operation_json_payload(self):
         from genesis_architect_pro import GenesisDecisionEngine
         from genesis_architect_pro.gde_types import WriteOperation
-        import tempfile
 
         with tempfile.TemporaryDirectory() as tmp:
             project_dir = Path(tmp)
@@ -343,7 +324,6 @@ class TestApproveCommit:
     def test_execute_write_operation_none_payload_is_noop(self):
         from genesis_architect_pro import GenesisDecisionEngine
         from genesis_architect_pro.gde_types import WriteOperation
-        import tempfile
 
         with tempfile.TemporaryDirectory() as tmp:
             project_dir = Path(tmp)
@@ -398,7 +378,6 @@ class TestCLI:
 
     def test_invalid_dir_returns_error(self):
         from genesis_architect_pro.gde_cli import main
-        import tempfile
         rc = main(["decide", "--classify-only", "diagnose", "--dir", "/nonexistent/path/xyz"])
         assert rc == 1
 
@@ -411,7 +390,6 @@ class TestCLI:
 class TestNewModeWiring:
     def test_all_7_modes_have_engines(self):
         """All GDE modes must have at least one engine registered."""
-        import genesis_architect_pro.gde_engine_registration
         from genesis_architect_pro.engine_registry import get_default_registry
         from genesis_architect_pro.gde_types import GDEMode
 
@@ -422,14 +400,12 @@ class TestNewModeWiring:
             assert n >= 1, f"Mode {mode.value} has no engines registered"
 
     def test_13_engines_total(self):
-        import genesis_architect_pro.gde_engine_registration
         from genesis_architect_pro.engine_registry import get_default_registry
 
         reg = get_default_registry()
         assert len(reg._descriptors) >= 13
 
     def test_research_mode_phases(self):
-        import genesis_architect_pro.gde_engine_registration
         from genesis_architect_pro.engine_registry import get_default_registry
         from genesis_architect_pro.gde_types import GDEMode
 
@@ -441,7 +417,6 @@ class TestNewModeWiring:
         assert "evidence_pack" in ids
 
     def test_build_mode_has_scaffold_engine(self):
-        import genesis_architect_pro.gde_engine_registration
         from genesis_architect_pro.engine_registry import get_default_registry
         from genesis_architect_pro.gde_types import GDEMode
 
@@ -451,7 +426,6 @@ class TestNewModeWiring:
         assert "build_scaffold" in ids
 
     def test_committee_mode_includes_analysis_and_synthesis(self):
-        import genesis_architect_pro.gde_engine_registration
         from genesis_architect_pro.engine_registry import get_default_registry
         from genesis_architect_pro.gde_types import GDEMode
 
@@ -464,7 +438,6 @@ class TestNewModeWiring:
     def test_source_registry_adapter_handles_exception(self):
         from genesis_architect_pro.gde_engine_adapters import gde_run_source_registry
         from genesis_architect_pro.gde_types import GDEMode, SessionContext
-        import tempfile
 
         with tempfile.TemporaryDirectory() as tmp:
             ctx = SessionContext(mode=GDEMode.RESEARCH)
@@ -476,7 +449,6 @@ class TestNewModeWiring:
     def test_field_intelligence_adapter_handles_exception(self):
         from genesis_architect_pro.gde_engine_adapters import gde_run_field_intelligence
         from genesis_architect_pro.gde_types import GDEMode, SessionContext
-        import tempfile
         from unittest.mock import patch
 
         with tempfile.TemporaryDirectory() as tmp:
@@ -494,8 +466,7 @@ class TestNewModeWiring:
 
     def test_committee_adapter_returns_perspectives(self):
         from genesis_architect_pro.gde_engine_adapters import gde_run_committee_analysis
-        from genesis_architect_pro.gde_types import GDEMode, SessionContext, EngineResult, EngineStatus
-        import tempfile
+        from genesis_architect_pro.gde_types import GDEMode, SessionContext
 
         with tempfile.TemporaryDirectory() as tmp:
             ctx = SessionContext(mode=GDEMode.COMMITTEE)
@@ -512,7 +483,6 @@ class TestNewModeWiring:
         from genesis_architect_pro.gde_types import (
             GDEMode, SessionContext, EngineResult, EngineStatus
         )
-        import tempfile
 
         with tempfile.TemporaryDirectory() as tmp:
             ctx = SessionContext(mode=GDEMode.COMMITTEE)
@@ -533,7 +503,6 @@ class TestNewModeWiring:
     def test_build_scaffold_adapter_missing_vision(self):
         from genesis_architect_pro.gde_engine_adapters import gde_run_build_scaffold
         from genesis_architect_pro.gde_types import GDEMode, SessionContext
-        import tempfile
 
         with tempfile.TemporaryDirectory() as tmp:
             ctx = SessionContext(mode=GDEMode.BUILD)

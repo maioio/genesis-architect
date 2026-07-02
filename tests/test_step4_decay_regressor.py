@@ -22,15 +22,10 @@ import pytest
 
 from genesis_architect_pro.decay_regressor import (
     ScoreDataPoint,
-    RegressionResult,
-    ScorePrediction,
-    DecayForecast,
     DecayRegressorConfig,
     DecayRegressor,
     forecast_from_history,
     _t_critical,
-    DEFAULT_HORIZON_WEEKS,
-    DEFAULT_CRITICAL_THRESHOLD,
 )
 
 

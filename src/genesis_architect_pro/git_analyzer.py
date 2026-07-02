@@ -20,9 +20,8 @@ import argparse
 import json
 import re
 import subprocess
-import sys
-from dataclasses import dataclass, field
-from datetime import UTC, date, datetime, timedelta
+from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 

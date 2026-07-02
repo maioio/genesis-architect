@@ -4,11 +4,9 @@ These tests encode the binding privacy invariants from Constitution 09:
 default OFF, anonymous, revocable, never collects sensitive content, never gates
 the product, and always lets the user inspect/clear what is stored.
 """
-from pathlib import Path
 
 from genesis_architect_pro.product_intelligence import (
-    CONSENT_PROMPT, TelemetryConfig,
-    load_config, set_consent, revoke_consent, is_enabled, needs_consent_prompt,
+    CONSENT_PROMPT, load_config, set_consent, revoke_consent, is_enabled, needs_consent_prompt,
     sanitize_event, record_event, read_events, describe_payload, clear_events,
 )
 

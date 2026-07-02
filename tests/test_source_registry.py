@@ -4,10 +4,9 @@ Covers: loading the packaged catalog, ranking by tier priority x evidence
 weight, engine profiles, the market=signal-only rule, and per-project overrides
 that add/replace sources without code changes.
 """
-import json
 
 from genesis_architect_pro.source_registry import (
-    Source, SourceRegistry, load_registry, add_project_source,
+    load_registry, add_project_source,
 )
 
 

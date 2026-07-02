@@ -28,7 +28,6 @@ All writes are append-or-create, never destructive. Never raises on I/O.
 
 from __future__ import annotations
 
-import json
 from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path

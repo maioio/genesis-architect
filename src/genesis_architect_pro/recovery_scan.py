@@ -133,7 +133,7 @@ def sync_model_from_graph(project_dir: Path, graph: dict) -> dict:
     """
     try:
         from genesis_architect_pro.model_store import (
-            ModelStore, ArchModel, ModelNode,
+            ModelStore, ModelNode,
         )
 
         store = ModelStore(project_dir)
@@ -276,7 +276,7 @@ def scan(project_dir: Path) -> dict:
         _arch = score_project(project_dir)
         architecture_score = _arch.get("total")
         architecture_profile = _arch.get("profile", "default")
-    except Exception as exc:  # noqa: BLE001
+    except Exception:  # noqa: BLE001
         architecture_score = None
         architecture_profile = "default"
 
@@ -294,7 +294,7 @@ def scan(project_dir: Path) -> dict:
             }
             for ap in (getattr(_ap_report, "patterns", []) or [])
         ]
-    except Exception as exc:  # noqa: BLE001
+    except Exception:  # noqa: BLE001
         anti_patterns = []
 
     # Source anchoring — compute object first so it can be optionally persisted below

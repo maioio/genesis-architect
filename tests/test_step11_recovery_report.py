@@ -49,8 +49,7 @@ import pytest
 
 from genesis_architect_pro.recovery_report import (
     generate_report, generate_report_for_project,
-    RecoveryReport, ArchitectureHealth, DriftSummary,
-    Recommendation, ReportMetadata,
+    RecoveryReport,
 )
 from genesis_architect_pro.recovery_scan import scan
 

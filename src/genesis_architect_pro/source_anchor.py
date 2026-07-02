@@ -484,7 +484,7 @@ def anchor_from_store(project_dir: Path) -> AnchorReport:
 
     Never raises. Errors are collected as warnings in the returned report.
     """
-    from genesis_architect_pro.model_store import ModelStore, ArchModel
+    from genesis_architect_pro.model_store import ModelStore
 
     project_dir = Path(project_dir)
     report_warnings: list[str] = []

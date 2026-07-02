@@ -191,6 +191,9 @@ class GateResult:
     reason: str
     detail: str = ""
     confidence_penalty: float = 0.0
+    # Companion instrumentation — ISO 8601 timestamps
+    presented_at: str = ""    # when gate fired and was surfaced to user
+    responded_at: str = ""    # when user approved/rejected/overrode
 
 
 @dataclass
@@ -330,6 +333,9 @@ class SessionContext:
     mode: GDEMode = GDEMode.RECOVERY
     stage: LifecycleStage = LifecycleStage.IDLE
     project_dir: Path = field(default_factory=lambda: Path("."))
+    # Companion instrumentation
+    session_started_at: str = ""   # ISO 8601, set at INTAKE
+    last_user_interaction_at: str = ""  # ISO 8601, updated on any user action
 
     # Project state — populated at INTAKE
     import_graph: dict[str, Any] = field(default_factory=dict)

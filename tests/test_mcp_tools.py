@@ -1,5 +1,4 @@
 """Tests for mcp_tools - read-only Genesis analysis exposed as MCP tools."""
-import textwrap
 from pathlib import Path
 
 import pytest

@@ -24,9 +24,10 @@ Gate IDs and their trigger conditions:
 
 from __future__ import annotations
 
+import datetime
+
 from genesis_architect_pro.gde_types import (
     GateAction,
-    GateOutcome,
     GateReport,
     GateResult,
     SessionContext,
@@ -116,6 +117,7 @@ def evaluate_gates(ctx: SessionContext, required_gate_ids: list[str]) -> GateRep
             reason=reason,
             detail=detail,
             confidence_penalty=penalty,
+            presented_at=datetime.datetime.now(datetime.timezone.utc).isoformat(),
         )
 
         if default_action is GateAction.HARD_BLOCK:

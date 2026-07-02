@@ -68,10 +68,9 @@ import math
 import warnings
 from pathlib import Path
 
-import pytest
 
 from genesis_architect_pro.drift_detector import (
-    detect_drift, DriftFlags, VagrantCandidate, StaleCandidate,
+    DriftFlags, VagrantCandidate, StaleCandidate,
 )
 from genesis_architect_pro.drift_scorer import (
     DriftScorerConfig, NodeDriftScore, DriftScore,
@@ -84,7 +83,7 @@ from genesis_architect_pro.model_store import (
     ArchModel, ModelNode, ModelResponsibility, ModelStore,
 )
 from genesis_architect_pro.decay_regressor import (
-    DecayForecast, RegressionResult, ScorePrediction,
+    DecayForecast, RegressionResult,
 )
 from genesis_architect_pro.recovery_scan import scan
 

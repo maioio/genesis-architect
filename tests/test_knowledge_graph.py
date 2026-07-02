@@ -4,7 +4,7 @@ Covers the planning-doc contract: additive/idempotent graph, confidence on every
 edge, connective queries, persistence, and graceful build from partial inputs.
 """
 from genesis_architect_pro.knowledge_graph import (
-    KnowledgeGraph, Node, Edge, NODE_TYPES, REL_TYPES,
+    KnowledgeGraph, NODE_TYPES, REL_TYPES,
     load_graph, save_graph, build_from_project,
     add_architecture, add_security, add_risks, add_decisions, add_field_findings,
 )

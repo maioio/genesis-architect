@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-import pytest
 
 def test_version_drift_detected(tmp_path: Path):
     """version_drift returns True when package.json and pyproject.toml have different versions."""

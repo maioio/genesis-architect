@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
 
 from genesis_architect_pro.engine_registry import EngineRegistry
 from genesis_architect_pro.gde_planner import _UNIVERSAL_GATES, build_plan

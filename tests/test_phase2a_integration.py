@@ -11,11 +11,9 @@ All tests operate on temporary directories so the real project is never written 
 from __future__ import annotations
 
 import json
-import tempfile
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-import pytest
 
 # ---------------------------------------------------------------------------
 # helpers

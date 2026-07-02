@@ -409,6 +409,98 @@ def cmd_decide(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_memory(args: argparse.Namespace) -> int:
+    """Show or update the per-project memory under .genesis/."""
+    from genesis_architect_pro.memory_engine import (
+        memory_status, init_memory, read_memory,
+    )
+
+    project_dir = Path(args.dir).expanduser().resolve()
+    if not project_dir.is_dir():
+        print(f"  error: --dir '{project_dir}' is not a directory", file=sys.stderr)
+        return 1
+
+    if args.init:
+        init_memory(project_dir)
+        print(f"  Memory initialised at {project_dir / '.genesis'}")
+        return 0
+
+    if args.status:
+        status = memory_status(project_dir)
+        if _use_rich():
+            from rich.console import Console
+            from rich.table import Table
+            from rich import box
+            console = Console()
+            console.print()
+            table = Table(title="Project Memory Status", box=box.SIMPLE,
+                          header_style="dim", border_style="bright_black", padding=(0, 2))
+            table.add_column("File")
+            table.add_column("Exists")
+            table.add_column("Size")
+            for fname, info in status.items():
+                exists = "[green]yes[/green]" if info.get("exists") else "[dim]no[/dim]"
+                size = f"{info.get('size', 0)} bytes" if info.get("exists") else "—"
+                table.add_row(fname, exists, size)
+            console.print(table)
+            console.print()
+        else:
+            print()
+            print("  Project Memory Status")
+            print(_hr())
+            for fname, info in status.items():
+                exists = "yes" if info.get("exists") else "no"
+                size = f"{info.get('size', 0)} bytes" if info.get("exists") else "—"
+                print(f"  {exists:3}  {size:12}  {fname}")
+            print(_hr())
+        return 0
+
+    # Default: show all memory files
+    mem = read_memory(project_dir)
+    if not mem:
+        print("  No memory files found. Run `genesis memory --init` to create them.")
+        return 0
+    for fname, content in mem.items():
+        print(f"\n--- {fname} ---")
+        lines = content.splitlines()
+        for line in lines[:20]:
+            print(f"  {line}")
+        if len(lines) > 20:
+            print(f"  ... ({len(lines) - 20} more lines)")
+    return 0
+
+
+def cmd_ui(args: argparse.Namespace) -> int:
+    """Generate (or open) the self-contained HTML workspace."""
+    from genesis_architect_pro.ui_workspace import collect_state, write_workspace
+
+    project_dir = Path(args.dir).expanduser().resolve()
+    if not project_dir.is_dir():
+        print(f"  error: --dir '{project_dir}' is not a directory", file=sys.stderr)
+        return 1
+
+    output_path = Path(args.output) if args.output else project_dir / ".genesis" / "workspace.html"
+
+    state = collect_state(project_dir)
+    written = write_workspace(state, output_path)
+
+    if _use_rich():
+        from rich.console import Console
+        Console().print(
+            f"\n  [bold green]Workspace written:[/bold green] {written}\n"
+            f"  [dim]Open in any browser — no server required.[/dim]\n"
+        )
+    else:
+        print(f"\n  Workspace written: {written}")
+        print("  Open in any browser — no server required.\n")
+
+    if args.open:
+        import webbrowser
+        webbrowser.open(str(written))
+
+    return 0
+
+
 def cmd_explain(args: argparse.Namespace) -> int:
     """Print the last decision log in human-readable form."""
     from genesis_architect_pro import read_decision_log
@@ -457,6 +549,88 @@ def cmd_explain(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_companion(args: argparse.Namespace) -> int:
+    """Start the health page server or print gate miss-rate stats."""
+    from genesis_architect_pro.gde_companion import (
+        CompanionInstrumentation,
+        HealthPageServer,
+    )
+    import time
+
+    project_dir = Path(args.dir).expanduser().resolve()
+    if not project_dir.is_dir():
+        print(f"  error: --dir '{project_dir}' is not a directory", file=sys.stderr)
+        return 1
+
+    # --stats mode: print gate miss-rate and exit
+    if args.stats:
+        stats = CompanionInstrumentation(project_dir).analyse()
+        rich = _use_rich()
+        if rich:
+            from rich.console import Console
+            from rich.table import Table
+            from rich import box
+            console = Console()
+            console.print()
+            table = Table(title="Gate Miss-Rate Stats", box=box.SIMPLE,
+                          header_style="dim", border_style="bright_black", padding=(0, 2))
+            table.add_column("Metric")
+            table.add_column("Value")
+            table.add_row("Sessions analysed", str(stats.sessions_analysed))
+            table.add_row("Gates presented", str(stats.total_gates_presented))
+            table.add_row("Missed (>5 min)", str(stats.missed_gates))
+            miss_style = "red" if stats.miss_rate > 0.15 else "green"
+            table.add_row("Miss rate", f"[{miss_style}]{stats.miss_rate:.0%}[/{miss_style}]")
+            if stats.avg_response_seconds:
+                table.add_row("Avg response time", f"{stats.avg_response_seconds:.0f}s")
+            table.add_row(
+                "Companion justified?",
+                "[green]YES[/green]" if stats.companion_justified else "[dim]not yet[/dim]",
+            )
+            console.print(table)
+            if stats.companion_justified:
+                console.print("  [bold green]→ Miss rate >15%. Build the Companion overlay.[/bold green]\n")
+            else:
+                console.print("  [dim]→ Miss rate ≤15%. CLI + notifications are sufficient.[/dim]\n")
+        else:
+            print()
+            print(f"  Sessions analysed : {stats.sessions_analysed}")
+            print(f"  Gates presented   : {stats.total_gates_presented}")
+            print(f"  Missed (>5 min)   : {stats.missed_gates}")
+            print(f"  Miss rate         : {stats.miss_rate:.0%}")
+            if stats.avg_response_seconds:
+                print(f"  Avg response time : {stats.avg_response_seconds:.0f}s")
+            justified = "YES" if stats.companion_justified else "not yet"
+            print(f"  Companion justified: {justified}")
+            print()
+        return 0
+
+    # Server mode
+    server = HealthPageServer(project_dir=project_dir, port=args.port)
+    server.start()
+
+    if _use_rich():
+        from rich.console import Console
+        console = Console()
+        console.print(f"\n  [bold]Genesis PRO health page:[/bold] [cyan]{server.url}[/cyan]")
+        console.print("  [dim]Press Ctrl-C to stop.[/dim]\n")
+    else:
+        print(f"\n  Genesis PRO health page: {server.url}")
+        print("  Press Ctrl-C to stop.\n")
+
+    if not args.no_browser:
+        server.open_browser()
+
+    try:
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        server.stop()
+        print("\n  Health page stopped.")
+
+    return 0
+
+
 # ---------------------------------------------------------------------------
 # Argument parser
 # ---------------------------------------------------------------------------
@@ -488,6 +662,32 @@ def _build_parser() -> argparse.ArgumentParser:
     explain.add_argument("--dir", default=".", metavar="PATH",
                          help="Project directory (default: current directory)")
 
+    memory = sub.add_parser("memory", help="Show or manage per-project memory (.genesis/*.md)")
+    memory.add_argument("--dir", default=".", metavar="PATH",
+                        help="Project directory (default: current directory)")
+    memory.add_argument("--init", action="store_true",
+                        help="Initialise memory files under .genesis/")
+    memory.add_argument("--status", action="store_true",
+                        help="Show memory file status (exists, size)")
+
+    ui = sub.add_parser("ui", help="Generate the self-contained HTML Canvas workspace")
+    ui.add_argument("--dir", default=".", metavar="PATH",
+                    help="Project directory (default: current directory)")
+    ui.add_argument("--output", default=None, metavar="PATH",
+                    help="Output path (default: .genesis/workspace.html)")
+    ui.add_argument("--open", action="store_true",
+                    help="Open the workspace in the default browser after generating")
+
+    companion = sub.add_parser("companion", help="Start the Genesis PRO health page server")
+    companion.add_argument("--dir", default=".", metavar="PATH",
+                           help="Project directory (default: current directory)")
+    companion.add_argument("--port", type=int, default=7433, metavar="PORT",
+                           help="Port for the health page (default: 7433, auto-scans if taken)")
+    companion.add_argument("--stats", action="store_true",
+                           help="Print gate miss-rate stats and exit (no server)")
+    companion.add_argument("--no-browser", action="store_true",
+                           help="Do not open the browser automatically")
+
     return parser
 
 
@@ -501,7 +701,8 @@ def main(argv: list[str] | None = None) -> int:
 
     if argv is None:
         argv = sys.argv[1:]
-    if argv and argv[0] not in ("decide", "explain", "-h", "--help"):
+    _known = ("decide", "explain", "memory", "ui", "companion", "-h", "--help")
+    if argv and argv[0] not in _known:
         argv = ["decide"] + argv
 
     args = parser.parse_args(argv)
@@ -510,6 +711,12 @@ def main(argv: list[str] | None = None) -> int:
         return cmd_decide(args)
     if args.command == "explain":
         return cmd_explain(args)
+    if args.command == "memory":
+        return cmd_memory(args)
+    if args.command == "ui":
+        return cmd_ui(args)
+    if args.command == "companion":
+        return cmd_companion(args)
 
     parser.print_help()
     return 0

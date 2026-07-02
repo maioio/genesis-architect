@@ -3,7 +3,7 @@ import json
 from pathlib import Path
 
 from genesis_architect_pro.ui_workspace import (
-    WorkspaceState, collect_state, render_workspace, write_workspace,
+    collect_state, render_workspace, write_workspace,
 )
 
 

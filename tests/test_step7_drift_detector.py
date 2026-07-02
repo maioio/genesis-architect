@@ -48,14 +48,12 @@ import json
 import warnings
 from pathlib import Path
 
-import pytest
 
 from genesis_architect_pro.model_store import (
-    ArchModel, ModelNode, ModelLink, ModelResponsibility, ModelStore,
+    ArchModel, ModelNode, ModelResponsibility, ModelStore,
 )
 from genesis_architect_pro.drift_detector import (
-    DriftFlags, VagrantCandidate, StaleCandidate,
-    detect_drift, compute_drift_flags,
+    DriftFlags, detect_drift, compute_drift_flags,
 )
 from genesis_architect_pro.recovery_scan import scan
 

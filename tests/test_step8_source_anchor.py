@@ -66,13 +66,12 @@ import json
 import warnings
 from pathlib import Path
 
-import pytest
 
 from genesis_architect_pro.model_store import (
     ArchModel, ModelNode, ModelResponsibility, ModelStore,
 )
 from genesis_architect_pro.source_anchor import (
-    AnchorEntry, AnchorResult, AnchorReport,
+    AnchorResult, AnchorReport,
     anchor_responsibilities, anchor_from_store,
     _tokenise, _extract_symbols, _end_line_of_block,
 )

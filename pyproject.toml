@@ -16,6 +16,7 @@ dependencies = [
 [project.optional-dependencies]
 dev = ["pytest>=8", "ruff>=0.4", "pytest-cov>=5"]
 tui = ["rich>=13"]
+companion = ["plyer>=2.1"]
 
 [project.scripts]
 genesis = "genesis_architect_pro.gde_cli:main"

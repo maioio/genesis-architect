@@ -99,6 +99,33 @@ from genesis_architect_pro.first_run import (
 from genesis_architect_pro.ui_workspace import (
     WorkspaceState, collect_state, render_workspace, write_workspace,
 )
+from genesis_architect_pro.rules_engine import (
+    RuleResult, CheckReport,
+    load_rules, gather_facts, evaluate, run_check,
+    format_report as format_rules_report,
+)
+from genesis_architect_pro.git_analyzer import (
+    WeeklySnapshot,
+    per_module_churn, build_timeline, render_sparkline,
+)
+from genesis_architect_pro.import_audit import (
+    AuditFinding, ImportAuditReport,
+    audit as audit_imports,
+    format_report as format_audit_report,
+)
+from genesis_architect_pro.decay_regressor import (
+    DecayRegressorConfig, ScoreDataPoint, RegressionResult,
+    ScorePrediction, DecayForecast, DecayRegressor,
+    forecast_from_history,
+)
+from genesis_architect_pro.cross_session_memory import (
+    restore_session, save_phase2, save_phase4, save_phase6,
+    save_video_pitfalls, list_analyzed_videos,
+)
+from genesis_architect_pro.gde_companion import (
+    CompanionInstrumentation, GateMissStats,
+    GateNotifier, HealthPageServer,
+)
 
 __all__ = [
     # GDE — central brain
@@ -158,4 +185,23 @@ __all__ = [
     "check_readiness", "doctor_report", "offline_capability_report",
     "ensure_optional_dep",
     "WorkspaceState", "collect_state", "render_workspace", "write_workspace",
+    # Rules Engine
+    "RuleResult", "CheckReport",
+    "load_rules", "gather_facts", "evaluate", "run_check", "format_rules_report",
+    # Git Churn Analyzer
+    "WeeklySnapshot",
+    "per_module_churn", "build_timeline", "render_sparkline",
+    # Import Audit
+    "AuditFinding", "ImportAuditReport",
+    "audit_imports", "format_audit_report",
+    # Decay Regressor
+    "DecayRegressorConfig", "ScoreDataPoint", "RegressionResult",
+    "ScorePrediction", "DecayForecast", "DecayRegressor",
+    "forecast_from_history",
+    # Cross-session memory
+    "restore_session", "save_phase2", "save_phase4", "save_phase6",
+    "save_video_pitfalls", "list_analyzed_videos",
+    # Companion — Phase 0 instrumentation + Phase 1 health page
+    "CompanionInstrumentation", "GateMissStats",
+    "GateNotifier", "HealthPageServer",
 ]

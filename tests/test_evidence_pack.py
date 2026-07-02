@@ -1,6 +1,5 @@
 """Tests for evidence_pack - the proof behind recommendations + honesty clause."""
 from genesis_architect_pro.evidence_pack import (
-    EvidenceItem, EvidencePack,
     build_evidence_pack, save_evidence_pack,
 )
 

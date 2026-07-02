@@ -30,7 +30,6 @@ from dataclasses import dataclass, field, asdict
 from pathlib import Path
 
 from genesis_architect_pro.antipattern_detector import detect_all, AntiPattern
-from genesis_architect_pro.fragility_classifier import classify_all
 
 
 # ---------------------------------------------------------------------------
@@ -218,8 +217,8 @@ def _rule_cycle_breaker(patterns: list[AntiPattern], step_id_start: int) -> list
                     type="CREATE",
                     path=_suggest_shared_types_path(cycle),
                     description=(
-                        f"Extract shared types/interfaces into new module. "
-                        f"None of the cycle participants should import each other."
+                        "Extract shared types/interfaces into new module. "
+                        "None of the cycle participants should import each other."
                     ),
                 ),
                 RefactorOperation(
@@ -396,8 +395,8 @@ def write_refactoring_plan_md(plan: RefactoringPlan, output_path: Path) -> None:
         "",
         "## Overview",
         "",
-        f"| Tier | Steps | Score Impact |",
-        f"|------|-------|-------------|",
+        "| Tier | Steps | Score Impact |",
+        "|------|-------|-------------|",
         f"| Tier 1 - Critical | {plan.tier1_count} | +{sum(s.score_impact for s in plan.steps if s.tier == 1)} pts |",
         f"| Tier 2 - Important | {plan.tier2_count} | +{sum(s.score_impact for s in plan.steps if s.tier == 2)} pts |",
         f"| **Total** | **{len(plan.steps)}** | **+{plan.total_score_impact} pts** |",

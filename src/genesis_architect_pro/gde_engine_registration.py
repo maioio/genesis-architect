@@ -19,7 +19,6 @@ Usage::
 
 from __future__ import annotations
 
-from genesis_architect_pro.engine_registry import register
 from genesis_architect_pro.gde_types import EngineCategory, EngineDescriptor, GDEMode
 
 # ---------------------------------------------------------------------------
@@ -230,9 +229,60 @@ _DESCRIPTORS: list[EngineDescriptor] = [
         modes=[GDEMode.BUILD],
     ),
 
+    # --- GATE mode (additional engines) ---
+
+    # 14. Rules Engine — architecture regression gate against .genesis/rules.json
+    EngineDescriptor(
+        id="rules_engine",
+        name="Rules Engine",
+        module=_ADAPTER_MODULE,
+        entry_point="gde_run_rules_engine",
+        category=EngineCategory.ANALYSIS,
+        input_keys=["project_dir"],
+        output_keys=["rules_passed", "rules_file", "rule_count", "failed_rules"],
+        requires=["architecture_scorer", "antipattern_detector"],
+        is_optional=True,
+        write_operations=[],
+        timeout_seconds=30,
+        modes=[GDEMode.GATE],
+    ),
+
+    # 15. Git Churn Analyzer — per-module churn, fix-ratio, bus factor from git history
+    EngineDescriptor(
+        id="git_analyzer",
+        name="Git Churn Analyzer",
+        module=_ADAPTER_MODULE,
+        entry_point="gde_run_git_analyzer",
+        category=EngineCategory.ANALYSIS,
+        input_keys=["project_dir"],
+        output_keys=["churn_map", "high_churn_count", "stale_count", "bus_factor_1_count"],
+        requires=["import_graph"],
+        is_optional=True,
+        write_operations=[],
+        timeout_seconds=60,
+        modes=[GDEMode.RECOVERY, GDEMode.REFACTOR, GDEMode.GATE],
+    ),
+
+    # 16. Import Audit — declared (model) vs actual (code) import edges
+    EngineDescriptor(
+        id="import_audit",
+        name="Import Audit",
+        module=_ADAPTER_MODULE,
+        entry_point="gde_run_import_audit",
+        category=EngineCategory.ANALYSIS,
+        input_keys=["project_dir"],
+        output_keys=["audit_consistent", "declared_links", "actual_edges",
+                     "missing_count", "undeclared_count"],
+        requires=["import_graph"],
+        is_optional=True,
+        write_operations=[],
+        timeout_seconds=30,
+        modes=[GDEMode.GATE],
+    ),
+
     # --- COMMITTEE mode ---
 
-    # 13. Committee Analysis — multi-perspective synthesis (runs after analysis engines)
+    # 17. Committee Analysis — multi-perspective synthesis (runs after analysis engines)
     EngineDescriptor(
         id="committee_analysis",
         name="Committee Analysis",
@@ -259,6 +309,14 @@ def _register_all() -> None:
     for desc in _DESCRIPTORS:
         if desc.id not in reg:
             reg.register(desc)
+
+    # Register the knowledge graph engine additively (kept in its own module
+    # so it doesn't pollute the core 8-engine set for legacy callers).
+    try:
+        from genesis_architect_pro.gde_knowledge_graph_adapter import register_knowledge_graph
+        register_knowledge_graph()
+    except Exception:
+        pass  # graceful degradation: knowledge graph is optional
 
 
 _register_all()

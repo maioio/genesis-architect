@@ -1,7 +1,6 @@
 """Tests for import_audit - declared (model) vs actual (code) import edges."""
 from pathlib import Path
 
-import pytest
 
 from genesis_architect_pro.import_audit import (
     audit, format_report, ImportAuditReport, _last_seg, _edge_matches,

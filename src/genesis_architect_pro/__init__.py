@@ -99,6 +99,12 @@ from genesis_architect_pro.first_run import (
 from genesis_architect_pro.ui_workspace import (
     WorkspaceState, collect_state, render_workspace, write_workspace,
 )
+from genesis_architect_pro.companion_ui import (
+    render_companion_html, write_companion_html, DEFAULT_PORT as COMPANION_UI_PORT,
+)
+from genesis_architect_pro.progress_report import (
+    PhaseReport, ReportItem, render_report, write_report,
+)
 from genesis_architect_pro.rules_engine import (
     RuleResult, CheckReport,
     load_rules, gather_facts, evaluate, run_check,
@@ -185,6 +191,8 @@ __all__ = [
     "check_readiness", "doctor_report", "offline_capability_report",
     "ensure_optional_dep",
     "WorkspaceState", "collect_state", "render_workspace", "write_workspace",
+    "render_companion_html", "write_companion_html", "COMPANION_UI_PORT",
+    "PhaseReport", "ReportItem", "render_report", "write_report",
     # Rules Engine
     "RuleResult", "CheckReport",
     "load_rules", "gather_facts", "evaluate", "run_check", "format_rules_report",

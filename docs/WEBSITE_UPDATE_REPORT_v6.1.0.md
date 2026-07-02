@@ -23,6 +23,12 @@
 > server (stdlib only), `genesis companion` CLI. 1,496 tests passing. Zero new
 > required deps.** All work is on the private remote `pro/main`.
 
+> ✅ **MILESTONE — v6.7.0 complete (2026-07-02).** Autonomous Sync Manager shipped.
+> `genesis sync` — scheduled self-maintenance loop with 3-zone approval scope (GREEN/YELLOW/RED),
+> durable CronCreate job, GitHub Actions workflow, `.genesis/sync_config.json`, and
+> `.genesis/pending.json` findings queue. Based on 2026 market research (Sigil, claude-auto,
+> auto-routines, iterate). No source code is touched autonomously — only docs/metrics/findings.
+
 > ✅ **MILESTONE — v6.6.1 complete (2026-07-02).** All engines fully wired — 17 production
 > engines, 4 new (rules_engine, git_analyzer, import_audit, knowledge_graph auto),
 > decay forecast in scorer, `genesis memory` + `genesis ui` CLI. 181 public API symbols.
@@ -42,11 +48,12 @@
 | Capability | State | Can a customer USE it after `pip install` + license? |
 |---|---|---|
 | Analysis engines (17) — score, anti-patterns, fragility, C4, security, KG | ✅ Shipped | **Yes.** Core product. |
-| GDE — `genesis decide / recover / harden / memory / ui / explain` | ✅ Shipped | **Yes.** Full CLI + Rich TUI. |
+| `genesis sync` — autonomous maintenance (GREEN/YELLOW/RED zones, GitHub Actions) | ✅ Shipped | **Yes.** Weekly cron + manual trigger. |
+| GDE — `genesis decide / sync / memory / ui / explain / companion` | ✅ Shipped | **Yes.** Full CLI + Rich TUI. |
 | Committee Engine (transparency profiles, anti-sycophancy) | ✅ Shipped | **Yes**, via CLI/API. |
 | `genesis companion` (health page + gate stats, Phase 0) | ✅ Shipped | **Yes.** Local health page. |
 | WebSocket Streaming Layer | ⚙️ Optional / no client | Installable (`[streaming]`), but nothing consumes it yet. |
-| Voice (STT/TTS, wake word "ג'נסיס, תתחיל") | 🚧 Not usable | **No.** Code degrades to no-op; **no model-download command exists**. |
+| Voice (STT/TTS, wake word "ג'נסיס, תתחיל") | ⚙️ Installable, self-serve setup | **Partly.** `genesis companion --setup` downloads models; `--check` reports readiness honestly; `--speak` verifies the round-trip. Works once the user installs `[voice]` + runs setup. Not yet a one-click experience. |
 | IDE Bridge / VS Code extension | 🚧 Source only | **No.** Not compiled, no `.vsix`, not published. |
 | Tauri standalone desktop app | ❌ Not started | **No.** Does not exist. |
 
@@ -55,10 +62,16 @@ Everything marked ⚙️ / 🚧 / ❌ must be presented as **"coming soon" / roa
 never as a shipped feature. The live React site already marks Companion + voice as
 "Soon" (correct). Keep it that way until this table flips them to ✅.
 
-**To flip Voice to ✅** (the biggest gap): declare the models, add
-`genesis companion --setup` to download faster-whisper + Piper/Kokoro to
-`~/.genesis/models/`, and verify one real round-trip (mic → transcript → TTS) on a
-clean machine. Until then, voice is a demo, not a feature.
+**Voice — progress (2026-07-02):** the model-download gap is now closed.
+`genesis companion --setup` downloads faster-whisper (STT) + Meta MMS Hebrew (TTS)
+into `~/.genesis/models/`; Kokoro (English) lazy-loads its weights. `--check`
+reports exactly which components are ready and the precise `pip install` / setup
+command for any gap (never a fake OK), and `--speak "..."` plays a phrase to prove
+the round-trip. 9 setup tests. **Remaining to flip Voice to ✅:** ship a real
+microphone capture loop + wake-word detector (currently the pipeline transcribes
+supplied audio, not a live mic stream), and verify on a clean machine. Until then,
+voice is **installable and self-serve**, not yet a turnkey feature — present as
+"early access / coming soon", not "available".
 
 ---
 
@@ -66,9 +79,9 @@ clean machine. Until then, voice is a demo, not a feature.
 
 | Surface | File | Version | Status |
 |---------|------|:-------:|--------|
-| Free landing (LIVE, React) | `genesis-react` → `main:docs/index.html` | v6.6.1 | ✅ in sync |
+| Free landing (LIVE, React) | `genesis-react` → `main:docs/index.html` | v6.6.1 | ⏳ needs sync (add sync feature) |
 | Pro page (static, NOT live) | `docs/pro.html` | v6.4.0 | ⚠️ not the live site — see note |
-| This report (source of truth) | this file | v6.6.1 | ✅ current |
+| This report (source of truth) | this file | v6.7.0 | ✅ current |
 
 > **⚠️ Which file is actually live (read before editing the site):** the PUBLISHED
 > landing at https://maioio.github.io/genesis-architect/ is the **React app** built

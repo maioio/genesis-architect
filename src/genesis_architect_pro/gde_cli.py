@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import argparse
 import sys
+import threading
 from pathlib import Path
 
 
@@ -549,6 +550,144 @@ def cmd_explain(args: argparse.Namespace) -> int:
     return 0
 
 
+def _companion_check() -> int:
+    """Report voice readiness (STT/TTS) without downloading anything."""
+    from genesis_architect_pro.voice import readiness
+
+    r = readiness()
+    print()
+    print("  Voice readiness")
+    print(_hr())
+    for c in r.components:
+        mark = "OK " if c.ready else "-- "
+        line = f"  {mark} {c.name:14} {c.detail}"
+        print(line)
+        if not c.ready and c.fix:
+            print(f"       fix: {c.fix}")
+    print(_hr())
+    if r.end_to_end_ready:
+        print("  Voice is READY end-to-end (STT + a real TTS voice).")
+    else:
+        print("  Voice is NOT ready end-to-end.")
+        print("  Run `genesis companion --setup` after installing the [voice] extra.")
+    print()
+    return 0 if r.end_to_end_ready else 1
+
+
+def _companion_setup() -> int:
+    """Download STT/TTS models, then print readiness."""
+    from genesis_architect_pro.voice import run_setup, readiness
+
+    print("\n  Setting up Genesis voice models (local, no cloud)…\n")
+    result = run_setup()
+    for step in result.steps:
+        print(f"    {step}")
+    for d in result.downloaded:
+        print(f"  [+] {d}")
+    for s in result.skipped:
+        print(f"  [=] {s}")
+    for f in result.failed:
+        print(f"  [!] {f}")
+
+    print()
+    r = readiness()
+    if r.end_to_end_ready:
+        print("  Voice is now READY end-to-end. Try: genesis companion --speak \"שלום\"")
+        print()
+        return 0
+    print("  Voice is still NOT ready end-to-end. Remaining gaps:")
+    for c in r.components:
+        if not c.ready and c.name != "fallback" and c.fix:
+            print(f"    - {c.name}: {c.fix}")
+    print()
+    return 1
+
+
+def _companion_speak(text: str) -> int:
+    """Speak a phrase to verify the TTS round-trip. Reports honestly if unavailable."""
+    from genesis_architect_pro.voice import TTSPipeline, Urgency, detect_lang, readiness
+
+    r = readiness()
+    lang = detect_lang(text)
+    real_voice = r.tts_hebrew_ready if lang == "he" else r.tts_english_ready
+    if not real_voice and not r.fallback_ready:
+        print(f"\n  Cannot speak: no TTS engine available for '{lang}'.")
+        print("  Run `genesis companion --setup` (and install the [voice] extra).\n")
+        return 1
+
+    engine = "real model" if real_voice else "eSpeak fallback"
+    print(f"\n  Speaking ({lang}, {engine}): {text}\n")
+    TTSPipeline().speak(text, urgency=Urgency.CRITICAL)  # sync so we hear it before exit
+    return 0
+
+
+def cmd_companion_serve(project_dir: Path) -> int:
+    """Start the full Companion backend (WebSocket + IDE bridge) for Tauri.
+
+    Prints READY token=<64-hex-chars> to stdout, then blocks until killed.
+    Handles SIGTERM and SIGINT for graceful shutdown.
+    """
+    import signal
+    import time
+
+    from genesis_architect_pro.gde_companion import GateNotifier
+    from genesis_architect_pro.streaming.server import CompanionServer
+    from genesis_architect_pro.ide_bridge.server import IDEBridgeServer
+    from genesis_architect_pro import streaming as _streaming_pkg
+    from genesis_architect_pro.streaming import runner_patch
+    from genesis_architect_pro import gate_notifier_patch
+    from genesis_architect_pro.streaming.inbound import InboundRouter
+    from genesis_architect_pro.streaming.events import default_emitter
+
+    # 1. Start WebSocket server
+    ws_server = CompanionServer(emitter=default_emitter)
+    ws_server.start_in_background()
+
+    # 2. Install GDE runner streaming patch
+    runner_patch.install()
+
+    # 3. Start IDE Bridge
+    ide_bridge = IDEBridgeServer()
+    ide_bridge.start()
+
+    # 4. Wire GateNotifier
+    project_name = project_dir.name or "Genesis"
+    notifier = GateNotifier(project_name=project_name)
+    gate_notifier_patch.install(notifier)
+
+    # 5. Build InboundRouter and register as on_message callback
+    router = InboundRouter(project_dir=project_dir, emitter=default_emitter)
+
+    # Patch the server's on_message after construction (server.py stores it at init time)
+    # We reassign the internal attribute directly since CompanionServer exposes no setter.
+    ws_server._on_message = router.handle  # type: ignore[attr-defined]
+
+    # 6. Print READY line so Tauri can extract the token
+    token = ws_server.token
+    sys.stdout.write(f"READY token={token}\n")
+    sys.stdout.flush()
+
+    # 7. Graceful shutdown handler
+    _shutdown = threading.Event()
+
+    def _handle_signal(signum, frame):  # noqa: ANN001
+        _shutdown.set()
+
+    signal.signal(signal.SIGTERM, _handle_signal)
+    signal.signal(signal.SIGINT, _handle_signal)
+
+    # Block until killed
+    _shutdown.wait()
+
+    # Tear down in reverse order
+    runner_patch.uninstall()
+    gate_notifier_patch.uninstall()
+    ide_bridge.stop()
+    ws_server.stop()
+
+    return 0
+
+
 def cmd_companion(args: argparse.Namespace) -> int:
     """Start the health page server or print gate miss-rate stats."""
     from genesis_architect_pro.gde_companion import (
@@ -561,6 +700,22 @@ def cmd_companion(args: argparse.Namespace) -> int:
     if not project_dir.is_dir():
         print(f"  error: --dir '{project_dir}' is not a directory", file=sys.stderr)
         return 1
+
+    # --serve mode: full Companion backend for Tauri
+    if getattr(args, "serve", False):
+        return cmd_companion_serve(project_dir)
+
+    # --setup mode: download voice models, then report readiness
+    if getattr(args, "setup", False):
+        return _companion_setup()
+
+    # --check mode: report voice readiness without downloading anything
+    if getattr(args, "check", False):
+        return _companion_check()
+
+    # --speak mode: verify the voice round-trip on a short phrase
+    if getattr(args, "speak", None) is not None:
+        return _companion_speak(args.speak)
 
     # --stats mode: print gate miss-rate and exit
     if args.stats:
@@ -631,6 +786,12 @@ def cmd_companion(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_sync(args: argparse.Namespace) -> int:
+    """Run the autonomous sync manager (genesis sync)."""
+    from genesis_architect_pro.genesis_sync import cli_sync
+    return cli_sync(args)
+
+
 # ---------------------------------------------------------------------------
 # Argument parser
 # ---------------------------------------------------------------------------
@@ -687,6 +848,30 @@ def _build_parser() -> argparse.ArgumentParser:
                            help="Print gate miss-rate stats and exit (no server)")
     companion.add_argument("--no-browser", action="store_true",
                            help="Do not open the browser automatically")
+    companion.add_argument("--setup", action="store_true",
+                           help="Download local voice models (STT/TTS) into ~/.genesis/models")
+    companion.add_argument("--check", action="store_true",
+                           help="Report voice readiness (STT/TTS) without downloading")
+    companion.add_argument("--speak", default=None, metavar="TEXT",
+                           help="Speak a phrase to verify the voice round-trip (he/en auto-detected)")
+    companion.add_argument("--serve", action="store_true",
+                           help="Start full Companion backend (WebSocket 47291 + IDE bridge 47292) for Tauri")
+
+    sync = sub.add_parser("sync", help="Run the autonomous sync manager (gate + findings + auto-apply)")
+    sync.add_argument("--dir", default=".", metavar="PATH",
+                      help="Project directory (default: current directory)")
+    sync.add_argument("--dry-run", action="store_true",
+                      help="Analyse only — write nothing to disk")
+    sync.add_argument("--report-only", action="store_true",
+                      help="Skip auto-apply writes but still print the report")
+    sync.add_argument("--auto-apply", action="store_true", default=True,
+                      help="Auto-apply GREEN zone writes (default: on)")
+    sync.add_argument("--no-auto-apply", dest="auto_apply", action="store_false",
+                      help="Disable GREEN zone auto-apply")
+    sync.add_argument("--json", dest="json_output", action="store_true",
+                      help="Output structured JSON (for piping / CI)")
+    sync.add_argument("--ci-mode", action="store_true",
+                      help="Exit 1 if any yellow/red findings (for CI pipelines)")
 
     return parser
 
@@ -701,7 +886,7 @@ def main(argv: list[str] | None = None) -> int:
 
     if argv is None:
         argv = sys.argv[1:]
-    _known = ("decide", "explain", "memory", "ui", "companion", "-h", "--help")
+    _known = ("decide", "explain", "memory", "ui", "companion", "sync", "-h", "--help")
     if argv and argv[0] not in _known:
         argv = ["decide"] + argv
 
@@ -717,6 +902,8 @@ def main(argv: list[str] | None = None) -> int:
         return cmd_ui(args)
     if args.command == "companion":
         return cmd_companion(args)
+    if args.command == "sync":
+        return cmd_sync(args)
 
     parser.print_help()
     return 0

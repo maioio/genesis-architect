@@ -6,6 +6,14 @@ from genesis_architect_pro.voice.pipeline import (
     notify,
     CRITICAL_NOTIFICATIONS,
 )
+from genesis_architect_pro.voice.setup import (
+    ComponentStatus,
+    VoiceReadiness,
+    SetupResult,
+    readiness,
+    run_setup,
+    MODELS_DIR,
+)
 
 __all__ = [
     "STTPipeline",
@@ -14,4 +22,10 @@ __all__ = [
     "detect_lang",
     "notify",
     "CRITICAL_NOTIFICATIONS",
+    "ComponentStatus",
+    "VoiceReadiness",
+    "SetupResult",
+    "readiness",
+    "run_setup",
+    "MODELS_DIR",
 ]

@@ -7,7 +7,7 @@ recovery diagnosis, and deep codebase analysis.
 Requires a valid license and the free genesis-architect core package.
 """
 
-__version__ = "6.4.0"
+__version__ = "6.6.0"
 
 from genesis_architect_pro.decision_engine import GenesisDecisionEngine, run_session
 from genesis_architect_pro.intent_classifier import classify

@@ -74,7 +74,12 @@ def _default_llm_call(system: str, user: str) -> str:
         system=system,
         messages=[{"role": "user", "content": user}],
     )
-    return message.content[0].text
+    # Return the first text block; content may include non-text blocks, so never
+    # assume content[0] is text (guarded — matches core llm.py).
+    for block in message.content:
+        if getattr(block, "type", None) == "text":
+            return block.text
+    return ""
 
 
 # ---------------------------------------------------------------------------

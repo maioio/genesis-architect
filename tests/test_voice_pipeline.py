@@ -133,6 +133,19 @@ class TestSTTPipelineOffline:
 # ---------------------------------------------------------------------------
 
 class TestTTSPipelineOffline:
+    @staticmethod
+    def _bare_tts(**kwargs):
+        """Build a TTSPipeline via __new__ with the required event attributes."""
+        import threading
+        tts = TTSPipeline.__new__(TTSPipeline)
+        tts._cancel = threading.Event()
+        tts._playing = threading.Event()
+        tts._lock = threading.Lock()
+        tts._kokoro = kwargs.get("kokoro", None)
+        tts._mms = kwargs.get("mms", None)
+        tts._espeak = kwargs.get("espeak", None)
+        return tts
+
     def test_espeak_fallback_detected_gracefully(self):
         """If eSpeak is absent, no exception is raised."""
         with patch("subprocess.run", side_effect=FileNotFoundError):
@@ -140,11 +153,7 @@ class TestTTSPipelineOffline:
             assert tts._espeak is None
 
     def test_speak_normal_runs_in_thread(self):
-        tts = TTSPipeline.__new__(TTSPipeline)
-        tts._kokoro = None
-        tts._mms = None
-        tts._espeak = None
-        tts._lock = __import__("threading").Lock()
+        tts = self._bare_tts()
 
         with patch.object(tts, "_speak_sync") as mock_sync:
             tts.speak("hello", urgency=Urgency.NORMAL)
@@ -152,30 +161,21 @@ class TestTTSPipelineOffline:
             mock_sync.assert_called_once_with("hello")
 
     def test_speak_critical_runs_synchronously(self):
-        tts = TTSPipeline.__new__(TTSPipeline)
-        tts._kokoro = None
-        tts._mms = None
-        tts._espeak = None
-        tts._lock = __import__("threading").Lock()
+        tts = self._bare_tts()
 
         with patch.object(tts, "_speak_sync") as mock_sync:
             tts.speak("CRITICAL!", urgency=Urgency.CRITICAL)
             mock_sync.assert_called_once_with("CRITICAL!")
 
     def test_play_espeak_logs_warning_when_unavailable(self, caplog):
-        tts = TTSPipeline.__new__(TTSPipeline)
-        tts._espeak = None
+        tts = self._bare_tts()
 
         with caplog.at_level(logging.WARNING, logger="genesis.voice"):
             tts._play_espeak("test", "en")
         assert "no engine available" in caplog.text
 
     def test_speak_english_routes_to_kokoro(self):
-        tts = TTSPipeline.__new__(TTSPipeline)
-        tts._kokoro = None
-        tts._mms = None
-        tts._espeak = None
-        tts._lock = __import__("threading").Lock()
+        tts = self._bare_tts()
 
         with patch.object(tts, "_load_kokoro") as mock_load, \
              patch.object(tts, "_play_kokoro") as mock_play:
@@ -184,11 +184,7 @@ class TestTTSPipelineOffline:
             mock_play.assert_called_once()
 
     def test_speak_hebrew_routes_to_mms(self):
-        tts = TTSPipeline.__new__(TTSPipeline)
-        tts._kokoro = None
-        tts._mms = None
-        tts._espeak = None
-        tts._lock = __import__("threading").Lock()
+        tts = self._bare_tts()
 
         with patch.object(tts, "_load_mms") as mock_load, \
              patch.object(tts, "_play_mms") as mock_play:
@@ -197,11 +193,7 @@ class TestTTSPipelineOffline:
             mock_play.assert_called_once()
 
     def test_speak_falls_back_to_espeak_when_kokoro_unavailable(self):
-        tts = TTSPipeline.__new__(TTSPipeline)
-        tts._kokoro = None
-        tts._mms = None
-        tts._espeak = "espeak-ng"
-        tts._lock = __import__("threading").Lock()
+        tts = self._bare_tts(espeak="espeak-ng")
 
         with patch.object(tts, "_load_kokoro"):  # kokoro stays None
             with patch.object(tts, "_play_espeak") as mock_espeak:
@@ -209,8 +201,7 @@ class TestTTSPipelineOffline:
                 mock_espeak.assert_called_once()
 
     def test_kokoro_load_warns_on_missing_import(self, caplog):
-        tts = TTSPipeline.__new__(TTSPipeline)
-        tts._kokoro = None
+        tts = self._bare_tts()
 
         with patch.dict("sys.modules", {"kokoro": None}):
             with caplog.at_level(logging.WARNING, logger="genesis.voice"):
@@ -218,8 +209,7 @@ class TestTTSPipelineOffline:
         assert "Kokoro" in caplog.text or tts._kokoro is None
 
     def test_mms_load_warns_when_model_missing(self, caplog, tmp_path):
-        tts = TTSPipeline.__new__(TTSPipeline)
-        tts._mms = None
+        tts = self._bare_tts()
 
         mock_sherpa = MagicMock()
         with patch.dict("sys.modules", {"sherpa_onnx": mock_sherpa}):

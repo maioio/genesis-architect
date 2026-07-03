@@ -22,6 +22,13 @@ from genesis_architect_pro.voice.listener import (
     mic_status,
     is_wake,
     listen_once,
+    listen_stream,
+)
+from genesis_architect_pro.voice.voice_pipeline import (
+    VoicePipeline,
+    EntityExtractor,
+    ContextPrefetcher,
+    BargeInWatcher,
 )
 
 __all__ = [
@@ -44,4 +51,9 @@ __all__ = [
     "mic_status",
     "is_wake",
     "listen_once",
+    "listen_stream",
+    "VoicePipeline",
+    "EntityExtractor",
+    "ContextPrefetcher",
+    "BargeInWatcher",
 ]

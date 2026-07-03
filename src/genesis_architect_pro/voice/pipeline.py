@@ -1,11 +1,21 @@
 """Genesis Companion — Voice Pipeline (STT/TTS).
 
-Wraps faster-whisper (STT) + Piper/MMS (TTS) with a clean interface.
+Wraps faster-whisper (STT) + Kokoro/MMS/eSpeak (TTS) with a clean interface.
 All models run locally — no cloud, no API keys.
 
 Model selection (from STT_TTS_DECISION_MATRIX.md):
   STT:  faster-whisper + ivrit-ai/faster-whisper-v2-d4  (Hebrew+English, Apache 2.0)
   TTS:  Kokoro-82M for English, Meta MMS ONNX for Hebrew, eSpeak NG fallback
+
+New in this version:
+  - TTSPipeline.stop() — cancels any active playback immediately via a shared
+    threading.Event cancel token. All three play methods (_play_kokoro,
+    _play_mms, _play_espeak) check the token between chunks/sentences.
+  - Full-duplex design: the cancel token is set externally (by VoicePipeline)
+    when VAD detects new speech onset during playback (barge-in).
+  - Blocking playback is replaced by a chunk-by-chunk loop that checks the
+    token after each audio chunk, so interruption latency is ≤ one chunk
+    (~100ms for Kokoro, one espeak sentence for eSpeak).
 
 Graceful degradation: if models are not installed, all methods are no-ops
 and warn once. Use `genesis companion --setup` to download models.
@@ -15,6 +25,7 @@ from __future__ import annotations
 
 import logging
 import os
+import subprocess
 import threading
 from enum import Enum
 from pathlib import Path
@@ -53,11 +64,10 @@ def detect_lang(text: str) -> str:
 # ---------------------------------------------------------------------------
 
 class STTPipeline:
-    """Streaming speech-to-text using faster-whisper.
+    """Speech-to-text using faster-whisper.
 
-    Args:
-        model_path: HuggingFace model ID or local path.
-        device: 'auto' | 'cpu' | 'cuda' | 'mps'
+    Accepts both file paths and numpy float32 arrays. Using arrays avoids
+    writing temp WAV files to disk for every utterance.
     """
 
     def __init__(
@@ -69,7 +79,6 @@ class STTPipeline:
         self._device = device
         self._model = None
         self._available = False
-        self._warned = False
         self._load()
 
     def _load(self) -> None:
@@ -120,8 +129,27 @@ class STTPipeline:
             _log.warning("STT transcribe error: %s", exc)
             return ""
 
+    def transcribe_array(self, audio) -> str:
+        """Transcribe a numpy float32 array. No temp file written."""
+        if not self._available or audio is None:
+            return ""
+        try:
+            import numpy as np
+            arr = np.asarray(audio, dtype=np.float32)
+            if arr.ndim > 1:
+                arr = arr.reshape(-1)
+            if arr.size == 0:
+                return ""
+            segments, _ = self._model.transcribe(arr, vad_filter=True)
+            return " ".join(s.text.strip() for s in segments).strip()
+        except Exception as exc:
+            _log.warning("STT transcribe_array error: %s", exc)
+            return ""
+
     def transcribe_stream(self, audio_bytes: bytes) -> Iterator[str]:
-        """Transcribe streaming audio chunks. Yields partial text."""
+        """Transcribe streaming audio chunks. Yields partial text.
+        Uses a temp file because the bytes path is for streaming ingest only.
+        """
         if not self._available:
             return
         import tempfile
@@ -137,15 +165,19 @@ class STTPipeline:
 
 
 # ---------------------------------------------------------------------------
-# TTS
+# TTS — with barge-in support
 # ---------------------------------------------------------------------------
 
 class TTSPipeline:
-    """Text-to-speech with language routing.
+    """Text-to-speech with language routing and barge-in cancel support.
 
       Hebrew → Meta MMS TTS (ONNX via sherpa-onnx)
       English → Kokoro-82M
       Fallback → eSpeak NG (always available if installed)
+
+    Barge-in: call stop() from any thread to cancel the current utterance.
+    All play methods check self._cancel between audio chunks, so interruption
+    latency is bounded by chunk size (≤100ms for Kokoro, ≤1 sentence for eSpeak).
     """
 
     def __init__(self) -> None:
@@ -153,11 +185,14 @@ class TTSPipeline:
         self._mms = None
         self._espeak = None
         self._lock = threading.Lock()
-        self._load_espeak()  # fast; load others lazily
+        self._cancel = threading.Event()   # set → stop playback ASAP
+        self._playing = threading.Event()  # set while audio is playing
+        self._load_espeak()
+
+    # -- setup ---------------------------------------------------------------
 
     def _load_espeak(self) -> None:
         try:
-            import subprocess
             result = subprocess.run(
                 ["espeak-ng", "--version"], capture_output=True, timeout=3
             )
@@ -172,7 +207,7 @@ class TTSPipeline:
             return
         try:
             from kokoro import KPipeline  # type: ignore[import]
-            self._kokoro = KPipeline(lang_code="a")  # American English
+            self._kokoro = KPipeline(lang_code="a")
             _log.info("TTS: Kokoro-82M loaded (English)")
         except ImportError:
             _log.warning("Kokoro TTS not installed. Run: pip install kokoro>=0.9")
@@ -189,76 +224,152 @@ class TTSPipeline:
                 self._mms = sherpa_onnx.OfflineTts(
                     sherpa_onnx.OfflineTtsConfig(
                         model=sherpa_onnx.OfflineTtsModelConfig(
-                            vits=sherpa_onnx.OfflineTtsVitsModelConfig(model=str(mms_model))
+                            vits=sherpa_onnx.OfflineTtsVitsModelConfig(
+                                model=str(mms_model)
+                            )
                         )
                     )
                 )
                 _log.info("TTS: Meta MMS Hebrew loaded")
             else:
-                _log.warning("Hebrew TTS model not found at %s. Run: genesis companion --setup", mms_model)
+                _log.warning(
+                    "Hebrew TTS model not found at %s. "
+                    "Run: genesis companion --setup", mms_model
+                )
         except ImportError:
             _log.warning("sherpa-onnx not installed — Hebrew TTS unavailable.")
         except Exception as exc:
             _log.warning("MMS load error: %s", exc)
 
+    # -- public API ----------------------------------------------------------
+
     def speak(self, text: str, urgency: Urgency = Urgency.NORMAL) -> None:
-        """Synthesize and play text. Non-blocking for NORMAL; interrupts for CRITICAL."""
+        """Synthesize and play text. Non-blocking except for CRITICAL urgency."""
+        self._cancel.clear()
         if urgency == Urgency.CRITICAL:
             self._speak_sync(text)
         else:
-            threading.Thread(target=self._speak_sync, args=(text,), daemon=True).start()
+            threading.Thread(
+                target=self._speak_sync, args=(text,), daemon=True
+            ).start()
+
+    def stop(self) -> None:
+        """Cancel any active playback immediately (barge-in entry point).
+
+        Sets the cancel token; the current play method sees it between chunks
+        and stops. Also calls sounddevice.stop() as a hard cutoff.
+        """
+        self._cancel.set()
+        try:
+            import sounddevice as sd  # type: ignore[import]
+            sd.stop()
+        except Exception:
+            pass
+        # Give the play thread a moment to exit cleanly
+        self._playing.wait(timeout=0.15)
+
+    @property
+    def is_speaking(self) -> bool:
+        return self._playing.is_set()
+
+    # -- internal playback ---------------------------------------------------
 
     def _speak_sync(self, text: str) -> None:
         lang = detect_lang(text)
-        with self._lock:
-            if lang == "he":
-                self._load_mms()
-                if self._mms:
-                    self._play_mms(text)
+        self._playing.set()
+        try:
+            with self._lock:
+                if self._cancel.is_set():
                     return
-            else:
-                self._load_kokoro()
-                if self._kokoro:
-                    self._play_kokoro(text)
-                    return
-            # Fallback: eSpeak NG
-            self._play_espeak(text, lang)
+                if lang == "he":
+                    self._load_mms()
+                    if self._mms:
+                        self._play_mms(text)
+                        return
+                else:
+                    self._load_kokoro()
+                    if self._kokoro:
+                        self._play_kokoro(text)
+                        return
+                self._play_espeak(text, lang)
+        finally:
+            self._playing.clear()
 
     def _play_kokoro(self, text: str) -> None:
-        try:
-            import sounddevice as sd  # type: ignore[import]
-            generator = self._kokoro(text, voice="af_heart", speed=1.0)
-            for _, _, audio in generator:
-                sd.play(audio, samplerate=24000, blocking=True)
-        except Exception as exc:
-            _log.warning("Kokoro playback error: %s", exc)
-            self._play_espeak(text, "en")
-
-    def _play_mms(self, text: str) -> None:
+        """Play Kokoro TTS audio chunk-by-chunk; checks cancel between chunks."""
         try:
             import sounddevice as sd  # type: ignore[import]
             import numpy as np
+
+            generator = self._kokoro(text, voice="af_heart", speed=1.0)
+            for _, _, audio in generator:
+                if self._cancel.is_set():
+                    sd.stop()
+                    return
+                # Non-blocking play + wait so we can re-check cancel after each chunk
+                sd.play(audio, samplerate=24000, blocking=False)
+                # Wait for this chunk to finish, checking cancel every 50ms
+                chunk_dur = len(audio) / 24000
+                elapsed = 0.0
+                while elapsed < chunk_dur:
+                    if self._cancel.is_set():
+                        sd.stop()
+                        return
+                    time_slice = min(0.05, chunk_dur - elapsed)
+                    threading.Event().wait(time_slice)
+                    elapsed += time_slice
+        except Exception as exc:
+            _log.warning("Kokoro playback error: %s", exc)
+            if not self._cancel.is_set():
+                self._play_espeak(text, "en")
+
+    def _play_mms(self, text: str) -> None:
+        """Play MMS TTS audio; checks cancel before playback."""
+        try:
+            import sounddevice as sd  # type: ignore[import]
+            import numpy as np
+
+            if self._cancel.is_set():
+                return
             audio = self._mms.generate(text, sid=0, speed=1.0)
             arr = np.array(audio.samples, dtype=np.float32)
-            sd.play(arr, samplerate=audio.sample_rate, blocking=True)
+            if self._cancel.is_set():
+                return
+            # Split into ~200ms chunks so cancel is responsive
+            sr = audio.sample_rate
+            chunk_size = sr // 5  # 200ms
+            for start in range(0, len(arr), chunk_size):
+                if self._cancel.is_set():
+                    sd.stop()
+                    return
+                chunk = arr[start:start + chunk_size]
+                sd.play(chunk, samplerate=sr, blocking=True)
         except Exception as exc:
             _log.warning("MMS playback error: %s", exc)
-            self._play_espeak(text, "he")
+            if not self._cancel.is_set():
+                self._play_espeak(text, "he")
 
     def _play_espeak(self, text: str, lang: str) -> None:
+        """Play via eSpeak NG; cancellable between sentences."""
         if not self._espeak:
             _log.warning("TTS: no engine available for '%s'", text[:40])
             return
-        try:
-            import subprocess
-            voice = "he" if lang == "he" else "en"
-            subprocess.run(
-                ["espeak-ng", "-v", voice, text],
-                timeout=10,
-                capture_output=True,
-            )
-        except Exception as exc:
-            _log.warning("eSpeak error: %s", exc)
+        voice = "he" if lang == "he" else "en"
+        # Split on sentence boundaries for per-sentence cancellation
+        import re
+        sentences = re.split(r'(?<=[.!?])\s+', text.strip()) or [text]
+        for sentence in sentences:
+            if self._cancel.is_set():
+                return
+            try:
+                subprocess.run(
+                    ["espeak-ng", "-v", voice, sentence],
+                    timeout=10,
+                    capture_output=True,
+                )
+            except Exception as exc:
+                _log.warning("eSpeak error: %s", exc)
+                return
 
 
 # ---------------------------------------------------------------------------

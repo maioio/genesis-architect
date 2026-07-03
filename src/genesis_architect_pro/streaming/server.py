@@ -43,10 +43,15 @@ from genesis_architect_pro.streaming.events import (
 
 try:
     import websockets
-    from websockets.server import WebSocketServerProtocol
+    # websockets >= 14 uses ServerConnection; < 14 used WebSocketServerProtocol
+    try:
+        from websockets.asyncio.server import ServerConnection as _WSConn
+    except ImportError:
+        from websockets.server import WebSocketServerProtocol as _WSConn  # type: ignore[assignment]
     _WS_AVAILABLE = True
 except ImportError:
     _WS_AVAILABLE = False
+    _WSConn = object  # type: ignore[assignment,misc]
 
 _HOST = "127.0.0.1"
 _PORT = 47291
@@ -147,7 +152,7 @@ class CompanionServer:
     # Connection handler
     # ------------------------------------------------------------------
 
-    async def _handle_connection(self, ws: "WebSocketServerProtocol") -> None:
+    async def _handle_connection(self, ws: "_WSConn") -> None:
         """Handle one client connection: auth → drain queue + forward inbound."""
         # Auth handshake — first message must be {"type":"auth","token":"..."}
         try:
@@ -177,7 +182,7 @@ class CompanionServer:
 
         _log.info("Companion: client disconnected %s", ws.remote_address)
 
-    async def _drain_outbound(self, ws: "WebSocketServerProtocol") -> None:
+    async def _drain_outbound(self, ws: "_WSConn") -> None:
         """Drain the emitter queue and send each message to the client."""
         queue = self._emitter.queue
         if queue is None:
@@ -193,7 +198,7 @@ class CompanionServer:
             except Exception:
                 break
 
-    async def _receive_inbound(self, ws: "WebSocketServerProtocol") -> None:
+    async def _receive_inbound(self, ws: "_WSConn") -> None:
         """Receive messages from the UI and dispatch to on_message handler."""
         try:
             async for raw in ws:

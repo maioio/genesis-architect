@@ -1,6 +1,10 @@
 # Genesis PRO — Capability Gap Report
 <!-- Generated after deep audit of architect (camilooscargbaptista) and scryer (aklos) -->
-<!-- Date: 2026-06-27 -->
+<!-- Original date: 2026-06-27 | Updated: 2026-07-03 — all G-CRIT gaps now implemented -->
+
+> **Update 2026-07-03:** G-CRIT-01, G-CRIT-02, G-CRIT-03, and G-CRIT-06 are all
+> implemented. See the status table below. The "Critical Gaps" section is kept for
+> historical reference; current status is ✅ for all four.
 
 ## Audit Basis
 
@@ -32,7 +36,18 @@ Genesis PRO current state assessed against every discovered capability (116 tota
 
 ---
 
-## Critical Gaps (Genesis currently lacks these entirely)
+## Critical Gaps — Implementation Status (2026-07-03)
+
+| Gap | Implemented | Location |
+|-----|-------------|---------|
+| G-CRIT-01 Dual-Layer Model | ✅ | `model_store.py` — `load_planned()`, `save_planned()`, `mark_implemented()`, `is_planned_diverged()` |
+| G-CRIT-02 Model Diff Engine | ✅ | `model_store.py` — `_compute_diff()`, `ModelDiff`, `NodeChange`, `ResponsibilityChange`, `LinkChange` |
+| G-CRIT-03 Source Anchors | ✅ | `source_anchor.py` — 3-pass matcher, `AnchorReport`, `persist_anchors()` |
+| G-CRIT-06 WLS Decay Regression | ✅ | `decay_regressor.py` — full WLS, R², t-test, 95% CI, threshold crossing, human summary |
+
+---
+
+## Critical Gaps — Original Analysis (kept for reference)
 
 ### G-CRIT-01: Dual-Layer Architecture Model (planned vs. committed)
 - **What's missing:** Genesis has no concept of intended vs. verified architecture. Every analysis is current-state only. There is no way to express "I intend to refactor auth into a separate module" without immediately changing code.

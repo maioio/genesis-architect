@@ -75,6 +75,17 @@ pub fn open_canvas(project_dir: String) -> Result<(), String> {
     open::that(url).map_err(|e| e.to_string())
 }
 
+/// Resize the Bubble window — used to show the first-run setup screen.
+#[tauri::command]
+pub fn resize_bubble(app: AppHandle, width: u32, height: u32) -> Result<(), String> {
+    let bubble = app
+        .get_webview_window("bubble")
+        .ok_or("bubble window not found")?;
+    bubble
+        .set_size(tauri::Size::Physical(tauri::PhysicalSize { width, height }))
+        .map_err(|e| e.to_string())
+}
+
 /// Show the panel at a specific anchor position relative to the bubble.
 #[tauri::command]
 pub fn anchor_panel_to_bubble(

@@ -3,7 +3,7 @@ mod sidecar;
 
 use commands::{
     anchor_panel_to_bubble, get_ws_credentials, open_canvas, read_session_state,
-    restart_sidecar, toggle_panel,
+    restart_sidecar, resize_bubble, toggle_panel,
 };
 use sidecar::{kill_sidecar, spawn_sidecar, SidecarState};
 use tauri::{Emitter, Manager, RunEvent};
@@ -23,6 +23,7 @@ pub fn run() {
             restart_sidecar,
             open_canvas,
             anchor_panel_to_bubble,
+            resize_bubble,
         ])
         .setup(|app| {
             let state = app.state::<SidecarState>();

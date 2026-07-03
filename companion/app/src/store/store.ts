@@ -46,6 +46,7 @@ interface GenesisStore {
   // Connection
   connected: boolean;
   sidecarAlive: boolean;
+  sidecarError: string | null;  // set when genesis is not found / fails to start
 
   // Session
   sessionId: string | null;
@@ -72,6 +73,7 @@ interface GenesisStore {
   // Actions
   setConnected: (v: boolean) => void;
   setSidecarAlive: (v: boolean) => void;
+  setSidecarError: (msg: string | null) => void;
   clearGate: () => void;
   clearDiff: () => void;
   handleEvent: (type: string, payload: unknown) => void;
@@ -80,6 +82,7 @@ interface GenesisStore {
 export const useGenesisStore = create<GenesisStore>((set) => ({
   connected: false,
   sidecarAlive: false,
+  sidecarError: null,
   sessionId: null,
   sessionMode: null,
   confidence: 1.0,
@@ -93,6 +96,7 @@ export const useGenesisStore = create<GenesisStore>((set) => ({
 
   setConnected: (v) => set({ connected: v }),
   setSidecarAlive: (v) => set({ sidecarAlive: v }),
+  setSidecarError: (msg) => set({ sidecarError: msg }),
   clearGate: () => set({ pendingGate: null }),
   clearDiff: () => set({ pendingDiff: null }),
 

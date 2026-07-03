@@ -84,9 +84,9 @@
 
 | Surface | Location | Version | Status |
 |---------|----------|:-------:|--------|
-| Free landing (LIVE, React) | `genesis-react` → `main:docs/` | v6.6.1 | ⏳ needs sync — add `genesis sync` + v6.7/v6.8 features |
+| Free landing (LIVE, React) | `genesis-react` → `main:docs/` | v7.2.0 | ✅ in sync — CHANGELOG, ROWS, NEW_PRO cards, pricing bullets all updated |
 | Pro page (static draft, NOT live) | `docs/pro.html` | v6.4.0 | ⚠️ not the live site |
-| This report (source of truth) | `docs/WEBSITE_UPDATE_REPORT_v6.1.0.md` | **v7.0.0** | ✅ current |
+| This report (source of truth) | `docs/WEBSITE_UPDATE_REPORT_v6.1.0.md` | **v7.2.0** | ✅ current |
 
 > **Which file is actually live:** the published site at https://maioio.github.io/genesis-architect/
 > is the **React app** built from `C:\temp\genesis-react` (Vite), published to `main:docs/`.
@@ -158,8 +158,20 @@
 - **Knowledge Graph** — links code, CVEs, risks and decisions; finds do-not-touch zones with an open CVE (nothing else on the market does this)
 - **Committee Engine** — 5-advisor debate (Contrarian, First Principles, Expansionist, Outsider, Executor), manufactured-consensus detection, full debate transcript in PRO
 - **Learning Engine** — improves which research strategy it picks for your task kind, with honest confidence
-- **Research Source Registry** — 29 ranked sources across 11 tiers (official docs → RFCs → local code → security DBs → GitHub → Stack Overflow → packages → field intelligence → blogs → research papers → YouTube → market signal). Priority-ordered: engineering truth first, market signal last. Extensible per-project without code changes.
-- **Reddit / Hacker News / Lobste.rs** — field intelligence tier (priority 85), verified developer sentiment — never treated as engineering truth
+- **Research Source Registry — 30 sources, 11 tiers, priority-ordered** (engineering truth first, market signal last):
+  - Tier 1 · official (priority 100): Official docs, API docs, SDK docs + RFCs / specifications
+  - Tier 2 · local (priority 99): Source code, tests, CI logs, TODO/FIXME markers, crash reports
+  - Tier 3 · security (priority 98): OSV.dev, NVD, CVE (MITRE), GitHub Security Advisories, Snyk DB
+  - Tier 4 · source (priority 97): GitHub REST API, GitHub GraphQL API, GitHub Issues/PRs/Discussions, Releases/changelogs/git history
+  - Tier 5 · qa (priority 90): Stack Overflow (API), Stack Exchange (advanced search)
+  - Tier 6 · packages (priority 88): PyPI, npm, crates.io, Maven Central, NuGet
+  - Tier 7 · field (priority 85): Reddit, Reddit Answers (AI layer), Hacker News, Lobste.rs
+  - Tier 8 · blog (priority 82): DEV.to, Hashnode, Company engineering blogs
+  - Tier 9 · research (priority 80): arXiv, Papers with Code
+  - Tier 10 · learning (priority 76): YouTube (transcripts, conference talks)
+  - Tier 11 · market (priority 40): Instagram — demand/trend signal ONLY; never presented as engineering truth
+  - **5 engine profiles**: research_intelligence · developer_field · security · project_discovery · recovery
+  - Extensible per-project without code changes; JSON-configurable
 - **Evidence Packs** — proof behind every recommendation, with honest confidence grade
 - **Memory + Decision Journal** — per-project `.genesis/*.md`; every significant decision journaled
 - **Floating Assistant + Canvas Workspace** — zero-setup visual workspace (no Node, no build, no server)
@@ -168,6 +180,39 @@
 - **Four-step install, no Docker** — Download → Install → License → Work
 - **Works fully offline** — local analysis never needs a network; online sources honestly marked when unavailable
 - **26-page documentation** — the complete "Read the docs" technical layer
+
+---
+
+### 📊 Comparison table — exact agent instructions
+
+> **SITE AGENT: These are the exact labels to use in the Free/Pro comparison table.**
+> Do NOT abbreviate. Do NOT summarize to just "GitHub, Reddit, YouTube, IG".
+> The whole point is to show the systematic architecture we built.
+
+| Row # | Label (exact text) | Free | Pro |
+|---|---|---|---|
+| 1 | Full scaffolder — Python, TypeScript, Go, Rust | ✓ | ✓ |
+| 2 | CI/CD pipelines, security defaults, language templates | ✓ | ✓ |
+| 3 | Top 3 GitHub pitfalls per project (cited, CI-verified) | ✓ | ✓ |
+| 4 | **30-source research across 11 tiers** — official docs + RFCs (priority 100) · local code (99) · OSV / NVD / CVE / Snyk (98) · GitHub REST + GraphQL + Issues + Releases (97) · Stack Overflow / Stack Exchange (90) · PyPI / npm / crates / Maven / NuGet (88) · Reddit / Hacker News / Lobste.rs (85) · DEV.to / Hashnode / engineering blogs (82) · arXiv / Papers with Code (80) · YouTube talks (76) · market signal (40). Engineering truth first, market signal last. | ✗ | ✓ |
+| 5 | Cross-source pitfall ranking + Evidence Packs (proof behind every recommendation) | ✗ | ✓ |
+| 6 | Video-to-pitfall extraction (conference talks → concrete warnings) | ✗ | ✓ |
+| 7 | Package-registry + CVE validation — PyPI, npm, crates.io, Maven, NuGet | ✗ | ✓ |
+| 8 | Architecture score 0–100 + 7 anti-pattern detectors (god class, circular deps, dead code, hub files, feature envy, leaky abstraction, shotgun surgery) | ✗ | ✓ |
+| 9 | STABLE / FRAGILE / VOLATILE risk map — every file rated with GO / HOLD / REWRITE | ✗ | ✓ |
+| 10 | Architecture decay forecast — weekly delta, weeks-to-critical, trend history | ✗ | ✓ |
+| 11 | Recovery scan + executable refactoring plan for existing codebases (`genesis recover .`) | ✗ | ✓ |
+| 12 | C4 architecture diagrams auto-generated (Mermaid, renders natively on GitHub) | ✗ | ✓ |
+| 13 | STRIDE threat model + OWASP Top 10 checklist, tailored to your project type | ✗ | ✓ |
+| 14 | Genesis Decision Engine — plain-English instruction → auto-routes to 7 modes, 17 engines, deterministic (no LLM for routing) | ✗ | ✓ |
+| 15 | 12-gate approval policy — 2 gates are hard-locked and can never be bypassed, even by you | ✗ | ✓ |
+| 16 | Rules gate + git churn + import audit — catches when the diagram lies | ✗ | ✓ |
+| 17 | Cross-session memory + Decision Journal — every significant choice recorded in .genesis/*.md | ✗ | ✓ |
+| 18 | Cross-source Knowledge Graph — code ↔ CVEs ↔ risks ↔ decisions, one queryable graph | ✗ | ✓ |
+| 19 | Committee Engine — 5-advisor debate (Contrarian, First Principles, Expansionist, Outsider, Executor), manufactured-consensus detection, full transcript | ✗ | ✓ |
+| 20 | Autonomous maintenance — `genesis sync` on a schedule: GREEN auto-applies, YELLOW queues for review, RED blocks and alerts. Never edits your source. | ✗ | ✓ |
+| 21 | Companion web UI — floating assistant, live 17-engine stream, gate approvals (`genesis companion --ui`) | ✗ | ✓ |
+| 22 | Voice pipeline — streaming VAD end-of-turn, barge-in, mid-turn entity prefetch, Hebrew + English TTS, local transcription (nothing leaves your machine) | ✗ | ✓ |
 
 ### Feature bullets — CLI (full list of shipped commands)
 

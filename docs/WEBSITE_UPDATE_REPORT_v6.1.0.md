@@ -10,8 +10,18 @@
 ## 🚦 Version & Status
 
 **Current product version: v6.8.0**
-**Last updated: 2026-07-02**
-**Next site review due: 2026-07-16**
+**Last updated: 2026-07-03**
+**Next site review due: 2026-07-17**
+
+> 🆕 **This session (2026-07-03):** the **Floating Assistant web UI** is now real
+> and wired end-to-end. `genesis companion --ui` starts the full backend and opens
+> a draggable bubble ↔ chat panel in the browser; a typed instruction runs a real
+> Decision Engine session and **7 engines stream live progress back** (verified).
+> Fixed a wire-protocol mismatch that was silently dropping the UI's messages.
+> **Still "early access / coming soon" on the site** — needs the `[streaming]`
+> extra and is not yet a one-click desktop app. See the readiness matrix row.
+> `render_companion_html` / `write_companion_html` + `progress_report` (downloadable
+> HTML phase reports) shipped in the package. 1,611 tests. Pro-only, on `pro/main`.
 
 ---
 
@@ -29,7 +39,8 @@
 | **genesis ui** — self-contained HTML Canvas workspace (no build, no server) | ✅ Shipped | **Yes.** |
 | **genesis companion** — local health page + gate miss-rate stats | ✅ Shipped | **Yes.** |
 | **Committee Engine** — 5-advisor debate, collapse detection, transparency profiles | ✅ Shipped | **Yes**, via CLI/API. |
-| **WebSocket Streaming Layer** | ⚙️ Optional / no client yet | Installable (`[streaming]`), but nothing consumes it until the Tauri shell ships. |
+| **Floating Assistant (web UI)** — `genesis companion --ui`: bubble ↔ chat panel, live multi-engine progress, approvals, quick actions | ⚙️ Early access | **Partly.** One command starts the backend + opens the assistant in a browser; chat drives a real GDE session and 7 engines stream live progress back (verified end-to-end). Needs the `[streaming]` extra. Zero build. Present as "early access / coming soon". |
+| **WebSocket Streaming Layer** | ✅ Has a client now | Installable (`[streaming]`); the Floating Assistant web UI consumes it end-to-end. The Tauri desktop shell will consume the same stream. |
 | **Voice (STT/TTS)** — faster-whisper + Kokoro + Meta MMS Hebrew | ⚙️ Self-serve | `genesis companion --setup` downloads models; `--check` + `--speak` verify the round-trip. Not yet one-click. Present as "coming soon / early access". |
 | **IDE Bridge / VS Code extension** | 🚧 Source only | Not compiled, no `.vsix`, not on marketplace. |
 | **Tauri standalone desktop app** | 🚧 Phase 1–3 built (28 files) | Needs `cargo build` + code signing. Phase 4 = distribution. Not shippable yet. |

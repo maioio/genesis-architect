@@ -17,10 +17,8 @@ import threading
 import time
 import uuid
 from pathlib import Path
-from typing import Any
-from unittest.mock import MagicMock, patch, call
+from unittest.mock import MagicMock, patch
 
-import pytest
 
 from genesis_architect_pro.streaming.events import (
     MessageType,
@@ -323,7 +321,7 @@ class TestIDEBridgeWiring:
 
         with patch("genesis_architect_pro.gde_engine_registration", create=True), \
              patch("genesis_architect_pro.GenesisDecisionEngine", return_value=mock_gde), \
-             patch("genesis_architect_pro.ide_bridge.build_index_from_engine_results", return_value={}) as mock_build:
+             patch("genesis_architect_pro.ide_bridge.build_index_from_engine_results", return_value={}):
             msg = _make_msg(MessageType.USER_INTENT, {"instruction": "analyse imports"})
             router.handle(msg)
             emitter.wait_for(MessageType.SESSION_DONE, timeout=3.0)

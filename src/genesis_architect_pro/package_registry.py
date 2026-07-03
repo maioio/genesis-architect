@@ -1,5 +1,6 @@
 """
-Package registry adapters: PyPI, npm, crates.io.
+Package registry adapters: PyPI, npm, crates.io, Maven Central, NuGet —
+plus CVE validation via OSV.dev.
 All APIs are public, require no key, and degrade gracefully on failure.
 
 Used by Ecosystem Velocity Scoring in Phase 2.
@@ -15,7 +16,7 @@ from datetime import UTC, datetime
 @dataclass
 class PackageSignal:
     name: str
-    ecosystem: str          # pypi | npm | crates
+    ecosystem: str          # pypi | npm | crates | maven | nuget
     latest_version: str
     last_release_days: int  # days since last release (-1 = unknown)
     monthly_downloads: int  # -1 = unknown
@@ -55,7 +56,8 @@ def _status(days: int) -> str:
     return "stale"
 
 
-def _signal_line(pkg: str, ecosystem: str, status: str, days: int, downloads: int) -> str:
+def _signal_line(pkg: str, ecosystem: str, status: str, days: int, downloads: int,
+                 downloads_label: str = "downloads/month") -> str:
     icon = {"active": "✅", "slow": "⚠", "stale": "⚠", "unknown": "❓"}[status]
     parts = [f"{icon} {pkg} ({ecosystem})"]
     if status == "active":
@@ -67,11 +69,11 @@ def _signal_line(pkg: str, ecosystem: str, status: str, days: int, downloads: in
         parts.append("release date unknown")
     if downloads >= 0:
         if downloads >= 1_000_000:
-            parts.append(f"{downloads // 1_000_000}M downloads/month")
+            parts.append(f"{downloads // 1_000_000}M {downloads_label}")
         elif downloads >= 1_000:
-            parts.append(f"{downloads // 1_000}k downloads/month")
+            parts.append(f"{downloads // 1_000}k {downloads_label}")
         elif downloads < 1_000:
-            parts.append(f"⚠ low adoption ({downloads}/month)")
+            parts.append(f"⚠ low adoption ({downloads} {downloads_label})")
     return " - ".join(parts)
 
 
@@ -148,8 +150,141 @@ def query_crates(package: str) -> PackageSignal:
         name=package, ecosystem="crates", latest_version=latest,
         last_release_days=days, monthly_downloads=downloads,
         status=status,
-        signal_line=_signal_line(package, "crates", status, days, downloads),
+        signal_line=_signal_line(package, "crates", status, days, downloads,
+                                 downloads_label="downloads all-time"),
     )
+
+
+# --- Maven Central ---
+
+def query_maven(package: str) -> PackageSignal:
+    """Query Maven Central search API. `package` is "groupId:artifactId"."""
+    group, _, artifact = package.partition(":")
+    if not artifact:
+        return PackageSignal(package, "maven", "?", -1, -1, "unknown",
+                             f"❓ {package} (maven) - expected groupId:artifactId")
+    data = _fetch_json(
+        "https://search.maven.org/solrsearch/select"
+        f"?q=g:%22{group}%22+AND+a:%22{artifact}%22&rows=1&wt=json"
+    )
+    docs = (data or {}).get("response", {}).get("docs", [])
+    if not docs:
+        return PackageSignal(package, "maven", "?", -1, -1, "unknown",
+                             f"❓ {package} (maven) - registry unavailable")
+    doc = docs[0]
+    latest = doc.get("latestVersion", "?")
+    ts_ms = doc.get("timestamp")
+    days = -1
+    if isinstance(ts_ms, (int, float)):
+        days = (datetime.now(UTC) - datetime.fromtimestamp(ts_ms / 1000, UTC)).days
+    status = _status(days)
+    return PackageSignal(
+        name=package, ecosystem="maven", latest_version=latest,
+        last_release_days=days, monthly_downloads=-1,
+        status=status,
+        signal_line=_signal_line(package, "maven", status, days, -1),
+    )
+
+
+# --- NuGet ---
+
+def query_nuget(package: str) -> PackageSignal:
+    """Query NuGet search API for package activity signal."""
+    data = _fetch_json(
+        f"https://azuresearch-usnc.nuget.org/query?q=packageid:{package}&take=1"
+    )
+    hits = (data or {}).get("data", [])
+    if not hits:
+        return PackageSignal(package, "nuget", "?", -1, -1, "unknown",
+                             f"❓ {package} (nuget) - registry unavailable")
+    hit = hits[0]
+    latest = hit.get("version", "?")
+    downloads = hit.get("totalDownloads", -1)
+    # Release date comes from the registration index (search API has none)
+    days = -1
+    reg = _fetch_json(
+        f"https://api.nuget.org/v3/registration5-semver1/{package.lower()}/index.json"
+    )
+    if reg:
+        pages = reg.get("items", [])
+        last_page = pages[-1] if pages else {}
+        leaves = last_page.get("items", [])
+        if not leaves and last_page.get("@id"):
+            # Large packages: the index only references its pages — fetch the last one.
+            page = _fetch_json(last_page["@id"])
+            leaves = (page or {}).get("items", [])
+        if leaves:
+            published = (leaves[-1].get("catalogEntry") or {}).get("published", "")
+            days = _days_since(published) if published else -1
+    status = _status(days)
+    return PackageSignal(
+        name=package, ecosystem="nuget", latest_version=latest,
+        last_release_days=days, monthly_downloads=downloads,
+        status=status,
+        signal_line=_signal_line(package, "nuget", status, days, downloads,
+                                 downloads_label="downloads all-time"),
+    )
+
+
+# --- OSV.dev CVE validation ---
+
+# PackageSignal.ecosystem -> OSV ecosystem name
+_OSV_ECOSYSTEM = {
+    "pypi": "PyPI",
+    "npm": "npm",
+    "crates": "crates.io",
+    "maven": "Maven",
+    "nuget": "NuGet",
+}
+
+
+@dataclass
+class CVESignal:
+    name: str
+    ecosystem: str
+    version: str            # "" = all versions of the package
+    vuln_ids: list[str]     # OSV/CVE identifiers, e.g. ["CVE-2024-39689"]
+    signal_line: str        # one-line display
+
+
+def query_osv(package: str, ecosystem: str, version: str = "") -> CVESignal:
+    """Query OSV.dev for known vulnerabilities. Free API, no key.
+
+    Degrades gracefully: network/API failure returns an empty CVESignal with
+    an 'unavailable' signal line — it never raises.
+    """
+    osv_eco = _OSV_ECOSYSTEM.get(ecosystem, ecosystem)
+    query: dict = {"package": {"name": package, "ecosystem": osv_eco}}
+    if version:
+        query["version"] = version
+    try:
+        req = urllib.request.Request(
+            "https://api.osv.dev/v1/query",
+            data=json.dumps(query).encode(),
+            headers={"User-Agent": "genesis-architect-registry/1.0",
+                     "Content-Type": "application/json"},
+            method="POST",
+        )
+        with urllib.request.urlopen(req, timeout=8) as resp:  # NOSONAR
+            data = json.loads(resp.read())
+    except Exception:
+        return CVESignal(package, ecosystem, version, [],
+                         f"❓ {package} - OSV unavailable")
+
+    vulns = data.get("vulns", []) or []
+    ids: list[str] = []
+    for v in vulns:
+        aliases = v.get("aliases", []) or []
+        cve = next((a for a in aliases if a.startswith("CVE-")), None)
+        ids.append(cve or v.get("id", "?"))
+    ids = list(dict.fromkeys(ids))
+    at = f"@{version}" if version else ""
+    if ids:
+        line = f"⚠ {package}{at} ({ecosystem}) - {len(ids)} known vulnerabilit" \
+               f"{'y' if len(ids) == 1 else 'ies'}: {', '.join(ids[:5])}"
+    else:
+        line = f"✅ {package}{at} ({ecosystem}) - no known vulnerabilities (OSV)"
+    return CVESignal(package, ecosystem, version, ids, line)
 
 
 # --- Dispatcher ---
@@ -157,7 +292,7 @@ def query_crates(package: str) -> PackageSignal:
 def query_package(package: str, ecosystem: str) -> PackageSignal:
     """
     Dispatch to the correct registry adapter.
-    ecosystem: 'pypi' | 'npm' | 'crates'
+    ecosystem: 'pypi' | 'npm' | 'crates' | 'maven' | 'nuget'
     """
     if ecosystem == "pypi":
         return query_pypi(package)
@@ -165,6 +300,10 @@ def query_package(package: str, ecosystem: str) -> PackageSignal:
         return query_npm(package)
     if ecosystem in ("crates", "crates.io"):
         return query_crates(package)
+    if ecosystem in ("maven", "maven-central"):
+        return query_maven(package)
+    if ecosystem == "nuget":
+        return query_nuget(package)
     return PackageSignal(package, ecosystem, "?", -1, -1, "unknown",
                          f"❓ {package} - unsupported ecosystem: {ecosystem}")
 

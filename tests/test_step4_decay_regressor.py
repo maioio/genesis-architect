@@ -638,7 +638,6 @@ class TestPerformance:
         for _ in range(1000):
             reg.forecast(data)
         elapsed_ms = (time.perf_counter() - t0)
-        per_call_ms = elapsed_ms  # total 1000 calls; each should be < 0.2s
         assert elapsed_ms < self.THRESHOLD_MS, (
             f"1000 forecasts on 10 points took {elapsed_ms:.1f} ms"
         )

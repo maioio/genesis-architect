@@ -299,7 +299,6 @@ class TTSPipeline:
         """Play Kokoro TTS audio chunk-by-chunk; checks cancel between chunks."""
         try:
             import sounddevice as sd  # type: ignore[import]
-            import numpy as np
 
             generator = self._kokoro(text, voice="af_heart", speed=1.0)
             for _, _, audio in generator:

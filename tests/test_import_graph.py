@@ -181,7 +181,7 @@ class TestBuildGraph:
         (src / "main.py").write_text("import os\n")
 
         from genesis_architect_pro.import_graph import build_graph
-        graph = build_graph(tmp_path, language="python", save=True)
+        build_graph(tmp_path, language="python", save=True)
 
         cache = tmp_path / ".genesis" / "import_graph.json"
         assert cache.exists()

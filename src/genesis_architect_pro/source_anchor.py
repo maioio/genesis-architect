@@ -71,6 +71,10 @@ import re
 import warnings as _warnings_mod
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from genesis_architect_pro.model_store import ModelResponsibility
 
 
 # ---------------------------------------------------------------------------
@@ -412,7 +416,7 @@ def anchor_responsibilities(
         )
 
     # Collect all responsibilities from committed nodes
-    responsibilities: list[tuple[str, "ModelResponsibility", str]] = []  # (node_id, resp, ...)
+    responsibilities: list[tuple[str, "ModelResponsibility"]] = []  # (node_id, resp)
     for node in committed.nodes:
         for resp in node.responsibilities:
             responsibilities.append((node.id, resp))

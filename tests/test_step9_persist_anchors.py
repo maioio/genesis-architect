@@ -154,12 +154,12 @@ class TestPersistAnchorsCore:
         """Verify save_committed side-effect: model.json timestamp changes once."""
         store = ModelStore(tmp_path)
         store.save_committed(ArchModel())
-        mtime_before = (tmp_path / ".genesis" / "model.json").stat().st_mtime_ns
+        (tmp_path / ".genesis" / "model.json").stat().st_mtime_ns
 
         report = _make_report_with_anchor("r1", "authenticate", "auth.py")
         persist_anchors(report, store)
 
-        mtime_after = (tmp_path / ".genesis" / "model.json").stat().st_mtime_ns
+        (tmp_path / ".genesis" / "model.json").stat().st_mtime_ns
         # File was written (mtime changed or content changed)
         committed = store.load_committed()
         assert "r1" in committed.source_map
@@ -440,7 +440,7 @@ class TestFaultTolerance:
         (genesis / "model.json").write_text("NOT JSON")
         store = ModelStore(tmp_path)
         report = _make_report_with_anchor("r1", "authenticate users", "auth.py")
-        with warnings.catch_warnings(record=True) as caught:
+        with warnings.catch_warnings(record=True):
             warnings.simplefilter("always")
             result = persist_anchors(report, store)
         # ModelStore.load_committed emits warning on corruption; persist continues

@@ -34,7 +34,6 @@ import time
 from dataclasses import dataclass, field, asdict
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
 
 
 # ---------------------------------------------------------------------------
@@ -308,7 +307,7 @@ def run_sync(
     run_id = datetime.now(timezone.utc).strftime("sync-%Y%m%d-%H%M%S")
     t0 = time.time()
 
-    cfg = _read_sync_config(project_dir)
+    _read_sync_config(project_dir)
     report = SyncReport(
         run_id=run_id,
         project_dir=str(project_dir),
@@ -397,14 +396,20 @@ def _print_report_rich(report: SyncReport) -> None:
 
     score_str = f"{report.score:.1f}" if report.score is not None else "n/a"
     summary = Text()
-    summary.append("  Run     ", style="dim"); summary.append(report.run_id + "\n", style="white")
-    summary.append("  Score   ", style="dim"); summary.append(score_str + "\n", style="bold cyan")
+    summary.append("  Run     ", style="dim")
+    summary.append(report.run_id + "\n", style="white")
+    summary.append("  Score   ", style="dim")
+    summary.append(score_str + "\n", style="bold cyan")
     summary.append("  Gate    ", style="dim")
     summary.append(report.gate_outcome.upper() + "\n", style=gate_style)
-    summary.append("  Green   ", style="dim"); summary.append(f"{report.green_applied} auto-applied\n", style="green")
-    summary.append("  Yellow  ", style="dim"); summary.append(f"{report.yellow_pending} pending review\n", style="yellow")
-    summary.append("  Red     ", style="dim"); summary.append(f"{report.red_blocked} blocked\n", style="red")
-    summary.append("  Elapsed ", style="dim"); summary.append(f"{report.duration_seconds:.1f}s\n", style="dim")
+    summary.append("  Green   ", style="dim")
+    summary.append(f"{report.green_applied} auto-applied\n", style="green")
+    summary.append("  Yellow  ", style="dim")
+    summary.append(f"{report.yellow_pending} pending review\n", style="yellow")
+    summary.append("  Red     ", style="dim")
+    summary.append(f"{report.red_blocked} blocked\n", style="red")
+    summary.append("  Elapsed ", style="dim")
+    summary.append(f"{report.duration_seconds:.1f}s\n", style="dim")
 
     if report.decay_forecast:
         fc = report.decay_forecast

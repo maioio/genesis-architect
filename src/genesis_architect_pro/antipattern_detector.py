@@ -21,6 +21,8 @@ from genesis_architect.core import antipattern_detector as _base
 from genesis_architect.core.antipattern_detector import (  # noqa: F401
     AntiPattern,
     AntiPatternReport,
+    GOD_CLASS_FAN_OUT,
+    HUB_FILE_FAN_IN,
     LAYER_VIOLATIONS,
     _detect_god_classes,
     _detect_hub_files,

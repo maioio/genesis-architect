@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "genesis-architect-pro"
-version = "6.6.0"
+version = "7.2.0"
 description = "Genesis Architect Pro - architecture analysis, anti-pattern detection, security hardening, C4 diagrams, deep research intelligence, a decision engine for every mode, and a voice-capable IDE-aware Companion. Requires a license."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -25,9 +25,16 @@ committee = ["anthropic>=0.40"]
 # Everything for the full desktop Companion experience.
 companion-full = [
     "plyer>=2.1", "rich>=13", "websockets>=12",
+    "faster-whisper>=1.0", "sounddevice>=0.4", "numpy>=1.24",
+    "webrtcvad>=2.0.10", "anthropic>=0.40",
+    "kokoro>=0.7", "soundfile>=0.12",
+]
+# Pro — all optional subsystems (used by genesis-sync.yml CI and docs).
+pro = [
     "plyer>=2.1", "rich>=13", "websockets>=12",
     "faster-whisper>=1.0", "sounddevice>=0.4", "numpy>=1.24",
     "webrtcvad>=2.0.10", "anthropic>=0.40",
+    "kokoro>=0.7", "soundfile>=0.12",
 ]
 
 [project.scripts]

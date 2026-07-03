@@ -297,16 +297,12 @@ class GenesisDecisionEngine:
 
         if isinstance(op.payload, bytes):
             content = op.payload
-            mode = "wb"
         elif isinstance(op.payload, str):
             content = op.payload.encode()
-            mode = "wb"
         elif isinstance(op.payload, dict):
             content = json.dumps(op.payload, indent=2).encode()
-            mode = "wb"
         else:
             content = str(op.payload).encode()
-            mode = "wb"
 
         # Atomic write via tmp → rename
         tmp_path = target.with_suffix(target.suffix + ".tmp")

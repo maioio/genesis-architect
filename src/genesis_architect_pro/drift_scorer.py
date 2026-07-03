@@ -67,6 +67,12 @@ is bitwise-identical across runs.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from genesis_architect_pro.decay_regressor import DecayForecast
 
 
 # ---------------------------------------------------------------------------

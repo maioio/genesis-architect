@@ -250,7 +250,7 @@ class EngineRegistry:
         groups: list[list[EngineDescriptor]] = []
         for lvl in range(max_level + 1):
             group = sorted(
-                [mode_engines[eid] for eid, l in level.items() if l == lvl],
+                [mode_engines[eid] for eid, depth in level.items() if depth == lvl],
                 key=lambda d: d.id,
             )
             if group:

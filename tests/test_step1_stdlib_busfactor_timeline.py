@@ -166,6 +166,22 @@ class TestBusFactor:
             authors = result["a.py"]["authors"]
             assert authors == sorted(authors)
 
+    def test_real_git_output_yields_files_and_churn(self, tmp_path):
+        """Regression: `git log --format=... --numstat` separates the header
+        from its numstat block with a blank line. The parser must not drop
+        the numstat lines (it did until v7.2 — churn was always empty on
+        real repositories, so git_analyzer reported 'no git history')."""
+        _init_git_repo(tmp_path)
+        _commit(tmp_path, "init", {"main.py": "x = 1\n", "pkg/util.py": "y = 2\n"})
+        from genesis_architect_pro.git_analyzer import _git_log, per_module_churn
+        log = _git_log(tmp_path, days=90)
+        assert len(log) == 1
+        assert sorted(log[0]["files"]) == ["main.py", "pkg/util.py"]
+        assert log[0]["additions"] == 2
+        result = per_module_churn(tmp_path, days=90)
+        assert set(result) == {"main.py", "pkg/util.py"}
+        assert result["main.py"]["commits"] == 1
+
     def test_non_git_dir_still_returns_empty(self, tmp_path):
         from genesis_architect_pro.git_analyzer import per_module_churn
         result = per_module_churn(tmp_path, days=90)

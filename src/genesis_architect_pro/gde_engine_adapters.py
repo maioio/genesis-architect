@@ -48,10 +48,17 @@ def gde_run_import_graph(ctx: SessionContext) -> dict[str, Any]:
     except Exception as exc:
         return {"_confidence": 0.5, "_warnings": [f"import_graph partial: {exc}"]}
 
-    cycles = [
-        list(cycle) for cycle in (graph.cycles if hasattr(graph, "cycles") else [])
-    ]
-    dark = list(graph.dark_modules) if hasattr(graph, "dark_modules") else []
+    # build_graph returns a dict: {"modules": {...}, "cycles": [...], ...}
+    if isinstance(graph, dict):
+        raw_cycles = graph.get("cycles", [])
+        dark = list(graph.get("dark_modules", []))
+        layer_map = {mod: data.get("layer", "unknown")
+                     for mod, data in graph.get("modules", {}).items()}
+    else:  # tolerate an object-shaped graph from older/newer cores
+        raw_cycles = graph.cycles if hasattr(graph, "cycles") else []
+        dark = list(graph.dark_modules) if hasattr(graph, "dark_modules") else []
+        layer_map = getattr(graph, "layer_map", {})
+    cycles = [list(cycle) for cycle in raw_cycles]
 
     confidence = 1.0
     warnings: list[str] = []
@@ -63,7 +70,7 @@ def gde_run_import_graph(ctx: SessionContext) -> dict[str, Any]:
         "graph": graph,
         "cycles": cycles,
         "dark_modules": dark,
-        "layer_map": getattr(graph, "layer_map", {}),
+        "layer_map": layer_map,
         "_confidence": max(0.5, confidence),
         "_warnings": warnings,
     }
@@ -79,11 +86,17 @@ def gde_run_architecture_scorer(ctx: SessionContext) -> dict[str, Any]:
     except Exception as exc:
         return {"_confidence": 0.4, "_warnings": [f"architecture_scorer failed: {exc}"]}
 
-    score = getattr(result, "score", None) or (result if isinstance(result, (int, float)) else 0)
-    label = getattr(result, "label", "")
-    dimensions = getattr(result, "dimensions", {})
-    if hasattr(dimensions, "__dict__"):
-        dimensions = dimensions.__dict__
+    # score_project returns a dict: {"total": int, "modularity": float, ...}
+    if isinstance(result, dict):
+        score = result.get("total", 0)
+        label = result.get("profile", "")
+        dimensions = {k: result.get(k) for k in ("modularity", "coupling", "cohesion", "layering")}
+    else:  # tolerate an object-shaped result from older/newer cores
+        score = getattr(result, "score", None) or (result if isinstance(result, (int, float)) else 0)
+        label = getattr(result, "label", "")
+        dimensions = getattr(result, "dimensions", {})
+        if hasattr(dimensions, "__dict__"):
+            dimensions = dimensions.__dict__
 
     warnings: list[str] = []
     if isinstance(score, (int, float)) and score < 40:
@@ -342,7 +355,7 @@ def gde_run_evidence_pack(ctx: SessionContext) -> dict[str, Any]:
 
     project_dir = _project_dir(ctx)
     findings = _output("field_intelligence", ctx).get("findings", [])
-    registry = _output("source_registry", ctx).get("registry")
+    _output("source_registry", ctx).get("registry")
 
     question = ctx.instruction or f"Is {project_dir.name} safe to build on?"
 

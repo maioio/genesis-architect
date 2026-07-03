@@ -90,13 +90,14 @@ def _git_log(project_path: Path, days: int) -> list[dict]:
     for line in result.stdout.splitlines():
         line = line.strip()
         if not line:
-            if current is not None:
-                commits.append(current)
-                current = None
+            # git separates the header from its --numstat block with a blank
+            # line; keep `current` open so those numstat lines are attributed.
             continue
         # Header line: 40-char hash | author | ISO date | subject
         parts = line.split("|", 3)
-        if len(parts) >= 2 and len(parts[0]) == 40:
+        if len(parts) >= 2 and len(parts[0]) == 40 and all(c in "0123456789abcdef" for c in parts[0]):
+            if current is not None:
+                commits.append(current)
             current = {
                 "hash": parts[0],
                 "author": parts[1] if len(parts) > 1 else "",

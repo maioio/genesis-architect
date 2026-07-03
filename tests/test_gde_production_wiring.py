@@ -345,6 +345,12 @@ class TestApproveCommit:
 
 
 class TestCLI:
+    @pytest.fixture(autouse=True)
+    def _licensed(self, monkeypatch):
+        """The CLI entry point enforces the Pro license; these tests assert
+        wiring, not the gate (covered by test_license.py)."""
+        monkeypatch.setattr("genesis_architect_pro.license.is_licensed", lambda: True)
+
     def _run_cli(self, argv, capsys=None):
         from genesis_architect_pro.gde_cli import main
         return main(argv)
@@ -380,6 +386,21 @@ class TestCLI:
         from genesis_architect_pro.gde_cli import main
         rc = main(["decide", "--classify-only", "diagnose", "--dir", "/nonexistent/path/xyz"])
         assert rc == 1
+
+    def test_unlicensed_cli_is_blocked(self, monkeypatch, capsys):
+        """Without a valid license every CLI command exits 2 with guidance."""
+        monkeypatch.setattr("genesis_architect_pro.license.is_licensed", lambda: False)
+        from genesis_architect_pro.gde_cli import main
+        rc = main(["decide", "--classify-only", "diagnose the project"])
+        assert rc == 2
+        assert "license" in capsys.readouterr().err.lower()
+
+    def test_help_works_without_license(self, monkeypatch):
+        monkeypatch.setattr("genesis_architect_pro.license.is_licensed", lambda: False)
+        from genesis_architect_pro.gde_cli import main
+        with pytest.raises(SystemExit) as exc:
+            main(["--help"])
+        assert exc.value.code == 0
 
 
 # ---------------------------------------------------------------------------

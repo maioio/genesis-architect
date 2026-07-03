@@ -157,7 +157,8 @@ class TestTTSPipelineOffline:
 
         with patch.object(tts, "_speak_sync") as mock_sync:
             tts.speak("hello", urgency=Urgency.NORMAL)
-            import time; time.sleep(0.05)  # let daemon thread run
+            import time
+            time.sleep(0.05)  # let daemon thread run
             mock_sync.assert_called_once_with("hello")
 
     def test_speak_critical_runs_synchronously(self):

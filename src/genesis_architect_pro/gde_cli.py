@@ -102,12 +102,18 @@ def _rich_report(report) -> None:
 
     # Summary panel
     summary = Text()
-    summary.append("  Session   ", style="dim"); summary.append(report.session_id[:12] + "…\n", style="white")
-    summary.append("  Mode      ", style="dim"); summary.append(report.mode.value + "\n", style="bold cyan")
-    summary.append("  Stage     ", style="dim"); summary.append(report.stage.value + "\n", style="white")
-    summary.append("  Confidence", style="dim"); summary.append(f"  {conf:.0%}\n", style=conf_style)
-    summary.append("  Risk      ", style="dim"); summary.append(str(report.project_risk_level) + "\n", style="white")
-    summary.append("  Gate      ", style="dim"); summary.append(gate, style=gate_style)
+    summary.append("  Session   ", style="dim")
+    summary.append(report.session_id[:12] + "…\n", style="white")
+    summary.append("  Mode      ", style="dim")
+    summary.append(report.mode.value + "\n", style="bold cyan")
+    summary.append("  Stage     ", style="dim")
+    summary.append(report.stage.value + "\n", style="white")
+    summary.append("  Confidence", style="dim")
+    summary.append(f"  {conf:.0%}\n", style=conf_style)
+    summary.append("  Risk      ", style="dim")
+    summary.append(str(report.project_risk_level) + "\n", style="white")
+    summary.append("  Gate      ", style="dim")
+    summary.append(gate, style=gate_style)
 
     console.print(Panel(summary, title="[bold]Session Report[/bold]", border_style="bright_black",
                         box=box.ROUNDED, padding=(0, 1)))
@@ -168,7 +174,6 @@ def _rich_approval(request) -> str:
     if request.pending_writes:
         body.append(f"  {len(request.pending_writes)} pending write operation(s):\n", style="dim")
         for op in request.pending_writes:
-            rev = "[yellow]IRREVERSIBLE[/yellow]" if not op.is_reversible else "[dim]reversible[/dim]"
             body.append(f"    {op.target_path}", style="cyan")
             body.append(f"  —  {op.description}\n", style="dim")
     else:
@@ -628,12 +633,10 @@ def cmd_companion_serve(project_dir: Path) -> int:
     Handles SIGTERM and SIGINT for graceful shutdown.
     """
     import signal
-    import time
 
     from genesis_architect_pro.gde_companion import GateNotifier
     from genesis_architect_pro.streaming.server import CompanionServer
     from genesis_architect_pro.ide_bridge.server import IDEBridgeServer
-    from genesis_architect_pro import streaming as _streaming_pkg
     from genesis_architect_pro.streaming import runner_patch
     from genesis_architect_pro import gate_notifier_patch
     from genesis_architect_pro.streaming.inbound import InboundRouter
@@ -725,6 +728,67 @@ def cmd_companion_listen(project_dir: Path) -> int:
     return 0
 
 
+def _auto_setup_voice() -> None:
+    """Run voice model setup automatically on first launch if models are missing.
+
+    Silently skips if the voice extra is not installed (packages missing).
+    Shows a one-time progress summary so the user knows what's happening.
+    """
+    try:
+        from genesis_architect_pro.voice import readiness, run_setup
+    except ImportError:
+        return  # voice extra not installed; companion works without it
+
+    r = readiness()
+    if r.end_to_end_ready:
+        return  # already ready — nothing to do
+
+    # Only auto-download when fix is "genesis companion --setup" (model file missing,
+    # packages ARE installed). Skip if the fix is a pip install (can't help there).
+    needs_download = [
+        c for c in r.components
+        if not c.ready and c.name != "fallback"
+        and c.fix.startswith("genesis companion")
+    ]
+    if not needs_download:
+        return  # only pip-install gaps remain — auto-setup would fail silently
+
+    rich = _use_rich()
+    if rich:
+        from rich.console import Console
+        from rich.progress import Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
+        console = Console()
+        console.print("\n  [bold cyan]First launch:[/bold cyan] downloading voice models (one-time, ~1–2 GB)…")
+        with Progress(
+            SpinnerColumn(style="cyan"),
+            TextColumn("[dim]{task.description}"),
+            TimeElapsedColumn(),
+            console=console,
+            transient=False,
+        ) as progress:
+            task = progress.add_task("Downloading STT + TTS models…", total=None)
+            result = run_setup()
+            progress.update(task, description="Done", completed=1, total=1)
+
+        for d in result.downloaded:
+            console.print(f"  [green]+[/green] {d}")
+        for s in result.skipped:
+            console.print(f"  [dim]=[/dim] {s}")
+        for f in result.failed:
+            console.print(f"  [red]![/red] {f}")
+        console.print()
+    else:
+        print("\n  First launch: downloading voice models (one-time, ~1–2 GB)…")
+        result = run_setup()
+        for d in result.downloaded:
+            print(f"  + {d}")
+        for s in result.skipped:
+            print(f"  = {s}")
+        for f in result.failed:
+            print(f"  ! {f}")
+        print()
+
+
 def cmd_companion_ui(project_dir: Path, *, no_browser: bool = False) -> int:
     """Launch the Floating Assistant end-to-end: start the full Companion backend,
     generate the web UI wired to that server's port+token, open it, and block.
@@ -738,6 +802,9 @@ def cmd_companion_ui(project_dir: Path, *, no_browser: bool = False) -> int:
     import webbrowser
 
     from genesis_architect_pro.companion_ui import write_companion_html, DEFAULT_PORT
+
+    # Auto-download voice models on first launch if packages are installed but models missing.
+    _auto_setup_voice()
 
     token = ""
     ws_server = None
@@ -982,7 +1049,7 @@ def _build_parser() -> argparse.ArgumentParser:
     companion.add_argument("--ui", action="store_true",
                            help="Launch the Floating Assistant: start the backend and open the web UI wired to it")
     companion.add_argument("--listen", action="store_true",
-                           help="Listen for the wake word ('genesis' / 'ג'נסיס') and print recognized instructions")
+                           help="Listen for the wake word ('genesis' or the Hebrew equivalent) and print recognized instructions")
 
     sync = sub.add_parser("sync", help="Run the autonomous sync manager (gate + findings + auto-apply)")
     sync.add_argument("--dir", default=".", metavar="PATH",
@@ -1009,6 +1076,15 @@ def _build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
+    # Legacy Windows consoles default to cp1252 — emoji/box characters in our
+    # output would raise UnicodeEncodeError. Degrade to replacement chars.
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            try:
+                stream.reconfigure(errors="replace")
+            except (OSError, ValueError):
+                pass
+
     parser = _build_parser()
 
     if argv is None:
@@ -1018,6 +1094,15 @@ def main(argv: list[str] | None = None) -> int:
         argv = ["decide"] + argv
 
     args = parser.parse_args(argv)
+
+    # Every command in this CLI is a Pro feature — enforce the license once
+    # here at the entry point (offline Ed25519 check, no phone-home).
+    from genesis_architect_pro.license import LicenseError, require_license
+    try:
+        require_license(f"genesis {args.command or ''}".strip())
+    except LicenseError as exc:
+        print(f"\n{exc}\n", file=sys.stderr)
+        return 2
 
     if args.command == "decide":
         return cmd_decide(args)

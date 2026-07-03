@@ -252,7 +252,7 @@ def ensure_optional_dep(dep: str, *, auto_install: bool = False) -> HealResult:
     if dep in ("ffmpeg", "yt-dlp"):
         try:
             from genesis_architect_pro.video_research import ensure_watch_ready
-            res = ensure_watch_ready(auto_install=True)
+            ensure_watch_ready(auto_install=True)
             ok = _have(dep)
             return HealResult(dep, False, True, ok,
                               "video tooling setup attempted; "

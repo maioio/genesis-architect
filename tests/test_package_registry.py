@@ -3,7 +3,6 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
-import pytest
 
 from genesis_architect_pro.package_registry import (
     PackageSignal,
@@ -11,7 +10,10 @@ from genesis_architect_pro.package_registry import (
     _signal_line,
     _status,
     query_crates,
+    query_maven,
     query_npm,
+    query_nuget,
+    query_osv,
     query_package,
     query_pypi,
     score_packages,
@@ -235,19 +237,19 @@ class TestQueryPackage:
     def test_dispatches_to_pypi(self):
         with patch("genesis_architect_pro.package_registry.query_pypi") as mock:
             mock.return_value = PackageSignal("p", "pypi", "1", 10, -1, "active", "line")
-            sig = query_package("requests", "pypi")
+            query_package("requests", "pypi")
         mock.assert_called_once_with("requests")
 
     def test_dispatches_to_npm(self):
         with patch("genesis_architect_pro.package_registry.query_npm") as mock:
             mock.return_value = PackageSignal("p", "npm", "1", 10, -1, "active", "line")
-            sig = query_package("react", "npm")
+            query_package("react", "npm")
         mock.assert_called_once_with("react")
 
     def test_dispatches_to_crates(self):
         with patch("genesis_architect_pro.package_registry.query_crates") as mock:
             mock.return_value = PackageSignal("p", "crates", "1", 10, -1, "active", "line")
-            sig = query_package("serde", "crates")
+            query_package("serde", "crates")
         mock.assert_called_once_with("serde")
 
     def test_crates_io_alias(self):
@@ -256,10 +258,127 @@ class TestQueryPackage:
             query_package("serde", "crates.io")
         mock.assert_called_once()
 
+    def test_dispatches_to_maven(self):
+        with patch("genesis_architect_pro.package_registry.query_maven") as mock:
+            mock.return_value = PackageSignal("p", "maven", "1", 10, -1, "active", "line")
+            query_package("com.google.guava:guava", "maven")
+        mock.assert_called_once_with("com.google.guava:guava")
+
+    def test_dispatches_to_nuget(self):
+        with patch("genesis_architect_pro.package_registry.query_nuget") as mock:
+            mock.return_value = PackageSignal("p", "nuget", "1", 10, -1, "active", "line")
+            query_package("Newtonsoft.Json", "nuget")
+        mock.assert_called_once_with("Newtonsoft.Json")
+
     def test_unsupported_ecosystem_returns_unknown(self):
-        sig = query_package("something", "maven")
+        sig = query_package("something", "homebrew")
         assert sig.status == "unknown"
         assert "unsupported" in sig.signal_line
+
+
+# ---------------------------------------------------------------------------
+# query_maven / query_nuget
+# ---------------------------------------------------------------------------
+
+class TestQueryMaven:
+    def test_parses_search_response(self):
+        payload = {"response": {"docs": [{"latestVersion": "33.0.0",
+                                          "timestamp": 1700000000000}]}}
+        with patch("genesis_architect_pro.package_registry._fetch_json",
+                   return_value=payload):
+            sig = query_maven("com.google.guava:guava")
+        assert sig.ecosystem == "maven"
+        assert sig.latest_version == "33.0.0"
+        assert sig.last_release_days > 0
+
+    def test_bad_coordinates_return_unknown(self):
+        sig = query_maven("guava-without-group")
+        assert sig.status == "unknown"
+        assert "groupId:artifactId" in sig.signal_line
+
+    def test_registry_unavailable(self):
+        with patch("genesis_architect_pro.package_registry._fetch_json",
+                   return_value=None):
+            sig = query_maven("com.google.guava:guava")
+        assert sig.status == "unknown"
+
+
+class TestQueryNuget:
+    def test_parses_search_and_registration(self):
+        search = {"data": [{"version": "13.0.3", "totalDownloads": 5_000_000_000}]}
+        reg = {"items": [{"items": [{"catalogEntry": {"published": "2024-01-01T00:00:00Z"}}]}]}
+        with patch("genesis_architect_pro.package_registry._fetch_json",
+                   side_effect=[search, reg]):
+            sig = query_nuget("Newtonsoft.Json")
+        assert sig.ecosystem == "nuget"
+        assert sig.latest_version == "13.0.3"
+        assert sig.monthly_downloads == 5_000_000_000
+        assert sig.last_release_days > 0
+
+    def test_follows_page_reference_when_index_has_no_leaves(self):
+        search = {"data": [{"version": "4.0.0", "totalDownloads": 10}]}
+        index = {"items": [{"@id": "https://api.nuget.org/page/2"}]}
+        page = {"items": [{"catalogEntry": {"published": "2024-01-01T00:00:00Z"}}]}
+        with patch("genesis_architect_pro.package_registry._fetch_json",
+                   side_effect=[search, index, page]):
+            sig = query_nuget("Serilog")
+        assert sig.last_release_days > 0
+
+    def test_registry_unavailable(self):
+        with patch("genesis_architect_pro.package_registry._fetch_json",
+                   return_value=None):
+            sig = query_nuget("Newtonsoft.Json")
+        assert sig.status == "unknown"
+
+
+# ---------------------------------------------------------------------------
+# query_osv (CVE validation)
+# ---------------------------------------------------------------------------
+
+class TestQueryOSV:
+    def _osv_response(self, payload):
+        import io
+        import json as _json
+
+        class _Resp(io.BytesIO):
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *a):
+                return False
+
+        return _Resp(_json.dumps(payload).encode())
+
+    def test_prefers_cve_alias_over_osv_id(self):
+        payload = {"vulns": [{"id": "GHSA-xxxx", "aliases": ["CVE-2024-26130"]}]}
+        with patch("urllib.request.urlopen", return_value=self._osv_response(payload)):
+            sig = query_osv("cryptography", "pypi", "42.0.2")
+        assert sig.vuln_ids == ["CVE-2024-26130"]
+        assert "CVE-2024-26130" in sig.signal_line
+
+    def test_no_vulns_gives_clean_line(self):
+        with patch("urllib.request.urlopen", return_value=self._osv_response({})):
+            sig = query_osv("requests", "pypi", "9.9.9")
+        assert sig.vuln_ids == []
+        assert "no known vulnerabilities" in sig.signal_line
+
+    def test_network_failure_degrades_gracefully(self):
+        with patch("urllib.request.urlopen", side_effect=OSError("boom")):
+            sig = query_osv("requests", "pypi")
+        assert sig.vuln_ids == []
+        assert "unavailable" in sig.signal_line
+
+    def test_ecosystem_mapping(self):
+        captured = {}
+
+        def fake_urlopen(req, timeout=0):
+            import json as _json
+            captured.update(_json.loads(req.data))
+            return self._osv_response({})
+
+        with patch("urllib.request.urlopen", side_effect=fake_urlopen):
+            query_osv("serde", "crates")
+        assert captured["package"]["ecosystem"] == "crates.io"
 
 
 # ---------------------------------------------------------------------------

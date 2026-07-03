@@ -713,7 +713,7 @@ class TestDecisionLog:
         genesis = tmp_path / ".genesis"
         genesis.mkdir()
         log = genesis / "gde_decision_log.jsonl"
-        good_entry = _make_decision_entry("sess-good")
+        _make_decision_entry("sess-good")
         # Write one good + one bad line
         log.write_text(
             json.dumps({

@@ -57,7 +57,6 @@ def _patched_run_single(desc: EngineDescriptor, ctx: SessionContext) -> None:
         engine_start(desc.id, phase=phase_index, total_phases=total_phases, session_id=ctx.session_id)
     )
 
-    confidence_before = ctx.overall_confidence
 
     # Call original
     _ORIGINAL_RUN_SINGLE(desc, ctx)  # type: ignore[misc]

@@ -13,6 +13,24 @@
 **Last updated: 2026-07-03**
 **Next site review due: 2026-07-17**
 
+> 🆕 **QA hardening pass (2026-07-03, evening):** deep simulation audit fixed five real product bugs:
+> (1) git_analyzer numstat parsing dropped every file — churn/bus-factor/timeline were empty on ALL real
+> repos ("no git history found"); (2) GDE architecture-score adapter read `.score` from a dict — the
+> engine reported **0/100 for every project**; (3) import-graph adapter same dict bug — circular-dep
+> warnings never surfaced; (4) free-core import graph skipped files with UTF-8 BOM (Windows default!) and
+> collapsed dotted imports (`import app.billing` → `app`) so the hero-terminal cycle `auth → billing → auth`
+> was undetectable — both fixed in core; (5) `_antipattern_confidence` NameError on god-class/hub-file paths.
+> **New capability shipped:** package registry now covers **Maven Central + NuGet** and validates CVEs live
+> against **OSV.dev** (`query_maven` / `query_nuget` / `query_osv`) — the capability-table row is now 100% true.
+> **License gate now enforced at CLI entry** (all commands; offline Ed25519; exit 2 with guidance).
+> **Site copy corrected:** 28 → **30 sources** everywhere current-facts, price shows **$9**, stat strip
+> **1,736 tests**, sync time 02:03 UTC, mobile 320px overflow fixed. Suite: **1,736 tests, 0 failures**; ruff clean.
+>
+> 🆕 **One-click install (2026-07-03):** `pip install genesis-architect-pro[companion-full]` now
+> includes `kokoro>=0.9`, `soundfile>=0.12`, and `sherpa-onnx>=1.10` — all voice packages in one
+> command. `genesis companion --ui` auto-downloads STT + Hebrew TTS models on first launch
+> (no `--setup` step required). Customer experience: install → license key → `genesis companion --ui`.
+
 > 🆕 **v7.2.0 (2026-07-03):** Full test coverage pass — 1,721 tests, 0 failures.
 > Added `test_voice_pipeline_orchestrator.py` (34 tests: EntityExtractor, ContextPrefetcher,
 > BargeInWatcher, VoicePipeline) and `test_package_registry.py` (38 tests: PyPI/npm/crates adapters,
@@ -70,7 +88,7 @@
 | **Committee Engine** — 5-advisor debate, collapse detection, transparency profiles | ✅ Shipped | **Yes**, via CLI/API. |
 | **Floating Assistant (web UI)** — `genesis companion --ui`: bubble ↔ chat panel, live multi-engine progress, approvals, quick actions | ⚙️ Early access | **Partly.** One command starts the backend + opens the assistant in a browser; chat drives a real GDE session and 7 engines stream live progress back (verified end-to-end). Needs the `[streaming]` extra. Zero build. Present as "early access / coming soon". |
 | **WebSocket Streaming Layer** | ✅ Has a client now | Installable (`[streaming]`); the Floating Assistant web UI consumes it end-to-end. The Tauri desktop shell also consumes the same stream (Panel↔Bubble IPC bridge wired). |
-| **Voice (STT/TTS + live mic + wake word + barge-in + streaming VAD + prefetch)** — faster-whisper + Kokoro + Meta MMS Hebrew | ⚙️ Self-serve, complete | `genesis companion --setup` downloads models; `--listen` runs a live wake-word loop ("genesis" / "ג'נסיס"); `--check` / `--speak` verify. Streaming VAD end-of-turn (no fixed duration), barge-in (bot goes silent instantly), mid-turn entity prefetch all implemented. VoicePTT wired in Tauri Panel. 1,721 tests. Present as "early access" until pre-bundled. |
+| **Voice (STT/TTS + live mic + wake word + barge-in + streaming VAD + prefetch)** — faster-whisper + Kokoro + Meta MMS Hebrew | ⚙️ Self-serve, one-click | `pip install genesis-architect-pro[companion-full]` installs all voice packages. `genesis companion --ui` auto-downloads models on first launch — no `--setup` required. `--listen` runs a live wake-word loop ("genesis" / "ג'נסיס"); `--check` / `--speak` verify. Streaming VAD end-of-turn, barge-in, mid-turn entity prefetch all implemented. VoicePTT wired in Tauri Panel. 1,721 tests. Present as "early access" until pre-bundled. |
 | **VS Code extension** | ⚙️ CI pipeline ready | `genesis-companion-0.1.0.vsix` compiles + packages; installable via "Install from VSIX". `vscode-extension.yml` CI workflow builds + publishes on `vscode-v*` tag. **Needs `VSCE_PAT` secret** for Marketplace publish. |
 | **Tauri standalone desktop app** | ⚙️ Distribution pipeline ready | **`tauri build` succeeds:** produces `genesis-companion.exe` + Windows **MSI** + **NSIS setup.exe**. **GitHub Actions `companion-release.yml`** builds Windows/macOS/Linux in parallel on `companion-v*` tag. `tauri-plugin-updater` wired (auto-update). **Needs code signing certs** before public distribution (SmartScreen/Gatekeeper). Present as "early access". |
 

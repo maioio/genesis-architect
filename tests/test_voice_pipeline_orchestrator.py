@@ -2,11 +2,9 @@
 BargeInWatcher (without hardware), and VoicePipeline orchestrator."""
 from __future__ import annotations
 
-import threading
 import time
 from unittest.mock import MagicMock, patch
 
-import pytest
 
 from genesis_architect_pro.voice.voice_pipeline import (
     BargeInWatcher,

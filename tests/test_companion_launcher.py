@@ -1,5 +1,4 @@
 """Tests for the `genesis companion --ui` launcher (F2)."""
-from pathlib import Path
 
 from genesis_architect_pro.gde_cli import cmd_companion_ui
 

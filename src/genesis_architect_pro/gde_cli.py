@@ -692,6 +692,39 @@ def cmd_companion_serve(project_dir: Path) -> int:
     return 0
 
 
+def cmd_companion_listen(project_dir: Path) -> int:
+    """Listen for the wake word and print recognized instructions. Honest about
+    readiness: if the mic or STT model is missing, it says exactly what to do."""
+    import time
+
+    from genesis_architect_pro.voice.listener import WakeWordListener, mic_status
+
+    mic = mic_status()
+    print("\n  Genesis voice listener")
+    print(f"  Microphone: {'ready — ' + mic.detail if mic.available else 'NOT ready — ' + mic.detail}")
+    if not mic.available:
+        print("  Install the voice extra: pip install genesis-architect-pro[voice]\n")
+        return 1
+
+    def _on(instruction: str) -> None:
+        print(f'\n  ▶ heard: "{instruction}"')
+
+    listener = WakeWordListener(on_instruction=_on)
+    if not listener.start():
+        print(f"  Cannot listen: {listener.last_error}")
+        print("  Run `genesis companion --setup` to download the speech model.\n")
+        return 1
+
+    print('  Listening… say "genesis <your request>" (or "ג\'נסיס …"). Ctrl+C to stop.\n')
+    try:
+        while True:
+            time.sleep(0.5)
+    except KeyboardInterrupt:
+        listener.stop()
+        print("\n  Stopped.")
+    return 0
+
+
 def cmd_companion_ui(project_dir: Path, *, no_browser: bool = False) -> int:
     """Launch the Floating Assistant end-to-end: start the full Companion backend,
     generate the web UI wired to that server's port+token, open it, and block.
@@ -782,6 +815,10 @@ def cmd_companion(args: argparse.Namespace) -> int:
     if not project_dir.is_dir():
         print(f"  error: --dir '{project_dir}' is not a directory", file=sys.stderr)
         return 1
+
+    # --listen mode: wake-word loop -> print recognized instructions
+    if getattr(args, "listen", False):
+        return cmd_companion_listen(project_dir)
 
     # --ui mode: start the backend AND open the Floating Assistant web UI wired to it
     if getattr(args, "ui", False):
@@ -944,6 +981,8 @@ def _build_parser() -> argparse.ArgumentParser:
                            help="Start full Companion backend (WebSocket 47291 + IDE bridge 47292) for Tauri")
     companion.add_argument("--ui", action="store_true",
                            help="Launch the Floating Assistant: start the backend and open the web UI wired to it")
+    companion.add_argument("--listen", action="store_true",
+                           help="Listen for the wake word ('genesis' / 'ג'נסיס') and print recognized instructions")
 
     sync = sub.add_parser("sync", help="Run the autonomous sync manager (gate + findings + auto-apply)")
     sync.add_argument("--dir", default=".", metavar="PATH",

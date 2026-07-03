@@ -9,9 +9,17 @@
 
 ## 🚦 Version & Status
 
-**Current product version: v6.8.0**
+**Current product version: v6.9.0**
 **Last updated: 2026-07-03**
 **Next site review due: 2026-07-17**
+
+> 🆕 **Turnkey milestone (2026-07-03):** the Companion is now a real, installable
+> product. The **Tauri desktop app builds** → `genesis-companion.exe` + Windows
+> **MSI** + **setup.exe** (verified). **Voice is complete** — `genesis companion
+> --listen` runs a live wake-word loop ("genesis" / "ג'נסיס"). The **VS Code
+> extension packages** to a `.vsix`. All three are **early access** (unsigned /
+> not on stores) — keep them "early access / coming soon" on the site until code
+> signing + store publish. 1,624 tests. Pro-only, on `pro/main`.
 
 > 🆕 **This session (2026-07-03):** the **Floating Assistant web UI** is now real
 > and wired end-to-end. `genesis companion --ui` starts the full backend and opens
@@ -41,9 +49,9 @@
 | **Committee Engine** — 5-advisor debate, collapse detection, transparency profiles | ✅ Shipped | **Yes**, via CLI/API. |
 | **Floating Assistant (web UI)** — `genesis companion --ui`: bubble ↔ chat panel, live multi-engine progress, approvals, quick actions | ⚙️ Early access | **Partly.** One command starts the backend + opens the assistant in a browser; chat drives a real GDE session and 7 engines stream live progress back (verified end-to-end). Needs the `[streaming]` extra. Zero build. Present as "early access / coming soon". |
 | **WebSocket Streaming Layer** | ✅ Has a client now | Installable (`[streaming]`); the Floating Assistant web UI consumes it end-to-end. The Tauri desktop shell will consume the same stream. |
-| **Voice (STT/TTS)** — faster-whisper + Kokoro + Meta MMS Hebrew | ⚙️ Self-serve | `genesis companion --setup` downloads models; `--check` + `--speak` verify the round-trip. Not yet one-click. Present as "coming soon / early access". |
-| **IDE Bridge / VS Code extension** | 🚧 Source only | Not compiled, no `.vsix`, not on marketplace. |
-| **Tauri standalone desktop app** | 🚧 Phase 1–3 built (28 files) | Needs `cargo build` + code signing. Phase 4 = distribution. Not shippable yet. |
+| **Voice (STT/TTS + live mic + wake word)** — faster-whisper + Kokoro + Meta MMS Hebrew | ⚙️ Self-serve, complete | `genesis companion --setup` downloads models; `--listen` runs a live wake-word loop ("genesis" / "ג'נסיס"); `--check` / `--speak` verify. Full loop works once `[voice]` is installed. Present as "early access" until it ships pre-bundled. |
+| **VS Code extension** | ⚙️ Built (`.vsix`) | `genesis-companion-0.1.0.vsix` compiles + packages; installable via "Install from VSIX". Not yet on the marketplace. |
+| **Tauri standalone desktop app** | ⚙️ Builds → installers | **`tauri build` succeeds:** produces `genesis-companion.exe` + Windows **MSI** + **NSIS setup.exe** (icons from the Genesis logo). Installable today. **Needs code signing** before public distribution (SmartScreen). Present as "early access". |
 
 **Publish rule:**
 - ✅ = announce as *available today*

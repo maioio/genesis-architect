@@ -9,9 +9,15 @@
 
 ## 🚦 Version & Status
 
-**Current product version: v7.1.0**
+**Current product version: v7.2.0**
 **Last updated: 2026-07-03**
 **Next site review due: 2026-07-17**
+
+> 🆕 **v7.2.0 (2026-07-03):** Full test coverage pass — 1,721 tests, 0 failures.
+> Added `test_voice_pipeline_orchestrator.py` (34 tests: EntityExtractor, ContextPrefetcher,
+> BargeInWatcher, VoicePipeline) and `test_package_registry.py` (38 tests: PyPI/npm/crates adapters,
+> dispatcher, score_packages). Fixed EntityExtractor keyword-regex false-positive (word-boundary guard).
+> All source modules now have explicit test coverage.
 
 > 🆕 **v7.1.0 (2026-07-03):** Voice companion upgraded to three alive-feeling behaviors:
 > **streaming VAD end-of-turn detection** (replaces fixed-duration recording — mic closes after ~600ms silence);
@@ -64,7 +70,7 @@
 | **Committee Engine** — 5-advisor debate, collapse detection, transparency profiles | ✅ Shipped | **Yes**, via CLI/API. |
 | **Floating Assistant (web UI)** — `genesis companion --ui`: bubble ↔ chat panel, live multi-engine progress, approvals, quick actions | ⚙️ Early access | **Partly.** One command starts the backend + opens the assistant in a browser; chat drives a real GDE session and 7 engines stream live progress back (verified end-to-end). Needs the `[streaming]` extra. Zero build. Present as "early access / coming soon". |
 | **WebSocket Streaming Layer** | ✅ Has a client now | Installable (`[streaming]`); the Floating Assistant web UI consumes it end-to-end. The Tauri desktop shell also consumes the same stream (Panel↔Bubble IPC bridge wired). |
-| **Voice (STT/TTS + live mic + wake word)** — faster-whisper + Kokoro + Meta MMS Hebrew | ⚙️ Self-serve, complete | `genesis companion --setup` downloads models; `--listen` runs a live wake-word loop ("genesis" / "ג'נסיס"); `--check` / `--speak` verify. Full loop works once `[voice]` is installed. VoicePTT also wired in Tauri Panel (Web Audio → WAV → STT → GDE). Present as "early access" until it ships pre-bundled. |
+| **Voice (STT/TTS + live mic + wake word + barge-in + streaming VAD + prefetch)** — faster-whisper + Kokoro + Meta MMS Hebrew | ⚙️ Self-serve, complete | `genesis companion --setup` downloads models; `--listen` runs a live wake-word loop ("genesis" / "ג'נסיס"); `--check` / `--speak` verify. Streaming VAD end-of-turn (no fixed duration), barge-in (bot goes silent instantly), mid-turn entity prefetch all implemented. VoicePTT wired in Tauri Panel. 1,721 tests. Present as "early access" until pre-bundled. |
 | **VS Code extension** | ⚙️ CI pipeline ready | `genesis-companion-0.1.0.vsix` compiles + packages; installable via "Install from VSIX". `vscode-extension.yml` CI workflow builds + publishes on `vscode-v*` tag. **Needs `VSCE_PAT` secret** for Marketplace publish. |
 | **Tauri standalone desktop app** | ⚙️ Distribution pipeline ready | **`tauri build` succeeds:** produces `genesis-companion.exe` + Windows **MSI** + **NSIS setup.exe**. **GitHub Actions `companion-release.yml`** builds Windows/macOS/Linux in parallel on `companion-v*` tag. `tauri-plugin-updater` wired (auto-update). **Needs code signing certs** before public distribution (SmartScreen/Gatekeeper). Present as "early access". |
 
@@ -197,6 +203,8 @@ genesis companion --stats                 # Gate miss-rate report
 genesis companion --setup                 # Download voice models (STT/TTS)
 genesis companion --check                 # Verify voice readiness
 genesis companion --speak "Hello"         # Test TTS round-trip
+genesis companion --listen                # Live wake-word loop ("genesis" / "ג'נסיס")
+genesis companion --ui                    # Launch Floating Assistant web UI
 ```
 
 ---
@@ -280,6 +288,7 @@ genesis companion --speak "Hello"         # Test TTS round-trip
 
 | Version | Date | What shipped |
 |---------|------|-------------|
+| v7.2.0 | 2026-07-03 | Full coverage pass: test_voice_pipeline_orchestrator (34 tests) + test_package_registry (38 tests). EntityExtractor word-boundary fix. 1,721 tests, 0 failures. All source modules covered. |
 | v7.1.0 | 2026-07-03 | Voice 3 alive behaviors: streaming VAD end-of-turn, barge-in (TTSPipeline.stop()), mid-turn context prefetch (EntityExtractor + ContextPrefetcher + BargeInWatcher + VoicePipeline orchestrator). webrtcvad added to [voice]. 1,649 tests. |
 | v7.0.0 | 2026-07-03 | Companion Phase 4 — Distribution Pipeline: GitHub Actions matrix build (Win/Mac/Linux), tauri-plugin-updater + auto-update, vscode-extension CI, code signing guide, latest.json template. 1,649 tests. |
 | v6.9.0 | 2026-07-03 | Phase 3 Intelligence Wiring: Gate Resume Flow (approve→commit), VoicePTT (Web Audio→WAV→STT→GDE), IDE Bridge hot-swap post-GDE, Panel↔Bubble IPC bridge. +25 tests. |

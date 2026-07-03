@@ -64,7 +64,7 @@ class EntityExtractor:
     _SNAKE_RE   = re.compile(r'\b[a-z][a-z0-9]+(?:_[a-z0-9]+)+\b')
     _FILE_RE    = re.compile(r'\b[\w/\\]+\.(?:py|ts|js|jsx|tsx|go|rs)\b')
     _KEYWORD_RE = re.compile(
-        r'(?:module|file|class|function|method|service|component)\s+([A-Za-z_][\w]*)',
+        r'\b(?:module|file|class|function|method|service|component)\s+([A-Za-z_][\w]*)',
         re.IGNORECASE,
     )
 

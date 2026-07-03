@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Genesis PRO — דוח מצב נוכחי · 2026-07-03</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg:      #0d0e14;
+  --s1:      #13151f;
+  --s2:      #1c1f2e;
+  --border:  #2a2d3e;
+  --accent:  #6c63ff;
+  --green:   #00d4aa;
+  --warn:    #fbbf24;
+  --danger:  #f87171;
+  --muted:   #6b7280;
+  --text:    #e8eaf0;
+  --r:       10px;
+}
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 14px;
+  line-height: 1.65;
+  padding: 48px 28px 80px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+/* ── header ── */
+.stamp { font-size: 11px; color: var(--muted); letter-spacing: .07em; text-transform: uppercase; margin-bottom: 14px; }
+h1 { font-size: 30px; font-weight: 900; letter-spacing: -.03em; margin-bottom: 6px; }
+.sub { color: var(--muted); font-size: 13px; margin-bottom: 40px; }
+
+/* ── stat row ── */
+.stats { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 48px; }
+.stat { background: var(--s1); border: 1px solid var(--border); border-radius: var(--r); padding: 20px 16px; text-align: center; }
+.stat-n { font-size: 32px; font-weight: 900; line-height: 1; }
+.stat-n.green  { color: var(--green); }
+.stat-n.accent { color: var(--accent); }
+.stat-n.warn   { color: var(--warn); }
+.stat-n.danger { color: var(--danger); }
+.stat-l { font-size: 11px; color: var(--muted); margin-top: 5px; text-transform: uppercase; letter-spacing: .06em; }
+
+/* ── section ── */
+section { margin-bottom: 40px; }
+h2 { font-size: 15px; font-weight: 700; color: var(--text); border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 18px; display: flex; align-items: center; gap: 8px; }
+h2::before { content: ''; display: block; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+
+/* ── status table ── */
+.tbl { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.tbl th { text-align: right; padding: 9px 12px; font-size: 11px; color: var(--muted); font-weight: 600; border-bottom: 1px solid var(--border); text-transform: uppercase; letter-spacing: .06em; }
+.tbl td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+.tbl tr:last-child td { border-bottom: none; }
+.tbl td:first-child { font-weight: 600; width: 34%; }
+.tbl tr:hover td { background: var(--s2); }
+
+/* ── badges ── */
+.b { display: inline-block; font-size: 10px; font-weight: 700; padding: 2px 9px; border-radius: 99px; text-transform: uppercase; letter-spacing: .05em; white-space: nowrap; }
+.b-green  { background: rgba(0,212,170,.13); color: var(--green); }
+.b-accent { background: rgba(108,99,255,.13); color: var(--accent); }
+.b-warn   { background: rgba(251,191,36,.13); color: var(--warn); }
+.b-danger { background: rgba(248,113,113,.13); color: var(--danger); }
+
+/* ── todo list ── */
+.todo { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.todo li { display: flex; align-items: flex-start; gap: 10px; padding: 12px 14px; border-radius: var(--r); background: var(--s1); border: 1px solid var(--border); font-size: 12.5px; }
+.todo li .ico { flex-shrink: 0; margin-top: 1px; }
+.todo li .lbl { font-weight: 700; display: block; margin-bottom: 2px; }
+.todo li .desc { color: var(--muted); font-size: 11.5px; line-height: 1.5; }
+.todo.done li { opacity: .55; }
+.todo.done li .ico::before { content: '✓'; color: var(--green); font-weight: 900; }
+.todo.open  li.easy   .ico::before { content: '○'; color: var(--accent); }
+.todo.open  li.med    .ico::before { content: '◐'; color: var(--warn); }
+.todo.open  li.hard   .ico::before { content: '●'; color: var(--danger); }
+
+/* ── phase blocks ── */
+.phase { background: var(--s1); border: 1px solid var(--border); border-radius: var(--r); padding: 18px 20px; margin-bottom: 12px; }
+.phase-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.phase-title { font-weight: 800; font-size: 13px; }
+.phase-bar { height: 5px; border-radius: 99px; background: var(--s2); overflow: hidden; margin-bottom: 8px; }
+.phase-fill { height: 100%; border-radius: 99px; }
+.phase ul { padding-right: 16px; color: var(--muted); font-size: 12px; line-height: 1.7; }
+.phase ul li { list-style: disc; }
+
+/* ── footer ── */
+footer { margin-top: 60px; padding-top: 24px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); }
+.mark { font-weight: 900; color: var(--accent); }
+</style>
+</head>
+<body>
+
+<p class="stamp">Genesis PRO · Companion App · דוח מצב</p>
+<h1>מה יש · מה חסר · מה הולך</h1>
+<p class="sub">2026-07-03 · סשן נוכחי · branch: pro-v3-analysis → pro/main</p>
+
+<!-- ── STATS ── -->
+<div class="stats">
+  <div class="stat"><div class="stat-n green">1,649</div><div class="stat-l">טסטים עוברים</div></div>
+  <div class="stat"><div class="stat-n accent">28</div><div class="stat-l">קבצי Tauri כתובים</div></div>
+  <div class="stat"><div class="stat-n accent">17</div><div class="stat-l">GDE engines פעילים</div></div>
+  <div class="stat"><div class="stat-n warn">4</div><div class="stat-l">שלבים לסיום</div></div>
+</div>
+
+<!-- ── PHASES ── -->
+<section>
+  <h2>סטטוס שלבים</h2>
+
+  <div class="phase">
+    <div class="phase-head">
+      <span class="phase-title">Phase 1 — Python Backend</span>
+      <span class="b b-green">הושלם 100%</span>
+    </div>
+    <div class="phase-bar"><div class="phase-fill" style="width:100%;background:var(--green)"></div></div>
+    <ul>
+      <li>CompanionServer WebSocket + auth token (64-hex)</li>
+      <li>InboundRouter — intent, approval, voice, gate resume flow (approve→commit), IDE Bridge wiring</li>
+      <li>runner_patch + gate_notifier_patch — monkey-patching GDE לstreaming</li>
+      <li>Voice pipeline — STT (faster-whisper) + TTS (Kokoro / MMS-Hebrew) + wake word <code>--listen</code></li>
+      <li>IDE Bridge HTTP server + pattern index hot-swap אחרי כל GDE run</li>
+      <li><code>genesis companion --serve</code> — מדפיס READY token, blocks, teardown נקי</li>
+    </ul>
+  </div>
+
+  <div class="phase">
+    <div class="phase-head">
+      <span class="phase-title">Phase 2 — Tauri App Scaffold</span>
+      <span class="b b-green">הושלם 100% (כולל build!)</span>
+    </div>
+    <div class="phase-bar"><div class="phase-fill" style="width:100%;background:var(--green)"></div></div>
+    <ul>
+      <li>Rust: sidecar spawn+kill, 6 Tauri commands, lib.rs setup + RunEvent teardown</li>
+      <li>TypeScript/React: store (Zustand), WS client (state machine, backoff, watchdog), Zod schemas (14 event types)</li>
+      <li>5 React components: Bubble (animated ring), Panel (header+body), EngineProgress, ConfidenceMeter (SVG arc), GateStatus, ResultSummary, ApprovalModal</li>
+      <li>Design tokens CSS — Genesis brand palette, animations</li>
+      <li><strong>tauri build הצליח</strong> — genesis-companion.exe + MSI + NSIS setup.exe</li>
+    </ul>
+  </div>
+
+  <div class="phase">
+    <div class="phase-head">
+      <span class="phase-title">Phase 3 — Intelligence Wiring</span>
+      <span class="b b-green">הושלם 100%</span>
+    </div>
+    <div class="phase-bar"><div class="phase-fill" style="width:100%;background:var(--green)"></div></div>
+    <ul>
+      <li>Panel→Bubble IPC bridge — <code>emit("genesis://event")</code> + <code>genesis://connection</code></li>
+      <li>Gate resume flow — approve/reject/defer → gde.commit(), timeout 5 דקות → auto-defer</li>
+      <li>IDE Bridge hot-swap — rebuild index מ-engine results אחרי כל run</li>
+      <li>VoicePTT.tsx — Web Audio → WAV encode → base64 → STT → GDE</li>
+      <li>25 טסטים חדשים, 1,649 סה"כ</li>
+    </ul>
+  </div>
+
+  <div class="phase">
+    <div class="phase-head">
+      <span class="phase-title">Phase 4 — Distribution Pipeline</span>
+      <span class="b b-warn">פתוח — הולך עכשיו</span>
+    </div>
+    <div class="phase-bar"><div class="phase-fill" style="width:5%;background:var(--warn)"></div></div>
+    <ul>
+      <li>GitHub Actions matrix build — Windows MSI / macOS DMG / Linux AppImage</li>
+      <li>App icons — כל הגדלים הנדרשים לכל פלטפורמה</li>
+      <li>tauri-plugin-updater — auto-update + latest.json endpoint</li>
+      <li>Code signing — Windows Authenticode + macOS notarization (אחרי cert)</li>
+      <li>VS Code Extension → .vsix publish למארקטפלייס</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ── WHAT EXISTS ── -->
+<section>
+  <h2>מה קיים — לפי שכבה</h2>
+  <table class="tbl">
+    <thead><tr><th>רכיב</th><th>סטטוס</th><th>הערה</th></tr></thead>
+    <tbody>
+      <tr><td>Analysis engines (17)</td><td><span class="b b-green">Shipped ✅</span></td><td>עובד offline, ללא LLM</td></tr>
+      <tr><td>Genesis Decision Engine CLI</td><td><span class="b b-green">Shipped ✅</span></td><td>decide / explain / memory / ui / sync</td></tr>
+      <tr><td>Committee Engine</td><td><span class="b b-green">Shipped ✅</span></td><td>5 advisors, anti-sycophancy</td></tr>
+      <tr><td>genesis sync</td><td><span class="b b-green">Shipped ✅</span></td><td>autonomous maintenance, 3 approval zones</td></tr>
+      <tr><td>WebSocket Streaming</td><td><span class="b b-green">Shipped ✅</span></td><td>[streaming] extra, web UI consumes it</td></tr>
+      <tr><td>Floating Assistant (web)</td><td><span class="b b-accent">Early Access</span></td><td>genesis companion --ui, browser, [streaming] נדרש</td></tr>
+      <tr><td>Voice pipeline</td><td><span class="b b-accent">Early Access</span></td><td>--setup/--listen/--speak עובדים, לא pre-bundled</td></tr>
+      <tr><td>IDE Bridge</td><td><span class="b b-accent">Early Access</span></td><td>HTTP server + VS Code extension (.vsix קיים)</td></tr>
+      <tr><td>Tauri desktop app</td><td><span class="b b-accent">Early Access</span></td><td>builds → MSI, ללא code signing עדיין</td></tr>
+      <tr><td>GitHub Actions CI/CD</td><td><span class="b b-warn">פתוח</span></td><td>אין matrix build עדיין</td></tr>
+      <tr><td>Auto-updater</td><td><span class="b b-danger">לא התחיל</span></td><td>tauri-plugin-updater + latest.json</td></tr>
+      <tr><td>App icons (כל הגדלים)</td><td><span class="b b-warn">חלקי</span></td><td>קיים לוגו, חסר icns/ico/png matrix</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ── WHAT'S NEXT ── -->
+<section>
+  <h2>מה הולך עכשיו — מהקל לקשה</h2>
+  <ul class="todo open">
+    <li class="easy">
+      <span class="ico"></span>
+      <span><span class="lbl">App Icons — כל הגדלים</span><span class="desc">מייצר את כל ה-PNG sizes הנדרשים (16–1024) + ICO לWindows + ICNS למ macOS מהלוגו הקיים. כותב ל-src-tauri/icons/.</span></span>
+    </li>
+    <li class="easy">
+      <span class="ico"></span>
+      <span><span class="lbl">tauri.conf.json — icons + bundle config</span><span class="desc">מגדיר את bundle.icon, identifier, productName, version. הכנה לbuild נקי.</span></span>
+    </li>
+    <li class="easy">
+      <span class="ico"></span>
+      <span><span class="lbl">tauri-plugin-updater — auto-update</span><span class="desc">מוסיף plugin לCargo.toml + lib.rs, מגדיר pubkey, יוצר latest.json endpoint structure.</span></span>
+    </li>
+    <li class="med">
+      <span class="ico"></span>
+      <span><span class="lbl">GitHub Actions — matrix build</span><span class="desc">workflow שמבנה Windows MSI / macOS DMG / Linux AppImage על כל push ל-pro/main. Artifacts מועלים ל-GitHub Releases.</span></span>
+    </li>
+    <li class="med">
+      <span class="ico"></span>
+      <span><span class="lbl">VS Code Extension — publish pipeline</span><span class="desc">vsce package → .vsix artifact. אופציונלי: vsce publish למארקטפלייס (דורש PAT).</span></span>
+    </li>
+    <li class="hard">
+      <span class="ico"></span>
+      <span><span class="lbl">Code Signing — Windows</span><span class="desc">Authenticode: דורש EV cert ($300-700/yr) או self-signed עם SmartScreen warning. נגדיר placeholder + הנחיות.</span></span>
+    </li>
+    <li class="hard">
+      <span class="ico"></span>
+      <span><span class="lbl">Code Signing — macOS notarization</span><span class="desc">דורש Apple Developer account ($99/yr) + notarytool. נגדיר את ה-workflow ללא cert, עם הנחיות לאחר רכישה.</span></span>
+    </li>
+  </ul>
+</section>
+
+<!-- ── OPEN QUESTIONS ── -->
+<section>
+  <h2>שאלות פתוחות לתיאום ציפיות</h2>
+  <table class="tbl">
+    <thead><tr><th>נושא</th><th>אופציה A</th><th>אופציה B</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Code signing</td>
+        <td>placeholder בלבד + הנחיות (לא דורש הוצאה)</td>
+        <td>self-signed (מונע SmartScreen אבל לא trusted)</td>
+      </tr>
+      <tr>
+        <td>VS Code marketplace</td>
+        <td>רק .vsix artifact (ללא publish)</td>
+        <td>publish אמיתי (דורש PAT + publisher account)</td>
+      </tr>
+      <tr>
+        <td>Auto-update endpoint</td>
+        <td>GitHub Releases כ-latest.json source</td>
+        <td>endpoint עצמאי (Cloudflare Worker וכו')</td>
+      </tr>
+      <tr>
+        <td>Platform scope</td>
+        <td>Windows בלבד עכשיו</td>
+        <td>Windows + macOS + Linux במקביל</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<footer>
+  <span><span class="mark">Genesis PRO</span> · Companion App · דוח מצב פתיחת Phase 4</span>
+  <span>2026-07-03 · Maio Eshet · 1,649 tests ✓</span>
+</footer>
+
+</body>
+</html>

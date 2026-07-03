@@ -1,0 +1,48 @@
+name: VS Code Extension
+
+on:
+  push:
+    tags:
+      - "vscode-v*"
+  workflow_dispatch:
+
+jobs:
+  package:
+    name: Package .vsix
+    runs-on: ubuntu-22.04
+    defaults:
+      run:
+        working-directory: companion/vscode-extension
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Node.js setup
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: companion/vscode-extension/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Compile TypeScript
+        run: npm run compile
+
+      - name: Package .vsix
+        run: npm run package
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: genesis-companion-vsix
+          path: companion/vscode-extension/*.vsix
+          retention-days: 30
+
+      - name: Publish to Marketplace
+        if: startsWith(github.ref, 'refs/tags/vscode-v')
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+        run: npm run publish -- -p "$VSCE_PAT"

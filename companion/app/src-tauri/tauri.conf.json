@@ -63,5 +63,13 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ]
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "PLACEHOLDER_UPDATE_PUBKEY",
+      "endpoints": [
+        "https://genesis-architect.com/releases/latest.json"
+      ]
+    }
   }
 }

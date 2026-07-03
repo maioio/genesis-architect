@@ -1,0 +1,180 @@
+name: Companion Release
+
+on:
+  push:
+    tags:
+      - "companion-v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release (e.g. 0.2.0)"
+        required: true
+
+concurrency:
+  group: companion-release-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build (${{ matrix.platform }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: windows-latest
+            target: x86_64-pc-windows-msvc
+            args: ""
+          - platform: macos-latest
+            target: x86_64-apple-darwin
+            args: "--target x86_64-apple-darwin"
+          - platform: macos-latest
+            target: aarch64-apple-darwin
+            args: "--target aarch64-apple-darwin"
+          - platform: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+            args: ""
+
+    runs-on: ${{ matrix.platform }}
+    defaults:
+      run:
+        working-directory: companion/app
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: companion/app/src-tauri -> target
+
+      - name: Node.js setup
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: companion/app/package-lock.json
+
+      - name: Install Linux system deps
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            patchelf \
+            libgtk-3-dev \
+            libssl-dev
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Import macOS signing certificates
+        if: startsWith(matrix.platform, 'macos')
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+        run: |
+          # Skip if no certificate provided (unsigned build)
+          if [ -z "$APPLE_CERTIFICATE" ]; then
+            echo "No Apple certificate — building unsigned"
+            exit 0
+          fi
+          echo "$APPLE_CERTIFICATE" | base64 --decode > certificate.p12
+          security create-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+          security import certificate.p12 -k build.keychain \
+            -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple: \
+            -s -k "$KEYCHAIN_PASSWORD" build.keychain
+          rm certificate.p12
+
+      - name: Build and bundle (Tauri)
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          # macOS notarization (optional — omit secrets to skip)
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        with:
+          tagName: companion-v__VERSION__
+          releaseName: "Genesis Companion v__VERSION__"
+          releaseBody: |
+            See [CHANGELOG](https://genesis-architect.com/changelog) for details.
+          releaseDraft: true
+          prerelease: false
+          args: ${{ matrix.args }}
+          projectPath: companion/app
+
+  publish-update-manifest:
+    name: Publish update manifest
+    needs: build
+    runs-on: ubuntu-22.04
+    if: startsWith(github.ref, 'refs/tags/companion-v')
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Extract version
+        id: ver
+        run: echo "version=${GITHUB_REF_NAME#companion-v}" >> $GITHUB_OUTPUT
+
+      - name: Generate latest.json
+        env:
+          VERSION: ${{ steps.ver.outputs.version }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Download signatures from GitHub Release assets
+          gh release download "companion-v${VERSION}" \
+            --pattern "*.sig" --dir /tmp/sigs || true
+
+          # Helper to read sig file
+          sig() { cat "/tmp/sigs/$1" 2>/dev/null || echo ""; }
+
+          PUB_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+          cat > latest.json <<JSON
+          {
+            "version": "${VERSION}",
+            "notes": "Genesis Companion ${VERSION}",
+            "pub_date": "${PUB_DATE}",
+            "platforms": {
+              "windows-x86_64": {
+                "signature": "$(sig "genesis-companion_${VERSION}_x64_en-US.msi.zip.sig")",
+                "url": "https://github.com/${{ github.repository }}/releases/download/companion-v${VERSION}/genesis-companion_${VERSION}_x64_en-US.msi.zip"
+              },
+              "darwin-x86_64": {
+                "signature": "$(sig "genesis-companion_${VERSION}_x64.dmg.tar.gz.sig")",
+                "url": "https://github.com/${{ github.repository }}/releases/download/companion-v${VERSION}/genesis-companion_${VERSION}_x64.dmg.tar.gz"
+              },
+              "darwin-aarch64": {
+                "signature": "$(sig "genesis-companion_${VERSION}_aarch64.dmg.tar.gz.sig")",
+                "url": "https://github.com/${{ github.repository }}/releases/download/companion-v${VERSION}/genesis-companion_${VERSION}_aarch64.dmg.tar.gz"
+              },
+              "linux-x86_64": {
+                "signature": "$(sig "genesis-companion_${VERSION}_amd64.AppImage.tar.gz.sig")",
+                "url": "https://github.com/${{ github.repository }}/releases/download/companion-v${VERSION}/genesis-companion_${VERSION}_amd64.AppImage.tar.gz"
+              }
+            }
+          }
+          JSON
+
+      - name: Upload latest.json to release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.ver.outputs.version }}
+        run: |
+          gh release upload "companion-v${VERSION}" latest.json \
+            --repo ${{ github.repository }} --clobber

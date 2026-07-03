@@ -14,6 +14,7 @@ pub fn run() {
         .plugin(tauri_plugin_positioner::init())
         .plugin(tauri_plugin_store::Builder::default().build())
         .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(SidecarState::new())
         .invoke_handler(tauri::generate_handler![
             get_ws_credentials,

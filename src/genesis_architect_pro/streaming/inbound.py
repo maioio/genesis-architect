@@ -9,11 +9,18 @@ Inbound types handled:
   user.voice_start  — begin STT audio capture
   user.voice_end    — finalize STT, transcribe, treat result as user.intent
 
+Gate resume flow:
+  1. _run_gde() calls gde.run(instruction) → report
+  2. If report has BLOCK → emit gate.approval_required + diff.ready, register PendingGate
+  3. _handle_approval() finds the PendingGate, sets decision + event
+  4. _run_gde() resumes, calls gde.approve() + gde.commit()
+  5. IDE Bridge index is hot-swapped after every GDE run
+
 Design contract:
   - InboundRouter.handle() is always called from a thread pool (see server.py)
   - It must never raise: errors are caught, logged, and emitted as error events
   - GDE sessions run in background threads so handle() returns quickly
-  - Pending gates are stored in _pending_gates keyed by gate_name
+  - Pending gates are stored in _pending_gates keyed by session_id
 """
 
 from __future__ import annotations
@@ -29,21 +36,20 @@ from genesis_architect_pro.streaming.events import (
     StreamEmitter,
     StreamMessage,
     MessageType,
-    StreamMessage,
     gate_approval_required,
     session_done,
+    diff_ready,
 )
 
 _log = logging.getLogger("genesis.inbound")
 
-# Sentinel emitted to the UI when a handler raises
-_ERROR_TYPE = "error"
+# Timeout (seconds) to wait for UI approval before auto-deferring
+_GATE_TIMEOUT_S = 300
 
 
 def _emit_error(emitter: StreamEmitter, msg: str, session_id: str = "") -> None:
-    from genesis_architect_pro.streaming.events import StreamMessage, MessageType
     emitter.emit(StreamMessage(
-        type=MessageType.SESSION_CONFIDENCE,  # reuse an existing type as error carrier
+        type=MessageType.SESSION_CONFIDENCE,
         payload={"error": msg},
         session_id=session_id,
     ))
@@ -55,12 +61,19 @@ class InboundRouter:
     Args:
         project_dir: The project directory for GDE sessions.
         emitter: StreamEmitter used to send outbound events back to the UI.
+        ide_bridge: Optional IDEBridgeServer — updated after each GDE run.
     """
 
-    def __init__(self, project_dir: Path, emitter: StreamEmitter) -> None:
+    def __init__(
+        self,
+        project_dir: Path,
+        emitter: StreamEmitter,
+        ide_bridge: object | None = None,
+    ) -> None:
         self._project_dir = Path(project_dir)
         self._emitter = emitter
-        # gate_name -> threading.Event that unblocks the waiting GDE thread
+        self._ide_bridge = ide_bridge  # IDEBridgeServer | None
+        # session_id / gate_name -> _PendingGate (waiting for user.approval)
         self._pending_gates: dict[str, _PendingGate] = {}
         self._pending_lock = threading.Lock()
         # Audio accumulator for voice recording
@@ -71,8 +84,12 @@ class InboundRouter:
         self._stt_loaded = False
 
     # ------------------------------------------------------------------
-    # Public entry point — called from server.py thread pool
+    # Public API
     # ------------------------------------------------------------------
+
+    def set_ide_bridge(self, bridge: object) -> None:
+        """Attach the IDEBridgeServer after construction (used in gde_cli.py)."""
+        self._ide_bridge = bridge
 
     def handle(self, msg: StreamMessage) -> None:
         """Dispatch one inbound message. Never raises."""
@@ -102,7 +119,6 @@ class InboundRouter:
             _log.warning("InboundRouter: user.intent with empty instruction")
             return
         _log.info("InboundRouter: user.intent -> '%s'", instruction[:80])
-        # Run GDE in a background thread so handle() returns immediately
         t = threading.Thread(
             target=self._run_gde,
             args=(instruction, msg.session_id),
@@ -112,10 +128,15 @@ class InboundRouter:
         t.start()
 
     def _run_gde(self, instruction: str, session_id: str) -> None:
-        """Run a full GDE session and emit session_done when complete."""
+        """Run a full GDE session including approve/commit gate resume flow."""
         try:
             import genesis_architect_pro.gde_engine_registration  # noqa: F401
             from genesis_architect_pro import GenesisDecisionEngine
+            from genesis_architect_pro.gde_types import (
+                ApprovalChoice,
+                ApprovalDecision,
+                GateOutcome,
+            )
 
             gde = GenesisDecisionEngine(
                 project_dir=self._project_dir,
@@ -123,48 +144,177 @@ class InboundRouter:
             )
             report = gde.run(instruction)
 
-            self._emitter.emit(
-                session_done(
+            # Hot-swap IDE Bridge pattern index after every run
+            self._update_ide_bridge(report)
+
+            gate_overall = report.gate_report.overall
+
+            # HARD_BLOCK: cannot be overridden
+            if gate_overall == GateOutcome.HARD_BLOCK:
+                _log.info("InboundRouter: GDE HARD_BLOCK — no approval possible")
+                self._emitter.emit(session_done(
                     session_id=report.session_id,
                     confidence=report.overall_confidence,
                     risk_level=str(report.project_risk_level),
                     mode=report.mode.value,
-                )
+                ))
+                return
+
+            # BLOCK/WARN with pending writes — needs UI approval
+            has_blocks = bool(report.gate_report.blocks)
+            has_writes = bool(getattr(report, "pending_writes", None))
+            needs_approval = (gate_overall in (GateOutcome.BLOCK, GateOutcome.WARN)) and (
+                has_blocks or has_writes
             )
+
+            if needs_approval:
+                approval_request = gde.approve(report)
+                preview_html = self._build_diff_preview(approval_request)
+                pending_count = len(getattr(approval_request, "pending_writes", []))
+                gate_key = f"{report.session_id[:8]}-gate"
+
+                # Emit gate.approval_required → Panel shows gate banner
+                self._emitter.emit(gate_approval_required(
+                    gate_name=gate_key,
+                    description=getattr(approval_request, "summary", "Approval required"),
+                    diff_preview=preview_html,
+                    session_id=report.session_id,
+                ))
+
+                # Emit diff.ready → Panel shows ApprovalModal with full diff
+                if preview_html:
+                    import uuid as _uuid
+                    self._emitter.emit(diff_ready(
+                        diff_id=str(_uuid.uuid4()),
+                        files_changed=pending_count,
+                        preview_html=preview_html,
+                        session_id=report.session_id,
+                    ))
+
+                # Block this thread until UI responds (or 5-min timeout → defer)
+                pg = self._register_pending_gate(report.session_id, gate_key)
+                resolved = pg.event.wait(timeout=_GATE_TIMEOUT_S)
+                self._clear_pending_gate(report.session_id, gate_key)
+
+                decision_str = pg.decision if resolved else "defer"
+                _log.info(
+                    "InboundRouter: gate %s resolved=%s decision=%s",
+                    gate_key, resolved, decision_str,
+                )
+
+                choice_map = {
+                    "approve": ApprovalChoice.APPROVE,
+                    "reject": ApprovalChoice.REJECT,
+                    "defer": ApprovalChoice.DEFER,
+                }
+                choice = choice_map.get(decision_str, ApprovalChoice.DEFER)
+
+                if choice != ApprovalChoice.DEFER:
+                    decision = ApprovalDecision(
+                        session_id=report.session_id,
+                        choice=choice,
+                    )
+                    commit_result = gde.commit(report, decision)
+                    if not commit_result.success:
+                        for err in commit_result.errors:
+                            _log.error("InboundRouter: commit error: %s", err)
+
+            # Emit session.done in all non-HARD_BLOCK paths
+            self._emitter.emit(session_done(
+                session_id=report.session_id,
+                confidence=report.overall_confidence,
+                risk_level=str(report.project_risk_level),
+                mode=report.mode.value,
+            ))
+
         except Exception as exc:
             _log.exception("InboundRouter: GDE session failed")
             _emit_error(self._emitter, f"GDE error: {exc}", session_id)
+
+    def _build_diff_preview(self, approval_request: object) -> str:
+        """Build minimal HTML diff preview from pending write operations."""
+        writes = getattr(approval_request, "pending_writes", [])
+        if not writes:
+            return ""
+        lines = [
+            "<ul style='margin:0;padding-left:1.2em;"
+            "font-family:monospace;font-size:12px;line-height:1.6'>"
+        ]
+        for op in writes[:20]:
+            path = getattr(op, "target_path", "?")
+            desc = getattr(op, "description", "")
+            reversible = getattr(op, "is_reversible", True)
+            rev_label = (
+                "<span style='color:#888'>reversible</span>"
+                if reversible
+                else "<span style='color:#f87171;font-weight:600'>IRREVERSIBLE</span>"
+            )
+            lines.append(f"<li><code>{path}</code> — {desc} ({rev_label})</li>")
+        lines.append("</ul>")
+        return "\n".join(lines)
+
+    def _update_ide_bridge(self, report: object) -> None:
+        """Hot-swap IDE Bridge pattern index after a GDE run."""
+        if self._ide_bridge is None:
+            return
+        try:
+            from genesis_architect_pro.ide_bridge import build_index_from_engine_results
+            raw_results: dict = {}
+            for eid, r in getattr(report, "engine_results", {}).items():
+                raw_results[eid] = {
+                    "output": getattr(r, "output", {}),
+                    "status": str(getattr(r, "status", "")),
+                }
+            index = build_index_from_engine_results(raw_results)
+            self._ide_bridge.update_index(index, session_id=report.session_id)
+            _log.debug("InboundRouter: IDE Bridge index updated (%d files)", len(index))
+        except Exception as exc:
+            _log.warning("InboundRouter: IDE Bridge update failed: %s", exc)
 
     # ------------------------------------------------------------------
     # user.approval
     # ------------------------------------------------------------------
 
     def _handle_approval(self, msg: StreamMessage) -> None:
-        gate_name = msg.payload.get("gate_name", "")
-        decision = msg.payload.get("decision", "")  # "approve" | "reject" | "defer"
+        gate_id = msg.payload.get("gate_id") or msg.payload.get("gate_name", "")
+        decision = msg.payload.get("decision", "defer")
 
-        if not gate_name:
-            _log.warning("InboundRouter: user.approval missing gate_name")
+        if not gate_id:
+            _log.warning("InboundRouter: user.approval missing gate_id")
             return
 
-        _log.info("InboundRouter: user.approval gate=%s decision=%s", gate_name, decision)
+        _log.info("InboundRouter: user.approval gate=%s decision=%s", gate_id, decision)
 
         with self._pending_lock:
-            pending = self._pending_gates.get(gate_name)
+            pg = self._pending_gates.get(gate_id)
+            if pg is None:
+                # Try prefix match (gate_id may be "<session[:8]>-gate" or full session_id)
+                for key, candidate in self._pending_gates.items():
+                    if key.startswith(gate_id[:8]) or gate_id.startswith(key[:8]):
+                        pg = candidate
+                        break
 
-        if pending is None:
-            _log.warning("InboundRouter: no pending gate for '%s'", gate_name)
+        if pg is None:
+            _log.warning("InboundRouter: no pending gate matching '%s'", gate_id)
             return
 
-        pending.decision = decision
-        pending.event.set()
+        pg.decision = decision
+        pg.event.set()
 
+    def _register_pending_gate(self, session_id: str, gate_key: str) -> "_PendingGate":
+        pg = _PendingGate(gate_key)
+        with self._pending_lock:
+            self._pending_gates[gate_key] = pg
+            self._pending_gates[session_id] = pg
+        return pg
+
+    def _clear_pending_gate(self, session_id: str, gate_key: str) -> None:
+        with self._pending_lock:
+            self._pending_gates.pop(gate_key, None)
+            self._pending_gates.pop(session_id, None)
+
+    # Kept for external callers (gate_notifier_patch)
     def register_pending_gate(self, gate_name: str) -> "_PendingGate":
-        """Register a gate that is waiting for UI approval.
-
-        Returns a PendingGate. Caller should block on pending.event.wait()
-        then read pending.decision.
-        """
         pg = _PendingGate(gate_name)
         with self._pending_lock:
             self._pending_gates[gate_name] = pg
@@ -188,7 +338,6 @@ class InboundRouter:
     # ------------------------------------------------------------------
 
     def _handle_voice_end(self, msg: StreamMessage) -> None:
-        # Collect any audio bytes sent inline (optional: payload.audio_b64)
         audio_b64 = msg.payload.get("audio_b64", "")
         with self._voice_lock:
             chunks = list(self._voice_chunks)
@@ -221,7 +370,6 @@ class InboundRouter:
             _emit_error(self._emitter, "STT not available — install voice extra", session_id)
             return
 
-        # Write to temp file and transcribe
         tmp = None
         try:
             fd, tmp = tempfile.mkstemp(suffix=".wav")
@@ -243,15 +391,12 @@ class InboundRouter:
             _log.warning("InboundRouter: STT returned empty transcript")
             return
 
-        # Emit the transcript so the UI can show it
-        from genesis_architect_pro.streaming.events import StreamMessage, MessageType
         self._emitter.emit(StreamMessage(
             type=MessageType.VOICE_TRANSCRIPT,
             session_id=session_id,
-            payload={"text": text},
+            payload={"text": text, "is_final": True},
         ))
 
-        # Treat transcript as a user.intent
         _log.info("InboundRouter: voice -> intent '%s'", text[:80])
         self._run_gde(text, session_id)
 
@@ -276,5 +421,5 @@ class _PendingGate:
 
     def __init__(self, gate_name: str) -> None:
         self.gate_name = gate_name
-        self.decision: str = "defer"  # default if event times out
+        self.decision: str = "defer"
         self.event = threading.Event()

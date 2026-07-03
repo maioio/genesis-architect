@@ -655,8 +655,12 @@ def cmd_companion_serve(project_dir: Path) -> int:
     notifier = GateNotifier(project_name=project_name)
     gate_notifier_patch.install(notifier)
 
-    # 5. Build InboundRouter and register as on_message callback
-    router = InboundRouter(project_dir=project_dir, emitter=default_emitter)
+    # 5. Build InboundRouter, wire IDE bridge, register as on_message callback
+    router = InboundRouter(
+        project_dir=project_dir,
+        emitter=default_emitter,
+        ide_bridge=ide_bridge,
+    )
 
     # Patch the server's on_message after construction (server.py stores it at init time)
     # We reassign the internal attribute directly since CompanionServer exposes no setter.
@@ -720,7 +724,11 @@ def cmd_companion_ui(project_dir: Path, *, no_browser: bool = False) -> int:
         ide_bridge.start()
         notifier = GateNotifier(project_name=project_dir.name or "Genesis")
         gate_notifier_patch.install(notifier)
-        router = InboundRouter(project_dir=project_dir, emitter=default_emitter)
+        router = InboundRouter(
+            project_dir=project_dir,
+            emitter=default_emitter,
+            ide_bridge=ide_bridge,
+        )
         ws_server._on_message = router.handle  # type: ignore[attr-defined]
         token = ws_server.token
         port = ws_server.port

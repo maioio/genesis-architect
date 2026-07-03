@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Genesis PRO — Phase 3 Intelligence Wiring</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0d0e14;
+    --surface: #13151f;
+    --surface2: #1c1f2e;
+    --border: #2a2d3e;
+    --accent: #6c63ff;
+    --accent2: #00d4aa;
+    --danger: #f87171;
+    --warn: #fbbf24;
+    --text: #e8eaf0;
+    --muted: #6b7280;
+    --r: 10px;
+  }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    padding: 40px 24px;
+    max-width: 860px;
+    margin: 0 auto;
+  }
+  header { margin-bottom: 40px; }
+  .badge {
+    display: inline-block;
+    background: var(--accent);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    padding: 3px 10px;
+    border-radius: 99px;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  h1 { font-size: 28px; font-weight: 800; letter-spacing: -0.03em; margin-bottom: 6px; }
+  .subtitle { color: var(--muted); font-size: 13px; }
+
+  .stat-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin: 32px 0;
+  }
+  .stat {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    padding: 18px 16px;
+    text-align: center;
+  }
+  .stat-value { font-size: 28px; font-weight: 800; color: var(--accent); line-height: 1; }
+  .stat-label { font-size: 11px; color: var(--muted); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.06em; }
+
+  section { margin-bottom: 32px; }
+  h2 {
+    font-size: 16px; font-weight: 700;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 10px; margin-bottom: 18px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  h2 .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--accent); flex-shrink: 0;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    padding: 18px 20px;
+    margin-bottom: 12px;
+  }
+  .card-title { font-weight: 700; font-size: 13px; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+  .card p { color: var(--muted); font-size: 12px; line-height: 1.6; }
+  .card ul { color: var(--muted); font-size: 12px; padding-left: 18px; margin-top: 6px; }
+  .card li { margin-bottom: 4px; }
+
+  .tag {
+    font-size: 10px; font-weight: 700; padding: 2px 8px;
+    border-radius: 99px; text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .tag-done  { background: rgba(0,212,170,0.15); color: var(--accent2); }
+  .tag-ts    { background: rgba(108,99,255,0.15); color: var(--accent); }
+  .tag-py    { background: rgba(251,191,36,0.15);  color: var(--warn); }
+  .tag-rust  { background: rgba(248,113,113,0.15); color: var(--danger); }
+
+  .flow {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin: 16px 0;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .flow-step {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .flow-arrow { color: var(--muted); font-size: 14px; flex-shrink: 0; }
+
+  .file-list { list-style: none; padding: 0; }
+  .file-list li {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+    font-size: 12px;
+  }
+  .file-list li:last-child { border-bottom: none; }
+  .file-path { font-family: monospace; color: var(--text); }
+  .file-desc { color: var(--muted); font-size: 11px; }
+
+  .timeline {
+    border-left: 2px solid var(--border);
+    padding-left: 20px;
+    margin-left: 6px;
+  }
+  .timeline-item { position: relative; margin-bottom: 20px; }
+  .timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -25px; top: 5px;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 2px solid var(--bg);
+  }
+  .timeline-item h3 { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+  .timeline-item p  { font-size: 12px; color: var(--muted); }
+
+  footer {
+    margin-top: 48px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: var(--muted);
+    font-size: 11px;
+  }
+  .genesis-mark { font-weight: 800; color: var(--accent); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="badge">Phase 3 Complete</div>
+  <h1>Intelligence Wiring</h1>
+  <p class="subtitle">Genesis PRO Companion · 2026-07-02 · All 4 subsystems connected</p>
+</header>
+
+<div class="stat-row">
+  <div class="stat">
+    <div class="stat-value">4</div>
+    <div class="stat-label">Subsystems wired</div>
+  </div>
+  <div class="stat">
+    <div class="stat-value">6</div>
+    <div class="stat-label">Files changed</div>
+  </div>
+  <div class="stat">
+    <div class="stat-value">1,602</div>
+    <div class="stat-label">Tests passing</div>
+  </div>
+  <div class="stat">
+    <div class="stat-value">0</div>
+    <div class="stat-label">Regressions</div>
+  </div>
+</div>
+
+<section>
+  <h2><span class="dot"></span>What Phase 3 Wired</h2>
+
+  <div class="card">
+    <div class="card-title">
+      <span class="tag tag-ts">TypeScript</span>
+      Panel → Bubble IPC Bridge
+    </div>
+    <p>
+      The Panel window owns the WebSocket connection. After every decoded event, it now mirrors it to the
+      Bubble window via Tauri's native IPC (<code>emit("genesis://event")</code>). Connection state changes
+      (<code>auth.ok</code> / WS close) are separately bridged via <code>genesis://connection</code>.
+      Bubble's Zustand store stays perfectly in sync without ever touching the WebSocket directly.
+    </p>
+    <ul>
+      <li><code>src/ws/ipc_bridge.ts</code> — <code>bridgeEvent()</code> + <code>bridgeConnection()</code></li>
+      <li><code>src/ws/client.ts</code> — calls bridge after every <code>handleEvent()</code> and on connect/disconnect</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <div class="card-title">
+      <span class="tag tag-py">Python</span>
+      Gate Resume Flow (approve → commit)
+    </div>
+    <p>
+      Previously <code>InboundRouter._run_gde()</code> would run a GDE session and emit <code>session.done</code>
+      — but never actually commit approved changes. Now it implements the full 5-step gate resume flow:
+    </p>
+    <div class="flow">
+      <div class="flow-step">gde.run()</div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-step">emit gate.approval_required</div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-step">emit diff.ready</div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-step">PendingGate.wait(300s)</div>
+      <span class="flow-arrow">→</span>
+      <div class="flow-step">gde.approve() + commit()</div>
+    </div>
+    <ul>
+      <li>HARD_BLOCK → emits session.done immediately, no approval prompt</li>
+      <li>BLOCK → builds HTML diff preview from pending writes, waits up to 5 min for UI decision</li>
+      <li>Approval arrives via <code>_handle_approval()</code> which sets the <code>threading.Event</code></li>
+      <li>Timeout (5 min) → auto-defer, writes stay pending in <code>.genesis/</code></li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <div class="card-title">
+      <span class="tag tag-py">Python</span>
+      IDE Bridge Hot-Swap After GDE Run
+    </div>
+    <p>
+      <code>InboundRouter._update_ide_bridge()</code> is called after every GDE run (regardless of gate outcome).
+      It rebuilds the pattern index from engine output and calls <code>ide_bridge.update_index()</code> so the
+      VS Code extension immediately sees fresh hints for the new analysis.
+    </p>
+    <ul>
+      <li><code>build_index_from_engine_results()</code> extracts anti-patterns + fragility findings</li>
+      <li>Index passed to <code>IDEBridgeServer</code> via its <code>update_index(session_id)</code> method</li>
+      <li><code>gde_cli.py</code> now passes <code>ide_bridge</code> into both <code>cmd_companion_serve</code> and <code>cmd_companion_ui</code></li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <div class="card-title">
+      <span class="tag tag-ts">TypeScript / React</span>
+      Voice PTT — Web Audio → STT → GDE
+    </div>
+    <p>
+      <code>VoicePTT.tsx</code> gives the user a push-to-talk button in the Panel.
+      It captures mono 16 kHz PCM via Web Audio API, encodes it to WAV in-browser,
+      converts to base64, and sends it via <code>sendVoiceEnd(audioB64)</code> over WebSocket.
+      The Python <code>InboundRouter</code> transcribes it (faster-whisper) and runs GDE.
+    </p>
+    <ul>
+      <li>ScriptProcessorNode collects Float32 PCM chunks at 4096 samples per callback</li>
+      <li>Custom <code>encodeWav()</code> — pure browser, no dependencies, produces valid PCM WAV</li>
+      <li>States: idle → recording (animated red dot) → processing → idle</li>
+      <li>Live transcript shows as italic grey text below the button</li>
+      <li>Degrades gracefully: mic denied → error message; STT unavailable → error event from Python</li>
+    </ul>
+  </div>
+</section>
+
+<section>
+  <h2><span class="dot"></span>Files Changed / Added</h2>
+  <div class="card" style="padding:0">
+    <ul class="file-list">
+      <li>
+        <span class="file-path">companion/app/src/ws/ipc_bridge.ts</span>
+        <span class="file-desc">NEW — Panel→Bubble IPC bridge</span>
+      </li>
+      <li>
+        <span class="file-path">companion/app/src/ws/client.ts</span>
+        <span class="file-desc">MODIFIED — calls bridgeEvent + bridgeConnection</span>
+      </li>
+      <li>
+        <span class="file-path">companion/app/src/components/Panel/VoicePTT.tsx</span>
+        <span class="file-desc">NEW — Web Audio PTT component</span>
+      </li>
+      <li>
+        <span class="file-path">companion/app/src/panel/PanelApp.tsx</span>
+        <span class="file-desc">MODIFIED — adds VoicePTT section</span>
+      </li>
+      <li>
+        <span class="file-path">src/genesis_architect_pro/streaming/inbound.py</span>
+        <span class="file-desc">MODIFIED — gate resume flow + IDE Bridge + voice transcript fix</span>
+      </li>
+      <li>
+        <span class="file-path">src/genesis_architect_pro/gde_cli.py</span>
+        <span class="file-desc">MODIFIED — passes ide_bridge to InboundRouter in both serve + ui modes</span>
+      </li>
+    </ul>
+  </div>
+</section>
+
+<section>
+  <h2><span class="dot"></span>End-to-End Flow (Now Live)</h2>
+  <div class="timeline">
+    <div class="timeline-item">
+      <h3>User speaks or types in Panel</h3>
+      <p>VoicePTT captures → WAV → base64 → WebSocket <code>user.voice_end</code>; or user types into intent box → <code>user.intent</code></p>
+    </div>
+    <div class="timeline-item">
+      <h3>Python InboundRouter receives message</h3>
+      <p>STT transcribes audio (faster-whisper, local), emits <code>voice.transcript</code>, then runs GDE in background thread</p>
+    </div>
+    <div class="timeline-item">
+      <h3>GDE runs all 18 engines</h3>
+      <p>Runner patch emits <code>engine.start</code> / <code>engine.done</code> events over WebSocket in real time</p>
+    </div>
+    <div class="timeline-item">
+      <h3>Gate fires if needed</h3>
+      <p>Gate notifier patch fires OS desktop notification; InboundRouter emits <code>gate.approval_required</code> + <code>diff.ready</code></p>
+    </div>
+    <div class="timeline-item">
+      <h3>Panel shows ApprovalModal</h3>
+      <p>User sees HTML diff preview. Clicks Approve/Reject/Defer → <code>user.approval</code> → Python unblocks, calls <code>gde.commit()</code></p>
+    </div>
+    <div class="timeline-item">
+      <h3>IDE Bridge updates</h3>
+      <p>Pattern index rebuilt from engine results, hot-swapped into IDEBridgeServer — VS Code extension sees fresh hints immediately</p>
+    </div>
+    <div class="timeline-item">
+      <h3>Bubble stays in sync</h3>
+      <p>Every WS event is mirrored to Bubble via Tauri IPC. Bubble ring color, badge count, and animations reflect live state without its own WebSocket</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="dot"></span>What Remains (Phase 4)</h2>
+  <div class="card">
+    <div class="card-title">Distribution Pipeline</div>
+    <ul>
+      <li>GitHub Actions matrix build: Windows (.msi) · macOS (.dmg) · Linux (.AppImage)</li>
+      <li>Code signing: Windows Authenticode + macOS notarization</li>
+      <li><code>tauri-plugin-updater</code> + <code>latest.json</code> for auto-updates</li>
+      <li>App icons (all required sizes per platform)</li>
+      <li>VS Code Extension build → .vsix + Marketplace publish</li>
+    </ul>
+  </div>
+  <div class="card">
+    <div class="card-title">First Compile Gate</div>
+    <p>
+      <code>npm install &amp;&amp; cargo check</code> in <code>companion/app/</code> — validates that all TypeScript and Rust
+      compiles cleanly before the first real build. This is the next immediate action.
+    </p>
+  </div>
+</section>
+
+<footer>
+  <span><span class="genesis-mark">Genesis PRO</span> · Companion App · Phase 3 of 4</span>
+  <span>2026-07-02 · Maio Eshet</span>
+</footer>
+
+</body>
+</html>

@@ -3,6 +3,7 @@ import { EngineProgress } from "@/components/Panel/EngineProgress";
 import { ConfidenceMeter } from "@/components/Panel/ConfidenceMeter";
 import { GateStatus } from "@/components/Panel/GateStatus";
 import { ResultSummary } from "@/components/Panel/ResultSummary";
+import { VoicePTT } from "@/components/Panel/VoicePTT";
 import { ApprovalModal } from "@/components/Approval/ApprovalModal";
 
 export function PanelApp() {
@@ -90,6 +91,14 @@ export function PanelApp() {
 
         {/* Last result */}
         <ResultSummary />
+
+        {/* Voice PTT */}
+        <section>
+          <div style={{ fontSize: "var(--text-xs)", color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>
+            Voice Input
+          </div>
+          <VoicePTT />
+        </section>
       </div>
     </div>
   );

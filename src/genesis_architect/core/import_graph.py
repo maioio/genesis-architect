@@ -124,9 +124,16 @@ def _collect_files(project_path: Path, extensions: list[str]) -> list[Path]:
 # ---------------------------------------------------------------------------
 
 def _extract_python_imports(py_file: Path, project_path: Path) -> list[str]:
-    """Return list of top-level module names imported by this file."""
+    """Return list of dotted module names imported by this file.
+
+    Full dotted paths are kept (`import app.billing` -> "app.billing") so the
+    resolver can map submodule imports to their actual files; consumers that
+    only need the top-level name can split on ".". utf-8-sig strips the BOM
+    that Windows editors often add — with plain utf-8 the BOM reaches
+    ast.parse as U+FEFF and the whole file is silently dropped.
+    """
     try:
-        source = py_file.read_text(encoding="utf-8", errors="replace")
+        source = py_file.read_text(encoding="utf-8-sig", errors="replace")
         tree = ast.parse(source)
     except (OSError, SyntaxError):
         return []
@@ -135,10 +142,15 @@ def _extract_python_imports(py_file: Path, project_path: Path) -> list[str]:
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             for alias in node.names:
-                imports.append(alias.name.split(".")[0])
+                imports.append(alias.name)
         elif isinstance(node, ast.ImportFrom):
             if node.module:
-                imports.append(node.module.split(".")[0])
+                imports.append(node.module)
+                # `from app import billing` imports the submodule app/billing.py
+                # when it exists — record the dotted candidate; the resolver
+                # drops it if it maps to nothing on disk.
+                for alias in node.names:
+                    imports.append(f"{node.module}.{alias.name}")
     return imports
 
 

@@ -9,9 +9,18 @@
 
 ## 🚦 Version & Status
 
-**Current product version: v6.9.0**
+**Current product version: v7.0.0**
 **Last updated: 2026-07-03**
 **Next site review due: 2026-07-17**
+
+> 🆕 **Phase 4 — Distribution Pipeline (2026-07-03):** GitHub Actions matrix build
+> wired: push `companion-v*` tag → CI builds **Windows MSI / macOS DMG / Linux AppImage**
+> in parallel and publishes a draft GitHub Release + `latest.json` update manifest.
+> **`tauri-plugin-updater` wired** — auto-update works once signing keys are in place.
+> **VS Code extension** gains `vsce package/publish` scripts + separate CI workflow.
+> **Code signing guide** written (`companion/docs/code-signing.md`) — Windows Authenticode
+> + macOS notarization + Tauri Ed25519 key. 1,649 tests (+25 from Phase 3 intelligence
+> wiring). Pro-only, on `pro/main`. **Ready to ship on first tag.**
 
 > 🆕 **Turnkey milestone (2026-07-03):** the Companion is now a real, installable
 > product. The **Tauri desktop app builds** → `genesis-companion.exe` + Windows
@@ -48,10 +57,10 @@
 | **genesis companion** — local health page + gate miss-rate stats | ✅ Shipped | **Yes.** |
 | **Committee Engine** — 5-advisor debate, collapse detection, transparency profiles | ✅ Shipped | **Yes**, via CLI/API. |
 | **Floating Assistant (web UI)** — `genesis companion --ui`: bubble ↔ chat panel, live multi-engine progress, approvals, quick actions | ⚙️ Early access | **Partly.** One command starts the backend + opens the assistant in a browser; chat drives a real GDE session and 7 engines stream live progress back (verified end-to-end). Needs the `[streaming]` extra. Zero build. Present as "early access / coming soon". |
-| **WebSocket Streaming Layer** | ✅ Has a client now | Installable (`[streaming]`); the Floating Assistant web UI consumes it end-to-end. The Tauri desktop shell will consume the same stream. |
-| **Voice (STT/TTS + live mic + wake word)** — faster-whisper + Kokoro + Meta MMS Hebrew | ⚙️ Self-serve, complete | `genesis companion --setup` downloads models; `--listen` runs a live wake-word loop ("genesis" / "ג'נסיס"); `--check` / `--speak` verify. Full loop works once `[voice]` is installed. Present as "early access" until it ships pre-bundled. |
-| **VS Code extension** | ⚙️ Built (`.vsix`) | `genesis-companion-0.1.0.vsix` compiles + packages; installable via "Install from VSIX". Not yet on the marketplace. |
-| **Tauri standalone desktop app** | ⚙️ Builds → installers | **`tauri build` succeeds:** produces `genesis-companion.exe` + Windows **MSI** + **NSIS setup.exe** (icons from the Genesis logo). Installable today. **Needs code signing** before public distribution (SmartScreen). Present as "early access". |
+| **WebSocket Streaming Layer** | ✅ Has a client now | Installable (`[streaming]`); the Floating Assistant web UI consumes it end-to-end. The Tauri desktop shell also consumes the same stream (Panel↔Bubble IPC bridge wired). |
+| **Voice (STT/TTS + live mic + wake word)** — faster-whisper + Kokoro + Meta MMS Hebrew | ⚙️ Self-serve, complete | `genesis companion --setup` downloads models; `--listen` runs a live wake-word loop ("genesis" / "ג'נסיס"); `--check` / `--speak` verify. Full loop works once `[voice]` is installed. VoicePTT also wired in Tauri Panel (Web Audio → WAV → STT → GDE). Present as "early access" until it ships pre-bundled. |
+| **VS Code extension** | ⚙️ CI pipeline ready | `genesis-companion-0.1.0.vsix` compiles + packages; installable via "Install from VSIX". `vscode-extension.yml` CI workflow builds + publishes on `vscode-v*` tag. **Needs `VSCE_PAT` secret** for Marketplace publish. |
+| **Tauri standalone desktop app** | ⚙️ Distribution pipeline ready | **`tauri build` succeeds:** produces `genesis-companion.exe` + Windows **MSI** + **NSIS setup.exe**. **GitHub Actions `companion-release.yml`** builds Windows/macOS/Linux in parallel on `companion-v*` tag. `tauri-plugin-updater` wired (auto-update). **Needs code signing certs** before public distribution (SmartScreen/Gatekeeper). Present as "early access". |
 
 **Publish rule:**
 - ✅ = announce as *available today*
@@ -65,7 +74,7 @@
 |---------|----------|:-------:|--------|
 | Free landing (LIVE, React) | `genesis-react` → `main:docs/` | v6.6.1 | ⏳ needs sync — add `genesis sync` + v6.7/v6.8 features |
 | Pro page (static draft, NOT live) | `docs/pro.html` | v6.4.0 | ⚠️ not the live site |
-| This report (source of truth) | `docs/WEBSITE_UPDATE_REPORT_v6.1.0.md` | **v6.8.0** | ✅ current |
+| This report (source of truth) | `docs/WEBSITE_UPDATE_REPORT_v6.1.0.md` | **v7.0.0** | ✅ current |
 
 > **Which file is actually live:** the published site at https://maioio.github.io/genesis-architect/
 > is the **React app** built from `C:\temp\genesis-react` (Vite), published to `main:docs/`.
@@ -195,21 +204,24 @@ genesis companion --speak "Hello"         # Test TTS round-trip
 - Wake word: "Genesis, start" / "ג'נסיס, תתחיל"
 - **Remaining gap:** live microphone capture loop + wake-word detector. Currently transcribes supplied audio, not a live mic stream. Verify on a clean machine. → Present as "early access / coming soon"
 
-### Tauri Standalone Desktop App (🚧)
-- Phase 1–3 complete: 28 Rust+TypeScript files, Panel↔Bubble IPC bridge, Gate Resume Flow, IDE Bridge hot-swap, Voice PTT (Web Audio → WAV → base64 → STT)
-- **Phase 4 remaining:** distribution packaging, code signing
-- → Present as "coming soon"
+### Tauri Standalone Desktop App (⚙️ — ready to distribute pending signing)
+- All 4 phases complete: Python backend, Tauri Rust+TS app, intelligence wiring, distribution pipeline
+- `companion-release.yml` builds Windows MSI / macOS DMG / Linux AppImage on `companion-v*` tag
+- `tauri-plugin-updater` wired — auto-update works once signing keys are added
+- **Remaining before GA:** add GitHub Secrets (TAURI_SIGNING_PRIVATE_KEY, APPLE_*, Windows cert)
+- → Present as "early access"
 
-### IDE Bridge / VS Code Extension (🚧)
-- HTTP server live after GDE run (port 47292), pattern index built from engine results
-- TypeScript extension source complete, cursor events, rate-limited, silent on sidecar absent
-- **Remaining:** compile to `.vsix`, publish to VS Code Marketplace
-- → Present as "coming soon"
+### IDE Bridge / VS Code Extension (⚙️ — ready to publish pending PAT)
+- HTTP server live after GDE run (port 47292), pattern index hot-swapped after every GDE run
+- TypeScript extension source complete, `vscode-extension.yml` CI workflow packages + publishes
+- **Remaining before Marketplace:** open `genesis-pro` publisher account, add `VSCE_PAT` secret
+- → Present as "early access"
 
-### WebSocket Streaming Layer (⚙️)
+### WebSocket Streaming Layer (✅ — both web UI and Tauri Panel consume it)
 - CompanionServer on `127.0.0.1:47291`, 20 event types, auth handshake, bidirectional
-- Installable today with `[streaming]` extra, but no UI client consumes it yet
-- → Present as "coming soon"
+- Web UI (`genesis companion --ui`) + Tauri Panel both consume the same stream
+- Panel→Bubble IPC bridge mirrors all events to Bubble via Tauri native events
+- → Installable today with `[streaming]` extra
 
 ---
 
@@ -259,7 +271,9 @@ genesis companion --speak "Hello"         # Test TTS round-trip
 
 | Version | Date | What shipped |
 |---------|------|-------------|
-| v6.8.0 | 2026-07-02 | Companion Phase 3 — Intelligence Wiring: Panel↔Bubble IPC, Gate Resume Flow, IDE Bridge hot-swap, Voice PTT. Tauri: 28 files total. |
+| v7.0.0 | 2026-07-03 | Companion Phase 4 — Distribution Pipeline: GitHub Actions matrix build (Win/Mac/Linux), tauri-plugin-updater + auto-update, vscode-extension CI, code signing guide, latest.json template. 1,649 tests. |
+| v6.9.0 | 2026-07-03 | Phase 3 Intelligence Wiring: Gate Resume Flow (approve→commit), VoicePTT (Web Audio→WAV→STT→GDE), IDE Bridge hot-swap post-GDE, Panel↔Bubble IPC bridge. +25 tests. |
+| v6.8.0 | 2026-07-02 | Companion Phase 2 — Tauri App Scaffold: Rust sidecar, 6 commands, Zustand store, WS client, 7 React components, design tokens. `tauri build` → .exe + MSI verified. |
 | v6.7.0 | 2026-07-02 | Autonomous Sync Manager: `genesis sync`, 3-zone approval scope, GitHub Actions workflow, sync_config.json, pending.json queue |
 | v6.6.1 | 2026-07-02 | Engine completeness: 17 engines wired (rules_engine, git_analyzer, import_audit, knowledge_graph auto), decay forecast in scorer, `genesis memory` + `genesis ui` CLI, 181 public API symbols |
 | v6.6.0 | 2026-07-02 | Companion Intelligence Layer: Committee Engine (28 tests), WebSocket Streaming (21 tests), IDE Bridge (19 tests), VoicePipeline stub (33 tests). 1,569 total tests. |

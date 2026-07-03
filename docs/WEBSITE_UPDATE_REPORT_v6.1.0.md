@@ -9,9 +9,15 @@
 
 ## 🚦 Version & Status
 
-**Current product version: v7.0.0**
+**Current product version: v7.1.0**
 **Last updated: 2026-07-03**
 **Next site review due: 2026-07-17**
+
+> 🆕 **v7.1.0 (2026-07-03):** Voice companion upgraded to three alive-feeling behaviors:
+> **streaming VAD end-of-turn detection** (replaces fixed-duration recording — mic closes after ~600ms silence);
+> **barge-in** (`TTSPipeline.stop()` + cancel token — bot goes silent the instant you speak);
+> **mid-turn context prefetch** (entity extraction from partial transcript → parallel KG + fragility lookup before you finish speaking).
+> `VoicePipeline` orchestrator added. `webrtcvad` added to `[voice]` extra. 1,649 tests. Pro-only.
 
 > 🆕 **Phase 4 — Distribution Pipeline (2026-07-03):** GitHub Actions matrix build
 > wired: push `companion-v*` tag → CI builds **Windows MSI / macOS DMG / Linux AppImage**
@@ -146,8 +152,8 @@
 - **Knowledge Graph** — links code, CVEs, risks and decisions; finds do-not-touch zones with an open CVE (nothing else on the market does this)
 - **Committee Engine** — 5-advisor debate (Contrarian, First Principles, Expansionist, Outsider, Executor), manufactured-consensus detection, full debate transcript in PRO
 - **Learning Engine** — improves which research strategy it picks for your task kind, with honest confidence
-- **Research Source Registry** — 25+ ranked sources, extensible per-project without code changes
-- **Reddit Answers workflow** — verified developer field intelligence (never treated as final truth)
+- **Research Source Registry** — 29 ranked sources across 11 tiers (official docs → RFCs → local code → security DBs → GitHub → Stack Overflow → packages → field intelligence → blogs → research papers → YouTube → market signal). Priority-ordered: engineering truth first, market signal last. Extensible per-project without code changes.
+- **Reddit / Hacker News / Lobste.rs** — field intelligence tier (priority 85), verified developer sentiment — never treated as engineering truth
 - **Evidence Packs** — proof behind every recommendation, with honest confidence grade
 - **Memory + Decision Journal** — per-project `.genesis/*.md`; every significant decision journaled
 - **Floating Assistant + Canvas Workspace** — zero-setup visual workspace (no Node, no build, no server)
@@ -201,8 +207,11 @@ genesis companion --speak "Hello"         # Test TTS round-trip
 - faster-whisper STT (Hebrew + English, 229ms streaming latency)
 - Meta MMS TTS Hebrew (ONNX, `mms-tts-heb.onnx`)
 - Kokoro-82M English TTS (sub-300ms, highest-quality local English)
-- Wake word: "Genesis, start" / "ג'נסיס, תתחיל"
-- **Remaining gap:** live microphone capture loop + wake-word detector. Currently transcribes supplied audio, not a live mic stream. Verify on a clean machine. → Present as "early access / coming soon"
+- Wake word: "genesis" / "ג'נסיס" — VAD-gated (not fixed-duration polling)
+- **Streaming VAD end-of-turn** — turn closes after ~600ms silence; no fixed duration
+- **Barge-in** — `TTSPipeline.stop()` + cancel token; bot goes silent instantly on speech onset
+- **Mid-turn context prefetch** — entity extraction → parallel KG + fragility lookup before utterance ends; `VoicePipeline` orchestrator wired
+- **Remaining before GA:** voice models must be downloaded via `genesis companion --setup`; not pre-bundled. → Present as "early access"
 
 ### Tauri Standalone Desktop App (⚙️ — ready to distribute pending signing)
 - All 4 phases complete: Python backend, Tauri Rust+TS app, intelligence wiring, distribution pipeline
@@ -271,6 +280,7 @@ genesis companion --speak "Hello"         # Test TTS round-trip
 
 | Version | Date | What shipped |
 |---------|------|-------------|
+| v7.1.0 | 2026-07-03 | Voice 3 alive behaviors: streaming VAD end-of-turn, barge-in (TTSPipeline.stop()), mid-turn context prefetch (EntityExtractor + ContextPrefetcher + BargeInWatcher + VoicePipeline orchestrator). webrtcvad added to [voice]. 1,649 tests. |
 | v7.0.0 | 2026-07-03 | Companion Phase 4 — Distribution Pipeline: GitHub Actions matrix build (Win/Mac/Linux), tauri-plugin-updater + auto-update, vscode-extension CI, code signing guide, latest.json template. 1,649 tests. |
 | v6.9.0 | 2026-07-03 | Phase 3 Intelligence Wiring: Gate Resume Flow (approve→commit), VoicePTT (Web Audio→WAV→STT→GDE), IDE Bridge hot-swap post-GDE, Panel↔Bubble IPC bridge. +25 tests. |
 | v6.8.0 | 2026-07-02 | Companion Phase 2 — Tauri App Scaffold: Rust sidecar, 6 commands, Zustand store, WS client, 7 React components, design tokens. `tauri build` → .exe + MSI verified. |

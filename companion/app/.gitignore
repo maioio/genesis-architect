@@ -1,0 +1,8 @@
+# Generated build output — never commit
+node_modules/
+dist/
+src-tauri/target/
+src-tauri/gen/
+
+# Tauri generated icons are kept (committed) so CI can build without the source PNG.
+# Everything else generated is ignored above.

@@ -14,6 +14,15 @@ from genesis_architect_pro.voice.setup import (
     run_setup,
     MODELS_DIR,
 )
+from genesis_architect_pro.voice.listener import (
+    ListenResult,
+    MicStatus,
+    WakeWordListener,
+    WAKE_WORDS,
+    mic_status,
+    is_wake,
+    listen_once,
+)
 
 __all__ = [
     "STTPipeline",
@@ -28,4 +37,11 @@ __all__ = [
     "readiness",
     "run_setup",
     "MODELS_DIR",
+    "ListenResult",
+    "MicStatus",
+    "WakeWordListener",
+    "WAKE_WORDS",
+    "mic_status",
+    "is_wake",
+    "listen_once",
 ]

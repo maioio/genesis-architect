@@ -6,7 +6,7 @@ use commands::{
     restart_sidecar, toggle_panel,
 };
 use sidecar::{kill_sidecar, spawn_sidecar, SidecarState};
-use tauri::{Manager, RunEvent};
+use tauri::{Emitter, Manager, RunEvent};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {

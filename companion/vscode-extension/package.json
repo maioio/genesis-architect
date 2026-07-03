@@ -3,6 +3,7 @@
   "displayName": "Genesis PRO Companion",
   "description": "Line-level codebase intelligence from Genesis PRO",
   "version": "0.1.0",
+  "publisher": "genesis-pro",
   "engines": { "vscode": "^1.85.0" },
   "categories": ["Other"],
   "activationEvents": ["onStartupFinished"],

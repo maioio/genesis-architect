@@ -4,7 +4,6 @@ export function ResultSummary() {
   const mode      = useGenesisStore((s) => s.sessionMode);
   const sessionId = useGenesisStore((s) => s.sessionId);
   const committee = useGenesisStore((s) => s.committeeSynthesis);
-  const confidence = useGenesisStore((s) => s.confidence);
 
   if (!sessionId) return null;
 

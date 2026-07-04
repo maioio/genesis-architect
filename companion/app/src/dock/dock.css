@@ -69,8 +69,9 @@ html, body, #root { height: 100%; background: transparent !important; overflow: 
 /* ============================ PANEL (expanded) ============================ */
 .panel {
   flex-direction: column;
-  background: linear-gradient(180deg, rgba(20,23,30,.94), rgba(13,15,20,.96));
-  backdrop-filter: blur(24px);
+  /* Fully opaque — a readable working surface, not a see-through overlay.
+     (The collapsed rail stays glassy; the expanded panel should not.) */
+  background: linear-gradient(180deg, #171a21, #0f1117);
   border: 1px solid var(--border);
   box-shadow: var(--shadow-panel);
 }

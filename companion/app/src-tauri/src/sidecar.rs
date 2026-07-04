@@ -47,11 +47,40 @@ fn find_genesis() -> Option<String> {
     None
 }
 
+/// Kill any stale `genesis companion --serve` process still holding the port
+/// from a previous run. Without this, our fresh sidecar can't bind 47291 and
+/// the UI hangs connecting to an orphan whose token we don't have.
+#[cfg(target_os = "windows")]
+fn kill_stale_backends() {
+    // WMImic: find python processes whose command line runs "companion --serve".
+    let _ = Command::new("powershell")
+        .args([
+            "-NoProfile",
+            "-Command",
+            "Get-CimInstance Win32_Process -Filter \"Name='python.exe'\" | \
+             Where-Object { $_.CommandLine -like '*companion*--serve*' } | \
+             ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }",
+        ])
+        .output();
+    std::thread::sleep(Duration::from_millis(400));
+}
+
+#[cfg(not(target_os = "windows"))]
+fn kill_stale_backends() {
+    let _ = Command::new("pkill")
+        .args(["-f", "companion --serve"])
+        .output();
+    std::thread::sleep(Duration::from_millis(400));
+}
+
 /// Spawn `genesis companion --serve` and wait for `READY token=<hex>` on stdout.
 /// Returns Err if genesis is not found or if the token is not received within 15s.
 pub fn spawn_sidecar(state: &SidecarState) -> Result<(), String> {
     let genesis = find_genesis()
         .ok_or_else(|| "genesis not found in PATH — run: pip install genesis-architect-pro[companion]".to_string())?;
+
+    // Clear any orphaned backend from a prior run before we bind the port.
+    kill_stale_backends();
 
     let mut child = Command::new(&genesis)
         .args(["companion", "--serve"])

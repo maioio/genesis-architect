@@ -25,6 +25,10 @@ class GenesisWSClient {
   private destroyed = false;
 
   async connect(): Promise<void> {
+    // A prior effect-cleanup may have flagged us destroyed; a fresh connect()
+    // is an explicit intent to live again. Without this reset the singleton
+    // stays dead after any remount and the UI hangs on "connecting" forever.
+    this.destroyed = false;
     if (this.state !== "disconnected" && this.state !== "reconnecting") return;
     this.state = "connecting";
 

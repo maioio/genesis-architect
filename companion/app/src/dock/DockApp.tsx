@@ -85,7 +85,9 @@ export function DockApp() {
     setDockSide(initial);
     applyDock(initial, false);
     void wsClient.connect();
-    return () => wsClient.disconnect();
+    // The WS client is an app-lifetime singleton — do NOT disconnect on effect
+    // cleanup. A StrictMode/remount cleanup would otherwise permanently brick
+    // the connection and wedge the UI on "connecting".
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

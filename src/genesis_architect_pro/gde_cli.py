@@ -634,6 +634,8 @@ def cmd_companion_serve(project_dir: Path) -> int:
     """
     import signal
 
+    import socket
+
     from genesis_architect_pro.gde_companion import GateNotifier
     from genesis_architect_pro.streaming.server import CompanionServer
     from genesis_architect_pro.ide_bridge.server import IDEBridgeServer
@@ -641,6 +643,24 @@ def cmd_companion_serve(project_dir: Path) -> int:
     from genesis_architect_pro import gate_notifier_patch
     from genesis_architect_pro.streaming.inbound import InboundRouter
     from genesis_architect_pro.streaming.events import default_emitter
+
+    # 0. Fail fast if the WebSocket port is already held by a stale backend.
+    #    Otherwise websockets.serve() raises inside the daemon thread, no READY
+    #    line is ever printed, and the Tauri shell hangs 15s then connects to
+    #    the *stale* server with a mismatched token — the UI sticks on
+    #    "connecting". A clear stderr line lets the shell surface the problem.
+    _probe = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        _in_use = _probe.connect_ex(("127.0.0.1", 47291)) == 0
+    finally:
+        _probe.close()
+    if _in_use:
+        print(
+            "ERROR: port 47291 is already in use — another Genesis Companion "
+            "backend is running. Close it and relaunch.",
+            file=sys.stderr,
+        )
+        return 3
 
     # 1. Start WebSocket server
     ws_server = CompanionServer(emitter=default_emitter)

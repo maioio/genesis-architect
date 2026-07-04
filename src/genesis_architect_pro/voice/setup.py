@@ -226,9 +226,13 @@ def ensure_companion_packages(*, progress=None) -> ProvisionResult:
         progress(f"Installing {len(missing)} missing package(s): "
                  + ", ".join(m.split(">=")[0] for m in missing))
     try:
+        # encoding+errors are required: pip emits UTF-8, but text=True would
+        # otherwise decode with the OS locale (cp1252 on Windows) and crash on
+        # any non-Latin-1 byte in pip's progress/output.
         proc = subprocess.run(
             [sys.executable, "-m", "pip", "install", "--quiet", *missing],
-            capture_output=True, text=True, timeout=1800,
+            capture_output=True, text=True, encoding="utf-8", errors="replace",
+            timeout=1800,
         )
         if proc.returncode == 0:
             result.installed = missing

@@ -43,6 +43,7 @@ def _is_git_repo(project_path: Path) -> bool:
     result = subprocess.run(
         ["git", "rev-parse", "--is-inside-work-tree"],
         cwd=str(project_path), capture_output=True, text=True,
+        encoding="utf-8", errors="replace",
     )
     return result.returncode == 0
 
@@ -80,6 +81,8 @@ def _git_log(project_path: Path, days: int) -> list[dict]:
         cwd=str(project_path),
         capture_output=True,
         text=True,
+        encoding="utf-8",
+        errors="replace",
         timeout=30,
     )
     if result.returncode != 0:
@@ -130,6 +133,8 @@ def _last_touched(project_path: Path, rel_path: str) -> int | None:
         cwd=str(project_path),
         capture_output=True,
         text=True,
+        encoding="utf-8",
+        errors="replace",
         timeout=10,
     )
     if result.returncode != 0 or not result.stdout.strip():

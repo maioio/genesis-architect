@@ -13,7 +13,11 @@ from pathlib import Path
 
 def _run(cmd: list[str], cwd: Path) -> str:
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True, cwd=cwd, timeout=30)  # noqa: S603
+        # encoding+errors: git output is UTF-8; without this text=True decodes
+        # with the OS locale (cp1252 on Windows) and crashes on non-Latin-1 bytes.
+        result = subprocess.run(cmd, capture_output=True, text=True,  # noqa: S603
+                                encoding="utf-8", errors="replace",
+                                cwd=cwd, timeout=30)
         return result.stdout
     except (subprocess.TimeoutExpired, FileNotFoundError):
         return ""

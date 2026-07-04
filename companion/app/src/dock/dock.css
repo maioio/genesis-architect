@@ -1,0 +1,210 @@
+/* ============================================================================
+   Genesis Companion — docked assistant
+   A narrow rail that clings to a screen edge and expands into a full panel.
+   Right edge for RTL (Hebrew), left for LTR. Glassy, calm, always-on-top.
+   ============================================================================ */
+
+html, body, #root { height: 100%; background: transparent !important; overflow: hidden; }
+
+/* ---------- shared surface ---------- */
+.rail, .panel {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  color: var(--text);
+  font-family: var(--font);
+  -webkit-font-smoothing: antialiased;
+  animation: dock-in var(--t-slow) cubic-bezier(.2,.8,.2,1);
+}
+@keyframes dock-in { from { opacity: 0; transform: translateY(6px) scale(.98); } to { opacity: 1; transform: none; } }
+
+/* ============================ RAIL (collapsed) ============================ */
+.rail {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: 16px 0;
+  background: linear-gradient(180deg, rgba(22,25,32,.86), rgba(13,15,20,.9));
+  backdrop-filter: blur(18px);
+  border: 1px solid var(--border);
+  box-shadow: 0 12px 40px rgba(0,0,0,.55);
+}
+.rail.right { border-radius: 20px 0 0 20px; border-right: none; }
+.rail.left  { border-radius: 0 20px 20px 0; border-left:  none; }
+
+.rail-orb {
+  background: none; border: none; padding: 0; cursor: pointer;
+  border-radius: 50%; transition: transform var(--t-fast);
+}
+.rail-orb:hover { transform: scale(1.06); }
+.rail-orb:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+
+.rail-mic {
+  width: 40px; height: 40px; border-radius: 50%;
+  background: var(--surface2); border: 1px solid var(--border2);
+  color: var(--text2); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all var(--t-fast);
+}
+.rail-mic:hover { color: var(--accent2); border-color: var(--accent2); background: var(--surface3); }
+.rail-mic:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.rail-badge {
+  position: absolute; top: 12px; inset-inline-end: 12px;
+  min-width: 18px; height: 18px; padding: 0 4px;
+  background: var(--danger); color: #fff; font-size: 11px; font-weight: 700;
+  border-radius: 9px; display: flex; align-items: center; justify-content: center;
+  border: 2px solid var(--bg);
+}
+.rail-status-dot { width: 7px; height: 7px; border-radius: 50%; }
+.rail-status-dot.on  { background: var(--success); box-shadow: 0 0 8px var(--success); }
+.rail-status-dot.off { background: var(--muted); }
+
+/* activity tint on the rail edge */
+.rail.activity-thinking  { border-color: color-mix(in srgb, var(--accent) 60%, var(--border)); }
+.rail.activity-attention { border-color: color-mix(in srgb, var(--accent2) 60%, var(--border)); }
+.rail.activity-blocked   { border-color: color-mix(in srgb, var(--danger) 70%, var(--border)); }
+
+/* ============================ PANEL (expanded) ============================ */
+.panel {
+  flex-direction: column;
+  background: linear-gradient(180deg, rgba(20,23,30,.94), rgba(13,15,20,.96));
+  backdrop-filter: blur(24px);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-panel);
+}
+.panel.right { border-radius: 22px 0 0 22px; border-right: none; }
+.panel.left  { border-radius: 0 22px 22px 0; border-left:  none; }
+
+.panel-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 16px; border-bottom: 1px solid var(--border);
+  cursor: grab;
+}
+.panel-title { display: flex; align-items: center; gap: 10px; }
+.panel-name { font-weight: 650; font-size: 15px; letter-spacing: .2px; }
+.panel-status { font-size: 11.5px; color: var(--text2); margin-top: 1px; }
+.panel-actions { display: flex; gap: 6px; }
+
+.ghost-btn {
+  min-width: 30px; height: 30px; padding: 0 8px;
+  background: transparent; border: 1px solid transparent; border-radius: 8px;
+  color: var(--text2); font-size: 15px; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: all var(--t-fast);
+}
+.ghost-btn:hover { background: var(--surface2); color: var(--text); }
+.ghost-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.ghost-btn.wide { flex: 1; }
+
+/* ---------- conversation ---------- */
+.convo {
+  flex: 1; overflow-y: auto; padding: 16px;
+  display: flex; flex-direction: column; gap: 12px;
+}
+.empty {
+  margin: auto; text-align: center;
+  display: flex; flex-direction: column; align-items: center; gap: 16px;
+  padding: 20px 8px;
+}
+.empty-hint { color: var(--text2); font-size: 14px; max-width: 30ch; line-height: 1.5; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+.chip {
+  background: var(--surface2); border: 1px solid var(--border2); color: var(--text2);
+  border-radius: var(--r-full); padding: 7px 13px; font-size: 12.5px; cursor: pointer;
+  transition: all var(--t-fast);
+}
+.chip:hover { color: var(--text); border-color: var(--accent); background: var(--surface3); }
+
+.turn { display: flex; }
+.turn.user { justify-content: flex-end; }
+.turn.genesis { justify-content: flex-start; }
+.bubble-msg {
+  max-width: 84%; padding: 10px 13px; border-radius: 14px;
+  font-size: 14px; line-height: 1.5; white-space: pre-wrap; word-break: break-word;
+}
+.turn.user .bubble-msg { background: var(--accent); color: #fff; border-bottom-right-radius: 5px; }
+.turn.genesis .bubble-msg { background: var(--surface2); border: 1px solid var(--border); border-bottom-left-radius: 5px; }
+.turn.pending .bubble-msg { opacity: .6; font-style: italic; }
+
+/* live engine strip */
+.engine-strip { display: flex; flex-wrap: wrap; gap: 6px; padding: 4px 0; }
+.engine-pill {
+  font-family: var(--font-mono); font-size: 10.5px; padding: 3px 8px;
+  border-radius: var(--r-full); background: var(--surface2);
+  border: 1px solid var(--border2); color: var(--text2);
+}
+.engine-pill.running { color: var(--accent); border-color: var(--accent); animation: pulse-thinking 2s infinite; }
+.engine-pill.done { color: var(--success); border-color: color-mix(in srgb, var(--success) 40%, var(--border2)); }
+.engine-pill.failed { color: var(--danger); border-color: var(--danger); }
+
+/* gate approval */
+.gate-card {
+  background: color-mix(in srgb, var(--danger) 10%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--danger) 45%, var(--border));
+  border-radius: 12px; padding: 13px;
+}
+.gate-title { font-weight: 650; font-size: 13px; color: var(--danger); margin-bottom: 4px; }
+.gate-desc { font-size: 13px; color: var(--text2); margin-bottom: 10px; line-height: 1.45; }
+.gate-btns { display: flex; gap: 8px; }
+
+/* ---------- composer ---------- */
+.composer {
+  display: flex; align-items: center; gap: 8px;
+  padding: 12px; border-top: 1px solid var(--border);
+}
+.mic-btn {
+  width: 42px; height: 42px; flex-shrink: 0; border-radius: 50%;
+  background: var(--surface2); border: 1px solid var(--border2); color: var(--text2);
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: all var(--t-fast);
+}
+.mic-btn:hover { color: var(--accent2); border-color: var(--accent2); }
+.mic-btn.on {
+  background: var(--accent2); color: #05201a; border-color: var(--accent2);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent2) 25%, transparent);
+  animation: pulse-mic 1.6s ease-in-out infinite;
+}
+.mic-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@keyframes pulse-mic {
+  0%,100% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent2) 22%, transparent); }
+  50%     { box-shadow: 0 0 0 9px color-mix(in srgb, var(--accent2) 0%, transparent); }
+}
+
+.composer-input {
+  flex: 1; min-width: 0; height: 42px; padding: 0 14px;
+  background: var(--surface2); border: 1px solid var(--border2); border-radius: var(--r-full);
+  color: var(--text); font-family: var(--font); font-size: 14px; outline: none;
+  transition: border-color var(--t-fast);
+}
+.composer-input::placeholder { color: var(--muted); }
+.composer-input:focus { border-color: var(--accent); }
+
+.send-btn {
+  width: 42px; height: 42px; flex-shrink: 0; border-radius: 50%;
+  background: var(--accent); border: none; color: #fff; font-size: 18px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; transition: all var(--t-fast);
+}
+.send-btn:hover:not(:disabled) { filter: brightness(1.12); }
+.send-btn:disabled { opacity: .4; cursor: default; }
+.send-btn:focus-visible { outline: 2px solid #fff; outline-offset: 1px; }
+
+/* first-run */
+.firstrun { padding: 26px 20px; text-align: center; display: flex; flex-direction: column; gap: 12px; align-items: center; }
+.firstrun-title { font-weight: 650; color: var(--danger); font-size: 15px; }
+.firstrun p { color: var(--text2); font-size: 13px; }
+.firstrun code {
+  font-family: var(--font-mono); font-size: 12.5px; color: var(--code);
+  background: var(--bg); padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border);
+}
+.primary-btn {
+  background: var(--accent); border: none; color: #fff; font-weight: 600; font-size: 13px;
+  padding: 9px 16px; border-radius: 9px; cursor: pointer; transition: filter var(--t-fast); flex: 1;
+}
+.primary-btn:hover { filter: brightness(1.12); }
+.primary-btn:focus-visible { outline: 2px solid #fff; outline-offset: 1px; }
+
+/* RTL: flip conversation alignment so user is on the correct side */
+:dir(rtl) .turn.user { justify-content: flex-start; }
+:dir(rtl) .turn.genesis { justify-content: flex-end; }

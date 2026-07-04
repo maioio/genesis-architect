@@ -2,8 +2,7 @@ mod commands;
 mod sidecar;
 
 use commands::{
-    anchor_panel_to_bubble, get_ws_credentials, open_canvas, read_session_state,
-    restart_sidecar, resize_bubble, toggle_panel,
+    dock_to_edge, get_ws_credentials, open_canvas, read_session_state, restart_sidecar,
 };
 use sidecar::{kill_sidecar, spawn_sidecar, SidecarState};
 use tauri::{Emitter, Manager, RunEvent};
@@ -19,11 +18,9 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             get_ws_credentials,
             read_session_state,
-            toggle_panel,
             restart_sidecar,
             open_canvas,
-            anchor_panel_to_bubble,
-            resize_bubble,
+            dock_to_edge,
         ])
         .setup(|app| {
             let state = app.state::<SidecarState>();
@@ -36,8 +33,8 @@ pub fn run() {
                 Err(e) => {
                     eprintln!("[genesis-companion] sidecar unavailable: {e}");
                     // Emit to frontend so it can show first-run instructions
-                    if let Some(bubble) = app.get_webview_window("bubble") {
-                        let _ = bubble.emit(
+                    if let Some(dock) = app.get_webview_window("dock") {
+                        let _ = dock.emit(
                             "genesis://sidecar-error",
                             serde_json::json!({ "message": e }),
                         );

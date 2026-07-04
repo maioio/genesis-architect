@@ -39,8 +39,16 @@ export interface CommitteeSynthesisState {
   minorityView?: string;
 }
 
-export type VoiceState = "idle" | "listening" | "transcribing" | "speaking";
+export type VoiceState = "idle" | "listening" | "transcribing" | "thinking" | "speaking";
 export type ActivityLevel = "IDLE" | "THINKING" | "ATTENTION" | "BLOCKED";
+export type DockSide = "left" | "right";
+
+export interface Turn {
+  id: string;
+  role: "user" | "genesis";
+  text: string;
+  streaming?: boolean;
+}
 
 interface GenesisStore {
   // Connection
@@ -70,10 +78,20 @@ interface GenesisStore {
   voiceState: VoiceState;
   voiceTranscript: string;
 
+  // Dock + conversation
+  expanded: boolean;
+  dockSide: DockSide;
+  conversation: Turn[];
+
   // Actions
   setConnected: (v: boolean) => void;
   setSidecarAlive: (v: boolean) => void;
   setSidecarError: (msg: string | null) => void;
+  setExpanded: (v: boolean) => void;
+  setDockSide: (s: DockSide) => void;
+  setVoiceState: (v: VoiceState) => void;
+  addTurn: (t: Turn) => void;
+  appendToLastGenesisTurn: (chunk: string) => void;
   clearGate: () => void;
   clearDiff: () => void;
   handleEvent: (type: string, payload: unknown) => void;
@@ -93,10 +111,28 @@ export const useGenesisStore = create<GenesisStore>((set) => ({
   committeeSynthesis: null,
   voiceState: "idle",
   voiceTranscript: "",
+  expanded: false,
+  dockSide: "right",
+  conversation: [],
 
   setConnected: (v) => set({ connected: v }),
   setSidecarAlive: (v) => set({ sidecarAlive: v }),
   setSidecarError: (msg) => set({ sidecarError: msg }),
+  setExpanded: (v) => set({ expanded: v }),
+  setDockSide: (s) => set({ dockSide: s }),
+  setVoiceState: (v) => set({ voiceState: v }),
+  addTurn: (t) => set((s) => ({ conversation: [...s.conversation, t] })),
+  appendToLastGenesisTurn: (chunk) =>
+    set((s) => {
+      const conv = [...s.conversation];
+      const last = conv[conv.length - 1];
+      if (last && last.role === "genesis" && last.streaming) {
+        conv[conv.length - 1] = { ...last, text: last.text + chunk };
+      } else {
+        conv.push({ id: crypto.randomUUID(), role: "genesis", text: chunk, streaming: true });
+      }
+      return { conversation: conv };
+    }),
   clearGate: () => set({ pendingGate: null }),
   clearDiff: () => set({ pendingDiff: null }),
 
@@ -176,8 +212,26 @@ export const useGenesisStore = create<GenesisStore>((set) => ({
         break;
       }
       case "session.done": {
-        // engines stay visible; clear voice state
-        set({ voiceState: "idle", voiceTranscript: "" });
+        // Compose a concise spoken-style reply from what the session found,
+        // add it as a Genesis turn, and return to idle.
+        set((s) => {
+          const done = Object.values(s.engines).filter((e) => e.status === "done").length;
+          const failed = Object.values(s.engines).filter((e) => e.status === "failed").length;
+          const mode = s.sessionMode ? s.sessionMode.toUpperCase() : "session";
+          const conf = Math.round((s.confidence ?? 1) * 100);
+          let reply = `Done — ${mode} complete. ${done} engine${done === 1 ? "" : "s"} ran`;
+          if (failed) reply += `, ${failed} degraded`;
+          reply += `. Confidence ${conf}%.`;
+          if (s.pendingGate) reply += " I need your approval before writing anything.";
+          return {
+            voiceState: "idle",
+            voiceTranscript: "",
+            conversation: [
+              ...s.conversation,
+              { id: crypto.randomUUID(), role: "genesis" as const, text: reply },
+            ],
+          };
+        });
         break;
       }
       case "committee.synthesis": {
@@ -194,7 +248,19 @@ export const useGenesisStore = create<GenesisStore>((set) => ({
       }
       case "voice.transcript": {
         const p = payload as VoiceTranscript;
-        set({ voiceTranscript: p.text, voiceState: p.is_final ? "idle" : "transcribing" });
+        if (p.is_final && p.text.trim()) {
+          // Commit the recognized speech as a user turn and kick off thinking.
+          set((s) => ({
+            voiceTranscript: "",
+            voiceState: "thinking",
+            conversation: [
+              ...s.conversation,
+              { id: crypto.randomUUID(), role: "user" as const, text: p.text.trim() },
+            ],
+          }));
+        } else {
+          set({ voiceTranscript: p.text, voiceState: "transcribing" });
+        }
         break;
       }
       case "voice.tts_chunk": {

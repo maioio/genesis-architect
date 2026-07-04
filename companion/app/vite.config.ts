@@ -16,8 +16,7 @@ export default defineConfig({
     sourcemap: !!process.env.TAURI_DEBUG,
     rollupOptions: {
       input: {
-        panel: resolve(__dirname, "index.html"),
-        bubble: resolve(__dirname, "bubble.html"),
+        dock: resolve(__dirname, "index.html"),
       },
     },
   },

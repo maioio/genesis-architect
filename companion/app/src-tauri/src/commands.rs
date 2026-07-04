@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::Path;
-use tauri::{AppHandle, Emitter, Manager, State};
+use tauri::{AppHandle, Emitter, Manager, PhysicalPosition, PhysicalSize, State};
 
 use crate::sidecar::{kill_sidecar, spawn_sidecar, SidecarState};
 
@@ -32,31 +32,12 @@ pub fn read_session_state(project_dir: String) -> Result<serde_json::Value, Stri
     serde_json::from_str(&raw).map_err(|e| format!("invalid JSON: {e}"))
 }
 
-/// Toggle Panel window visibility.
-#[tauri::command]
-pub fn toggle_panel(app: AppHandle) -> Result<(), String> {
-    let panel = app
-        .get_webview_window("panel")
-        .ok_or("panel window not found")?;
-
-    if panel.is_visible().unwrap_or(false) {
-        panel.hide().map_err(|e| e.to_string())
-    } else {
-        panel.show().map_err(|e| e.to_string())?;
-        panel.set_focus().map_err(|e| e.to_string())
-    }
-}
-
 /// Restart the Python sidecar (e.g. after crash).
 #[tauri::command]
-pub fn restart_sidecar(
-    app: AppHandle,
-    state: State<SidecarState>,
-) -> Result<(), String> {
+pub fn restart_sidecar(app: AppHandle, state: State<SidecarState>) -> Result<(), String> {
     kill_sidecar(&state);
     *state.token.lock().unwrap() = None;
     spawn_sidecar(&state)?;
-    // Notify frontend that sidecar is back
     app.emit("genesis://sidecar-restarted", ())
         .map_err(|e| e.to_string())?;
     Ok(())
@@ -75,37 +56,59 @@ pub fn open_canvas(project_dir: String) -> Result<(), String> {
     open::that(url).map_err(|e| e.to_string())
 }
 
-/// Resize the Bubble window — used to show the first-run setup screen.
-#[tauri::command]
-pub fn resize_bubble(app: AppHandle, width: u32, height: u32) -> Result<(), String> {
-    let bubble = app
-        .get_webview_window("bubble")
-        .ok_or("bubble window not found")?;
-    bubble
-        .set_size(tauri::Size::Physical(tauri::PhysicalSize { width, height }))
-        .map_err(|e| e.to_string())
+/// Which screen edge the dock clings to.
+#[derive(Serialize, Deserialize, Clone, Copy, PartialEq)]
+#[serde(rename_all = "lowercase")]
+pub enum DockSide {
+    Left,
+    Right,
 }
 
-/// Show the panel at a specific anchor position relative to the bubble.
+/// Dock the companion window to a screen edge at a given logical size, then
+/// snap it flush against that edge (vertically centered). This is the single
+/// source of truth for the window's geometry — the collapsed rail and the
+/// expanded panel are just two different `width`/`height` calls to it.
+///
+/// Replaces the old bubble+panel two-window positioning math, which drifted
+/// because it guessed the bubble's location instead of measuring the screen.
 #[tauri::command]
-pub fn anchor_panel_to_bubble(
+pub fn dock_to_edge(
     app: AppHandle,
-    bubble_x: i32,
-    bubble_y: i32,
+    side: DockSide,
+    width: u32,
+    height: u32,
 ) -> Result<(), String> {
-    let panel = app
-        .get_webview_window("panel")
-        .ok_or("panel window not found")?;
+    let win = app
+        .get_webview_window("dock")
+        .ok_or("dock window not found")?;
 
-    // Position panel to the left of the bubble (assuming bubble is bottom-right)
-    let panel_x = bubble_x - 395;
-    let panel_y = bubble_y - 620;
-    let panel_x = panel_x.max(8);
-    let panel_y = panel_y.max(8);
+    let scale = win.scale_factor().map_err(|e| e.to_string())?;
+    let monitor = win
+        .current_monitor()
+        .map_err(|e| e.to_string())?
+        .ok_or("no monitor for window")?;
+    let mon_pos = monitor.position();
+    let mon_size = monitor.size();
 
-    panel
-        .set_position(tauri::PhysicalPosition::new(panel_x, panel_y))
+    // Convert requested logical size to physical pixels for this monitor.
+    let phys_w = (width as f64 * scale).round() as u32;
+    let phys_h = (height as f64 * scale).round() as u32;
+
+    // A small breathing gap from the very edge so the rounded corners read.
+    let gap = (12.0 * scale).round() as i32;
+
+    let x = match side {
+        DockSide::Right => {
+            mon_pos.x + mon_size.width as i32 - phys_w as i32 - gap
+        }
+        DockSide::Left => mon_pos.x + gap,
+    };
+    // Vertically centered on the monitor.
+    let y = mon_pos.y + ((mon_size.height as i32 - phys_h as i32) / 2).max(0);
+
+    win.set_size(PhysicalSize::new(phys_w, phys_h))
         .map_err(|e| e.to_string())?;
-    panel.show().map_err(|e| e.to_string())?;
-    panel.set_focus().map_err(|e| e.to_string())
+    win.set_position(PhysicalPosition::new(x, y))
+        .map_err(|e| e.to_string())?;
+    Ok(())
 }

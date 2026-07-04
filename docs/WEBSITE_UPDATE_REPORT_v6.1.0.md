@@ -26,10 +26,19 @@
 > **Site copy corrected:** 28 → **30 sources** everywhere current-facts, price shows **$9**, stat strip
 > **1,736 tests**, sync time 02:03 UTC, mobile 320px overflow fixed. Suite: **1,736 tests, 0 failures**; ruff clean.
 >
-> 🆕 **One-click install (2026-07-03):** `pip install genesis-architect-pro[companion-full]` now
-> includes `kokoro>=0.9`, `soundfile>=0.12`, and `sherpa-onnx>=1.10` — all voice packages in one
-> command. `genesis companion --ui` auto-downloads STT + Hebrew TTS models on first launch
-> (no `--setup` step required). Customer experience: install → license key → `genesis companion --ui`.
+> 🆕 **True one-command install (2026-07-04):** the customer now installs **only**
+> `pip install genesis-architect-pro` — no extras at all. The first `genesis companion --ui`
+> auto-installs every missing Companion package into the environment
+> (`ensure_companion_packages`, verified by import, honest per-package failure reporting)
+> and then auto-downloads the STT + Hebrew TTS models. Two compatibility traps fixed on the way:
+> `webrtcvad` → `webrtcvad-wheels` (plain webrtcvad is sdist-only — failed on any machine without
+> a C compiler) and `kokoro` pinned `>=0.7` (0.8+ requires Python <3.13 — would have broken every
+> Python 3.13/3.14 customer). On Python ≥3.13 kokoro is uninstallable entirely (spacy has no
+> wheels) — **English TTS now falls back to Piper en_US via sherpa-onnx**, same engine as Hebrew.
+> The Hebrew MMS download URL was a 404 since day one (no `heb` asset in the k2-fsa release) —
+> now fetched from HF (`thewh1teagle/mms-tts-heb`, model+tokens; note MMS weights are CC-BY-NC-4.0).
+> Verified end-to-end on this machine: `--check` all OK, `--speak` plays real Hebrew and English.
+> Customer experience: **install → license key → talk.**
 
 > 🆕 **v7.2.0 (2026-07-03):** Full test coverage pass — 1,721 tests, 0 failures.
 > Added `test_voice_pipeline_orchestrator.py` (34 tests: EntityExtractor, ContextPrefetcher,

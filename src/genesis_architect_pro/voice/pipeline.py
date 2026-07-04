@@ -10,7 +10,7 @@ Model selection (from STT_TTS_DECISION_MATRIX.md):
 New in this version:
   - TTSPipeline.stop() — cancels any active playback immediately via a shared
     threading.Event cancel token. All three play methods (_play_kokoro,
-    _play_mms, _play_espeak) check the token between chunks/sentences.
+    _play_sherpa, _play_espeak) check the token between chunks/sentences.
   - Full-duplex design: the cancel token is set externally (by VoicePipeline)
     when VAD detects new speech onset during playback (barge-in).
   - Blocking playback is replaced by a chunk-by-chunk loop that checks the
@@ -183,6 +183,7 @@ class TTSPipeline:
     def __init__(self) -> None:
         self._kokoro = None
         self._mms = None
+        self._piper = None
         self._espeak = None
         self._lock = threading.Lock()
         self._cancel = threading.Event()   # set → stop playback ASAP
@@ -210,36 +211,74 @@ class TTSPipeline:
             self._kokoro = KPipeline(lang_code="a")
             _log.info("TTS: Kokoro-82M loaded (English)")
         except ImportError:
-            _log.warning("Kokoro TTS not installed. Run: pip install kokoro>=0.9")
+            # Expected on Python >=3.13 (kokoro's spacy dep has no wheels there);
+            # English falls through to Piper via sherpa-onnx.
+            _log.debug("Kokoro not installed — using Piper English fallback")
         except Exception as exc:
             _log.warning("Kokoro load error: %s", exc)
+
+    @staticmethod
+    def _sherpa_vits(model: "Path", tokens: "Path | None",
+                     data_dir: "Path | None" = None):
+        """Build a sherpa-onnx OfflineTts for a VITS model directory."""
+        import sherpa_onnx  # type: ignore[import]
+        vits_kwargs = {"model": str(model)}
+        if tokens is not None and tokens.exists():
+            vits_kwargs["tokens"] = str(tokens)
+        if data_dir is not None and data_dir.exists():
+            vits_kwargs["data_dir"] = str(data_dir)
+        return sherpa_onnx.OfflineTts(
+            sherpa_onnx.OfflineTtsConfig(
+                model=sherpa_onnx.OfflineTtsModelConfig(
+                    vits=sherpa_onnx.OfflineTtsVitsModelConfig(**vits_kwargs)
+                )
+            )
+        )
 
     def _load_mms(self) -> None:
         if self._mms is not None:
             return
         try:
-            import sherpa_onnx  # type: ignore[import]
-            mms_model = _MODELS_DIR / "mms-tts-heb.onnx"
-            if mms_model.exists():
-                self._mms = sherpa_onnx.OfflineTts(
-                    sherpa_onnx.OfflineTtsConfig(
-                        model=sherpa_onnx.OfflineTtsModelConfig(
-                            vits=sherpa_onnx.OfflineTtsVitsModelConfig(
-                                model=str(mms_model)
-                            )
-                        )
-                    )
-                )
+            mms_dir = _MODELS_DIR / "vits-mms-heb"
+            legacy = _MODELS_DIR / "mms-tts-heb.onnx"
+            if (mms_dir / "model.onnx").exists():
+                self._mms = self._sherpa_vits(mms_dir / "model.onnx",
+                                              mms_dir / "tokens.txt")
                 _log.info("TTS: Meta MMS Hebrew loaded")
+            elif legacy.exists():  # pre-7.2 layout (onnx only, no tokens)
+                self._mms = self._sherpa_vits(legacy, None)
+                _log.info("TTS: Meta MMS Hebrew loaded (legacy layout)")
             else:
                 _log.warning(
                     "Hebrew TTS model not found at %s. "
-                    "Run: genesis companion --setup", mms_model
+                    "Run: genesis companion --setup", mms_dir
                 )
         except ImportError:
             _log.warning("sherpa-onnx not installed — Hebrew TTS unavailable.")
         except Exception as exc:
             _log.warning("MMS load error: %s", exc)
+
+    def _load_piper_en(self) -> None:
+        """English VITS through sherpa-onnx — the path taken when Kokoro is
+        not installable (its spacy dependency has no wheels on Python >=3.13)."""
+        if self._piper is not None:
+            return
+        try:
+            piper_dir = _MODELS_DIR / "vits-piper-en_US-amy-low"
+            onnx = next(iter(piper_dir.glob("*.onnx")), None) if piper_dir.exists() else None
+            if onnx is None:
+                _log.warning(
+                    "English Piper model not found at %s. "
+                    "Run: genesis companion --setup", piper_dir
+                )
+                return
+            self._piper = self._sherpa_vits(onnx, piper_dir / "tokens.txt",
+                                            piper_dir / "espeak-ng-data")
+            _log.info("TTS: Piper en_US loaded (sherpa-onnx)")
+        except ImportError:
+            _log.warning("sherpa-onnx not installed — English Piper TTS unavailable.")
+        except Exception as exc:
+            _log.warning("Piper load error: %s", exc)
 
     # -- public API ----------------------------------------------------------
 
@@ -284,12 +323,16 @@ class TTSPipeline:
                 if lang == "he":
                     self._load_mms()
                     if self._mms:
-                        self._play_mms(text)
+                        self._play_sherpa(self._mms, text)
                         return
                 else:
                     self._load_kokoro()
                     if self._kokoro:
                         self._play_kokoro(text)
+                        return
+                    self._load_piper_en()
+                    if self._piper:
+                        self._play_sherpa(self._piper, text)
                         return
                 self._play_espeak(text, lang)
         finally:
@@ -322,15 +365,16 @@ class TTSPipeline:
             if not self._cancel.is_set():
                 self._play_espeak(text, "en")
 
-    def _play_mms(self, text: str) -> None:
-        """Play MMS TTS audio; checks cancel before playback."""
+    def _play_sherpa(self, tts, text: str) -> None:
+        """Play sherpa-onnx VITS audio (MMS Hebrew / Piper English);
+        checks cancel before and during playback."""
         try:
             import sounddevice as sd  # type: ignore[import]
             import numpy as np
 
             if self._cancel.is_set():
                 return
-            audio = self._mms.generate(text, sid=0, speed=1.0)
+            audio = tts.generate(text, sid=0, speed=1.0)
             arr = np.array(audio.samples, dtype=np.float32)
             if self._cancel.is_set():
                 return
@@ -344,9 +388,9 @@ class TTSPipeline:
                 chunk = arr[start:start + chunk_size]
                 sd.play(chunk, samplerate=sr, blocking=True)
         except Exception as exc:
-            _log.warning("MMS playback error: %s", exc)
+            _log.warning("sherpa TTS playback error: %s", exc)
             if not self._cancel.is_set():
-                self._play_espeak(text, "he")
+                self._play_espeak(text, detect_lang(text))
 
     def _play_espeak(self, text: str, lang: str) -> None:
         """Play via eSpeak NG; cancellable between sentences."""

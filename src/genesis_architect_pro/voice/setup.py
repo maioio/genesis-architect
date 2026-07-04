@@ -27,12 +27,32 @@ MODELS_DIR = Path.home() / ".genesis" / "models"
 WHISPER_MODEL_ID = "ivrit-ai/faster-whisper-v2-d4"
 WHISPER_LOCAL = MODELS_DIR / "faster-whisper-v2-d4"
 
-# Hebrew TTS — Meta MMS VITS ONNX for sherpa-onnx
-MMS_HEB_URL = (
+# Hebrew TTS — Meta MMS VITS ONNX for sherpa-onnx.
+# The k2-fsa tts-models release has no Hebrew asset; this HF repo carries the
+# sherpa-exported ONNX + tokens. NOTE: MMS weights are CC-BY-NC-4.0.
+MMS_HEB_FILES = {
+    "model.onnx": "https://huggingface.co/thewh1teagle/mms-tts-heb/resolve/main/model_sherpa.onnx",
+    "tokens.txt": "https://huggingface.co/thewh1teagle/mms-tts-heb/resolve/main/tokens.txt",
+}
+MMS_HEB_MODEL = MODELS_DIR / "mms-tts-heb.onnx"      # legacy single-file layout
+MMS_HEB_DIR = MODELS_DIR / "vits-mms-heb"            # full layout (model + tokens)
+
+# English TTS fallback — Piper VITS for sherpa-onnx. Kokoro requires
+# Python <3.13 (its spacy dependency has no wheels beyond that), so on
+# newer Pythons English speech runs through sherpa-onnx instead.
+PIPER_EN_URL = (
     "https://github.com/k2-fsa/sherpa-onnx/releases/download/"
-    "tts-models/vits-mms-heb.tar.bz2"
+    "tts-models/vits-piper-en_US-amy-low.tar.bz2"
 )
-MMS_HEB_MODEL = MODELS_DIR / "mms-tts-heb.onnx"
+PIPER_EN_DIR = MODELS_DIR / "vits-piper-en_US-amy-low"
+
+
+def mms_heb_ready() -> bool:
+    return (MMS_HEB_DIR / "model.onnx").exists() or MMS_HEB_MODEL.exists()
+
+
+def piper_en_ready() -> bool:
+    return any(PIPER_EN_DIR.glob("*.onnx")) if PIPER_EN_DIR.exists() else False
 
 
 # ---------------------------------------------------------------------------
@@ -107,20 +127,27 @@ def readiness() -> VoiceReadiness:
         r.components.append(ComponentStatus(
             "stt", True, f"faster-whisper + {WHISPER_MODEL_ID}"))
 
-    # English TTS: Kokoro package (model auto-downloads on first use)
+    # English TTS: Kokoro when installable (Python <3.13); otherwise the
+    # Piper VITS model through sherpa-onnx.
     if _pkg_available("kokoro"):
         r.components.append(ComponentStatus("tts_english", True, "Kokoro-82M"))
+    elif _pkg_available("sherpa_onnx") and piper_en_ready():
+        r.components.append(ComponentStatus("tts_english", True, "Piper en_US (sherpa-onnx)"))
+    elif _pkg_available("sherpa_onnx"):
+        r.components.append(ComponentStatus(
+            "tts_english", False, "English Piper model not downloaded",
+            "genesis companion --setup"))
     else:
         r.components.append(ComponentStatus(
-            "tts_english", False, "kokoro not installed",
-            "pip install kokoro>=0.9 soundfile"))
+            "tts_english", False, "kokoro / sherpa-onnx not installed",
+            "pip install sherpa-onnx soundfile"))
 
     # Hebrew TTS: sherpa-onnx package + the MMS model on disk
     if not _pkg_available("sherpa_onnx"):
         r.components.append(ComponentStatus(
             "tts_hebrew", False, "sherpa-onnx not installed",
             "pip install sherpa-onnx"))
-    elif not MMS_HEB_MODEL.exists():
+    elif not mms_heb_ready():
         r.components.append(ComponentStatus(
             "tts_hebrew", False, "Hebrew MMS model not downloaded",
             "genesis companion --setup"))
@@ -252,7 +279,6 @@ def run_setup(models_dir: Path | None = None) -> SetupResult:
     result = SetupResult()
 
     whisper_local = target / WHISPER_LOCAL.name
-    mms_local = target / MMS_HEB_MODEL.name
 
     # 1. STT model via huggingface_hub (comes with faster-whisper)
     if whisper_local.exists():
@@ -270,44 +296,73 @@ def run_setup(models_dir: Path | None = None) -> SetupResult:
         except Exception as exc:  # network, auth, disk — report honestly
             result.failed.append(f"STT download failed: {exc}")
 
-    # 2. Hebrew MMS TTS model (sherpa-onnx release tarball)
-    if mms_local.exists():
-        result.skipped.append(f"Hebrew TTS model already present: {mms_local.name}")
+    # 2. Hebrew MMS TTS model — direct files from HF (model.onnx + tokens.txt;
+    #    sherpa needs both, so they live together in one dir).
+    mms_dir = target / MMS_HEB_DIR.name
+    if (mms_dir / "model.onnx").exists():
+        result.skipped.append(f"Hebrew TTS model already present: {mms_dir.name}")
     else:
+        import urllib.request
         try:
             result.steps.append("Downloading Hebrew MMS TTS model …")
-            _download_and_extract_mms(target, mms_local)
-            if mms_local.exists():
+            mms_dir.mkdir(parents=True, exist_ok=True)
+            for fname, url in MMS_HEB_FILES.items():
+                urllib.request.urlretrieve(url, mms_dir / fname)  # noqa: S310 (fixed https URLs)
+            if (mms_dir / "model.onnx").exists():
                 result.downloaded.append("TTS (Hebrew): Meta MMS")
             else:
                 result.failed.append(
-                    "Hebrew TTS: archive downloaded but model file not found after extract")
+                    "Hebrew TTS: download finished but model file missing")
         except Exception as exc:
             result.failed.append(f"Hebrew TTS download failed: {exc}")
 
-    # 3. English Kokoro — package downloads its own weights on first synthesis;
-    #    nothing to pre-fetch, just report whether the package is importable.
+    # 3. English TTS. Kokoro when importable (Python <3.13); otherwise the
+    #    Piper VITS model through sherpa-onnx — same engine as Hebrew.
     if _pkg_available("kokoro"):
         result.skipped.append("English TTS (Kokoro): package present, weights lazy-load on first use")
     else:
-        result.failed.append(
-            "English TTS: kokoro not installed — run `pip install kokoro>=0.9 soundfile`")
+        piper_dir = target / PIPER_EN_DIR.name
+        if any(piper_dir.glob("*.onnx")) if piper_dir.exists() else False:
+            result.skipped.append(f"English TTS model already present: {piper_dir.name}")
+        elif not _pkg_available("sherpa_onnx"):
+            result.failed.append(
+                "English TTS: neither kokoro nor sherpa-onnx installed — "
+                "run `pip install sherpa-onnx soundfile`")
+        else:
+            try:
+                result.steps.append("Downloading English Piper TTS model …")
+                _download_and_extract_tts(PIPER_EN_URL, target, piper_dir.name)
+                if any(piper_dir.glob("*.onnx")):
+                    result.downloaded.append("TTS (English): Piper en_US via sherpa-onnx")
+                else:
+                    result.failed.append(
+                        "English TTS: archive downloaded but model file not found after extract")
+            except Exception as exc:
+                result.failed.append(f"English TTS download failed: {exc}")
 
     return result
 
 
-def _download_and_extract_mms(target: Path, model_out: Path) -> None:
-    """Fetch the sherpa-onnx MMS Hebrew tarball and place the .onnx at model_out."""
+def _download_and_extract_tts(url: str, target: Path, dir_name: str) -> None:
+    """Fetch a sherpa-onnx TTS tarball and extract its model dir into target/dir_name.
+
+    The k2-fsa release tarballs contain a single top-level directory named like
+    the archive; the whole tree (model.onnx, tokens.txt, data dirs) is kept —
+    sherpa needs more than just the .onnx.
+    """
     import tarfile
     import tempfile
     import urllib.request
 
     with tempfile.TemporaryDirectory() as tmp:
-        tar_path = Path(tmp) / "mms-heb.tar.bz2"
-        urllib.request.urlretrieve(MMS_HEB_URL, tar_path)  # noqa: S310 (fixed https URL)
+        tar_path = Path(tmp) / "tts-model.tar.bz2"
+        urllib.request.urlretrieve(url, tar_path)  # noqa: S310 (fixed https URL)
         with tarfile.open(tar_path, "r:bz2") as tf:
             tf.extractall(tmp)  # noqa: S202 (trusted sherpa-onnx release)
-        # Find the model.onnx inside the extracted tree and copy it out.
-        for onnx in Path(tmp).rglob("*.onnx"):
-            shutil.copy(onnx, model_out)
-            break
+        extracted = [p for p in Path(tmp).iterdir() if p.is_dir()]
+        if not extracted:
+            return
+        dest = target / dir_name
+        if dest.exists():
+            shutil.rmtree(dest)
+        shutil.move(str(extracted[0]), str(dest))

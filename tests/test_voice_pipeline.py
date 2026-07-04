@@ -143,6 +143,7 @@ class TestTTSPipelineOffline:
         tts._lock = threading.Lock()
         tts._kokoro = kwargs.get("kokoro", None)
         tts._mms = kwargs.get("mms", None)
+        tts._piper = kwargs.get("piper", None)
         tts._espeak = kwargs.get("espeak", None)
         return tts
 
@@ -188,18 +189,32 @@ class TestTTSPipelineOffline:
         tts = self._bare_tts()
 
         with patch.object(tts, "_load_mms") as mock_load, \
-             patch.object(tts, "_play_mms") as mock_play:
+             patch.object(tts, "_play_sherpa") as mock_play:
             mock_load.side_effect = lambda: setattr(tts, "_mms", MagicMock())
             tts._speak_sync("שלום, מה שלומך?")
+            mock_play.assert_called_once()
+
+    def test_speak_english_falls_back_to_piper_when_kokoro_unavailable(self):
+        """Python >=3.13 cannot install kokoro — English must route to the
+        Piper VITS model through sherpa-onnx before touching eSpeak."""
+        tts = self._bare_tts()
+
+        with patch.object(tts, "_load_kokoro"), \
+             patch.object(tts, "_load_piper_en") as mock_load, \
+             patch.object(tts, "_play_sherpa") as mock_play:
+            mock_load.side_effect = lambda: setattr(tts, "_piper", MagicMock())
+            tts._speak_sync("Hello world")
             mock_play.assert_called_once()
 
     def test_speak_falls_back_to_espeak_when_kokoro_unavailable(self):
         tts = self._bare_tts(espeak="espeak-ng")
 
-        with patch.object(tts, "_load_kokoro"):  # kokoro stays None
-            with patch.object(tts, "_play_espeak") as mock_espeak:
-                tts._speak_sync("Hello world")
-                mock_espeak.assert_called_once()
+        # both real engines stay None -> last resort is eSpeak
+        with patch.object(tts, "_load_kokoro"), \
+             patch.object(tts, "_load_piper_en"), \
+             patch.object(tts, "_play_espeak") as mock_espeak:
+            tts._speak_sync("Hello world")
+            mock_espeak.assert_called_once()
 
     def test_kokoro_load_warns_on_missing_import(self, caplog):
         tts = self._bare_tts()

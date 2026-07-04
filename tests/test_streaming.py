@@ -71,6 +71,40 @@ def test_valid_token_gets_auth_ok():
     assert reply["id"] and reply["ts"]
 
 
+def test_idle_connection_stays_open():
+    """Regression: _drain_outbound must not poke a version-specific 'closed'
+    attribute. Newer websockets renamed it; touching it raised AttributeError
+    ~1s after connect and dropped the socket — the green/yellow flapping."""
+    pytest.importorskip("websockets")
+    from genesis_architect_pro.streaming.server import CompanionServer
+
+    async def _run():
+        srv = CompanionServer(port=47294)
+        srv.start_in_background()
+        await asyncio.sleep(0.5)
+        import websockets
+        still_open = False
+        try:
+            async with websockets.connect(
+                "ws://127.0.0.1:47294", ping_interval=None
+            ) as ws:
+                await ws.send(json.dumps({"type": "auth", "token": srv.token}))
+                await asyncio.wait_for(ws.recv(), timeout=3)  # auth.ok
+                # idle well past the old ~1s failure point
+                try:
+                    await asyncio.wait_for(ws.recv(), timeout=4)
+                except asyncio.TimeoutError:
+                    pass
+                # socket must still be usable
+                await ws.send(json.dumps({"type": "noop", "payload": {}}))
+                still_open = True
+        finally:
+            srv.stop()
+        return still_open
+
+    assert asyncio.run(_run()) is True
+
+
 def test_bad_token_gets_auth_fail_then_close():
     pytest.importorskip("websockets")
     from genesis_architect_pro.streaming.server import CompanionServer

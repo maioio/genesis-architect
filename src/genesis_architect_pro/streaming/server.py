@@ -213,20 +213,27 @@ class CompanionServer:
         _log.info("Companion: client disconnected %s", ws.remote_address)
 
     async def _drain_outbound(self, ws: "_WSConn") -> None:
-        """Drain the emitter queue and send each message to the client."""
+        """Drain the emitter queue and send each message to the client.
+
+        When the queue is idle we simply loop again — the send() on the next
+        message (or the concurrent inbound task) surfaces a real disconnect.
+        We must NOT poke a version-specific 'closed' attribute here: newer
+        `websockets` renamed it, and touching it raised AttributeError, killing
+        this task ~1s after every connect and closing the socket. That was the
+        green↔yellow flapping.
+        """
         queue = self._emitter.queue
         if queue is None:
             return
         while True:
             try:
                 msg: StreamMessage = await asyncio.wait_for(queue.get(), timeout=1.0)
-                await ws.send(msg.to_json())
             except asyncio.TimeoutError:
-                # No messages — check if connection is still alive
-                if ws.closed:
-                    break
+                continue  # idle — keep waiting; do not touch the socket
+            try:
+                await ws.send(msg.to_json())
             except Exception:
-                break
+                break  # real send failure → connection is gone
 
     async def _receive_inbound(self, ws: "_WSConn") -> None:
         """Receive messages from the UI and dispatch to on_message handler."""

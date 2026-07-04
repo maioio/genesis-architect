@@ -139,6 +139,92 @@ def readiness() -> VoiceReadiness:
 
 
 # ---------------------------------------------------------------------------
+# Package auto-provision (one-command premium install)
+# ---------------------------------------------------------------------------
+
+# import name -> pip requirement. Everything the full Companion experience
+# needs beyond the base install. webrtcvad-wheels ships prebuilt wheels for
+# every platform (plain webrtcvad is sdist-only and fails without a compiler)
+# and exposes the same `webrtcvad` module.
+COMPANION_PACKAGES: dict[str, str] = {
+    "rich": "rich>=13",
+    "plyer": "plyer>=2.1",
+    "websockets": "websockets>=12",
+    "numpy": "numpy>=1.24",
+    "sounddevice": "sounddevice>=0.4",
+    "webrtcvad": "webrtcvad-wheels>=2.0.10",
+    "faster_whisper": "faster-whisper>=1.0",
+    "soundfile": "soundfile>=0.12",
+    # kokoro >=0.8 pins Python <3.13; 0.7.x is the newest that installs everywhere.
+    "kokoro": "kokoro>=0.7",
+    "sherpa_onnx": "sherpa-onnx>=1.10",
+}
+
+
+@dataclass
+class ProvisionResult:
+    installed: list[str] = field(default_factory=list)
+    already_present: list[str] = field(default_factory=list)
+    failed: list[str] = field(default_factory=list)
+
+    @property
+    def ok(self) -> bool:
+        return not self.failed
+
+
+def missing_companion_packages() -> list[str]:
+    """Pip requirement strings for Companion packages not importable right now."""
+    return [req for mod, req in COMPANION_PACKAGES.items()
+            if not _pkg_available(mod)]
+
+
+def ensure_companion_packages(*, progress=None) -> ProvisionResult:
+    """Install any missing Companion packages into the current environment.
+
+    This is what makes `pip install genesis-architect-pro` a one-command
+    install: the first `genesis companion --ui` pulls the rest automatically.
+    Never raises — failures are reported per requirement with pip's own error.
+    """
+    import subprocess
+    import sys
+
+    result = ProvisionResult()
+    result.already_present = [req for mod, req in COMPANION_PACKAGES.items()
+                              if _pkg_available(mod)]
+    missing = missing_companion_packages()
+    if not missing:
+        return result
+
+    if progress:
+        progress(f"Installing {len(missing)} missing package(s): "
+                 + ", ".join(m.split(">=")[0] for m in missing))
+    try:
+        proc = subprocess.run(
+            [sys.executable, "-m", "pip", "install", "--quiet", *missing],
+            capture_output=True, text=True, timeout=1800,
+        )
+        if proc.returncode == 0:
+            result.installed = missing
+        else:
+            tail = (proc.stderr or proc.stdout or "").strip().splitlines()[-3:]
+            result.failed = [f"{' '.join(missing)} — pip exited "
+                             f"{proc.returncode}: {' / '.join(tail)}"]
+    except Exception as exc:
+        result.failed = [f"{' '.join(missing)} — {exc}"]
+
+    # Verify by import, not by pip exit code alone.
+    if result.installed:
+        import importlib
+        importlib.invalidate_caches()
+        still_missing = missing_companion_packages()
+        if still_missing:
+            result.failed.extend(still_missing)
+            result.installed = [r for r in result.installed
+                                if r not in still_missing]
+    return result
+
+
+# ---------------------------------------------------------------------------
 # Setup (download)
 # ---------------------------------------------------------------------------
 

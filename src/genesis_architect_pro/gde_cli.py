@@ -729,29 +729,45 @@ def cmd_companion_listen(project_dir: Path) -> int:
 
 
 def _auto_setup_voice() -> None:
-    """Run voice model setup automatically on first launch if models are missing.
+    """Make voice fully ready on first launch: install any missing Companion
+    packages into this environment, then download the STT/TTS models.
 
-    Silently skips if the voice extra is not installed (packages missing).
-    Shows a one-time progress summary so the user knows what's happening.
+    This is the premium one-command experience — a customer installs
+    `genesis-architect-pro` and the first `genesis companion --ui` provisions
+    everything else automatically. Shows progress; never raises.
     """
-    try:
-        from genesis_architect_pro.voice import readiness, run_setup
-    except ImportError:
-        return  # voice extra not installed; companion works without it
+    # setup.py is import-safe with nothing extra installed — import it directly
+    # (the voice package __init__ pulls modules that need the extras).
+    from genesis_architect_pro.voice.setup import (
+        ensure_companion_packages,
+        missing_companion_packages,
+        readiness,
+        run_setup,
+    )
+
+    # Step 1 — packages. pip-install whatever is missing, right here.
+    if missing_companion_packages():
+        print("\n  First launch: installing Companion packages (one-time)…")
+        prov = ensure_companion_packages(progress=lambda m: print(f"  {m}"))
+        for req in prov.installed:
+            print(f"  + {req}")
+        for fail in prov.failed:
+            print(f"  ! {fail}")
+        if prov.failed:
+            print("  Voice will run degraded until the packages above install.\n")
 
     r = readiness()
     if r.end_to_end_ready:
         return  # already ready — nothing to do
 
-    # Only auto-download when fix is "genesis companion --setup" (model file missing,
-    # packages ARE installed). Skip if the fix is a pip install (can't help there).
+    # Step 2 — models. Only when the packages for them are importable.
     needs_download = [
         c for c in r.components
         if not c.ready and c.name != "fallback"
         and c.fix.startswith("genesis companion")
     ]
     if not needs_download:
-        return  # only pip-install gaps remain — auto-setup would fail silently
+        return  # remaining gaps are package installs that just failed — reported above
 
     rich = _use_rich()
     if rich:

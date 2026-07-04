@@ -10,8 +10,11 @@ from genesis_architect_pro.voice.setup import (
     ComponentStatus,
     VoiceReadiness,
     SetupResult,
+    ProvisionResult,
     readiness,
     run_setup,
+    ensure_companion_packages,
+    missing_companion_packages,
     MODELS_DIR,
 )
 from genesis_architect_pro.voice.listener import (
@@ -41,8 +44,11 @@ __all__ = [
     "ComponentStatus",
     "VoiceReadiness",
     "SetupResult",
+    "ProvisionResult",
     "readiness",
     "run_setup",
+    "ensure_companion_packages",
+    "missing_companion_packages",
     "MODELS_DIR",
     "ListenResult",
     "MicStatus",

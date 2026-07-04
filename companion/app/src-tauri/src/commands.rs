@@ -112,3 +112,53 @@ pub fn dock_to_edge(
         .map_err(|e| e.to_string())?;
     Ok(())
 }
+
+/// Slide the dock almost entirely off the screen edge, leaving only a thin
+/// `peek` sliver on-screen to click and bring it back. This is the "hide it
+/// to the side" affordance — the window stays alive and connected, just out
+/// of the way and invisible over your work.
+#[tauri::command]
+pub fn set_hidden(
+    app: AppHandle,
+    side: DockSide,
+    hidden: bool,
+    width: u32,
+    height: u32,
+    peek: u32,
+) -> Result<(), String> {
+    let win = app
+        .get_webview_window("dock")
+        .ok_or("dock window not found")?;
+
+    let scale = win.scale_factor().map_err(|e| e.to_string())?;
+    let monitor = win
+        .current_monitor()
+        .map_err(|e| e.to_string())?
+        .ok_or("no monitor for window")?;
+    let mon_pos = monitor.position();
+    let mon_size = monitor.size();
+
+    let phys_w = (width as f64 * scale).round() as i32;
+    let phys_h = (height as f64 * scale).round() as u32;
+    let peek_px = (peek as f64 * scale).round() as i32;
+    let gap = (12.0 * scale).round() as i32;
+
+    let y = mon_pos.y + ((mon_size.height as i32 - phys_h as i32) / 2).max(0);
+
+    let x = if hidden {
+        // Push the window off-edge, leaving only `peek` px on-screen.
+        match side {
+            DockSide::Right => mon_pos.x + mon_size.width as i32 - peek_px,
+            DockSide::Left => mon_pos.x + peek_px - phys_w,
+        }
+    } else {
+        match side {
+            DockSide::Right => mon_pos.x + mon_size.width as i32 - phys_w - gap,
+            DockSide::Left => mon_pos.x + gap,
+        }
+    };
+
+    win.set_position(PhysicalPosition::new(x, y))
+        .map_err(|e| e.to_string())?;
+    Ok(())
+}

@@ -80,6 +80,7 @@ interface GenesisStore {
 
   // Dock + conversation
   expanded: boolean;
+  hidden: boolean;
   dockSide: DockSide;
   conversation: Turn[];
 
@@ -88,6 +89,7 @@ interface GenesisStore {
   setSidecarAlive: (v: boolean) => void;
   setSidecarError: (msg: string | null) => void;
   setExpanded: (v: boolean) => void;
+  setHidden: (v: boolean) => void;
   setDockSide: (s: DockSide) => void;
   setVoiceState: (v: VoiceState) => void;
   addTurn: (t: Turn) => void;
@@ -112,6 +114,7 @@ export const useGenesisStore = create<GenesisStore>((set) => ({
   voiceState: "idle",
   voiceTranscript: "",
   expanded: false,
+  hidden: false,
   dockSide: "right",
   conversation: [],
 
@@ -119,6 +122,7 @@ export const useGenesisStore = create<GenesisStore>((set) => ({
   setSidecarAlive: (v) => set({ sidecarAlive: v }),
   setSidecarError: (msg) => set({ sidecarError: msg }),
   setExpanded: (v) => set({ expanded: v }),
+  setHidden: (v) => set({ hidden: v }),
   setDockSide: (s) => set({ dockSide: s }),
   setVoiceState: (v) => set({ voiceState: v }),
   addTurn: (t) => set((s) => ({ conversation: [...s.conversation, t] })),

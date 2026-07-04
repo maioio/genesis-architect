@@ -3,6 +3,7 @@ mod sidecar;
 
 use commands::{
     dock_to_edge, get_ws_credentials, open_canvas, read_session_state, restart_sidecar,
+    set_hidden,
 };
 use sidecar::{kill_sidecar, spawn_sidecar, SidecarState};
 use tauri::{Emitter, Manager, RunEvent};
@@ -21,6 +22,7 @@ pub fn run() {
             restart_sidecar,
             open_canvas,
             dock_to_edge,
+            set_hidden,
         ])
         .setup(|app| {
             let state = app.state::<SidecarState>();

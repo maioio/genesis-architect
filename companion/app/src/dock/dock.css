@@ -23,12 +23,37 @@ html, body, #root { height: 100%; background: transparent !important; overflow: 
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 18px;
-  padding: 16px 0;
-  background: linear-gradient(180deg, rgba(22,25,32,.86), rgba(13,15,20,.9));
-  backdrop-filter: blur(18px);
+  gap: 16px;
+  padding: 14px 0;
+  /* Fully opaque — nothing shows through. */
+  background: linear-gradient(180deg, #171a21, #0f1117);
   border: 1px solid var(--border);
-  box-shadow: 0 12px 40px rgba(0,0,0,.55);
+  box-shadow: 0 12px 40px rgba(0,0,0,.6);
+}
+.rail-hide {
+  position: absolute; top: 8px; inset-inline-start: 50%; transform: translateX(-50%);
+  width: 26px; height: 20px; border-radius: 7px;
+  background: transparent; border: none; color: var(--muted);
+  font-size: 15px; line-height: 1; cursor: pointer; transition: color var(--t-fast);
+}
+.rail-hide:hover { color: var(--text); }
+.rail-hide:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* ---------- peek (hidden) ---------- */
+.peek {
+  position: fixed; inset: 0;
+  background: linear-gradient(180deg, var(--accent), #4a43cc);
+  border: none; cursor: pointer; padding: 0;
+  animation: dock-in var(--t-normal);
+}
+.peek.right { border-radius: 6px 0 0 6px; }
+.peek.left  { border-radius: 0 6px 6px 0; }
+.peek:hover { filter: brightness(1.25); }
+.peek:focus-visible { outline: 2px solid #fff; outline-offset: -2px; }
+.peek.activity-blocked { background: linear-gradient(180deg, var(--danger), #b91c1c); }
+.peek-badge {
+  position: absolute; top: 10px; inset-inline-end: 2px;
+  width: 5px; height: 5px; border-radius: 50%; background: #fff;
 }
 .rail.right { border-radius: 20px 0 0 20px; border-right: none; }
 .rail.left  { border-radius: 0 20px 20px 0; border-left:  none; }

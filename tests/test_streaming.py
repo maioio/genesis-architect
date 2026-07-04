@@ -34,6 +34,68 @@ from genesis_architect_pro.streaming.runner_patch import (
 
 
 # ---------------------------------------------------------------------------
+# Auth handshake — the client waits for a schema-valid auth.ok before it
+# considers itself connected. If the server stays silent (or replies with a
+# bare {type} that fails schema validation) the UI holds a live socket but
+# shows "connecting" forever. This guards that contract.
+# ---------------------------------------------------------------------------
+
+def test_auth_ok_is_a_full_envelope():
+    from genesis_architect_pro.streaming.server import _control_envelope
+    env = json.loads(_control_envelope("auth.ok"))
+    assert env["type"] == "auth.ok"
+    assert isinstance(env.get("id"), str) and env["id"]
+    assert isinstance(env.get("ts"), (int, float))
+    assert env.get("payload") == {}
+
+
+def test_valid_token_gets_auth_ok():
+    pytest.importorskip("websockets")
+    from genesis_architect_pro.streaming.server import CompanionServer
+
+    async def _run():
+        srv = CompanionServer(port=47298)
+        srv.start_in_background()
+        await asyncio.sleep(0.5)
+        import websockets
+        try:
+            async with websockets.connect("ws://127.0.0.1:47298") as ws:
+                await ws.send(json.dumps({"type": "auth", "token": srv.token}))
+                reply = json.loads(await asyncio.wait_for(ws.recv(), timeout=3))
+        finally:
+            srv.stop()
+        return reply
+
+    reply = asyncio.run(_run())
+    assert reply["type"] == "auth.ok"
+    assert reply["id"] and reply["ts"]
+
+
+def test_bad_token_gets_auth_fail_then_close():
+    pytest.importorskip("websockets")
+    from genesis_architect_pro.streaming.server import CompanionServer
+
+    async def _run():
+        srv = CompanionServer(port=47297)
+        srv.start_in_background()
+        await asyncio.sleep(0.5)
+        import websockets
+        got = None
+        try:
+            async with websockets.connect("ws://127.0.0.1:47297") as ws:
+                await ws.send(json.dumps({"type": "auth", "token": "wrong"}))
+                got = json.loads(await asyncio.wait_for(ws.recv(), timeout=3))
+        except Exception:
+            pass
+        finally:
+            srv.stop()
+        return got
+
+    reply = asyncio.run(_run())
+    assert reply is not None and reply["type"] == "auth.fail"
+
+
+# ---------------------------------------------------------------------------
 # Unit: StreamMessage
 # ---------------------------------------------------------------------------
 

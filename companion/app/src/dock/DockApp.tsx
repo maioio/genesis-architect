@@ -11,6 +11,7 @@ const RAIL_W = 64;
 const RAIL_H = 340;
 const PANEL_W = 400;
 const PANEL_H = 640;
+const PEEK = 7; // px of the dock left on-screen when hidden
 
 type DockSide = "left" | "right";
 
@@ -56,6 +57,8 @@ export function DockApp() {
   const connected = useGenesisStore((s) => s.connected);
   const sidecarError = useGenesisStore((s) => s.sidecarError);
   const setSidecarError = useGenesisStore((s) => s.setSidecarError);
+  const hidden = useGenesisStore((s) => s.hidden);
+  const setHidden = useGenesisStore((s) => s.setHidden);
   const voiceState = useGenesisStore((s) => s.voiceState);
   const setVoiceState = useGenesisStore((s) => s.setVoiceState);
   const activity = useGenesisStore(selectActivityLevel);
@@ -91,7 +94,25 @@ export function DockApp() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => { applyDock(side, expanded); }, [side, expanded, applyDock]);
+  // ── Hide/show geometry: slide off-edge leaving a PEEK sliver ──
+  const applyHidden = useCallback(
+    (nextSide: DockSide, isHidden: boolean) => {
+      invoke("set_hidden", {
+        side: nextSide,
+        hidden: isHidden,
+        width: RAIL_W,
+        height: RAIL_H,
+        peek: PEEK,
+      }).catch(() => {});
+    },
+    []
+  );
+
+  // When hidden, always collapse to the rail first (never hide a wide panel).
+  useEffect(() => {
+    if (hidden) { applyDock(side, false); applyHidden(side, true); }
+    else { applyDock(side, expanded); }
+  }, [side, expanded, hidden, applyDock, applyHidden]);
 
   // Sidecar-not-found → auto-expand so the user sees the fix.
   useEffect(() => {
@@ -157,10 +178,32 @@ export function DockApp() {
 
   const activityClass = `activity-${activity.toLowerCase()}`;
 
+  // ── Hidden: a thin peek strip; click anywhere on it to bring the dock back ──
+  if (hidden) {
+    return (
+      <button
+        className={`peek ${side} ${activityClass}`}
+        onClick={() => setHidden(false)}
+        aria-label="Show Genesis Companion"
+        title="Show Genesis"
+      >
+        {pendingGate && <span className="peek-badge" />}
+      </button>
+    );
+  }
+
   // ── Collapsed rail ──
   if (!expanded) {
     return (
       <div className={`rail ${side} ${activityClass}`} data-tauri-drag-region>
+        <button
+          className="rail-hide"
+          onClick={() => setHidden(true)}
+          aria-label="Hide to the edge"
+          title="Hide to the edge"
+        >
+          {side === "right" ? "›" : "‹"}
+        </button>
         <button
           className="rail-orb"
           onClick={() => setExpanded(true)}
@@ -202,6 +245,14 @@ export function DockApp() {
             title="Switch side"
           >
             {side === "right" ? "⇤" : "⇥"}
+          </button>
+          <button
+            className="ghost-btn"
+            onClick={() => { if (continuous) toggleContinuous(); setExpanded(false); setHidden(true); }}
+            aria-label="Hide to the edge"
+            title="Hide to the edge"
+          >
+            {side === "right" ? "»" : "«"}
           </button>
           <button
             className="ghost-btn"

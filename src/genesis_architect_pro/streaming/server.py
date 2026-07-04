@@ -65,6 +65,22 @@ _log = logging.getLogger("genesis.streaming")
 InboundHandler = Callable[[StreamMessage], None]
 
 
+def _control_envelope(msg_type: str) -> str:
+    """A minimal but schema-valid envelope for control messages (auth.ok /
+    auth.fail). The client validates every frame against {id, type, ts,
+    payload}; a bare {type} would be dropped."""
+    import json
+    import time
+    import uuid
+
+    return json.dumps({
+        "id": str(uuid.uuid4()),
+        "type": msg_type,
+        "ts": time.time(),
+        "payload": {},
+    })
+
+
 # ---------------------------------------------------------------------------
 # Server
 # ---------------------------------------------------------------------------
@@ -155,16 +171,30 @@ class CompanionServer:
     async def _handle_connection(self, ws: "_WSConn") -> None:
         """Handle one client connection: auth → drain queue + forward inbound."""
         # Auth handshake — first message must be {"type":"auth","token":"..."}
+        import json
         try:
             raw = await asyncio.wait_for(ws.recv(), timeout=5.0)
-            import json
             msg = json.loads(raw)
             if msg.get("type") != "auth" or msg.get("token") != self._token:
+                # Tell the client explicitly so it stops waiting, then close.
+                try:
+                    await ws.send(_control_envelope("auth.fail"))
+                except Exception:
+                    pass
                 await ws.close(1008, "unauthorized")
                 _log.warning("Companion: auth failed from %s", ws.remote_address)
                 return
         except Exception:
             await ws.close(1008, "auth timeout or bad message")
+            return
+
+        # Acknowledge — the client waits for auth.ok before it considers itself
+        # connected. Without this it holds a live socket but shows "connecting"
+        # forever. The message must be a full envelope (id + ts) or the client's
+        # schema validation drops it.
+        try:
+            await ws.send(_control_envelope("auth.ok"))
+        except Exception:
             return
 
         _log.info("Companion: client connected %s", ws.remote_address)

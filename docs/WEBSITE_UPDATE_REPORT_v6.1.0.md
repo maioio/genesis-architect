@@ -10,8 +10,13 @@
 ## 🚦 Version & Status
 
 **Current product version: v7.2.0**
-**Last updated: 2026-07-03**
-**Next site review due: 2026-07-17**
+**Last updated: 2026-07-04**
+**Next site review due: 2026-07-18**
+
+> ✅ **Site synced 2026-07-04:** full content refresh published to GitHub Pages —
+> 30 sources everywhere, $9 price tag, 1,746 tests, new changelog entry
+> ("One command. Then it talks."), Companion card and voice/CVE capability rows
+> updated to the one-command install + Piper/MMS reality, mobile 320px overflow fixed.
 
 > 🆕 **QA hardening pass (2026-07-03, evening):** deep simulation audit fixed five real product bugs:
 > (1) git_analyzer numstat parsing dropped every file — churn/bus-factor/timeline were empty on ALL real

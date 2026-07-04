@@ -14,6 +14,34 @@ const PANEL_H = 640;
 
 type DockSide = "left" | "right";
 
+/** One-tap starting points, grouped so the welcome screen reads as a checklist
+ * of what Genesis can do — each item runs a real GDE session when clicked. */
+const SUGGESTIONS: { group: string; items: { label: string; say: string }[] }[] = [
+  {
+    group: "Understand this project",
+    items: [
+      { label: "Audit the whole codebase", say: "audit this codebase" },
+      { label: "What's the riskiest file?", say: "which file is riskiest to change" },
+      { label: "Show the architecture score", say: "score the architecture" },
+    ],
+  },
+  {
+    group: "Fix & improve",
+    items: [
+      { label: "Plan a safe refactor", say: "produce a refactoring plan ordered by risk" },
+      { label: "Find circular dependencies", say: "find circular dependencies" },
+      { label: "Check before I commit", say: "check compliance" },
+    ],
+  },
+  {
+    group: "Research & decide",
+    items: [
+      { label: "Document the architecture (C4)", say: "document the architecture" },
+      { label: "Stress-test a big decision", say: "convene the committee on our next architecture decision" },
+    ],
+  },
+];
+
 /** Detect UI language from the browser; Hebrew docks right, everything else left. */
 function detectSide(): DockSide {
   const lang = (navigator.language || "en").toLowerCase();
@@ -96,15 +124,21 @@ export function DockApp() {
     else { setContinuous(true); void startListening(); }
   }, [continuous, startListening, stopListening]);
 
-  // ── Text send ──
-  const sendText = useCallback(() => {
-    const instruction = text.trim();
-    if (!instruction) return;
-    addTurn({ id: crypto.randomUUID(), role: "user", text: instruction });
-    wsClient.send({ type: "user.intent", payload: { instruction } });
+  // ── Run an instruction (shared by the composer and the suggestion list) ──
+  const runInstruction = useCallback((instruction: string) => {
+    const trimmed = instruction.trim();
+    if (!trimmed) return;
+    if (!connected) return; // backend not ready — suggestions are disabled anyway
+    addTurn({ id: crypto.randomUUID(), role: "user", text: trimmed });
+    wsClient.send({ type: "user.intent", payload: { instruction: trimmed } });
     setVoiceState("thinking");
+  }, [connected, addTurn, setVoiceState]);
+
+  const sendText = useCallback(() => {
+    if (!text.trim()) return;
+    runInstruction(text);
     setText("");
-  }, [text, addTurn, setVoiceState]);
+  }, [text, runInstruction]);
 
   const runningCount = useMemo(
     () => Object.values(engines).filter((e) => e.status === "running").length,
@@ -194,17 +228,51 @@ export function DockApp() {
         <>
           <div className="convo" ref={scrollRef}>
             {conversation.length === 0 && (
-              <div className="empty">
-                <VoiceOrb state={voiceState} level={mic.level} size={112} />
-                <p className="empty-hint">
-                  Ask me anything about this project — or just start talking.
-                </p>
-                <div className="chips">
-                  {["Audit this codebase", "What's the riskiest file?", "Refactor plan"].map((c) => (
-                    <button key={c} className="chip" onClick={() => { setText(c); }}>
-                      {c}
-                    </button>
+              <div className="welcome">
+                <div className="welcome-hero">
+                  <VoiceOrb state={voiceState} level={mic.level} size={92} />
+                  <div className="welcome-title">Genesis is ready</div>
+                  <div className="welcome-sub">
+                    Tap something below, type a request, or hold the mic and talk.
+                  </div>
+                </div>
+
+                {/* live readiness */}
+                <div className="ready-strip">
+                  <span className={`ready-item ${connected ? "ok" : "wait"}`}>
+                    <span className="ready-dot" />
+                    {connected ? "Backend connected" : "Connecting to backend…"}
+                  </span>
+                  <span className="ready-item ok">
+                    <span className="ready-dot" />
+                    Voice · Hebrew + English
+                  </span>
+                </div>
+
+                {/* what you can ask — grouped, one tap runs it */}
+                <div className="suggest">
+                  {SUGGESTIONS.map((g) => (
+                    <div className="suggest-group" key={g.group}>
+                      <div className="suggest-head">{g.group}</div>
+                      {g.items.map((it) => (
+                        <button
+                          key={it.say}
+                          className="suggest-item"
+                          disabled={!connected}
+                          onClick={() => runInstruction(it.say)}
+                          title={connected ? `Run: "${it.say}"` : "Waiting for backend…"}
+                        >
+                          <span className="suggest-label">{it.label}</span>
+                          <span className="suggest-go">→</span>
+                        </button>
+                      ))}
+                    </div>
                   ))}
+                </div>
+
+                <div className="welcome-foot">
+                  Genesis analyzes <b>this project's code</b> — not general questions.
+                  It asks before writing anything to disk.
                 </div>
               </div>
             )}

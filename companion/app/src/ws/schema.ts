@@ -11,61 +11,66 @@ export const EnvelopeSchema = z.object({
 export type Envelope = z.infer<typeof EnvelopeSchema>;
 
 // ── Payload schemas ──────────────────────────────────────────────────────────
+// These mirror the *actual* constructors in streaming/events.py — key names
+// must match what the backend emits (engine, gate_name, result_summary, …).
+// A mismatch here silently drops the event at validation and the UI goes
+// blind, which is exactly what happened before v7.2.
 
 export const EngineStartPayload = z.object({
-  engine_id: z.string(),
-  phase:     z.number().optional(),
+  engine:       z.string(),
+  phase:        z.number().optional(),
+  total_phases: z.number().optional(),
 });
 
 export const EngineDonePayload = z.object({
-  engine_id:  z.string(),
-  status:     z.enum(["SUCCESS", "DEGRADED", "FAILED", "SKIPPED"]),
-  confidence: z.number().optional(),
-  summary:    z.string().optional(),
+  engine:         z.string(),
+  confidence:     z.number().optional(),
+  result_summary: z.string().optional(),
 });
 
 export const EngineFailedPayload = z.object({
-  engine_id: z.string(),
-  error:     z.string(),
+  engine:             z.string(),
+  error:              z.string(),
+  confidence_penalty: z.number().optional(),
 });
 
 export const GateFiredPayload = z.object({
-  gate_id:    z.string(),
-  outcome:    z.enum(["PASS", "WARN", "BLOCK", "HARD_BLOCK"]),
-  reason:     z.string(),
+  gate_name:   z.string(),
+  type:        z.string().optional(),
   overridable: z.boolean().optional(),
 });
 
 export const GateApprovalPayload = z.object({
-  gate_id:          z.string(),
-  description:      z.string(),
-  diff_preview_html: z.string().optional(),
-  overridable:      z.boolean(),
+  gate_name:    z.string(),
+  description:  z.string(),
+  diff_preview: z.string().optional(),
 });
 
 export const SessionConfidencePayload = z.object({
-  session_id:  z.string(),
-  confidence:  z.number(),
-  risk_level:  z.string(),
+  confidence: z.number().optional(),
+  risk_level: z.string().optional(),
+  error:      z.string().optional(), // _emit_error rides this type
 });
 
 export const SessionStartPayload = z.object({
-  session_id:  z.string(),
-  mode:        z.string(),
+  mode:        z.string().optional(),
   instruction: z.string().optional(),
 });
 
+export const SessionReplyPayload = z.object({
+  text: z.string(),
+});
+
 export const SessionDonePayload = z.object({
-  session_id:   z.string(),
-  confidence:   z.number(),
-  engine_count: z.number().optional(),
+  confidence: z.number(),
+  risk_level: z.string().optional(),
+  mode:       z.string().optional(),
 });
 
 export const CommitteeSynthesisPayload = z.object({
   verdict:        z.string(),
-  confidence:     z.number(),
   consensus_type: z.string(),
-  minority_view:  z.string().optional(),
+  minority_view:  z.string().nullable().optional(),
 });
 
 export const VoiceTranscriptPayload = z.object({
@@ -74,8 +79,8 @@ export const VoiceTranscriptPayload = z.object({
 });
 
 export const VoiceTtsChunkPayload = z.object({
-  audio_b64: z.string(),
-  is_final:  z.boolean(),
+  audio_b64: z.string().optional(),
+  is_final:  z.boolean().optional(),
 });
 
 export const IdeLineEventPayload = z.object({
@@ -89,7 +94,7 @@ export const IdeLineEventPayload = z.object({
 export const DiffReadyPayload = z.object({
   diff_id:       z.string(),
   files_changed: z.number(),
-  preview_html:  z.string(),
+  preview_html:  z.string().optional(),
 });
 
 // Map type → payload schema
@@ -101,6 +106,7 @@ export const PAYLOAD_SCHEMAS: Record<string, z.ZodTypeAny> = {
   "gate.approval_required": GateApprovalPayload,
   "session.confidence":     SessionConfidencePayload,
   "session.start":          SessionStartPayload,
+  "session.reply":          SessionReplyPayload,
   "session.done":           SessionDonePayload,
   "committee.synthesis":    CommitteeSynthesisPayload,
   "voice.transcript":       VoiceTranscriptPayload,
@@ -109,16 +115,17 @@ export const PAYLOAD_SCHEMAS: Record<string, z.ZodTypeAny> = {
   "diff.ready":             DiffReadyPayload,
 };
 
-export type EngineStart       = z.infer<typeof EngineStartPayload>;
-export type EngineDone        = z.infer<typeof EngineDonePayload>;
-export type EngineFailed      = z.infer<typeof EngineFailedPayload>;
-export type GateFired         = z.infer<typeof GateFiredPayload>;
-export type GateApproval      = z.infer<typeof GateApprovalPayload>;
-export type SessionConfidence = z.infer<typeof SessionConfidencePayload>;
-export type SessionStart      = z.infer<typeof SessionStartPayload>;
-export type SessionDone       = z.infer<typeof SessionDonePayload>;
+export type EngineStart        = z.infer<typeof EngineStartPayload>;
+export type EngineDone         = z.infer<typeof EngineDonePayload>;
+export type EngineFailed       = z.infer<typeof EngineFailedPayload>;
+export type GateFired          = z.infer<typeof GateFiredPayload>;
+export type GateApproval       = z.infer<typeof GateApprovalPayload>;
+export type SessionConfidence  = z.infer<typeof SessionConfidencePayload>;
+export type SessionStart       = z.infer<typeof SessionStartPayload>;
+export type SessionReply       = z.infer<typeof SessionReplyPayload>;
+export type SessionDone        = z.infer<typeof SessionDonePayload>;
 export type CommitteeSynthesis = z.infer<typeof CommitteeSynthesisPayload>;
-export type VoiceTranscript   = z.infer<typeof VoiceTranscriptPayload>;
-export type VoiceTtsChunk     = z.infer<typeof VoiceTtsChunkPayload>;
-export type IdeLineEvent      = z.infer<typeof IdeLineEventPayload>;
-export type DiffReady         = z.infer<typeof DiffReadyPayload>;
+export type VoiceTranscript    = z.infer<typeof VoiceTranscriptPayload>;
+export type VoiceTtsChunk      = z.infer<typeof VoiceTtsChunkPayload>;
+export type IdeLineEvent       = z.infer<typeof IdeLineEventPayload>;
+export type DiffReady          = z.infer<typeof DiffReadyPayload>;

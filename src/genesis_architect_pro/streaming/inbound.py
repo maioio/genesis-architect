@@ -38,6 +38,8 @@ from genesis_architect_pro.streaming.events import (
     MessageType,
     gate_approval_required,
     session_done,
+    session_reply,
+    session_start,
     diff_ready,
 )
 
@@ -53,6 +55,79 @@ def _emit_error(emitter: StreamEmitter, msg: str, session_id: str = "") -> None:
         payload={"error": msg},
         session_id=session_id,
     ))
+
+
+def _is_hebrew(text: str) -> bool:
+    return any(0x0590 <= ord(c) <= 0x05FF for c in text)
+
+
+def _compose_reply(report: object, instruction: str) -> str:
+    """Turn a SessionReport into a short spoken-style answer with the actual
+    findings — what a voice assistant would say, not a status line.
+
+    Answers in the user's language (Hebrew instruction → Hebrew reply).
+    Never raises; falls back to a minimal sentence on any surprise shape.
+    """
+    he = _is_hebrew(instruction)
+    try:
+        results = getattr(report, "engine_results", {}) or {}
+
+        def out(engine: str) -> dict:
+            r = results.get(engine)
+            return getattr(r, "output", {}) or {} if r is not None else {}
+
+        score = out("architecture_scorer").get("score")
+        cycles = out("import_graph").get("cycles") or []
+        critical = out("antipattern_detector").get("critical_count") or 0
+        volatile = out("fragility_classifier").get("volatile_count") or 0
+        pending = len(getattr(report, "pending_writes", []) or [])
+        gate = getattr(getattr(report, "gate_report", None), "overall", None)
+        gate_val = getattr(gate, "value", "") if gate is not None else ""
+        mode = getattr(getattr(report, "mode", None), "value", "") or "session"
+
+        parts: list[str] = []
+        if he:
+            parts.append(f"סיימתי את ריצת ה-{mode}.")
+            if isinstance(score, (int, float)):
+                parts.append(f"ציון הארכיטקטורה הוא {round(score)} מתוך 100.")
+            findings = []
+            if cycles:
+                findings.append(f"{len(cycles)} תלויות מעגליות")
+            if critical:
+                findings.append(f"{critical} אנטי-תבניות קריטיות")
+            if volatile:
+                findings.append(f"{volatile} מודולים תנודתיים")
+            if findings:
+                parts.append("מצאתי " + ", ".join(findings) + ".")
+            elif isinstance(score, (int, float)) and score >= 80:
+                parts.append("לא מצאתי בעיות מהותיות.")
+            if gate_val == "hard_block":
+                parts.append("שער קשיח חסם את הריצה — שום דבר לא ייכתב.")
+            elif pending:
+                parts.append(f"יש {pending} כתיבות שממתינות לאישור שלך בפאנל.")
+        else:
+            parts.append(f"Done — {mode} run complete.")
+            if isinstance(score, (int, float)):
+                parts.append(f"Architecture score is {round(score)} out of 100.")
+            findings = []
+            if cycles:
+                findings.append(f"{len(cycles)} circular dependenc{'y' if len(cycles) == 1 else 'ies'}")
+            if critical:
+                findings.append(f"{critical} critical anti-pattern{'s' if critical != 1 else ''}")
+            if volatile:
+                findings.append(f"{volatile} volatile module{'s' if volatile != 1 else ''}")
+            if findings:
+                parts.append("I found " + ", ".join(findings) + ".")
+            elif isinstance(score, (int, float)) and score >= 80:
+                parts.append("No significant issues found.")
+            if gate_val == "hard_block":
+                parts.append("A hard gate blocked this run — nothing will be written.")
+            elif pending:
+                parts.append(f"{pending} write{'s' if pending != 1 else ''} awaiting your approval in the panel.")
+
+        return " ".join(parts)
+    except Exception:
+        return "הריצה הסתיימה." if he else "The run is complete."
 
 
 class InboundRouter:
@@ -82,6 +157,9 @@ class InboundRouter:
         # Lazy STT pipeline (loads only when first used)
         self._stt: Optional[object] = None
         self._stt_loaded = False
+        # Lazy TTS pipeline for spoken replies
+        self._tts: Optional[object] = None
+        self._tts_loaded = False
 
     # ------------------------------------------------------------------
     # Public API
@@ -90,6 +168,26 @@ class InboundRouter:
     def set_ide_bridge(self, bridge: object) -> None:
         """Attach the IDEBridgeServer after construction (used in gde_cli.py)."""
         self._ide_bridge = bridge
+
+    def _speak(self, text: str) -> None:
+        """Speak the reply aloud (local TTS). Best-effort and non-blocking —
+        voice being unavailable must never break the session flow.
+
+        GENESIS_COMPANION_MUTE=1 skips loading the TTS stack entirely — used
+        by the test suite (loading onnxruntime inside pytest triggered an
+        access-violation crash later in the run) and useful for silent CI.
+        """
+        if os.environ.get("GENESIS_COMPANION_MUTE"):
+            return
+        try:
+            if not self._tts_loaded:
+                self._tts_loaded = True
+                from genesis_architect_pro.voice.pipeline import TTSPipeline
+                self._tts = TTSPipeline()
+            if self._tts is not None:
+                self._tts.speak(text)  # NORMAL urgency → plays on a daemon thread
+        except Exception as exc:
+            _log.debug("InboundRouter: TTS unavailable (%s)", exc)
 
     def handle(self, msg: StreamMessage) -> None:
         """Dispatch one inbound message. Never raises."""
@@ -142,10 +240,20 @@ class InboundRouter:
                 project_dir=self._project_dir,
                 parallel=True,
             )
+            self._emitter.emit(session_start(
+                session_id=session_id, instruction=instruction,
+            ))
             report = gde.run(instruction)
 
             # Hot-swap IDE Bridge pattern index after every run
             self._update_ide_bridge(report)
+
+            # Conversational answer — shown as a chat turn and spoken aloud.
+            # Emitted before any approval wait so the user hears the findings
+            # immediately, including whether their approval is needed.
+            reply = _compose_reply(report, instruction)
+            self._emitter.emit(session_reply(reply, session_id=report.session_id))
+            self._speak(reply)
 
             gate_overall = report.gate_report.overall
 

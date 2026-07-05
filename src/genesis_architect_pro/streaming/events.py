@@ -36,7 +36,9 @@ class MessageType(str, Enum):
     GATE_FIRED        = "gate.fired"
     GATE_APPROVAL     = "gate.approval_required"
     # Session
+    SESSION_START      = "session.start"
     SESSION_CONFIDENCE = "session.confidence"
+    SESSION_REPLY      = "session.reply"
     SESSION_DONE       = "session.done"
     # Committee (PRO)
     COMMITTEE_ADVISOR  = "committee.advisor_round"
@@ -140,6 +142,22 @@ def session_confidence(confidence: float, risk_level: str, session_id: str = "")
         type=MessageType.SESSION_CONFIDENCE,
         session_id=session_id,
         payload={"confidence": round(confidence, 4), "risk_level": risk_level},
+    )
+
+def session_start(session_id: str, mode: str = "", instruction: str = "") -> StreamMessage:
+    return StreamMessage(
+        type=MessageType.SESSION_START,
+        session_id=session_id,
+        payload={"mode": mode, "instruction": instruction},
+    )
+
+def session_reply(text: str, session_id: str = "") -> StreamMessage:
+    """The assistant's conversational answer for a completed run — shown as a
+    chat turn in the Companion and spoken aloud."""
+    return StreamMessage(
+        type=MessageType.SESSION_REPLY,
+        session_id=session_id,
+        payload={"text": text},
     )
 
 def session_done(session_id: str, confidence: float, risk_level: str, mode: str) -> StreamMessage:

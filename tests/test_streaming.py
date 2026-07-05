@@ -34,6 +34,65 @@ from genesis_architect_pro.streaming.runner_patch import (
 
 
 # ---------------------------------------------------------------------------
+# session.reply — the conversational answer (composed from real findings,
+# shown as a chat turn and spoken aloud). Bilingual: Hebrew in → Hebrew out.
+# ---------------------------------------------------------------------------
+
+def _fake_report(score=61, cycles=1, critical=1, volatile=2, pending=0):
+    from types import SimpleNamespace as NS
+    results = {
+        "architecture_scorer": NS(output={"score": score}),
+        "import_graph": NS(output={"cycles": [["a", "b", "a"]] * cycles}),
+        "antipattern_detector": NS(output={"critical_count": critical}),
+        "fragility_classifier": NS(output={"volatile_count": volatile}),
+    }
+    return NS(
+        engine_results=results,
+        pending_writes=[object()] * pending,
+        gate_report=NS(overall=NS(value="pass")),
+        mode=NS(value="recovery"),
+        session_id="s1",
+        overall_confidence=0.8,
+        project_risk_level="low",
+    )
+
+
+def test_compose_reply_english_contains_real_findings():
+    from genesis_architect_pro.streaming.inbound import _compose_reply
+    text = _compose_reply(_fake_report(), "audit this codebase")
+    assert "61 out of 100" in text
+    assert "1 circular dependency" in text
+    assert "1 critical anti-pattern" in text
+    assert "2 volatile modules" in text
+
+
+def test_compose_reply_hebrew_when_instruction_is_hebrew():
+    from genesis_architect_pro.streaming.inbound import _compose_reply
+    text = _compose_reply(_fake_report(score=95), "תבדוק את הפרויקט")
+    assert "95 מתוך 100" in text
+    assert "תלויות מעגליות" in text
+
+
+def test_compose_reply_mentions_pending_approval():
+    from genesis_architect_pro.streaming.inbound import _compose_reply
+    text = _compose_reply(_fake_report(pending=3), "audit")
+    assert "3 writes awaiting your approval" in text
+
+
+def test_compose_reply_never_raises_on_garbage_report():
+    from genesis_architect_pro.streaming.inbound import _compose_reply
+    assert _compose_reply(object(), "audit")  # non-empty fallback
+
+
+def test_session_reply_and_start_constructors():
+    from genesis_architect_pro.streaming.events import session_reply, session_start
+    r = session_reply("hello", session_id="s1")
+    assert r.type.value == "session.reply" and r.payload == {"text": "hello"}
+    s = session_start("s1", instruction="audit")
+    assert s.type.value == "session.start" and s.payload["instruction"] == "audit"
+
+
+# ---------------------------------------------------------------------------
 # Auth handshake — the client waits for a schema-valid auth.ok before it
 # considers itself connected. If the server stays silent (or replies with a
 # bare {type} that fails schema validation) the UI holds a live socket but

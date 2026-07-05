@@ -6,6 +6,8 @@ import type {
   GateApproval,
   SessionConfidence,
   SessionStart,
+  SessionReply,
+  SessionDone,
   CommitteeSynthesis,
   VoiceTranscript,
   DiffReady,
@@ -147,8 +149,8 @@ export const useGenesisStore = create<GenesisStore>((set) => ({
         set((s) => ({
           engines: {
             ...s.engines,
-            [p.engine_id]: {
-              id: p.engine_id,
+            [p.engine]: {
+              id: p.engine,
               phase: p.phase ?? 0,
               status: "running",
             },
@@ -157,16 +159,18 @@ export const useGenesisStore = create<GenesisStore>((set) => ({
         break;
       }
       case "engine.done": {
+        // The backend only emits engine.done for successful engines;
+        // failures arrive as engine.failed.
         const p = payload as EngineDone;
         set((s) => ({
           engines: {
             ...s.engines,
-            [p.engine_id]: {
-              ...s.engines[p.engine_id],
-              status: p.status === "SUCCESS" ? "done" :
-                      p.status === "FAILED"  ? "failed" : "skipped",
+            [p.engine]: {
+              ...s.engines[p.engine],
+              id: p.engine,
+              status: "done",
               confidence: p.confidence,
-              summary: p.summary,
+              summary: p.result_summary,
             },
           },
         }));
@@ -177,8 +181,9 @@ export const useGenesisStore = create<GenesisStore>((set) => ({
         set((s) => ({
           engines: {
             ...s.engines,
-            [p.engine_id]: {
-              ...s.engines[p.engine_id],
+            [p.engine]: {
+              ...s.engines[p.engine],
+              id: p.engine,
               status: "failed",
               summary: p.error,
             },
@@ -190,64 +195,69 @@ export const useGenesisStore = create<GenesisStore>((set) => ({
         const p = payload as GateApproval;
         set({
           pendingGate: {
-            gateId: p.gate_id,
+            gateId: p.gate_name,
             description: p.description,
-            diffPreviewHtml: p.diff_preview_html,
-            overridable: p.overridable,
+            diffPreviewHtml: p.diff_preview,
+            overridable: true,
           },
         });
         break;
       }
       case "session.confidence": {
         const p = payload as SessionConfidence;
-        set({ confidence: p.confidence, riskLevel: p.risk_level });
+        set((s) => ({
+          confidence: p.confidence ?? s.confidence,
+          riskLevel: p.risk_level ?? s.riskLevel,
+        }));
         break;
       }
       case "session.start": {
         const p = payload as SessionStart;
         set({
-          sessionId: p.session_id,
-          sessionMode: p.mode,
+          sessionMode: p.mode || null,
           engines: {},
           pendingGate: null,
           pendingDiff: null,
           committeeSynthesis: null,
+          voiceState: "thinking",
         });
         break;
       }
+      case "session.reply": {
+        // The assistant's real answer — the backend composed it from the
+        // actual findings and speaks it aloud in parallel.
+        const p = payload as SessionReply;
+        set((s) => ({
+          voiceState: "speaking",
+          conversation: [
+            ...s.conversation,
+            { id: crypto.randomUUID(), role: "genesis" as const, text: p.text },
+          ],
+        }));
+        break;
+      }
       case "session.done": {
-        // Compose a concise spoken-style reply from what the session found,
-        // add it as a Genesis turn, and return to idle.
-        set((s) => {
-          const done = Object.values(s.engines).filter((e) => e.status === "done").length;
-          const failed = Object.values(s.engines).filter((e) => e.status === "failed").length;
-          const mode = s.sessionMode ? s.sessionMode.toUpperCase() : "session";
-          const conf = Math.round((s.confidence ?? 1) * 100);
-          let reply = `Done — ${mode} complete. ${done} engine${done === 1 ? "" : "s"} ran`;
-          if (failed) reply += `, ${failed} degraded`;
-          reply += `. Confidence ${conf}%.`;
-          if (s.pendingGate) reply += " I need your approval before writing anything.";
-          return {
-            voiceState: "idle",
-            voiceTranscript: "",
-            conversation: [
-              ...s.conversation,
-              { id: crypto.randomUUID(), role: "genesis" as const, text: reply },
-            ],
-          };
-        });
+        // The conversational answer arrives separately as session.reply
+        // (composed by the backend from real findings) — here we just settle.
+        const p = payload as SessionDone;
+        set((s) => ({
+          voiceState: "idle",
+          voiceTranscript: "",
+          sessionMode: p.mode ?? s.sessionMode,
+          confidence: p.confidence ?? s.confidence,
+        }));
         break;
       }
       case "committee.synthesis": {
         const p = payload as CommitteeSynthesis;
-        set({
+        set((s) => ({
           committeeSynthesis: {
             verdict: p.verdict,
-            confidence: p.confidence,
+            confidence: s.confidence,
             consensusType: p.consensus_type,
-            minorityView: p.minority_view,
+            minorityView: p.minority_view ?? undefined,
           },
-        });
+        }));
         break;
       }
       case "voice.transcript": {
@@ -277,7 +287,7 @@ export const useGenesisStore = create<GenesisStore>((set) => ({
           pendingDiff: {
             diffId: p.diff_id,
             filesChanged: p.files_changed,
-            previewHtml: p.preview_html,
+            previewHtml: p.preview_html ?? "",
           },
         });
         break;

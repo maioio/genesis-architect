@@ -871,9 +871,37 @@ def cmd_companion_ui(project_dir: Path, *, no_browser: bool = False) -> int:
         print(f"\n  Genesis Companion backend running (ws 127.0.0.1:{port}).")
     except Exception as exc:  # noqa: BLE001
         port = DEFAULT_PORT
+        router = None
         print(f"\n  Backend not started ({exc}).")
         print("  Opening the UI in offline mode. For live engines, install:")
         print("    pip install genesis-architect-pro[streaming]\n")
+
+    # Wake word -> the same router the panel's WebSocket uses, so "genesis ..."
+    # spoken aloud behaves exactly like typing the instruction into the panel:
+    # same GDE pipeline, same engine/gate events streamed back to the open UI.
+    # Previously --listen (wake word) and --ui (the panel) were two disconnected
+    # commands - you could have one or the other, never both together.
+    wake_listener = None
+    if ws_server is not None and router is not None:
+        try:
+            from genesis_architect_pro.streaming.events import MessageType, StreamMessage
+            from genesis_architect_pro.voice.listener import WakeWordListener
+
+            def _on_wake_instruction(instruction: str) -> None:
+                router.handle(StreamMessage(
+                    type=MessageType.USER_INTENT,
+                    payload={"instruction": instruction},
+                ))
+
+            wake_listener = WakeWordListener(on_instruction=_on_wake_instruction)
+            if wake_listener.start():
+                print('  Wake word active: say "genesis <request>" (or "ג\'נסיס …").')
+            else:
+                print(f"  Wake word unavailable: {wake_listener.last_error}")
+                wake_listener = None
+        except Exception as exc:  # noqa: BLE001
+            print(f"  Wake word unavailable: {exc}")
+            wake_listener = None
 
     ui_path = write_companion_html(project_dir, ws_port=port, ws_token=token)
     if ui_path is None:
@@ -898,6 +926,11 @@ def cmd_companion_ui(project_dir: Path, *, no_browser: bool = False) -> int:
             time.sleep(0.5)
     except KeyboardInterrupt:
         pass
+    if wake_listener is not None:
+        try:
+            wake_listener.stop()
+        except Exception:
+            pass
     try:
         ws_server.stop()
     except Exception:
@@ -1025,8 +1058,18 @@ def cmd_sync(args: argparse.Namespace) -> int:
 
 def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="genesis decide",
+        prog="genesis",
         description="Genesis Decision Engine — route any instruction to the right engines",
+        epilog=(
+            "Core commands (from genesis-architect):\n"
+            "  init       Scan GitHub repos, mine pitfalls, and scaffold your project\n"
+            "  research   Multi-source research on a topic (--json-data to process results)\n"
+            "  publish    Generate Show HN post and GitHub Release notes\n"
+            "  config     Manage API keys (set / get / show)\n"
+            "  upgrade    Show Pro status and how to unlock advanced features\n"
+            "\nRun `genesis <command> --help` for details on any command."
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     sub = parser.add_subparsers(dest="command")
 
@@ -1125,8 +1168,20 @@ def main(argv: list[str] | None = None) -> int:
 
     if argv is None:
         argv = sys.argv[1:]
-    _known = ("decide", "explain", "memory", "ui", "companion", "sync", "-h", "--help")
+
+    # Pro owns these subcommands; the core Typer CLI owns the rest. The two
+    # packages both ship a `genesis` console-script, and whichever installs
+    # last wins the launcher — so Pro's entry point must delegate core
+    # commands to the core app instead of forcing everything into `decide`.
+    _pro_cmds = ("decide", "explain", "memory", "ui", "companion", "sync")
+    _core_cmds = ("init", "config", "research", "publish", "upgrade")
+    if argv and argv[0] in _core_cmds:
+        from genesis_architect.cli import app as _core_app
+        return _core_app(args=argv, prog_name="genesis", standalone_mode=False) or 0
+
+    _known = _pro_cmds + ("-h", "--help")
     if argv and argv[0] not in _known:
+        # A bare instruction with no subcommand → treat as a GDE session.
         argv = ["decide"] + argv
 
     args = parser.parse_args(argv)

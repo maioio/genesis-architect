@@ -1,6 +1,7 @@
 """Tests for the one-command Companion auto-provision (voice/setup.py)."""
 from __future__ import annotations
 
+import sys
 from unittest.mock import patch
 
 from genesis_architect_pro.voice.setup import (
@@ -63,7 +64,11 @@ class TestEnsureCompanionPackages:
 
         assert result.ok
         assert "pip" in calls["cmd"]
-        assert any(req.startswith("kokoro") for req in result.installed)
+        if sys.version_info < (3, 13):
+            # kokoro is only offered on Python <3.13 — its spacy dependency
+            # has no wheels on newer versions and pip falls back to a
+            # from-source build that effectively hangs.
+            assert any(req.startswith("kokoro") for req in result.installed)
         assert all(not req.startswith("rich") for req in result.installed)
 
     def test_pip_invoked_with_utf8_decoding(self):

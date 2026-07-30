@@ -45,6 +45,14 @@ IGNORED_DIRS = frozenset({
     "htmlcov", ".mypy_cache", "target", "vendor", ".git",
 })
 
+EXT_MAP: dict[str, list[str]] = {
+    "python": [".py"],
+    "javascript": [".js", ".jsx"],
+    "typescript": [".ts", ".tsx"],
+    "go": [".go"],
+    "rust": [".rs"],
+}
+
 ENTRY_POINT_NAMES = frozenset({
     "main.py", "__main__.py", "cli.py", "app.py", "server.py",
     "index.js", "index.ts", "main.js", "main.ts",
@@ -380,14 +388,7 @@ def build_graph(project_path: str | Path, language: str | None = None,
         language = detect_language(root)
 
     # Collect source files
-    ext_map = {
-        "python": [".py"],
-        "javascript": [".js", ".jsx"],
-        "typescript": [".ts", ".tsx"],
-        "go": [".go"],
-        "rust": [".rs"],
-    }
-    extensions = ext_map.get(language, [".py"])
+    extensions = EXT_MAP.get(language, [".py"])
     src_files = _collect_files(root, extensions)
 
     # Index all module keys
@@ -487,15 +488,45 @@ def build_graph(project_path: str | Path, language: str | None = None,
     return graph
 
 
+def _cache_is_stale(root: Path, cached: dict, cache_mtime: float, language: str | None) -> bool:
+    """True if any tracked source file was added, removed, or modified since the cache was written."""
+    lang = language or cached.get("language") or detect_language(root)
+    extensions = EXT_MAP.get(lang, [".py"])
+    current_files = _collect_files(root, extensions)
+
+    current_keys: set[str] = set()
+    for f in current_files:
+        try:
+            rel = str(f.relative_to(root)).replace("\\", "/")
+        except ValueError:
+            continue
+        current_keys.add(rel)
+        try:
+            if f.stat().st_mtime > cache_mtime:
+                return True
+        except OSError:
+            return True
+
+    return current_keys != set(cached.get("modules", {}))
+
+
 def load_or_build(project_path: str | Path, language: str | None = None,
                   force_rebuild: bool = False) -> dict:
-    """Load cached graph from .genesis/import_graph.json or rebuild."""
+    """Load cached graph from .genesis/import_graph.json or rebuild.
+
+    The cache is invalidated (not just re-read) whenever a tracked source file
+    has been added, removed, or modified since it was written - otherwise new
+    files never surface until someone deletes the cache file by hand.
+    """
     root = Path(project_path).resolve()
     cache_path = root / ".genesis" / "import_graph.json"
 
     if not force_rebuild and cache_path.exists():
         try:
-            return json.loads(cache_path.read_text(encoding="utf-8"))
+            cached = json.loads(cache_path.read_text(encoding="utf-8-sig"))
+            cache_mtime = cache_path.stat().st_mtime
+            if not _cache_is_stale(root, cached, cache_mtime, language):
+                return cached
         except (json.JSONDecodeError, OSError):
             pass
 

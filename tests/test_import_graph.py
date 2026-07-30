@@ -202,6 +202,48 @@ class TestBuildGraph:
         graph = load_or_build(tmp_path)
         assert graph["language"] == "python"
 
+    def test_load_or_build_detects_new_file_without_manual_cache_delete(self, tmp_path):
+        import os
+        import time
+
+        src = tmp_path / "src"
+        src.mkdir()
+        (src / "app.py").write_text("import os\n")
+
+        from genesis_architect.core.import_graph import load_or_build
+        graph = load_or_build(tmp_path, language="python")
+        assert "src/app.py" in graph["modules"]
+        assert "src/new_module.py" not in graph["modules"]
+
+        # Force the new file's mtime strictly after the cache file's mtime -
+        # on filesystems with coarse mtime resolution a same-tick write can
+        # otherwise look identical to the cached state.
+        cache_path = tmp_path / ".genesis" / "import_graph.json"
+        time.sleep(1.1)
+        (src / "new_module.py").write_text("x = 1\n")
+        newer = cache_path.stat().st_mtime + 5
+        os.utime(src / "new_module.py", (newer, newer))
+
+        graph = load_or_build(tmp_path, language="python")
+        assert "src/new_module.py" in graph["modules"], (
+            "new file must appear without deleting .genesis/import_graph.json by hand"
+        )
+
+    def test_load_or_build_detects_removed_file(self, tmp_path):
+        src = tmp_path / "src"
+        src.mkdir()
+        (src / "app.py").write_text("import os\n")
+        (src / "gone.py").write_text("x = 1\n")
+
+        from genesis_architect.core.import_graph import load_or_build
+        graph = load_or_build(tmp_path, language="python")
+        assert "src/gone.py" in graph["modules"]
+
+        (src / "gone.py").unlink()
+
+        graph = load_or_build(tmp_path, language="python")
+        assert "src/gone.py" not in graph["modules"]
+
     def test_fan_in_fan_out_computed(self, tmp_path):
         src = tmp_path / "src"
         src.mkdir()

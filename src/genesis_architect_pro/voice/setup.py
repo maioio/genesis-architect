@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import logging
 import shutil
+import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -182,10 +183,18 @@ COMPANION_PACKAGES: dict[str, str] = {
     "webrtcvad": "webrtcvad-wheels>=2.0.10",
     "faster_whisper": "faster-whisper>=1.0",
     "soundfile": "soundfile>=0.12",
-    # kokoro >=0.8 pins Python <3.13; 0.7.x is the newest that installs everywhere.
-    "kokoro": "kokoro>=0.7",
     "sherpa_onnx": "sherpa-onnx>=1.10",
 }
+
+# kokoro's spacy dependency has no wheels on Python >=3.13, so pip falls back to
+# a source build that never succeeds - every attempt just burns the full
+# subprocess timeout (up to 30 min in ensure_companion_packages) before failing.
+# readiness() already treats this as expected (falls back to Piper via
+# sherpa-onnx, verified to produce real audio); the auto-installer needs the
+# same awareness or every fresh `genesis companion --ui` hangs on a doomed
+# install instead of using the fallback that already works.
+if sys.version_info < (3, 13):
+    COMPANION_PACKAGES["kokoro"] = "kokoro>=0.7"
 
 
 @dataclass

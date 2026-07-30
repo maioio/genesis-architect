@@ -44,13 +44,27 @@ def _anti_patterns_from_ctx(ctx: SessionContext) -> list[dict]:
         if isinstance(item, dict):
             norm.append(item)
             continue
-        modules = getattr(item, "affected_modules", None) or []
+        # AntiPattern.file is the module the pattern was detected in.
+        # affected_modules is a *different* thing (the related imports/importers
+        # that made it a pattern, e.g. a hub-file's callers) - using it here
+        # attributed every anti-pattern to some other, unrelated module instead
+        # of the one it was actually found in, and left it edge-less whenever
+        # that list happened to be empty.
         norm.append({
             "name": getattr(item, "type", "anti_pattern"),
-            "module": modules[0] if modules else "",
+            "module": getattr(item, "file", "") or "",
             "confidence": getattr(item, "confidence", 0.7),
         })
     return norm
+
+
+def _modules_from_ctx(ctx: SessionContext) -> list[str]:
+    """List of known module paths from the import_graph engine, if it ran."""
+    result = ctx.engine_results.get("import_graph")
+    if result is None or not getattr(result, "output", None):
+        return []
+    graph = result.output.get("graph") or {}
+    return list(graph.get("modules", {}).keys())
 
 
 def gde_run_knowledge_graph(ctx: SessionContext) -> dict[str, Any]:
@@ -62,7 +76,11 @@ def gde_run_knowledge_graph(ctx: SessionContext) -> dict[str, Any]:
 
     project_dir = _project_dir(ctx)
     anti_patterns = _anti_patterns_from_ctx(ctx)
-    architecture = {"anti_patterns": anti_patterns} if anti_patterns else None
+    modules = _modules_from_ctx(ctx)
+    architecture = (
+        {"anti_patterns": anti_patterns, "modules": modules}
+        if (anti_patterns or modules) else None
+    )
 
     try:
         graph = kg.build_from_project(project_dir, architecture=architecture,

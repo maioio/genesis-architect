@@ -101,7 +101,19 @@ _PERF_SIGNALS = re.compile(
 
 # Security signals
 _SEC_SIGNALS = re.compile(
-    r"(?:security|auth(?:entication)?|inject(?:ion)?|cve|vulnerab|secret|token leak)",
+    r"(?:"
+    r"security|auth(?:entication|orization)?|inject(?:ion)?|"
+    r"cve|vulnerab(?:le|ility)?|secret|"
+    r"token[s]?\b|cookie[s]?\b|session\b|httponly|"
+    r"pentest|penetra(?:tion|te)|"
+    r"credential|password|plaintext|plain.text|"
+    r"xss|csrf|sql.injection|"
+    r"encrypt|decrypt|cors|"
+    r"bearer.token|oAuth|"
+    r"malicious|attack|exploit|backdoor|"
+    r"mitm|man.in.the.middle|"
+    r"two.factor|mfa"
+    r")",
     re.IGNORECASE,
 )
 

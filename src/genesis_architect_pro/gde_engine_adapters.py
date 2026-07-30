@@ -34,6 +34,16 @@ def _project_dir(ctx: SessionContext) -> Path:
     return ctx.project_dir
 
 
+def _instruction(ctx: SessionContext) -> str:
+    """The user's free-text instruction for this session.
+
+    SessionContext has no `instruction` attribute of its own — the raw text
+    lives on ctx.intent (set at INTAKE). Engines that need it (field
+    intelligence, evidence pack, build scaffold) must go through here.
+    """
+    return ctx.intent.raw_text if ctx.intent is not None else ""
+
+
 # ---------------------------------------------------------------------------
 # Adapter functions
 # ---------------------------------------------------------------------------
@@ -77,7 +87,7 @@ def gde_run_import_graph(ctx: SessionContext) -> dict[str, Any]:
 
 
 def gde_run_architecture_scorer(ctx: SessionContext) -> dict[str, Any]:
-    from genesis_architect_pro.architecture_scorer import score_project
+    from genesis_architect_pro.architecture_scorer import append_score_history, score_project
 
     project_dir = _project_dir(ctx)
 
@@ -91,6 +101,15 @@ def gde_run_architecture_scorer(ctx: SessionContext) -> dict[str, Any]:
         score = result.get("total", 0)
         label = result.get("profile", "")
         dimensions = {k: result.get(k) for k in ("modularity", "coupling", "cohesion", "layering")}
+        # GREEN-zone auto-write (score_history), same category as the import_graph
+        # and knowledge_graph caches - an internal trend index, not a user-facing
+        # deliverable, so no approval gate. This call was simply missing: the
+        # decay/trend forecast a few lines down reads this same file but nothing
+        # ever appended to it, so real history could never accumulate.
+        try:
+            append_score_history(project_dir, result)
+        except Exception:
+            pass  # history append is advisory; never block the scorer
     else:  # tolerate an object-shaped result from older/newer cores
         score = getattr(result, "score", None) or (result if isinstance(result, (int, float)) else 0)
         label = getattr(result, "label", "")
@@ -179,7 +198,7 @@ def gde_run_antipattern_detector(ctx: SessionContext) -> dict[str, Any]:
 
 
 def gde_run_fragility_classifier(ctx: SessionContext) -> dict[str, Any]:
-    from genesis_architect_pro.fragility_classifier import classify_all
+    from genesis_architect_pro.fragility_classifier import classify_all, write_fragility_map
 
     project_dir = _project_dir(ctx)
 
@@ -197,8 +216,20 @@ def gde_run_fragility_classifier(ctx: SessionContext) -> dict[str, Any]:
     if volatile:
         warnings.append(f"{len(volatile)} VOLATILE module(s) detected")
 
+    map_path = project_dir / "FRAGILITY_MAP.md"
+    # GREEN-zone auto-write, per genesis_sync's own zone policy ("fragility map
+    # refresh" is documented as an auto-applied action) - write_fragility_map()
+    # already existed but was only ever reachable from this module's own CLI
+    # main(), never from the GDE, so the map file this classifier is named for
+    # was never actually produced by a genesis decide/sync session.
+    try:
+        write_fragility_map(report, map_path)
+    except Exception:
+        pass  # map write is advisory; never block the classifier
+
     return {
         "fragility_map": classifications,
+        "fragility_map_path": str(map_path),
         "volatile_count": len(volatile),
         "fragile_count": len(fragile),
         "stable_count": len(stable),
@@ -211,6 +242,7 @@ def gde_run_recovery_report(ctx: SessionContext) -> dict[str, Any]:
     from genesis_architect_pro.recovery_report import generate_report_for_project
 
     project_dir = _project_dir(ctx)
+    rel_path = "PROJECT_RECOVERY_REPORT.md"
 
     try:
         report = generate_report_for_project(project_dir)
@@ -225,18 +257,25 @@ def gde_run_recovery_report(ctx: SessionContext) -> dict[str, Any]:
     ctx.project_risk_level = str(risk_level)
 
     return {
-        "report_path": str(project_dir / "PROJECT_RECOVERY_REPORT.md"),
+        "report_path": rel_path,
         "risk_level": str(risk_level),
         "recommendations": [str(r) for r in recs[:10]],
+        "_pending_writes": [{
+            "operation_id": "recovery_report:doc",
+            "description": "Write project recovery report to PROJECT_RECOVERY_REPORT.md",
+            "target_path": rel_path,
+            "payload": report.to_markdown(),
+        }],
         "_confidence": 1.0,
         "_warnings": [],
     }
 
 
 def gde_run_refactoring_planner(ctx: SessionContext) -> dict[str, Any]:
-    from genesis_architect_pro.refactoring_planner import generate_plan
+    from genesis_architect_pro.refactoring_planner import generate_plan, render_refactoring_plan_md
 
     project_dir = _project_dir(ctx)
+    rel_path = "REFACTORING_PLAN.md"
 
     try:
         plan = generate_plan(project_dir)
@@ -248,9 +287,15 @@ def gde_run_refactoring_planner(ctx: SessionContext) -> dict[str, Any]:
     tier2 = [s for s in steps if getattr(s, "tier", 0) == 2]
 
     return {
-        "plan_path": str(project_dir / "REFACTORING_PLAN.md"),
+        "plan_path": rel_path,
         "tier1_count": len(tier1),
         "tier2_count": len(tier2),
+        "_pending_writes": [{
+            "operation_id": "refactoring_planner:doc",
+            "description": "Write refactoring plan to REFACTORING_PLAN.md",
+            "target_path": rel_path,
+            "payload": render_refactoring_plan_md(plan),
+        }],
         "_confidence": 1.0,
         "_warnings": [],
     }
@@ -260,15 +305,23 @@ def gde_run_c4_generator(ctx: SessionContext) -> dict[str, Any]:
     from genesis_architect_pro.c4_generator import generate_c4_doc
 
     project_dir = _project_dir(ctx)
-    output_path = project_dir / "docs" / "architecture" / "C4_ARCHITECTURE.md"
+    rel_path = str(Path("docs") / "architecture" / "C4_ARCHITECTURE.md")
 
     try:
-        generate_c4_doc(project_dir, output_path=output_path)
+        # No output_path -> generate_c4_doc returns content without writing;
+        # the actual write is deferred to commit() after user approval.
+        content = generate_c4_doc(project_dir)
     except Exception as exc:
         return {"_confidence": 0.4, "_warnings": [f"c4_generator failed: {exc}"]}
 
     return {
-        "doc_path": str(output_path),
+        "doc_path": rel_path,
+        "_pending_writes": [{
+            "operation_id": "c4_generator:doc",
+            "description": "Write C4 architecture diagram to docs/architecture/C4_ARCHITECTURE.md",
+            "target_path": rel_path,
+            "payload": content,
+        }],
         "_confidence": 1.0,
         "_warnings": [],
     }
@@ -278,18 +331,39 @@ def gde_run_security_templates(ctx: SessionContext) -> dict[str, Any]:
     from genesis_architect_pro.security_templates import generate_security_docs
 
     project_dir = _project_dir(ctx)
+    sec_dir = Path("docs") / "security"
 
     try:
-        result = generate_security_docs(project_dir)
+        docs = generate_security_docs(project_dir, write=False)
     except Exception as exc:
         return {"_confidence": 0.4, "_warnings": [f"security_templates failed: {exc}"]}
 
-    stride_path = result.get("stride_path", "") if isinstance(result, dict) else ""
-    owasp_path = result.get("owasp_path", "") if isinstance(result, dict) else ""
+    pending_writes = []
+    stride_path = ""
+    owasp_path = ""
+
+    if "STRIDE_ANALYSIS.md" in docs:
+        stride_path = str(sec_dir / "STRIDE_ANALYSIS.md")
+        pending_writes.append({
+            "operation_id": "security_templates:stride",
+            "description": "Write STRIDE threat model to docs/security/STRIDE_ANALYSIS.md",
+            "target_path": stride_path,
+            "payload": docs["STRIDE_ANALYSIS.md"],
+        })
+
+    if "OWASP_CHECKLIST.md" in docs:
+        owasp_path = str(sec_dir / "OWASP_CHECKLIST.md")
+        pending_writes.append({
+            "operation_id": "security_templates:owasp",
+            "description": "Write OWASP Top 10 checklist to docs/security/OWASP_CHECKLIST.md",
+            "target_path": owasp_path,
+            "payload": docs["OWASP_CHECKLIST.md"],
+        })
 
     return {
-        "stride_path": str(stride_path),
-        "owasp_path": str(owasp_path),
+        "stride_path": stride_path,
+        "owasp_path": owasp_path,
+        "_pending_writes": pending_writes,
         "_confidence": 1.0,
         "_warnings": [],
     }
@@ -326,7 +400,7 @@ def gde_run_field_intelligence(ctx: SessionContext) -> dict[str, Any]:
 
     # Derive the tool name from the session instruction or project dir name
     project_dir = _project_dir(ctx)
-    tool_name = ctx.instruction or project_dir.name
+    tool_name = _instruction(ctx) or project_dir.name
 
     try:
         report = run_field_workflow(tool=tool_name)
@@ -351,13 +425,16 @@ def gde_run_field_intelligence(ctx: SessionContext) -> dict[str, Any]:
 
 def gde_run_evidence_pack(ctx: SessionContext) -> dict[str, Any]:
     """Build an evidence pack from research findings and source registry."""
-    from genesis_architect_pro.evidence_pack import build_evidence_pack, save_evidence_pack
+    import json as _json
+
+    from genesis_architect_pro.evidence_pack import build_evidence_pack
 
     project_dir = _project_dir(ctx)
     findings = _output("field_intelligence", ctx).get("findings", [])
     _output("source_registry", ctx).get("registry")
 
-    question = ctx.instruction or f"Is {project_dir.name} safe to build on?"
+    question = _instruction(ctx) or f"Is {project_dir.name} safe to build on?"
+    rel_path = str(Path(".genesis") / "evidence_packs" / "research_session.json")
 
     try:
         items: list[dict] = []
@@ -371,14 +448,19 @@ def gde_run_evidence_pack(ctx: SessionContext) -> dict[str, Any]:
 
         pack = build_evidence_pack(question, items,
                                    recommendation="See findings above for risks and pitfalls.")
-        saved_path = save_evidence_pack(pack, "research_session", project_dir)
     except Exception as exc:
         return {"_confidence": 0.4, "_warnings": [f"evidence_pack failed: {exc}"],
                 "pack_path": "", "item_count": 0}
 
     return {
-        "pack_path": str(saved_path) if saved_path else "",
+        "pack_path": rel_path,
         "item_count": len(items),
+        "_pending_writes": [{
+            "operation_id": "evidence_pack:research_session",
+            "description": f"Write evidence pack to {rel_path}",
+            "target_path": rel_path,
+            "payload": _json.dumps(pack.to_dict(), indent=2),
+        }],
         "_confidence": 1.0,
         "_warnings": [],
     }
@@ -392,7 +474,7 @@ def gde_run_evidence_pack(ctx: SessionContext) -> dict[str, Any]:
 def gde_run_build_scaffold(ctx: SessionContext) -> dict[str, Any]:
     """Invoke the genesis-architect free core to scaffold a new project."""
     project_dir = _project_dir(ctx)
-    instruction = ctx.instruction or ""
+    instruction = _instruction(ctx)
 
     # Extract vision from instruction — BUILD mode sessions carry the project description
     vision = instruction
@@ -532,7 +614,10 @@ def gde_run_committee_analysis(ctx: SessionContext) -> dict[str, Any]:
 
             committee_result = run_committee(request)
 
-            # Journal entry (always, regardless of transparency)
+            # Journal entry: this is the Decision Journal, not a disk write
+            # gated by approval — it's a permanent record of what the
+            # Committee said, independent of whether the user later
+            # approves any pending writes.
             try:
                 append_journal_entry(
                     request=request,
@@ -543,19 +628,22 @@ def gde_run_committee_analysis(ctx: SessionContext) -> dict[str, Any]:
             except Exception:
                 pass  # journal failure must never crash the engine
 
-            # Write report
-            report_path = project_dir / ".genesis" / "committee_report.md"
-            report_path.parent.mkdir(parents=True, exist_ok=True)
-            _write_committee_report(report_path, committee_result, perspectives, project_dir.name)
+            rel_path = str(Path(".genesis") / "committee_report.md")
 
             return {
                 "perspectives": perspectives,
                 "perspective_count": len(perspectives),
                 "divergent_lenses": divergent,
-                "report_path": str(report_path),
+                "report_path": rel_path,
                 "committee_verdict": committee_result.verdict,
                 "committee_confidence": committee_result.confidence,
                 "committee_consensus": committee_result.consensus_type.value,
+                "_pending_writes": [{
+                    "operation_id": "committee_analysis:report",
+                    "description": "Write Committee analysis report to .genesis/committee_report.md",
+                    "target_path": rel_path,
+                    "payload": _render_committee_report(committee_result, perspectives, project_dir.name),
+                }],
                 "_confidence": committee_result.confidence,
                 "_warnings": warnings,
             }
@@ -573,30 +661,30 @@ def gde_run_committee_analysis(ctx: SessionContext) -> dict[str, Any]:
     if divergent:
         report_lines.append(f"\n## Divergence\nLenses disagree on: {', '.join(divergent)}")
 
-    report_path = project_dir / ".genesis" / "committee_report.md"
-    try:
-        report_path.parent.mkdir(parents=True, exist_ok=True)
-        report_path.write_text("\n".join(report_lines), encoding="utf-8")
-    except Exception as exc:
-        warnings.append(f"could not write committee report: {exc}")
+    rel_path = str(Path(".genesis") / "committee_report.md")
 
     fallback_confidence = max(0.2, 1.0 - (0.10 * len(divergent)))
     return {
         "perspectives": perspectives,
         "perspective_count": len(perspectives),
+        "report_path": rel_path,
+        "_pending_writes": [{
+            "operation_id": "committee_analysis:report",
+            "description": "Write Committee analysis report to .genesis/committee_report.md",
+            "target_path": rel_path,
+            "payload": "\n".join(report_lines),
+        }],
         "divergent_lenses": divergent,
-        "report_path": str(report_path),
         "_confidence": fallback_confidence,
         "_warnings": warnings,
     }
 
 
-def _write_committee_report(
-    path: "Path",  # noqa: F821
-    result: "CommitteeResult",  # noqa: F821
+def _render_committee_report(
+    result: Any,
     perspectives: list[dict],
     project_name: str,
-) -> None:
+) -> str:
     lines = [f"# Committee Analysis — {project_name}\n"]
     lines.append(f"**Verdict:** {result.verdict}\n")
     lines.append(f"**Confidence:** {result.confidence:.0%} | **Consensus:** {result.consensus_type.value.upper()}\n")
@@ -617,10 +705,7 @@ def _write_committee_report(
     if result.manufactured_warning:
         lines.append(f"\n> ⚠️ {result.manufactured_warning}\n")
 
-    try:
-        path.write_text("\n".join(lines), encoding="utf-8")
-    except Exception:
-        pass
+    return "\n".join(lines)
 
 
 def _summarize_output(engine_id: str, out: dict) -> str:

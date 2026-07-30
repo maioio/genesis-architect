@@ -108,8 +108,8 @@ class TestContextPrefetcher:
         p.prefetch("PaymentService")
         assert p.last_entity == "PaymentService"
 
-    def test_await_result_returns_dict(self):
-        p = ContextPrefetcher(".")
+    def test_await_result_returns_dict(self, tmp_path):
+        p = ContextPrefetcher(tmp_path)
         p.start_loop_in_thread()
         time.sleep(0.05)
         p.prefetch("SomeModule")
@@ -117,8 +117,8 @@ class TestContextPrefetcher:
         assert isinstance(result, dict)
         assert result.get("entity") == "SomeModule"
 
-    def test_await_result_has_fragility_and_kg_keys(self):
-        p = ContextPrefetcher(".")
+    def test_await_result_has_fragility_and_kg_keys(self, tmp_path):
+        p = ContextPrefetcher(tmp_path)
         p.start_loop_in_thread()
         time.sleep(0.05)
         p.prefetch("TestModule")

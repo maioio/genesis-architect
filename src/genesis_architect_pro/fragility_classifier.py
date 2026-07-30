@@ -241,6 +241,24 @@ def classify_all(project_path: str | Path, language: str | None = None,
     )
 
 
+def classify_module(entity: str, project_path: str | Path) -> dict | None:
+    """Look up one module's fragility classification by name.
+
+    `entity` is matched case-insensitively against the tail of each module's
+    path (so a bare name like "auth_module" or "auth_module.py" matches
+    "src/auth_module.py"). Returns None if no module matches. Used by the
+    voice Companion's context-prefetch, which only has a bare entity name
+    extracted from speech, not a full project-relative path.
+    """
+    report = classify_all(project_path)
+    needle = entity.lower()
+    for c in report.classifications:
+        tail = Path(c.module).name.lower()
+        if needle == tail or needle == tail.rsplit(".", 1)[0] or needle in c.module.lower():
+            return c.to_dict()
+    return None
+
+
 def write_fragility_map(report: FragilityReport, output_path: Path) -> None:
     """Write FRAGILITY_MAP.md from a FragilityReport."""
     lines = [

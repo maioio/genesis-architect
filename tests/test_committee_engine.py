@@ -314,11 +314,16 @@ def test_journal_append_is_additive():
         result2 = CommitteeResult(verdict="v2", confidence=0.8, consensus_type=ConsensusType.SPLIT)
         append_journal_entry(request, result2, session_id="s2", project_dir=project_dir)
 
-        journal = project_dir / ".genesis" / "gde_decision_log.jsonl"
+        # Committee journal has its own file, separate from gde_session.py's
+        # .genesis/gde_decision_log.jsonl (incompatible schemas - see journal.py).
+        journal = project_dir / ".genesis" / "committee_journal.jsonl"
         lines = journal.read_text().strip().splitlines()
         assert len(lines) == 2
         assert json.loads(lines[0])["verdict"] == "v1"
         assert json.loads(lines[1])["verdict"] == "v2"
+
+        gde_log = project_dir / ".genesis" / "gde_decision_log.jsonl"
+        assert not gde_log.exists(), "Committee entries must not leak into the GDE's own decision log"
 
 
 # ---------------------------------------------------------------------------

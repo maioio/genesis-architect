@@ -530,10 +530,18 @@ def _generate_owasp_doc(project_path: Path, stack: dict) -> str:
 
 def generate_security_docs(project_path: str | Path,
                             stride: bool = True,
-                            owasp: bool = True) -> dict[str, str]:
+                            owasp: bool = True,
+                            write: bool = True) -> dict[str, str]:
     """
     Generate STRIDE and OWASP documents.
-    Returns dict of {filename: content}.
+
+    If write=True (default, CLI/standalone behavior), writes both files to
+    disk immediately and returns {filename: written_path}.
+
+    If write=False (used by the GDE adapter so the write can be deferred
+    until the user APPROVEs it), no disk I/O happens here — returns
+    {filename: content} instead, for the caller to turn into a
+    WriteOperation.
     """
     root = Path(project_path).resolve()
     evidence = _load_evidence(root)
@@ -544,17 +552,23 @@ def generate_security_docs(project_path: str | Path,
 
     if stride:
         content = _generate_stride_doc(root, stack)
-        out_path = sec_dir / "STRIDE_ANALYSIS.md"
-        sec_dir.mkdir(parents=True, exist_ok=True)
-        out_path.write_text(content, encoding="utf-8")
-        docs["STRIDE_ANALYSIS.md"] = str(out_path)
+        if write:
+            out_path = sec_dir / "STRIDE_ANALYSIS.md"
+            sec_dir.mkdir(parents=True, exist_ok=True)
+            out_path.write_text(content, encoding="utf-8")
+            docs["STRIDE_ANALYSIS.md"] = str(out_path)
+        else:
+            docs["STRIDE_ANALYSIS.md"] = content
 
     if owasp:
         content = _generate_owasp_doc(root, stack)
-        out_path = sec_dir / "OWASP_CHECKLIST.md"
-        sec_dir.mkdir(parents=True, exist_ok=True)
-        out_path.write_text(content, encoding="utf-8")
-        docs["OWASP_CHECKLIST.md"] = str(out_path)
+        if write:
+            out_path = sec_dir / "OWASP_CHECKLIST.md"
+            sec_dir.mkdir(parents=True, exist_ok=True)
+            out_path.write_text(content, encoding="utf-8")
+            docs["OWASP_CHECKLIST.md"] = str(out_path)
+        else:
+            docs["OWASP_CHECKLIST.md"] = content
 
     return docs
 

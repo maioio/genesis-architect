@@ -1,8 +1,16 @@
 """Committee engine — Decision Journal integration.
 
-Appends a structured entry to .genesis/gde_decision_log.jsonl
-after every Committee run. Append-only, atomic (tmp→rename),
-consistent with the GDE session persistence pattern.
+Appends a structured entry to .genesis/committee_journal.jsonl after every
+Committee run. Append-only, atomic (tmp→rename), consistent with the GDE
+session persistence pattern.
+
+This is a separate file from gde_session.py's .genesis/gde_decision_log.jsonl
+(the GDE's own DecisionEntry log, read by gde_cli.py's `explain` command).
+The two use incompatible schemas — a Committee entry has no `stage` field,
+a DecisionEntry has no `verdict` field — so they must never share a path:
+read_decision_log() silently drops any line it can't parse into a
+DecisionEntry, which previously meant every Committee journal entry
+vanished the moment it was written.
 """
 
 from __future__ import annotations
@@ -18,7 +26,7 @@ from genesis_architect_pro.engines.committee.types import (
     CommitteeResult,
 )
 
-_JOURNAL_FILE = ".genesis/gde_decision_log.jsonl"
+_JOURNAL_FILE = ".genesis/committee_journal.jsonl"
 
 
 def append_journal_entry(
@@ -90,6 +98,32 @@ def _build_entry(
         }
 
     return entry
+
+
+def read_journal_entries(project_dir: Path | None = None) -> list[dict]:
+    """Read all Committee journal entries for a project.
+
+    Returns an empty list if the file does not exist. Corrupt lines are
+    silently skipped (consistent with gde_session.read_decision_log).
+
+    Args:
+        project_dir: Root of the project (cwd if None).
+    """
+    root = project_dir or Path.cwd()
+    journal_path = root / _JOURNAL_FILE
+    if not journal_path.exists():
+        return []
+
+    entries: list[dict] = []
+    for line in journal_path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            entries.append(json.loads(line))
+        except json.JSONDecodeError:
+            continue
+    return entries
 
 
 def _atomic_append(path: Path, entry: dict) -> None:

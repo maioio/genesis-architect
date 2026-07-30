@@ -33,6 +33,7 @@ from genesis_architect_pro.gde_types import (
     ExecutionPlan,
     LifecycleStage,
     SessionContext,
+    WriteOperation,
 )
 
 # Confidence penalties
@@ -110,6 +111,16 @@ def _run_single(desc: EngineDescriptor, ctx: SessionContext) -> None:
         status = EngineStatus.SUCCESS
         confidence = float(output.pop("_confidence", 1.0))
         warnings = list(output.pop("_warnings", []))
+        pending_writes = output.pop("_pending_writes", [])
+        for w in pending_writes:
+            ctx.pending_write_operations.append(WriteOperation(
+                engine_id=desc.id,
+                operation_id=w["operation_id"],
+                description=w["description"],
+                target_path=w["target_path"],
+                is_reversible=bool(w.get("is_reversible", True)),
+                payload=w.get("payload"),
+            ))
 
         result = EngineResult(
             engine_id=desc.id,
@@ -146,6 +157,11 @@ def _invoke(desc: EngineDescriptor, ctx: SessionContext) -> dict[str, Any]:
     Special keys in the returned dict:
       _confidence: float — engine's self-reported confidence (default 1.0)
       _warnings: list[str] — warnings to surface (triggers DEGRADED status)
+      _pending_writes: list[dict] — disk writes the engine wants to make,
+        deferred until the user APPROVEs the session. Each dict needs
+        operation_id, description, target_path, payload, and optionally
+        is_reversible. Converted to WriteOperation and appended to
+        ctx.pending_write_operations — nothing is written to disk here.
     """
     module = importlib.import_module(desc.module)
     fn: Callable[[SessionContext], dict[str, Any]] = getattr(module, desc.entry_point)

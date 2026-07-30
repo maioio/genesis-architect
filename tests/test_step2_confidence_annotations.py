@@ -39,6 +39,22 @@ def _make_python_project(root: Path, *, with_tests: bool = False) -> None:
 
 
 def _inject_graph(root: Path, graph: dict) -> None:
+    """Write a synthetic import graph straight into the cache.
+
+    import_graph.load_or_build() now checks the injected cache against the
+    real filesystem (mtime + file set) and rebuilds if they disagree — a
+    real files-added-but-cache-stale bug this used to paper over (see
+    import_graph.py's load_or_build/_cache_is_stale). So every module key
+    the fake graph claims must exist as a real (empty is fine) file on disk,
+    or the staleness check discards this synthetic graph and rebuilds from
+    the (empty) tmp_path, and the fabricated god-class/cycle disappears.
+    """
+    for rel_path in graph.get("modules", {}):
+        f = root / rel_path
+        f.parent.mkdir(parents=True, exist_ok=True)
+        if not f.exists():
+            f.write_text("")
+
     genesis_dir = root / ".genesis"
     genesis_dir.mkdir(exist_ok=True)
     (genesis_dir / "import_graph.json").write_text(json.dumps(graph))

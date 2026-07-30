@@ -179,14 +179,34 @@ class ContextPrefetcher:
             from genesis_architect_pro.knowledge_graph import load_graph
             loop = asyncio.get_event_loop()
             graph = await loop.run_in_executor(None, load_graph, str(self._root))
-            node = graph.get_node(entity) or graph.get_node(entity.lower())
+            node = self._find_node(graph, entity)
             if node is None:
                 return None
-            return {"id": node.id, "labels": node.labels,
-                    "props": dict(node.properties)}
+            return {"id": node.id, "label": node.label,
+                    "props": dict(node.metadata)}
         except Exception as exc:
             _log.debug("prefetch KG error for %s: %s", entity, exc)
             return None
+
+    @staticmethod
+    def _find_node(graph: Any, entity: str):
+        """Match a bare entity name (e.g. "auth_module") to a graph node.
+
+        Node ids are namespaced ("module:src/auth_module.py",
+        "anti_pattern:dead-code:src/auth_module.py") so an exact
+        graph.get_node(entity) lookup never matches a bare voice-extracted
+        name - it only ever matched if the caller happened to pass a full,
+        correctly-prefixed id. Search by path tail / label instead.
+        """
+        needle = entity.lower()
+        exact = graph.get_node(needle)
+        if exact is not None:
+            return exact
+        for node_id, node in graph.nodes.items():
+            tail = node_id.rsplit("/", 1)[-1].rsplit(".", 1)[0].lower()
+            if needle == tail or needle in node_id.lower() or needle == node.label.lower():
+                return node
+        return None
 
     def await_result(self, timeout: float = 0.5) -> dict[str, Any]:
         """Block until the prefetch task completes (or timeout), return result."""

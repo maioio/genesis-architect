@@ -402,6 +402,117 @@ class TestCLI:
             main(["--help"])
         assert exc.value.code == 0
 
+    # -----------------------------------------------------------------
+    # Regression tests for the QA report (genesis-pro-qa-report.md)
+    # -----------------------------------------------------------------
+
+    def test_memory_status_does_not_crash_when_empty(self, tmp_path):
+        """memory_status() returns {filename: int|False} (flat); cmd_memory
+        used to call .get() on that int/bool and crash with AttributeError."""
+        from genesis_architect_pro.gde_cli import main
+        rc = main(["memory", "--status", "--dir", str(tmp_path)])
+        assert rc == 0
+
+    def test_memory_status_does_not_crash_when_populated(self, tmp_path):
+        from genesis_architect_pro.gde_cli import main
+        assert main(["memory", "--init", "--dir", str(tmp_path)]) == 0
+        assert main(["memory", "--status", "--dir", str(tmp_path)]) == 0
+
+    def test_ui_writes_workspace_file(self, tmp_path):
+        """write_workspace(project_root, out_name) recomputes state itself;
+        cmd_ui used to pass it (WorkspaceState, Path) and crash with TypeError."""
+        from genesis_architect_pro.gde_cli import main
+        rc = main(["ui", "--dir", str(tmp_path)])
+        assert rc == 0
+        assert (tmp_path / ".genesis" / "ui" / "workspace.html").is_file()
+
+    def test_doctor_runs_without_license_and_reports_missing(self, monkeypatch):
+        monkeypatch.setattr("genesis_architect_pro.license.is_licensed", lambda: False)
+        from genesis_architect_pro.gde_cli import main
+        rc = main(["doctor"])
+        assert rc == 1
+
+    def test_doctor_runs_with_license_and_reports_ready(self):
+        from genesis_architect_pro.gde_cli import main
+        rc = main(["doctor"])
+        assert rc == 0
+
+    def test_license_activate_invalid_key_fails_cleanly(self, capsys):
+        from genesis_architect_pro.gde_cli import main
+        rc = main(["license", "activate", "gpro_not-a-real-key.bad"])
+        assert rc == 1
+        captured = capsys.readouterr()
+        assert "invalid" in (captured.out + captured.err).lower()
+
+    def test_license_activate_valid_key_writes_file(self, tmp_path, monkeypatch):
+        """Uses a monkeypatched parse_key rather than a real signed key — the
+        private signing key deliberately never lives in this package (see
+        license.py). The Docker QA simulation covers the real Ed25519 path
+        end-to-end with an actual signed test key."""
+        fake_file = tmp_path / "pro_license"
+        monkeypatch.setattr("genesis_architect_pro.license.LICENSE_FILE", fake_file)
+        monkeypatch.setattr("genesis_architect_pro.license.parse_key",
+                            lambda key: {"sub": "test@example.com"})
+        from genesis_architect_pro.gde_cli import main
+        rc = main(["license", "activate", "gpro_fake.fake"])
+        assert rc == 0
+        assert fake_file.is_file()
+        assert "gpro_fake.fake" in fake_file.read_text(encoding="utf-8")
+
+    def test_license_status_reports_active(self, monkeypatch, capsys):
+        monkeypatch.setattr("genesis_architect_pro.license.is_licensed", lambda: True)
+        from genesis_architect_pro.gde_cli import main
+        rc = main(["license", "status"])
+        assert rc == 0
+        assert "active" in capsys.readouterr().out.lower()
+
+    def test_license_status_reports_inactive(self, monkeypatch, capsys):
+        monkeypatch.setattr("genesis_architect_pro.license.is_licensed", lambda: False)
+        from genesis_architect_pro.gde_cli import main
+        rc = main(["license", "status"])
+        assert rc == 1
+        assert "not active" in capsys.readouterr().out.lower()
+
+    def test_recover_command_classifies_as_recovery_high_confidence(self, tmp_path, capsys):
+        """genesis recover <path> is a thin wrapper around decide — the site
+        advertises it as a literal single/two-word command."""
+        from genesis_architect_pro.gde_cli import main
+        rc = main(["recover", str(tmp_path), "--classify-only"])
+        assert rc == 0
+        out = capsys.readouterr().out.lower()
+        assert "recovery" in out
+
+    def test_harden_command_classifies_as_gate(self, tmp_path, capsys):
+        from genesis_architect_pro.gde_cli import main
+        rc = main(["harden", str(tmp_path), "--classify-only"])
+        assert rc == 0
+        out = capsys.readouterr().out.lower()
+        assert "gate" in out
+
+    def test_unknown_single_word_command_is_rejected(self, capsys):
+        """A mistyped/unregistered single-word command (e.g. 'doctr', or the
+        website's old 'harden'/'recover'/'doctor' before they were wired up)
+        must not be silently swallowed into a low-confidence decide guess."""
+        from genesis_architect_pro.gde_cli import main
+        rc = main(["doctr"])
+        assert rc == 1
+        assert "unknown command" in capsys.readouterr().err.lower()
+
+    def test_terse_real_word_still_routes_to_decide(self):
+        """A single word that matches at least one intent signal (unlike a
+        typo) must still fall through to decide, not the unknown-command guard."""
+        from genesis_architect_pro.gde_cli import main
+        rc = main(["--classify-only", "refactor"])
+        assert rc == 0
+
+    def test_flag_as_first_token_still_routes_to_decide(self):
+        """Regression guard: a leading flag like --classify-only (from a bare
+        `genesis --classify-only "..."` invocation) must never be mistaken
+        for an unknown command token."""
+        from genesis_architect_pro.gde_cli import main
+        rc = main(["--classify-only", "diagnose the project and identify drift"])
+        assert rc == 0
+
 
 # ---------------------------------------------------------------------------
 # New mode wiring — RESEARCH, BUILD, COMMITTEE

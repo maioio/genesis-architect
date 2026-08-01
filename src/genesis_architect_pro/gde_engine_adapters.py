@@ -341,6 +341,7 @@ def gde_run_security_templates(ctx: SessionContext) -> dict[str, Any]:
     pending_writes = []
     stride_path = ""
     owasp_path = ""
+    secrets_path = ""
 
     if "STRIDE_ANALYSIS.md" in docs:
         stride_path = str(sec_dir / "STRIDE_ANALYSIS.md")
@@ -360,9 +361,19 @@ def gde_run_security_templates(ctx: SessionContext) -> dict[str, Any]:
             "payload": docs["OWASP_CHECKLIST.md"],
         })
 
+    if "SECRETS_SCAN.md" in docs:
+        secrets_path = str(sec_dir / "SECRETS_SCAN.md")
+        pending_writes.append({
+            "operation_id": "security_templates:secrets",
+            "description": "Write secrets scan to docs/security/SECRETS_SCAN.md",
+            "target_path": secrets_path,
+            "payload": docs["SECRETS_SCAN.md"],
+        })
+
     return {
         "stride_path": stride_path,
         "owasp_path": owasp_path,
+        "secrets_path": secrets_path,
         "_pending_writes": pending_writes,
         "_confidence": 1.0,
         "_warnings": [],

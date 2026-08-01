@@ -74,7 +74,7 @@ def _rich_classify(intent) -> None:
     table.add_row("Mode", f"[{mode_style}]{intent.mode.value}[/{mode_style}]")
     table.add_row("Confidence", f"[{conf_color}]{conf:.0%}[/{conf_color}]")
     if intent.signals:
-        table.add_row("Signals", ", ".join(s.strip("\\b") for s in intent.signals[:4]))
+        table.add_row("Signals", ", ".join(s.replace("\\b", "") for s in intent.signals[:4]))
     console.print(table)
 
     if intent.clarifying_questions:
@@ -444,9 +444,9 @@ def cmd_memory(args: argparse.Namespace) -> int:
             table.add_column("File")
             table.add_column("Exists")
             table.add_column("Size")
-            for fname, info in status.items():
-                exists = "[green]yes[/green]" if info.get("exists") else "[dim]no[/dim]"
-                size = f"{info.get('size', 0)} bytes" if info.get("exists") else "—"
+            for fname, count in status.items():
+                exists = "[green]yes[/green]" if count is not False else "[dim]no[/dim]"
+                size = f"{count} lines" if count is not False else "—"
                 table.add_row(fname, exists, size)
             console.print(table)
             console.print()
@@ -454,9 +454,9 @@ def cmd_memory(args: argparse.Namespace) -> int:
             print()
             print("  Project Memory Status")
             print(_hr())
-            for fname, info in status.items():
-                exists = "yes" if info.get("exists") else "no"
-                size = f"{info.get('size', 0)} bytes" if info.get("exists") else "—"
+            for fname, count in status.items():
+                exists = "yes" if count is not False else "no"
+                size = f"{count} lines" if count is not False else "—"
                 print(f"  {exists:3}  {size:12}  {fname}")
             print(_hr())
         return 0
@@ -478,17 +478,19 @@ def cmd_memory(args: argparse.Namespace) -> int:
 
 def cmd_ui(args: argparse.Namespace) -> int:
     """Generate (or open) the self-contained HTML workspace."""
-    from genesis_architect_pro.ui_workspace import collect_state, write_workspace
+    from genesis_architect_pro.ui_workspace import write_workspace
 
     project_dir = Path(args.dir).expanduser().resolve()
     if not project_dir.is_dir():
         print(f"  error: --dir '{project_dir}' is not a directory", file=sys.stderr)
         return 1
 
-    output_path = Path(args.output) if args.output else project_dir / ".genesis" / "workspace.html"
+    out_name = Path(args.output).name if args.output else "workspace.html"
+    written = write_workspace(project_dir, out_name)
 
-    state = collect_state(project_dir)
-    written = write_workspace(state, output_path)
+    if written is None:
+        print(f"  error: could not write the workspace under {project_dir / '.genesis' / 'ui'}", file=sys.stderr)
+        return 1
 
     if _use_rich():
         from rich.console import Console
@@ -1051,6 +1053,100 @@ def cmd_sync(args: argparse.Namespace) -> int:
     return cli_sync(args)
 
 
+def cmd_doctor(args: argparse.Namespace) -> int:
+    """Customer-facing readiness report: license, Pro install, optional deps.
+
+    Deliberately license-exempt (main() skips the license gate for this
+    command) — this is the tool you run to find out *why* nothing else works.
+    """
+    from genesis_architect_pro.first_run import check_readiness, doctor_report
+    print()
+    print(doctor_report())
+    print()
+    return 0 if check_readiness().ready_to_work else 1
+
+
+def cmd_license(args: argparse.Namespace) -> int:
+    """Activate or report the Pro license (offline Ed25519 check, no phone-home).
+
+    License-exempt in main() — `activate` is how a customer unlocks Pro in
+    the first place, so it must work before a license exists.
+    """
+    from genesis_architect_pro.license import ENV_VAR, LICENSE_FILE, is_licensed, parse_key
+
+    action = getattr(args, "license_action", None)
+
+    if action == "activate":
+        key = args.key.strip()
+        payload = parse_key(key)
+        if payload is None:
+            print(
+                "\n  Invalid license key — signature check failed, or the key "
+                "is malformed/expired.\n"
+                "  Get a license: https://github.com/maioio/genesis-architect\n",
+                file=sys.stderr,
+            )
+            return 1
+        try:
+            LICENSE_FILE.parent.mkdir(parents=True, exist_ok=True)
+            LICENSE_FILE.write_text(key + "\n", encoding="utf-8")
+        except OSError as exc:
+            print(f"\n  Could not write license file at {LICENSE_FILE}: {exc}\n", file=sys.stderr)
+            return 1
+        sub = payload.get("sub", "licensee")
+        print(f"\n  License activated for '{sub}'. Genesis Architect Pro is unlocked.")
+        print(f"  Key stored at {LICENSE_FILE}\n")
+        return 0
+
+    # "status" or bare `genesis license` — report current state.
+    if is_licensed():
+        print("\n  License: active. All Pro features unlocked.\n")
+        return 0
+    print("\n  License: not active.")
+    print("  Activate with:  genesis license activate <YOUR-KEY>")
+    print(f"  Or set {ENV_VAR}=<key>, or place a key at {LICENSE_FILE}\n")
+    return 1
+
+
+def cmd_recover(args: argparse.Namespace) -> int:
+    """`genesis recover [PATH]` — thin wrapper: expands to a full-sentence
+    RECOVERY-mode instruction and delegates to cmd_decide. A single bare word
+    like "recover" scores too low to classify reliably (see intent_classifier
+    signal weights); a full sentence routes deterministically."""
+    decide_args = argparse.Namespace(
+        instruction=(
+            "diagnose the project's health: identify drift, broken imports, "
+            "anti-patterns, and architecture decay"
+        ),
+        dir=args.path,
+        resume=args.resume,
+        serial=args.serial,
+        classify_only=args.classify_only,
+        yes=args.yes,
+        no_commit=args.no_commit,
+    )
+    return cmd_decide(decide_args)
+
+
+def cmd_harden(args: argparse.Namespace) -> int:
+    """`genesis harden [PATH]` — thin wrapper: expands to a full-sentence
+    GATE-mode instruction (STRIDE + OWASP + secrets scan via the
+    security_templates engine) and delegates to cmd_decide."""
+    decide_args = argparse.Namespace(
+        instruction=(
+            "run a security gate check: STRIDE threat model, OWASP Top 10 "
+            "checklist, secrets scan, and compliance validation"
+        ),
+        dir=args.path,
+        resume=args.resume,
+        serial=args.serial,
+        classify_only=args.classify_only,
+        yes=args.yes,
+        no_commit=args.no_commit,
+    )
+    return cmd_decide(decide_args)
+
+
 # ---------------------------------------------------------------------------
 # Argument parser
 # ---------------------------------------------------------------------------
@@ -1104,7 +1200,7 @@ def _build_parser() -> argparse.ArgumentParser:
     ui.add_argument("--dir", default=".", metavar="PATH",
                     help="Project directory (default: current directory)")
     ui.add_argument("--output", default=None, metavar="PATH",
-                    help="Output path (default: .genesis/workspace.html)")
+                    help="Output filename, written under .genesis/ui/ (default: workspace.html)")
     ui.add_argument("--open", action="store_true",
                     help="Open the workspace in the default browser after generating")
 
@@ -1146,6 +1242,44 @@ def _build_parser() -> argparse.ArgumentParser:
     sync.add_argument("--ci-mode", action="store_true",
                       help="Exit 1 if any yellow/red findings (for CI pipelines)")
 
+    sub.add_parser("doctor", help="Readiness check: license, Pro install, optional deps")
+
+    license_p = sub.add_parser("license", help="Activate or check the Pro license key")
+    license_sub = license_p.add_subparsers(dest="license_action")
+    activate_p = license_sub.add_parser("activate", help="Activate a Pro license key")
+    activate_p.add_argument("key", help="License key from your purchase email (starts with gpro_)")
+    license_sub.add_parser("status", help="Show current license status")
+
+    recover = sub.add_parser(
+        "recover", help="Diagnose project health: drift, broken imports, anti-patterns, decay")
+    recover.add_argument("path", nargs="?", default=".", metavar="PATH",
+                         help="Project directory to scan (default: current directory)")
+    recover.add_argument("--resume", action="store_true",
+                         help="Resume a saved session instead of starting fresh")
+    recover.add_argument("--serial", action="store_true",
+                         help="Run engines serially (useful for debugging)")
+    recover.add_argument("--classify-only", action="store_true",
+                         help="Only classify the instruction — do not run engines")
+    recover.add_argument("--yes", "-y", action="store_true",
+                         help="Auto-approve all write operations (CI mode)")
+    recover.add_argument("--no-commit", action="store_true",
+                         help="Skip APPROVE/COMMIT — analysis only")
+
+    harden = sub.add_parser(
+        "harden", help="Security gate: STRIDE threat model + OWASP Top 10 + secrets scan")
+    harden.add_argument("path", nargs="?", default=".", metavar="PATH",
+                        help="Project directory to harden (default: current directory)")
+    harden.add_argument("--resume", action="store_true",
+                        help="Resume a saved session instead of starting fresh")
+    harden.add_argument("--serial", action="store_true",
+                        help="Run engines serially (useful for debugging)")
+    harden.add_argument("--classify-only", action="store_true",
+                        help="Only classify the instruction — do not run engines")
+    harden.add_argument("--yes", "-y", action="store_true",
+                        help="Auto-approve all write operations (CI mode)")
+    harden.add_argument("--no-commit", action="store_true",
+                        help="Skip APPROVE/COMMIT — analysis only")
+
     return parser
 
 
@@ -1173,7 +1307,8 @@ def main(argv: list[str] | None = None) -> int:
     # packages both ship a `genesis` console-script, and whichever installs
     # last wins the launcher — so Pro's entry point must delegate core
     # commands to the core app instead of forcing everything into `decide`.
-    _pro_cmds = ("decide", "explain", "memory", "ui", "companion", "sync")
+    _pro_cmds = ("decide", "explain", "memory", "ui", "companion", "sync",
+                 "doctor", "license", "recover", "harden")
     _core_cmds = ("init", "config", "research", "publish", "upgrade")
     if argv and argv[0] in _core_cmds:
         from genesis_architect.cli import app as _core_app
@@ -1181,6 +1316,26 @@ def main(argv: list[str] | None = None) -> int:
 
     _known = _pro_cmds + ("-h", "--help")
     if argv and argv[0] not in _known:
+        first = argv[0]
+        # A single word with no whitespace looks like a mistyped/unregistered
+        # command name rather than a free-text instruction. If it matches
+        # *zero* intent signals (the classifier's raw_score == 0 case), routing
+        # it into `decide` would silently produce a low-confidence COMMITTEE
+        # guess with no indication the command itself doesn't exist. Anything
+        # that matches at least one signal (e.g. a terse "refactor") still
+        # falls through to decide as before — only truly unknown tokens stop.
+        if (first and not first.startswith("-") and not first.isspace()
+                and " " not in first and "\t" not in first):
+            from genesis_architect_pro.intent_classifier import classify
+            if not classify(first).signals:
+                print(
+                    f"\nUnknown command '{first}'.\n"
+                    f"Did you mean to describe what you want in a full sentence?\n"
+                    f"  genesis decide \"{first} ...\"\n"
+                    f"  genesis --help\n",
+                    file=sys.stderr,
+                )
+                return 1
         # A bare instruction with no subcommand → treat as a GDE session.
         argv = ["decide"] + argv
 
@@ -1188,12 +1343,15 @@ def main(argv: list[str] | None = None) -> int:
 
     # Every command in this CLI is a Pro feature — enforce the license once
     # here at the entry point (offline Ed25519 check, no phone-home).
-    from genesis_architect_pro.license import LicenseError, require_license
-    try:
-        require_license(f"genesis {args.command or ''}".strip())
-    except LicenseError as exc:
-        print(f"\n{exc}\n", file=sys.stderr)
-        return 2
+    # `doctor` and `license` are exempt: they're how a customer diagnoses and
+    # unlocks the license in the first place, so they must work without one.
+    if args.command not in ("doctor", "license"):
+        from genesis_architect_pro.license import LicenseError, require_license
+        try:
+            require_license(f"genesis {args.command or ''}".strip())
+        except LicenseError as exc:
+            print(f"\n{exc}\n", file=sys.stderr)
+            return 2
 
     if args.command == "decide":
         return cmd_decide(args)
@@ -1207,6 +1365,14 @@ def main(argv: list[str] | None = None) -> int:
         return cmd_companion(args)
     if args.command == "sync":
         return cmd_sync(args)
+    if args.command == "doctor":
+        return cmd_doctor(args)
+    if args.command == "license":
+        return cmd_license(args)
+    if args.command == "recover":
+        return cmd_recover(args)
+    if args.command == "harden":
+        return cmd_harden(args)
 
     parser.print_help()
     return 0

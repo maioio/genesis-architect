@@ -531,11 +531,12 @@ def _generate_owasp_doc(project_path: Path, stack: dict) -> str:
 def generate_security_docs(project_path: str | Path,
                             stride: bool = True,
                             owasp: bool = True,
+                            secrets: bool = True,
                             write: bool = True) -> dict[str, str]:
     """
-    Generate STRIDE and OWASP documents.
+    Generate STRIDE, OWASP, and secrets-scan documents.
 
-    If write=True (default, CLI/standalone behavior), writes both files to
+    If write=True (default, CLI/standalone behavior), writes files to
     disk immediately and returns {filename: written_path}.
 
     If write=False (used by the GDE adapter so the write can be deferred
@@ -570,6 +571,17 @@ def generate_security_docs(project_path: str | Path,
         else:
             docs["OWASP_CHECKLIST.md"] = content
 
+    if secrets:
+        from genesis_architect_pro.secrets_scanner import _generate_secrets_doc
+        content = _generate_secrets_doc(root)
+        if write:
+            out_path = sec_dir / "SECRETS_SCAN.md"
+            sec_dir.mkdir(parents=True, exist_ok=True)
+            out_path.write_text(content, encoding="utf-8")
+            docs["SECRETS_SCAN.md"] = str(out_path)
+        else:
+            docs["SECRETS_SCAN.md"] = content
+
     return docs
 
 
@@ -580,12 +592,16 @@ def main() -> None:
     parser.add_argument("project_path", nargs="?", default=".")
     parser.add_argument("--stride-only", action="store_true")
     parser.add_argument("--owasp-only", action="store_true")
+    parser.add_argument("--secrets-only", action="store_true")
     args = parser.parse_args()
 
-    stride = not args.owasp_only
-    owasp = not args.stride_only
+    only_flags = (args.stride_only, args.owasp_only, args.secrets_only)
+    if any(only_flags):
+        stride, owasp, secrets = args.stride_only, args.owasp_only, args.secrets_only
+    else:
+        stride = owasp = secrets = True
 
-    docs = generate_security_docs(args.project_path, stride=stride, owasp=owasp)
+    docs = generate_security_docs(args.project_path, stride=stride, owasp=owasp, secrets=secrets)
     for name, path in docs.items():
         print(f"Written: {path}")
 

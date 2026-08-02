@@ -451,18 +451,47 @@ class TestCmdCheck:
 
 
 class TestSubcommandStubs:
-    """Tests for genesis research and genesis harden stubs added in v2.4.1."""
+    """Tests for genesis research (real, Pro-bridged) and genesis harden (still a stub)."""
 
-    def test_cmd_research_returns_nonzero(self, capsys):
+    def test_cmd_research_without_pro_returns_2(self, capsys, monkeypatch):
+        from genesis_architect.core import pro_bridge
         from genesis_architect.core.genesis_subcommands import cmd_research
+        monkeypatch.setattr(pro_bridge, "pro_installed", lambda: False)
+        monkeypatch.setattr(pro_bridge, "pro_licensed", lambda: False)
         rc = cmd_research("gpx parsing")
-        assert rc == 1
-
-    def test_cmd_research_mentions_planned(self, capsys):
-        from genesis_architect.core.genesis_subcommands import cmd_research
-        cmd_research("gpx parsing")
+        assert rc == 2
         err = capsys.readouterr().err
-        assert "planned" in err.lower() or "not yet implemented" in err.lower()
+        assert "not installed" in err.lower() or "not licensed" in err.lower()
+
+    def test_cmd_research_no_cache_no_json_data_prints_collection_guide(self, capsys, monkeypatch):
+        from genesis_architect.core import pro_bridge
+        from genesis_architect.core.genesis_subcommands import cmd_research
+
+        class _FakeOrchestrator:
+            @staticmethod
+            def load_from_vault(topic, cwd):
+                return None
+
+        monkeypatch.setattr(pro_bridge, "get_pro_module", lambda name: _FakeOrchestrator())
+        rc = cmd_research("gpx parsing")
+        assert rc == 0
+        out = capsys.readouterr().out
+        assert "--json-data" in out
+
+    def test_cmd_research_json_data_missing_file_returns_1(self, capsys, monkeypatch):
+        from genesis_architect.core import pro_bridge
+        from genesis_architect.core.genesis_subcommands import cmd_research
+
+        class _FakeOrchestrator:
+            @staticmethod
+            def load_from_vault(topic, cwd):
+                return None
+
+        monkeypatch.setattr(pro_bridge, "get_pro_module", lambda name: _FakeOrchestrator())
+        rc = cmd_research("gpx parsing", json_data="does_not_exist.json")
+        assert rc == 1
+        err = capsys.readouterr().err
+        assert "not found" in err.lower()
 
     def test_cmd_harden_returns_nonzero(self, capsys):
         from genesis_architect.core.genesis_subcommands import cmd_harden
@@ -475,12 +504,15 @@ class TestSubcommandStubs:
         err = capsys.readouterr().err
         assert "planned" in err.lower() or "not yet implemented" in err.lower()
 
-    def test_main_research_exits_1(self):
+    def test_main_research_exits_2_without_pro(self, monkeypatch):
+        from genesis_architect.core import pro_bridge
         from genesis_architect.core.genesis_subcommands import main
+        monkeypatch.setattr(pro_bridge, "pro_installed", lambda: False)
+        monkeypatch.setattr(pro_bridge, "pro_licensed", lambda: False)
         with mock.patch("sys.argv", ["genesis_subcommands.py", "research", "gpx"]):
             with pytest.raises(SystemExit) as exc:
                 main()
-        assert exc.value.code == 1
+        assert exc.value.code == 2
 
     def test_main_harden_exits_1(self):
         from genesis_architect.core.genesis_subcommands import main

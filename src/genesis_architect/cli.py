@@ -256,6 +256,17 @@ def publish(
 
 
 @app.command()
+def resolve(
+    query: list[str] = typer.Argument(..., help="What you're stuck on, e.g. path traversal python"),
+):
+    """Look up a known solution — local vault first, falls back to Stack Overflow."""
+    from genesis_architect.core.resolve_engine import resolve_with_output
+
+    text = resolve_with_output(" ".join(query))
+    typer.echo(f"\n{text}\n")
+
+
+@app.command()
 def config(
     action: str = typer.Argument(..., help="'set', 'get', or 'show'"),
     key: str | None = typer.Argument(None, help="Key name (e.g. GITHUB_TOKEN, LLM_API_KEY)"),
@@ -288,8 +299,16 @@ def config(
 def research(
     topic: str = typer.Argument(..., help="Topic to research, or a video URL with --video"),
     video: bool = typer.Option(False, "--video", help="Deep video-to-pitfall analysis (Pro)"),
+    json_data: str = typer.Option(
+        None, "--json-data", help="Path to JSON file with pre-collected research data"
+    ),
 ):
-    """Research a topic. Use --video for Pro video-to-pitfall analysis."""
+    """Research a topic. Use --video for Pro video-to-pitfall analysis.
+
+    Multi-source research (Pro): checks the vault cache, then either prints a
+    data-collection guide or — with --json-data FILE — merges, ranks, and
+    returns a structured summary of pre-collected results.
+    """
     from genesis_architect.core import pro_bridge
 
     if video:
@@ -306,7 +325,7 @@ def research(
         return
 
     from genesis_architect.core import genesis_subcommands
-    raise typer.Exit(genesis_subcommands.cmd_research(topic))
+    raise typer.Exit(genesis_subcommands.cmd_research(topic, json_data=json_data))
 
 
 @app.command()

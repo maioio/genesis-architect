@@ -234,15 +234,74 @@ def cmd_validate(project_dir: str, json_output: bool = False) -> int:
     return 0
 
 
-def cmd_research(topic: str) -> int:
-    """Stub: genesis research [topic] - planned for v2.5.0."""
-    print(
-        f"genesis research '{topic}': not yet implemented in this version.\n"
-        "Planned for v2.5.0. Workaround: use `genesis resolve [topic]` for cached lookups\n"
-        "or run a manual Exa/GitHub search from the Companion Mode session.",
-        file=sys.stderr,
-    )
-    return 1
+def cmd_research(topic: str, json_data: str | None = None) -> int:
+    """Multi-source research via the Pro orchestrator.
+
+    1. Look up the vault cache first (returns immediately on a hit).
+    2. If ``json_data`` points at a JSON file with pre-collected streams,
+       merge/rank/summarise it through the orchestrator.
+    3. Otherwise, print the data-collection guide so the caller can gather
+       the four streams and re-run with --json-data.
+    """
+    import json
+    from pathlib import Path
+
+    from genesis_architect.core import pro_bridge
+
+    try:
+        orchestrator = pro_bridge.get_pro_module("research_orchestrator")
+    except pro_bridge.ProUnavailable:
+        print(
+            f"genesis research '{topic}': Pro is not installed or not licensed.\n"
+            "Install:  pip install genesis-architect-pro\n"
+            "License:  set GENESIS_PRO_LICENSE=<your-key>",
+            file=sys.stderr,
+        )
+        return 2
+
+    cwd = Path.cwd()
+
+    # --- vault cache lookup ---
+    cached = orchestrator.load_from_vault(topic, cwd)
+    if cached is not None:
+        print(orchestrator.format_summary(cached))
+        return 0
+
+    # --- process pre-collected data ---
+    if json_data:
+        data_path = Path(json_data)
+        if not data_path.exists():
+            print(f"File not found: {json_data}", file=sys.stderr)
+            return 1
+        try:
+            # utf-8-sig tolerates a BOM, which Windows editors (and
+            # PowerShell's Out-File -Encoding utf8) prepend.
+            raw = json.loads(data_path.read_text(encoding="utf-8-sig"))
+        except json.JSONDecodeError as exc:
+            print(f"Invalid JSON in {json_data}: {exc}", file=sys.stderr)
+            return 1
+        summary = orchestrator.build_summary_from_raw(
+            vision=topic,
+            repos=raw.get("repos", []),
+            github_issues=raw.get("github_issues", []),
+            exa_results=raw.get("exa_results", []),
+            video_exa_results=raw.get("video_exa_results", []),
+            project_root=cwd,
+        )
+        print(orchestrator.format_summary(summary))
+        return 0
+
+    # --- no cache, no data: print the collection guide ---
+    print(f"\n:: Genesis Research: {topic}\n")
+    print("No cached research found. The orchestrator needs raw data from four")
+    print("streams. Collect them in a Claude/Codex session, save as JSON, then:\n")
+    print(f'    genesis research "{topic}" --json-data research_data.json\n')
+    print("Streams (JSON keys): repos, github_issues, exa_results, video_exa_results")
+    print("  A. repos              - GitHub repos matching the vision")
+    print("  B. exa_results        - web/ecosystem signals")
+    print("  C. github_issues      - issues mined from the top repos")
+    print("  D. video_exa_results  - conference talks / lessons learned\n")
+    return 0
 
 
 def cmd_harden(project_dir: str) -> int:
@@ -263,7 +322,7 @@ def main():
             "Subcommands:\n"
             "  check    [project_dir]  CVE scan + CI action version audit\n"
             "  validate [project_dir]  Hard enforcement: evidence pack + mitigation files\n"
-            "  research <topic>        [planned v2.6.0] ecosystem research for a topic\n"
+            "  research <topic>        multi-source research (Pro) or vault lookup\n"
             "  harden   [project_dir]  [planned v2.6.0] security and quality upgrade",
             file=sys.stderr,
         )

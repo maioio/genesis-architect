@@ -513,6 +513,52 @@ class TestCLI:
         rc = main(["--classify-only", "diagnose the project and identify drift"])
         assert rc == 0
 
+    def test_telemetry_status_shows_consent_prompt_when_undecided(self, tmp_path, capsys):
+        from genesis_architect_pro.gde_cli import main
+        rc = main(["telemetry", "status", "--dir", str(tmp_path)])
+        assert rc == 0
+        assert "help improve genesis" in capsys.readouterr().out.lower()
+
+    def test_telemetry_enable_then_status_reports_on(self, tmp_path, capsys):
+        from genesis_architect_pro.gde_cli import main
+        assert main(["telemetry", "enable", "--dir", str(tmp_path)]) == 0
+        rc = main(["telemetry", "status", "--dir", str(tmp_path)])
+        assert rc == 0
+        out = capsys.readouterr().out.lower()
+        assert "telemetry: on" in out
+        assert "anonymous install id" in out
+
+    def test_telemetry_disable_after_enable(self, tmp_path, capsys):
+        from genesis_architect_pro.gde_cli import main
+        assert main(["telemetry", "enable", "--dir", str(tmp_path)]) == 0
+        assert main(["telemetry", "disable", "--dir", str(tmp_path)]) == 0
+        capsys.readouterr()  # discard enable/disable output
+        rc = main(["telemetry", "status", "--dir", str(tmp_path)])
+        assert rc == 0
+        assert "telemetry is off" in capsys.readouterr().out.lower()
+
+    def test_telemetry_clear_reports_count(self, tmp_path, capsys):
+        from genesis_architect_pro.gde_cli import main
+        from genesis_architect_pro.product_intelligence import record_event, set_consent
+        set_consent(True, tmp_path)
+        record_event("engine_used", {"engine": "recovery", "tier": "pro"}, tmp_path)
+        rc = main(["telemetry", "clear", "--dir", str(tmp_path)])
+        assert rc == 0
+        assert "cleared 1" in capsys.readouterr().out.lower()
+
+    def test_telemetry_never_records_unsafe_fields(self, tmp_path):
+        """End-to-end proof the sanitizer is really wired: a path-shaped value
+        is dropped from the event (a single bad field doesn't reject the
+        whole event, per sanitize_event's own contract) — but the unsafe
+        value itself must never end up in what's stored on disk."""
+        from genesis_architect_pro.product_intelligence import read_events, record_event, set_consent
+        set_consent(True, tmp_path)
+        record_event("friction_point", {"where": r"C:\Users\secret\project"}, tmp_path)
+        events = read_events(tmp_path)
+        assert len(events) == 1
+        assert events[0]["fields"] == {}  # the unsafe path value was dropped, not stored
+        assert "secret" not in str(events[0])
+
 
 # ---------------------------------------------------------------------------
 # New mode wiring — RESEARCH, BUILD, COMMITTEE

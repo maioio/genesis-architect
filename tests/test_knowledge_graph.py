@@ -88,6 +88,60 @@ class TestTraversal:
         assert g.query(["cve", "affects"]) == []  # even length -> invalid
 
 
+class TestDoNotTouchWithCVE:
+    """The flagship query: find_do_not_touch_with_cve() intersects the
+    cve->package->module and risk->located_in->module patterns by module."""
+
+    def test_finds_module_with_both_cve_and_risk(self):
+        g = KnowledgeGraph()
+        g.add_node("module:m", "module", "m")
+        g.add_node("package:x", "package", "x")
+        g.add_node("cve:1", "cve", "CVE-1")
+        g.add_edge("cve:1", "affects", "package:x", confidence=0.9)
+        g.add_edge("package:x", "used_by", "module:m", confidence=0.7)
+        g.add_node("risk:r", "risk", "do-not-touch")
+        g.add_edge("risk:r", "located_in", "module:m", confidence=0.8)
+
+        hits = g.find_do_not_touch_with_cve()
+        assert hits == [{"module": "module:m", "cves": ["cve:1"], "risks": ["risk:r"]}]
+
+    def test_excludes_cve_only_module_with_no_risk(self):
+        g = KnowledgeGraph()
+        g.add_node("module:m", "module", "m")
+        g.add_node("package:x", "package", "x")
+        g.add_node("cve:1", "cve", "CVE-1")
+        g.add_edge("cve:1", "affects", "package:x", confidence=0.9)
+        g.add_edge("package:x", "used_by", "module:m", confidence=0.7)
+        # no risk node at all
+        assert g.find_do_not_touch_with_cve() == []
+
+    def test_excludes_risk_only_module_with_no_cve(self):
+        g = KnowledgeGraph()
+        g.add_node("module:m", "module", "m")
+        g.add_node("risk:r", "risk", "do-not-touch")
+        g.add_edge("risk:r", "located_in", "module:m", confidence=0.8)
+        # no cve/package data at all
+        assert g.find_do_not_touch_with_cve() == []
+
+    def test_empty_graph_returns_empty(self):
+        assert KnowledgeGraph().find_do_not_touch_with_cve() == []
+
+    def test_multiple_cves_and_risks_on_same_module_are_all_reported(self):
+        g = KnowledgeGraph()
+        g.add_node("module:m", "module", "m")
+        for i in (1, 2):
+            g.add_node(f"package:pkg{i}", "package", f"pkg{i}")
+            g.add_node(f"cve:{i}", "cve", f"CVE-{i}")
+            g.add_edge(f"cve:{i}", "affects", f"package:pkg{i}", confidence=0.9)
+            g.add_edge(f"package:pkg{i}", "used_by", "module:m", confidence=0.7)
+        g.add_node("risk:r", "risk", "do-not-touch")
+        g.add_edge("risk:r", "located_in", "module:m", confidence=0.8)
+
+        hits = g.find_do_not_touch_with_cve()
+        assert len(hits) == 1
+        assert hits[0]["cves"] == ["cve:1", "cve:2"]
+
+
 class TestPersistence:
     def test_roundtrip(self, tmp_path):
         g = KnowledgeGraph()

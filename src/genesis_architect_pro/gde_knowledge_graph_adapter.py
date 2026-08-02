@@ -68,7 +68,19 @@ def _modules_from_ctx(ctx: SessionContext) -> list[str]:
 
 
 def gde_run_knowledge_graph(ctx: SessionContext) -> dict[str, Any]:
-    """Build/extend the project knowledge graph from session analysis outputs."""
+    """Build/extend the project knowledge graph from session analysis outputs.
+
+    Also feeds the graph's security/risk layers so the flagship "which
+    do-not-touch zone has an open CVE?" query (KnowledgeGraph.
+    find_do_not_touch_with_cve()) has real data to answer from, not just the
+    architecture layer:
+
+    - Risk data (fragility_classifier's VOLATILE modules) is local and fast —
+      wired in on every mode this engine runs under.
+    - CVE data needs a network call per third-party dependency (OSV.dev), so
+      it only runs under GATE mode (`genesis harden`) — RECOVERY/REFACTOR
+      stay "pure graph analysis, sub-second, no network."
+    """
     try:
         from genesis_architect_pro import knowledge_graph as kg
     except ImportError as exc:
@@ -82,9 +94,28 @@ def gde_run_knowledge_graph(ctx: SessionContext) -> dict[str, Any]:
         if (anti_patterns or modules) else None
     )
 
+    risks = None
+    try:
+        from genesis_architect_pro.dependency_scanner import scan_do_not_touch_risks
+        risk_list = scan_do_not_touch_risks(project_dir)
+        if risk_list:
+            risks = {"risks": risk_list}
+    except Exception:
+        pass  # risk data is best-effort enrichment, never fatal to the graph build
+
+    security = None
+    if ctx.mode == GDEMode.GATE:
+        try:
+            from genesis_architect_pro.dependency_scanner import scan_dependency_cves
+            cve_list = scan_dependency_cves(project_dir)
+            if cve_list:
+                security = {"cves": cve_list}
+        except Exception:
+            pass  # OSV.dev unavailable/rate-limited — degrade, don't fail the session
+
     try:
         graph = kg.build_from_project(project_dir, architecture=architecture,
-                                      persist=True)
+                                      security=security, risks=risks, persist=True)
     except Exception as exc:
         return {"_confidence": 0.3, "_warnings": [f"knowledge_graph build failed: {exc}"]}
 
@@ -92,9 +123,16 @@ def gde_run_knowledge_graph(ctx: SessionContext) -> dict[str, Any]:
     warnings: list[str] = []
     if stats["nodes"] == 0:
         warnings.append("knowledge graph is empty (no analysis inputs yet)")
+
+    hits = graph.find_do_not_touch_with_cve()
+    for hit in hits:
+        warnings.append(f"do-not-touch zone with an open CVE: {hit['module']} "
+                        f"({', '.join(hit['cves'])})")
+
     return {
         "knowledge_graph_stats": stats,
         "graph_path": str(project_dir / ".genesis" / "knowledge" / "graph.json"),
+        "do_not_touch_with_cve": hits,
         "_confidence": 0.8 if stats["nodes"] else 0.4,
         "_warnings": warnings,
     }
@@ -111,12 +149,12 @@ KNOWLEDGE_GRAPH_DESCRIPTOR = EngineDescriptor(
     entry_point="gde_run_knowledge_graph",
     category=EngineCategory.PERSISTENCE,
     input_keys=["project_dir", "patterns"],
-    output_keys=["knowledge_graph_stats", "graph_path"],
+    output_keys=["knowledge_graph_stats", "graph_path", "do_not_touch_with_cve"],
     requires=["antipattern_detector"],
     is_optional=True,
     write_operations=["knowledge_graph_json"],
     timeout_seconds=30,
-    modes=[GDEMode.RECOVERY, GDEMode.REFACTOR],
+    modes=[GDEMode.RECOVERY, GDEMode.REFACTOR, GDEMode.GATE],
 )
 
 

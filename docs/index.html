@@ -6,7 +6,7 @@
 <title>Genesis Architect — Research First. Build Once.</title>
 <meta name="description" content="The only AI tool that analyzes your existing codebase before touching a file. Architecture score, anti-pattern map, refactoring plan, C4 diagrams, and a decision engine that never guesses.">
 <meta property="og:title" content="Genesis Architect — Research First. Build Once.">
-<meta property="og:description" content="Scans 15–20 real GitHub repos and mines their Issues. Pro adds architecture analysis, Knowledge Graph, and a 7-mode decision engine.">
+<meta property="og:description" content="Scans 15 real GitHub repos and mines their Issues. Pro adds architecture analysis, Knowledge Graph, and a 7-mode decision engine.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
@@ -186,7 +186,7 @@ footer a:hover{color:var(--acc)}
   <div class="hero-bloom"></div>
   <div class="eyebrow"><span class="eyebrow-pulse"></span>Open Source Core &nbsp;·&nbsp; v5.4.1 &nbsp;·&nbsp; MIT License</div>
   <h1>The AI partner that reads<br><span class="g">your codebase first</span><br>before touching a file.</h1>
-  <p class="hero-sub">Free: scans 15–20 production repos and mines closed issues before scaffolding. Pro: scores your architecture, maps every file STABLE / FRAGILE / VOLATILE, and routes any instruction through 14 engines — no LLM guess.</p>
+  <p class="hero-sub">Free: scans 15 production repos and mines closed issues from the top 5 before scaffolding. Pro: scores your architecture, maps every file STABLE / FRAGILE / VOLATILE, and routes any instruction through 14 engines — no LLM guess.</p>
   <div class="hero-actions">
     <a class="btn btn-primary" href="#install">Get started free →</a>
     <a class="btn btn-outline" href="https://github.com/maioio/genesis-architect">View on GitHub</a>
@@ -237,7 +237,7 @@ footer a:hover{color:var(--acc)}
     <div class="stat"><span class="stat-n">14</span><div class="stat-l">Pro engines</div></div>
     <div class="stat"><span class="stat-n">7</span><div class="stat-l">GDE modes</div></div>
     <div class="stat"><span class="stat-n">12</span><div class="stat-l">Gate policies</div></div>
-    <div class="stat"><span class="stat-n">15<em>–</em>20</span><div class="stat-l">Repos scanned</div></div>
+    <div class="stat"><span class="stat-n">15</span><div class="stat-l">Repos scanned</div></div>
     <div class="stat"><span class="stat-n">500</span><div class="stat-l">Vault entries</div></div>
   </div>
 </div></div>
@@ -247,8 +247,8 @@ footer a:hover{color:var(--acc)}
   <h2 class="sh">Research first. Then build.</h2>
   <p class="sp">Every other scaffolder starts from a template. Genesis starts from production data.</p>
   <div class="pipeline reveal">
-    <div class="pipe"><div class="pipe-num">Phase 01</div><span class="pipe-icon">🔍</span><h3>Scan real repos</h3><p>Finds 15–20 GitHub repos building exactly what you described. Ranks by stars and active fork activity.</p></div>
-    <div class="pipe"><div class="pipe-num">Phase 02</div><span class="pipe-icon">⚠️</span><h3>Mine closed issues</h3><p>Reads up to 50 closed bug issues per repo. Extracts recurring errors, security patches, architecture regrets.</p></div>
+    <div class="pipe"><div class="pipe-num">Phase 01</div><span class="pipe-icon">🔍</span><h3>Scan real repos</h3><p>Finds 15 GitHub repos building exactly what you described. Ranks by stars and active fork activity.</p></div>
+    <div class="pipe"><div class="pipe-num">Phase 02</div><span class="pipe-icon">⚠️</span><h3>Mine closed issues</h3><p>Reads up to 20 closed bug issues per repo from the top 5 ranked repos. Extracts recurring errors, security patches, architecture regrets.</p></div>
     <div class="pipe"><div class="pipe-num">Phase 03</div><span class="pipe-icon">🧬</span><h3>Synthesize ecosystem</h3><p>Builds the "wise average" — what successful projects converge on — not a copy of one repo.</p></div>
     <div class="pipe"><div class="pipe-num">Phase 04</div><span class="pipe-icon">🏗️</span><h3>Generate + validate</h3><p>Creates scaffold with tests and CI/CD. Runs smoke test. Never declares success without exit code 0.</p></div>
   </div>
@@ -274,10 +274,10 @@ footer a:hover{color:var(--acc)}
   <p class="sp">14 engines running pure graph analysis — no LLM required. Architecture score, fragility map, refactoring plan, C4 diagrams, and a Knowledge Graph that links code to CVEs.</p>
   <div class="feats reveal">
     <div class="feat"><span class="feat-icon">📊</span><h3>Architecture Scorer <span class="badge">PRO</span></h3><p>0–100 score across Modularity, Coupling, Cohesion, Layering. 6 adaptive profiles. Trend history in <code style="color:#a5c4ff;font-family:var(--mono)">.genesis/score_history.jsonl</code>.</p></div>
-    <div class="feat"><span class="feat-icon">🕸️</span><h3>Anti-Pattern Detector <span class="badge">PRO</span></h3><p>7 structural anti-patterns: God Class, Hub File, Circular Deps, Dead Code, Feature Envy, Leaky Abstraction, Shotgun Surgery. Pure graph — no LLM.</p></div>
+    <div class="feat"><span class="feat-icon">🕸️</span><h3>Anti-Pattern Detector <span class="badge">PRO</span></h3><p>7 structural anti-patterns: God Class, Hub File, Circular Deps, Dead Code (free core) plus Feature Envy, Leaky Abstraction, Shotgun Surgery (Pro). Pure graph — no LLM.</p></div>
     <div class="feat"><span class="feat-icon">🔥</span><h3>Fragility Classifier <span class="badge">PRO</span></h3><p>VOLATILE / FRAGILE / STABLE per module. Combines anti-patterns + git churn + test coverage. Outputs <code style="color:#a5c4ff;font-family:var(--mono)">FRAGILITY_MAP.md</code> with GO / HOLD / REWRITE.</p></div>
     <div class="feat"><span class="feat-icon">📋</span><h3>Refactoring Planner <span class="badge">PRO</span></h3><p>Tier-1 critical first, tier-2 improvements after. Each step includes operations, complexity estimate, and projected score impact.</p></div>
-    <div class="feat"><span class="feat-icon">🗺️</span><h3>C4 Diagrams <span class="badge">PRO</span></h3><p>Levels 1–3: System Context, Containers, Components. Mermaid output — renders natively on GitHub. Auto-detects databases, auth, queues, payments.</p></div>
+    <div class="feat"><span class="feat-icon">🗺️</span><h3>C4 Diagrams <span class="badge">PRO</span></h3><p>Levels 1–2 (System Context, Containers) in free core; Level 3 (Components) in Pro. Mermaid output — renders natively on GitHub. Auto-detects databases, auth, queues, payments.</p></div>
     <div class="feat"><span class="feat-icon">🔗</span><h3>Knowledge Graph <span class="badge">PRO</span></h3><p>Links code, CVEs, risks, and decisions into one queryable graph. Answers: <em>"which do-not-touch zone has an open CVE?"</em> No other tool does this.</p></div>
   </div>
 </div></section>

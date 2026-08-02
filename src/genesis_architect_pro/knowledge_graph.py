@@ -203,6 +203,36 @@ class KnowledgeGraph:
             dfs(s.id, 0, [s.id])
         return results
 
+    def find_do_not_touch_with_cve(self) -> list[dict]:
+        """The flagship query: which do-not-touch zones (risk nodes) sit in a
+        module that also has an open CVE?
+
+        `cve -> package -> module` and `risk -> module` are two independent
+        path patterns with no shared start type, so a single query() call
+        can't answer this — this intersects both by their common module id.
+        Returns one dict per module hit: {module, cves, risks}, empty if the
+        graph has no security/risk data (never fabricates a hit).
+        """
+        cve_paths = self.query(["cve", "affects", "package", "used_by", "module"])
+        risk_paths = self.query(["risk", "located_in", "module"])
+
+        cve_by_module: dict[str, set[str]] = {}
+        for path in cve_paths:
+            cve_id, module_id = path[0], path[-1]
+            cve_by_module.setdefault(module_id, set()).add(cve_id)
+
+        risk_by_module: dict[str, set[str]] = {}
+        for path in risk_paths:
+            risk_id, module_id = path[0], path[-1]
+            risk_by_module.setdefault(module_id, set()).add(risk_id)
+
+        return [
+            {"module": module_id,
+             "cves": sorted(cve_by_module[module_id]),
+             "risks": sorted(risk_by_module[module_id])}
+            for module_id in sorted(set(cve_by_module) & set(risk_by_module))
+        ]
+
     # -- persistence --------------------------------------------------------
 
     def to_dict(self) -> dict:

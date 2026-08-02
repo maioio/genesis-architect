@@ -1147,6 +1147,48 @@ def cmd_harden(args: argparse.Namespace) -> int:
     return cmd_decide(decide_args)
 
 
+def cmd_telemetry(args: argparse.Namespace) -> int:
+    """Manage anonymous, opt-in product telemetry (default OFF, local-first).
+
+    See product_intelligence.py for the full privacy contract: an allow-list
+    sanitizer enforced in code (not trust) means code/paths/secrets/prompts
+    can never be recorded even if a future call site tried to send them.
+    """
+    from genesis_architect_pro.product_intelligence import (
+        CONSENT_PROMPT, clear_events, describe_payload, needs_consent_prompt,
+        revoke_consent, set_consent,
+    )
+
+    project_dir = Path(args.dir).expanduser().resolve()
+    action = getattr(args, "telemetry_action", None)
+
+    if action == "enable":
+        set_consent(True, project_dir)
+        print("\n  Telemetry enabled — anonymous, local-first. "
+              "Run `genesis telemetry status` any time to see what's stored.\n")
+        return 0
+    if action == "disable":
+        revoke_consent(project_dir)
+        print("\n  Telemetry disabled. This stops new collection; existing local "
+              "events are kept — run `genesis telemetry clear` to delete them too.\n")
+        return 0
+    if action == "clear":
+        n = clear_events(project_dir)
+        print(f"\n  Cleared {n} locally-stored event(s).\n")
+        return 0
+
+    # "status" or bare `genesis telemetry`.
+    print()
+    if needs_consent_prompt(project_dir):
+        print(CONSENT_PROMPT)
+        print()
+        print("  Decide with: genesis telemetry enable   |   genesis telemetry disable")
+    else:
+        print(describe_payload(project_dir))
+    print()
+    return 0
+
+
 # ---------------------------------------------------------------------------
 # Argument parser
 # ---------------------------------------------------------------------------
@@ -1280,6 +1322,21 @@ def _build_parser() -> argparse.ArgumentParser:
     harden.add_argument("--no-commit", action="store_true",
                         help="Skip APPROVE/COMMIT — analysis only")
 
+    telemetry_p = sub.add_parser(
+        "telemetry", help="Manage anonymous, opt-in product telemetry (default OFF)")
+    telemetry_p.add_argument("--dir", default=".", metavar="PATH",
+                             help="Project directory (default: current directory)")
+    telemetry_sub = telemetry_p.add_subparsers(dest="telemetry_action")
+    for _name, _help in (
+        ("status", "Show consent state and what's stored locally"),
+        ("enable", "Turn telemetry on (generates an anonymous install id)"),
+        ("disable", "Turn telemetry off (keeps existing local events)"),
+        ("clear", "Delete all locally-stored telemetry events"),
+    ):
+        _sub_p = telemetry_sub.add_parser(_name, help=_help)
+        _sub_p.add_argument("--dir", default=".", metavar="PATH",
+                            help="Project directory (default: current directory)")
+
     return parser
 
 
@@ -1308,7 +1365,7 @@ def main(argv: list[str] | None = None) -> int:
     # last wins the launcher — so Pro's entry point must delegate core
     # commands to the core app instead of forcing everything into `decide`.
     _pro_cmds = ("decide", "explain", "memory", "ui", "companion", "sync",
-                 "doctor", "license", "recover", "harden")
+                 "doctor", "license", "recover", "harden", "telemetry")
     _core_cmds = ("init", "config", "research", "publish", "upgrade")
     if argv and argv[0] in _core_cmds:
         from genesis_architect.cli import app as _core_app
@@ -1373,6 +1430,8 @@ def main(argv: list[str] | None = None) -> int:
         return cmd_recover(args)
     if args.command == "harden":
         return cmd_harden(args)
+    if args.command == "telemetry":
+        return cmd_telemetry(args)
 
     parser.print_help()
     return 0

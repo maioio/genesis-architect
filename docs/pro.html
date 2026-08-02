@@ -205,11 +205,11 @@ footer a:hover{color:var(--acc)}
   <div class="engine-grid reveal">
     <div class="engine"><span class="engine-icon">🕸️</span><span class="engine-tag tag-pro">PRO</span><h3>Import Graph</h3><p>Multi-language dependency graph (Python, JS, TS, Go, Rust). Detects circular deps, dark modules, fan-in/fan-out. Maps every file to an architectural layer.</p></div>
     <div class="engine"><span class="engine-icon">📐</span><span class="engine-tag tag-pro">PRO</span><h3>Architecture Scorer</h3><p>Scores any codebase 0–100 across 4 dimensions: Modularity, Coupling, Cohesion, Layering. 6 adaptive profiles. Tracks score history in <code style="color:#a5c4ff;font-size:11px">.genesis/score_history.jsonl</code>.</p></div>
-    <div class="engine"><span class="engine-icon">🚨</span><span class="engine-tag tag-pro">PRO</span><h3>Anti-Pattern Detector</h3><p>Detects 7 structural anti-patterns: God Class, Hub File, Circular Dependency, Dead Code, Feature Envy, Leaky Abstraction, Shotgun Surgery. Each with severity + suggested fix.</p></div>
+    <div class="engine"><span class="engine-icon">🚨</span><span class="engine-tag tag-pro">PRO</span><h3>Anti-Pattern Detector</h3><p>Detects 7 structural anti-patterns: God Class, Hub File, Circular Dependency, Dead Code (free core) plus Feature Envy, Leaky Abstraction, Shotgun Surgery (Pro). Each with severity + suggested fix.</p></div>
     <div class="engine"><span class="engine-icon">🔥</span><span class="engine-tag tag-pro">PRO</span><h3>Git Churn Analyzer</h3><p>Counts commits, fix-commits, and fix ratio per file. Classifies modules as HIGH / MEDIUM / LOW / STALE churn over a configurable time window (default: 90 days).</p></div>
     <div class="engine"><span class="engine-icon">🗺️</span><span class="engine-tag tag-pro">PRO</span><h3>Fragility Classifier</h3><p>Combines anti-patterns + git churn + test existence. Every file gets VOLATILE / FRAGILE / STABLE + a GO / HOLD / REWRITE recommendation. Output: <code style="color:#a5c4ff;font-size:11px">FRAGILITY_MAP.md</code>.</p></div>
     <div class="engine"><span class="engine-icon">📋</span><span class="engine-tag tag-pro">PRO</span><h3>Refactoring Planner</h3><p>Tier-1 blocking issues first, tier-2 improvements after. Each step: why, operations (CREATE / MODIFY / DELETE / MOVE), complexity, projected score impact. Output: <code style="color:#a5c4ff;font-size:11px">REFACTORING_PLAN.md</code>.</p></div>
-    <div class="engine"><span class="engine-icon">🏛️</span><span class="engine-tag tag-pro">PRO</span><h3>C4 Architecture Generator</h3><p>Level 1 (System Context), Level 2 (Containers), Level 3 (Components). Mermaid diagrams — render natively on GitHub. Auto-detects external systems: DB, auth, queue, payments, AI.</p></div>
+    <div class="engine"><span class="engine-icon">🏛️</span><span class="engine-tag tag-pro">PRO</span><h3>C4 Architecture Generator</h3><p>Level 1 (System Context) and Level 2 (Containers) in free core; Level 3 (Components) in Pro. Mermaid diagrams — render natively on GitHub. Auto-detects external systems: DB, auth, queue, payments, AI.</p></div>
     <div class="engine"><span class="engine-icon">🛡️</span><span class="engine-tag tag-pro">PRO</span><h3>Security Templates</h3><p>STRIDE threat model (all 6 categories) + OWASP Top 10 checklist, tailored to your project type (api / cli / library) — plus an offline regex secrets scan (AWS/GitHub/Slack/Stripe keys, private key blocks). Items auto-marked N/A when not applicable; secrets are always redacted.</p></div>
     <div class="engine"><span class="engine-icon">🧠</span><span class="engine-tag tag-pro">PRO ⭐</span><h3>Knowledge Graph</h3><p>Links code, CVEs, risks, decisions, and field findings into one queryable graph. Finds do-not-touch zones that have an open CVE. Nothing else on the market does this.</p></div>
     <div class="engine"><span class="engine-icon">📚</span><span class="engine-tag tag-pro">PRO</span><h3>Learning Engine</h3><p>Records which research strategy performs best per task kind. Honest confidence: low until ≥3 samples, medium until ≥8. Never overclaims from one result.</p></div>
@@ -218,7 +218,7 @@ footer a:hover{color:var(--acc)}
     <div class="engine"><span class="engine-icon">📑</span><span class="engine-tag tag-pro">PRO</span><h3>Evidence Packs</h3><p>Every recommendation ships with proof: sources consulted (with reliability), an honest confidence grade (never "high" without an authoritative source), and contradictions surfaced — not hidden.</p></div>
     <div class="engine"><span class="engine-icon">📓</span><span class="engine-tag tag-pro">PRO</span><h3>Memory + Decision Journal</h3><p>Per-project memory as plain Markdown under <code style="color:#a5c4ff;font-size:11px">.genesis/</code> — project memory, decision log, research history, ADRs, known risks, lessons. Every decision journaled with alternatives, evidence, confidence, and what would change it.</p></div>
     <div class="engine"><span class="engine-icon">🖥️</span><span class="engine-tag tag-pro">PRO</span><h3>Floating Assistant + Canvas</h3><p>A premium visual workspace with zero setup — a single self-contained HTML view of your engine outputs (score, knowledge graph, CVEs, drift, risk zones). No Node, no build, no server. Opens in any browser.</p></div>
-    <div class="engine"><span class="engine-icon">🔬</span><span class="engine-tag tag-free">FREE</span><h3>Issue Mining</h3><p>Reads up to 50 closed bug issues per repo across 15–20 GitHub repos. Extracts recurring errors, security patches, and architecture regrets before you write a line.</p></div>
+    <div class="engine"><span class="engine-icon">🔬</span><span class="engine-tag tag-free">FREE</span><h3>Issue Mining</h3><p>Reads up to 20 closed bug issues per repo from the top 5 of 15 scanned GitHub repos. Extracts recurring errors, security patches, and architecture regrets before you write a line.</p></div>
     <div class="engine"><span class="engine-icon">🍴</span><span class="engine-tag tag-free">FREE</span><h3>Fork Analysis</h3><p>Ranks forks by merged PRs in the last 6 months — not stars. Top 3 active forks are analyzed for bug fixes that didn't make it upstream.</p></div>
     <div class="engine"><span class="engine-icon">🗄️</span><span class="engine-tag tag-free">FREE</span><h3>Knowledge Vault</h3><p>Caches solutions locally — 6-month TTL, LRU eviction at 500 entries. Fast on repeat projects. Falls back to Stack Overflow on cache miss.</p></div>
   </div>
@@ -287,6 +287,7 @@ footer a:hover{color:var(--acc)}
     <p>The Knowledge Graph connects node types — module, anti-pattern, drift, CVE, package, risk, decision, evidence, field-finding, test — with confidence-weighted edges. Every link needs evidence; low-evidence links are low-confidence by construction.</p>
     <div class="kg-label">Example query</div>
     <div class="kg-query">cve → package → module<br>intersected with: risk → module<br><br>→ "Which do-not-touch zones have an open CVE?"</div>
+    <p style="font-size:12.5px;color:var(--muted);margin-top:14px">Runs automatically as part of <code style="color:#a5c4ff;font-family:var(--mono)">genesis harden</code> — CVEs from OSV.dev cross-referenced against fragility's VOLATILE (do-not-touch) modules, surfaced as gate warnings.</p>
   </div>
 </div></section>
 
@@ -294,12 +295,12 @@ footer a:hover{color:var(--acc)}
 <section class="sec sec-alt"><div class="sec-inner">
   <div class="stag">Product Intelligence</div>
   <h2 class="sh">Privacy enforced in code,<br>not by trust.</h2>
-  <p class="sp">Anonymous, opt-in telemetry — the loop that shows which engines earn their keep. Default OFF. Nothing recorded until you consent.</p>
+  <p class="sp">Anonymous, opt-in telemetry, stored locally under your control. Default OFF. Nothing recorded until you consent, and <code style="color:#a5c4ff;font-family:var(--mono)">genesis telemetry status</code> shows exactly what's stored.</p>
   <div class="privacy-pills reveal">
     <div class="pp"><span class="pp-dot"></span>Default OFF — no pre-checked opt-in</div>
     <div class="pp"><span class="pp-dot"></span>Anonymous random install ID only</div>
     <div class="pp"><span class="pp-dot"></span>Never: code, paths, secrets, prompts</div>
-    <div class="pp"><span class="pp-dot"></span>Revocable at any time</div>
+    <div class="pp"><span class="pp-dot"></span>Revocable any time — <code style="color:#a5c4ff;font-family:var(--mono)">genesis telemetry disable</code></div>
     <div class="pp"><span class="pp-dot"></span>Sanitizer blocks leaks in code — not trust</div>
     <div class="pp"><span class="pp-dot"></span>Fully functional with telemetry off</div>
   </div>

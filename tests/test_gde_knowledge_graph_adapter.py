@@ -61,6 +61,61 @@ class TestAdapter:
         assert out["_warnings"]
 
 
+class TestSecurityRiskWiring:
+    """CVE data needs a network call per dependency (OSV.dev) — only worth
+    the latency under GATE mode; risk data (fragility_classifier) is local
+    and fast, so it's wired in on every mode."""
+
+    def test_recovery_mode_never_calls_cve_scan(self, project, monkeypatch):
+        calls = []
+        monkeypatch.setattr(
+            "genesis_architect_pro.dependency_scanner.scan_dependency_cves",
+            lambda *a, **k: calls.append(a) or [],
+        )
+        ctx = _ctx(project)  # RECOVERY mode
+        gde_run_knowledge_graph(ctx)
+        assert calls == []
+
+    def test_gate_mode_calls_cve_scan(self, project, monkeypatch):
+        calls = []
+        monkeypatch.setattr(
+            "genesis_architect_pro.dependency_scanner.scan_dependency_cves",
+            lambda *a, **k: calls.append(a) or [],
+        )
+        ctx = SessionContext(session_id="t", mode=GDEMode.GATE,
+                             stage=LifecycleStage.EXECUTE, project_dir=project)
+        gde_run_knowledge_graph(ctx)
+        assert len(calls) == 1
+
+    def test_cve_scan_failure_degrades_gracefully(self, project, monkeypatch):
+        def boom(*a, **k):
+            raise ConnectionError("OSV unreachable")
+        monkeypatch.setattr(
+            "genesis_architect_pro.dependency_scanner.scan_dependency_cves", boom)
+        ctx = SessionContext(session_id="t", mode=GDEMode.GATE,
+                             stage=LifecycleStage.EXECUTE, project_dir=project)
+        out = gde_run_knowledge_graph(ctx)  # must not raise
+        assert isinstance(out, dict)
+
+    def test_do_not_touch_hits_surfaced_as_warnings(self, project, monkeypatch):
+        monkeypatch.setattr(
+            "genesis_architect_pro.dependency_scanner.scan_dependency_cves",
+            lambda *a, **k: [{"id": "CVE-1", "package": "pyyaml",
+                              "modules": ["src/demo/core.py"], "confidence": 0.9}],
+        )
+        monkeypatch.setattr(
+            "genesis_architect_pro.dependency_scanner.scan_do_not_touch_risks",
+            lambda *a, **k: [{"id": "do-not-touch:src/demo/core.py",
+                              "label": "VOLATILE", "module": "src/demo/core.py",
+                              "confidence": 0.8}],
+        )
+        ctx = SessionContext(session_id="t", mode=GDEMode.GATE,
+                             stage=LifecycleStage.EXECUTE, project_dir=project)
+        out = gde_run_knowledge_graph(ctx)
+        assert out["do_not_touch_with_cve"]
+        assert any("do-not-touch zone with an open CVE" in w for w in out["_warnings"])
+
+
 class TestRegistration:
     def test_descriptor_depends_on_antipattern(self):
         assert KNOWLEDGE_GRAPH_DESCRIPTOR.requires == ["antipattern_detector"]

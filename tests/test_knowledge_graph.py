@@ -6,7 +6,8 @@ edge, connective queries, persistence, and graceful build from partial inputs.
 from genesis_architect_pro.knowledge_graph import (
     KnowledgeGraph, NODE_TYPES, REL_TYPES,
     load_graph, save_graph, build_from_project,
-    add_architecture, add_security, add_risks, add_decisions, add_field_findings,
+    add_architecture, add_security, add_risks, add_test_coverage,
+    add_decisions, add_field_findings,
 )
 
 
@@ -202,6 +203,20 @@ class TestBuildPipeline:
         cve_modules = {p[-1] for p in cve_paths}
         risk_modules = {p[-1] for p in risk_paths}
         assert cve_modules & risk_modules == {"module:net"}
+
+    def test_test_coverage_pass_links_tested_modules_only(self):
+        g = KnowledgeGraph()
+        add_architecture(g, modules=["net", "legacy"])
+        add_test_coverage(g, classifications=[
+            {"module": "net", "has_test": True},
+            {"module": "legacy", "has_test": False},
+        ])
+        assert g.query(["test", "covers", "module"]) == [["test:net", "module:net"]]
+
+    def test_test_coverage_pass_empty_input_adds_nothing(self):
+        g = KnowledgeGraph()
+        add_test_coverage(g, classifications=[])
+        assert g.stats()["nodes"] == 0
 
     def test_decisions_and_field_findings(self):
         g = KnowledgeGraph()

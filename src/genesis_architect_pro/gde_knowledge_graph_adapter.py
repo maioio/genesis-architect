@@ -67,6 +67,26 @@ def _modules_from_ctx(ctx: SessionContext) -> list[str]:
     return list(graph.get("modules", {}).keys())
 
 
+def _test_coverage_from_ctx(ctx: SessionContext) -> list[dict]:
+    """Normalize the fragility_classifier output (if present) into the dicts
+    the knowledge-graph test pass expects. Returns [] when it didn't run —
+    the graph then simply gets no test nodes (no fabrication)."""
+    result = ctx.engine_results.get("fragility_classifier")
+    if result is None or not getattr(result, "output", None):
+        return []
+    classifications = result.output.get("fragility_map") or []
+    norm: list[dict] = []
+    for item in classifications:
+        if isinstance(item, dict):
+            norm.append(item)
+            continue
+        norm.append({
+            "module": getattr(item, "module", "") or "",
+            "has_test": getattr(item, "has_test", False),
+        })
+    return norm
+
+
 def gde_run_knowledge_graph(ctx: SessionContext) -> dict[str, Any]:
     """Build/extend the project knowledge graph from session analysis outputs.
 
@@ -77,6 +97,8 @@ def gde_run_knowledge_graph(ctx: SessionContext) -> dict[str, Any]:
 
     - Risk data (fragility_classifier's VOLATILE modules) is local and fast —
       wired in on every mode this engine runs under.
+    - Test coverage (`test` nodes, one per module fragility_classifier found
+      a test file for, linked via `covers`) is likewise local and always on.
     - CVE data needs a network call per third-party dependency (OSV.dev), so
       it only runs under GATE mode (`genesis harden`) — RECOVERY/REFACTOR
       stay "pure graph analysis, sub-second, no network."
@@ -103,6 +125,9 @@ def gde_run_knowledge_graph(ctx: SessionContext) -> dict[str, Any]:
     except Exception:
         pass  # risk data is best-effort enrichment, never fatal to the graph build
 
+    test_classifications = _test_coverage_from_ctx(ctx)
+    tests = {"classifications": test_classifications} if test_classifications else None
+
     security = None
     if ctx.mode == GDEMode.GATE:
         try:
@@ -115,7 +140,8 @@ def gde_run_knowledge_graph(ctx: SessionContext) -> dict[str, Any]:
 
     try:
         graph = kg.build_from_project(project_dir, architecture=architecture,
-                                      security=security, risks=risks, persist=True)
+                                      security=security, risks=risks, tests=tests,
+                                      persist=True)
     except Exception as exc:
         return {"_confidence": 0.3, "_warnings": [f"knowledge_graph build failed: {exc}"]}
 

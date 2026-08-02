@@ -281,5 +281,5 @@ def summarize_extraction(entries: list[PitfallEntry], source_url: str) -> str:
     ]
     if high_conf:
         lines.append(f"High-confidence findings: {', '.join(e.title[:50] for e in high_conf)}.")
-    lines.append("Run `genesis audit .` to validate mitigations are implemented.")
+    lines.append("Run `genesis harden .` to validate mitigations are implemented.")
     return " ".join(lines)

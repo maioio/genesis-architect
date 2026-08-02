@@ -346,6 +346,14 @@ def add_risks(graph: KnowledgeGraph, *,
         graph.add_node(rid, "risk", label=r.get("label", "risk"), metadata=r)
         mod = r.get("module")
         if mod:
+            # Explicitly type the module node rather than relying on
+            # add_architecture() having run first and typed it already — a
+            # risk with no matching architecture-pass entry (e.g. the module
+            # had no anti-patterns) would otherwise leave it "unknown"-typed,
+            # which silently breaks find_do_not_touch_with_cve()'s type-
+            # matched path query. add_node() is idempotent, so this is a
+            # no-op when the module is already correctly typed.
+            graph.add_node(f"module:{mod}", "module", label=mod)
             graph.add_edge(rid, "located_in", f"module:{mod}",
                            confidence=float(r.get("confidence", 0.8)))
     return graph
@@ -366,6 +374,21 @@ def add_decisions(graph: KnowledgeGraph, *,
         for mod in (d.get("modules") or []):
             graph.add_node(f"module:{mod}", "module", label=mod)
             graph.add_edge(did, "affects", f"module:{mod}", confidence=0.6)
+    return graph
+
+
+def add_test_coverage(graph: KnowledgeGraph, *,
+                      classifications: list[dict] | None = None) -> KnowledgeGraph:
+    """Test pass: a `test` node per module fragility_classifier found a test
+    file for, linked via `covers`. Only tested modules get a node — absence
+    of a test is silence, not a fabricated "no test" node."""
+    for c in (classifications or []):
+        mod = c.get("module")
+        if mod and c.get("has_test"):
+            tid = f"test:{mod}"
+            graph.add_node(tid, "test", label=f"tests for {mod}")
+            graph.add_node(f"module:{mod}", "module", label=mod)
+            graph.add_edge(tid, "covers", f"module:{mod}", confidence=0.9)
     return graph
 
 
@@ -390,6 +413,7 @@ def build_from_project(project_root: Path | str = ".", *,
                        architecture: dict | None = None,
                        security: dict | None = None,
                        risks: dict | None = None,
+                       tests: dict | None = None,
                        decisions: dict | None = None,
                        field_intel: dict | None = None,
                        persist: bool = True) -> KnowledgeGraph:
@@ -406,6 +430,8 @@ def build_from_project(project_root: Path | str = ".", *,
         add_security(graph, **security)
     if risks:
         add_risks(graph, **risks)
+    if tests:
+        add_test_coverage(graph, **tests)
     if decisions:
         add_decisions(graph, **decisions)
     if field_intel:

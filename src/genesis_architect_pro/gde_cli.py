@@ -1366,7 +1366,7 @@ def main(argv: list[str] | None = None) -> int:
     # commands to the core app instead of forcing everything into `decide`.
     _pro_cmds = ("decide", "explain", "memory", "ui", "companion", "sync",
                  "doctor", "license", "recover", "harden", "telemetry")
-    _core_cmds = ("init", "config", "research", "publish", "upgrade")
+    _core_cmds = ("init", "config", "research", "publish", "upgrade", "resolve")
     if argv and argv[0] in _core_cmds:
         from genesis_architect.cli import app as _core_app
         return _core_app(args=argv, prog_name="genesis", standalone_mode=False) or 0

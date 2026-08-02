@@ -18,6 +18,7 @@ Usage:
 
 import argparse
 import json
+import re
 from pathlib import Path
 
 
@@ -159,6 +160,18 @@ STRIDE_TEMPLATES: dict[str, dict] = {
 }
 
 
+def _first_sentence(text: str) -> str:
+    """The first sentence of `text`, for the threat-matrix summary column.
+
+    Splitting on the first "." alone breaks on any decimal/abbreviation in
+    the sentence (e.g. "Enforce TLS 1.2+ on all endpoints." was truncating to
+    "Enforce TLS 1" — the "1." in "1.2+" looked like a sentence end). A real
+    sentence boundary is a period followed by whitespace (or end of string).
+    """
+    match = re.search(r"\.(?:\s|$)", text)
+    return text[:match.start() + 1] if match else text.rstrip(".") + "."
+
+
 def _generate_stride_doc(project_path: Path, stack: dict) -> str:
     archetype = stack["archetype"]
     framework = stack["framework"]
@@ -192,10 +205,10 @@ def _generate_stride_doc(project_path: Path, stack: dict) -> str:
     for stride_id, data in STRIDE_TEMPLATES.items():
         mitigation = data["default_mitigations"].get(mit_key,
                      data["default_mitigations"]["default"])
+        summary = _first_sentence(mitigation)
         for threat in data["default_threats"]:
             rows.append(
-                f"| {stride_id} | {data['name']} | {threat} | Medium | High | "
-                f"{mitigation.split('.')[0]}. |"
+                f"| {stride_id} | {data['name']} | {threat} | Medium | High | {summary} |"
             )
 
     details = []

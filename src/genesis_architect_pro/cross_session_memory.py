@@ -146,7 +146,7 @@ def restore_session(project_root: Path | str = ".") -> SessionContext:
 def no_session_message() -> str:
     return (
         "No prior Genesis session found. "
-        "Start with `genesis init [description]` or `genesis audit .` for an existing project."
+        "Start with `genesis init [description]` or `genesis recover .` for an existing project."
     )
 
 

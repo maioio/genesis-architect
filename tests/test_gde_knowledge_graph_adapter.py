@@ -11,6 +11,7 @@ import pytest
 from genesis_architect_pro.gde_knowledge_graph_adapter import (
     KNOWLEDGE_GRAPH_DESCRIPTOR, gde_run_knowledge_graph, register_knowledge_graph,
 )
+from genesis_architect_pro.knowledge_graph import load_graph as kg_load
 from genesis_architect_pro.engine_registry import EngineRegistry
 from genesis_architect_pro.gde_types import (
     GDEMode, SessionContext, EngineResult, EngineStatus, LifecycleStage,
@@ -59,6 +60,25 @@ class TestAdapter:
         # no antipattern result in ctx -> graph has no fabricated nodes
         assert out["knowledge_graph_stats"]["nodes"] == 0
         assert out["_warnings"]
+
+
+class TestTestCoverageWiring:
+    def test_fragility_classifier_results_produce_test_nodes(self, project):
+        ctx = _ctx(project)
+        ctx.engine_results["fragility_classifier"] = EngineResult(
+            engine_id="fragility_classifier", status=EngineStatus.SUCCESS,
+            output={"fragility_map": [
+                {"module": "src/demo/core.py", "has_test": True, "status": "STABLE"},
+            ]})
+        out = gde_run_knowledge_graph(ctx)
+        assert (project / ".genesis" / "knowledge" / "graph.json").exists()
+        graph = kg_load(project)
+        assert graph.query(["test", "covers", "module"])
+
+    def test_no_fragility_result_adds_no_test_nodes(self, project):
+        out = gde_run_knowledge_graph(_ctx(project))
+        graph = kg_load(project)
+        assert graph.query(["test", "covers", "module"]) == []
 
 
 class TestSecurityRiskWiring:

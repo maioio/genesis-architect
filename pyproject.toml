@@ -20,23 +20,35 @@ companion = ["plyer>=2.1"]
 # Companion App optional subsystems — code degrades gracefully without these,
 # and prints the matching `pip install genesis-architect-pro[<extra>]` hint.
 streaming = ["websockets>=12"]
-voice = ["faster-whisper>=1.0", "sounddevice>=0.4", "numpy>=1.24", "webrtcvad-wheels>=2.0.10"]
+voice = [
+    "faster-whisper>=1.0", "sounddevice>=0.4", "numpy>=1.24", "webrtcvad-wheels>=2.0.10",
+    # VAD only (base package — no extras): a self-contained, ONNX-bundled neural
+    # VAD, much more accurate than webrtcvad/energy fallback at telling speech
+    # from noise. Deliberately NOT pipecat-ai[whisper] or [kokoro]: [whisper]
+    # just wraps the same faster-whisper already used directly above (no gain,
+    # only async-pipeline complexity); [kokoro] currently fails to install on
+    # Python >=3.14 (kokoro-onnx's numba pin has no 3.14 wheel yet).
+    "pipecat-ai>=1.7",
+]
 committee = ["anthropic>=0.40"]
 # Everything for the full desktop Companion experience.
 companion-full = [
     "plyer>=2.1", "rich>=13", "websockets>=12",
     "faster-whisper>=1.0", "sounddevice>=0.4", "numpy>=1.24",
-    "webrtcvad-wheels>=2.0.10", "anthropic>=0.40",
+    "webrtcvad-wheels>=2.0.10", "pipecat-ai>=1.7", "anthropic>=0.40",
     # kokoro >=0.8 pins Python <3.13 — 0.7.x is the newest that installs everywhere.
     "kokoro>=0.7", "soundfile>=0.12", "sherpa-onnx>=1.10",
+    # Native floating window (frameless, always-on-top) for the Companion panel.
+    "pywebview>=5.0",
 ]
 # Pro — all optional subsystems (used by genesis-sync.yml CI and docs).
 pro = [
     "plyer>=2.1", "rich>=13", "websockets>=12",
     "faster-whisper>=1.0", "sounddevice>=0.4", "numpy>=1.24",
-    "webrtcvad-wheels>=2.0.10", "anthropic>=0.40",
+    "webrtcvad-wheels>=2.0.10", "pipecat-ai>=1.7", "anthropic>=0.40",
     # kokoro >=0.8 pins Python <3.13 — 0.7.x is the newest that installs everywhere.
     "kokoro>=0.7", "soundfile>=0.12", "sherpa-onnx>=1.10",
+    "pywebview>=5.0",
 ]
 
 [project.scripts]

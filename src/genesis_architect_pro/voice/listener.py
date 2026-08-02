@@ -31,7 +31,7 @@ import threading
 import time
 from collections import deque
 from dataclasses import dataclass, field
-from typing import Callable
+from typing import Any, Callable
 
 _log = logging.getLogger("genesis.voice.listen")
 
@@ -42,10 +42,13 @@ WAKE_WORDS = {
 
 _SAMPLE_RATE    = 16000   # what faster-whisper expects
 _CHANNELS       = 1
-_FRAME_MS       = 30      # VAD frame size in milliseconds (10/20/30 are valid for webrtcvad)
-_FRAME_SAMPLES  = _SAMPLE_RATE * _FRAME_MS // 1000   # 480 samples per frame at 16 kHz
+_FRAME_MS       = 30      # webrtcvad/energy frame size in ms (10/20/30 valid for webrtcvad)
+_FRAME_SAMPLES  = _SAMPLE_RATE * _FRAME_MS // 1000   # 480 samples/frame (webrtcvad/energy)
+_SILERO_FRAME_SAMPLES = 512   # Silero VAD's fixed frame size at 16 kHz (~32ms)
 _VAD_MODE       = 3       # webrtcvad aggressiveness: 0 (least) – 3 (most aggressive)
-_SILENCE_FRAMES = 20      # ~600ms silence (20 × 30ms) before closing an utterance
+_SILERO_THRESHOLD = 0.5   # per-frame voice-confidence threshold for Silero
+_SILENCE_FRAMES = 20      # ~600ms silence before closing an utterance (frame COUNT —
+                          # actual duration depends on the active backend's frame size)
 _PRE_ROLL_FRAMES = 5      # frames to keep before speech onset (so we don't clip the start)
 _MAX_UTTERANCE_S = 15     # hard cap on a single utterance in seconds
 _WAKE_WINDOW_S  = 2.0     # seconds of audio to check for wake word
@@ -100,23 +103,66 @@ def is_wake(text: str, lang: str = "en") -> bool:
 
 
 # ---------------------------------------------------------------------------
-# VAD helpers
+# VAD backend — Silero (neural, most accurate) > webrtcvad (tiny C ext) >
+# energy threshold (pure Python, never fails to import)
 # ---------------------------------------------------------------------------
 
-def _build_vad():
-    """Return a (vad, mode) tuple using webrtcvad if available, else None."""
+@dataclass
+class VADBackend:
+    """The selected VAD engine plus the frame size (in samples) it needs.
+
+    frame_samples drives the sounddevice InputStream blocksize: Silero
+    requires exactly 512 samples at 16kHz; webrtcvad/energy use 480 (30ms).
+    """
+    kind: str            # "silero" | "webrtc" | "energy"
+    engine: Any
+    frame_samples: int
+
+
+def _build_vad() -> VADBackend:
+    """Pick the best available VAD backend. Never raises — the energy
+    fallback always succeeds, so a backend is always returned.
+
+    Silero ships as part of the base `pipecat-ai` package (bundled ONNX
+    model, no extra download) and is a real accuracy upgrade over
+    webrtcvad/energy — fewer false wake-word triggers, cleaner end-of-turn
+    and barge-in detection. webrtcvad remains the fallback for installs that
+    predate this, and energy is the last-resort, dependency-free floor.
+    """
+    try:
+        from pipecat.audio.vad.silero import SileroVADAnalyzer  # type: ignore[import]
+        analyzer = SileroVADAnalyzer(sample_rate=_SAMPLE_RATE)
+        # The constructor's sample_rate arg alone doesn't take effect — pipecat
+        # normally calls this from the Pipeline/transport setup, which we're
+        # bypassing by using the analyzer standalone. Without it, `sample_rate`
+        # stays 0 and voice_confidence() rejects every frame.
+        analyzer.set_sample_rate(_SAMPLE_RATE)
+        return VADBackend("silero", analyzer, _SILERO_FRAME_SAMPLES)
+    except Exception:
+        pass
     try:
         import webrtcvad  # type: ignore[import]
-        vad = webrtcvad.Vad(_VAD_MODE)
-        return vad
+        return VADBackend("webrtc", webrtcvad.Vad(_VAD_MODE), _FRAME_SAMPLES)
     except ImportError:
-        return None
+        pass
+    return VADBackend("energy", None, _FRAME_SAMPLES)
 
 
-def _frame_is_speech_webrtc(vad, pcm_bytes: bytes) -> bool:
-    """Ask webrtcvad whether a 16-bit PCM frame contains speech."""
+def _frame_is_speech(backend: VADBackend, pcm_bytes: bytes, frame_f32) -> bool:
+    """Per-frame speech/silence decision, dispatched to the active backend."""
     try:
-        return vad.is_speech(pcm_bytes, _SAMPLE_RATE)
+        if backend.kind == "silero":
+            # voice_confidence returns a 1-element numpy array (batch dim of 1),
+            # not a bare float. float() on it raises under numpy>=2 ("only
+            # 0-dimensional arrays can be converted to Python scalars") even
+            # though it has exactly one element — .item() is the numpy-version-
+            # safe way to pull out the scalar.
+            import numpy as np
+            confidence = np.asarray(backend.engine.voice_confidence(pcm_bytes)).item()
+            return confidence >= _SILERO_THRESHOLD
+        if backend.kind == "webrtc":
+            return backend.engine.is_speech(pcm_bytes, _SAMPLE_RATE)
+        return _frame_is_speech_energy(frame_f32)
     except Exception:
         return False
 
@@ -189,12 +235,13 @@ def _capture_utterance_streaming(
     except ImportError:
         return None, False
 
-    vad = _build_vad()
+    backend = _build_vad()
+    frame_ms = 1000 * backend.frame_samples / _SAMPLE_RATE
     captured_frames: list[bytes] = []   # raw PCM int16 bytes
     pre_roll: deque[bytes] = deque(maxlen=_PRE_ROLL_FRAMES)
     in_speech = False
     silence_count = 0
-    max_frames = int(max_seconds * 1000 / _FRAME_MS)
+    max_frames = int(max_seconds * 1000 / frame_ms)
     frame_count = 0
     done_event = threading.Event()
     result_frames: list[bytes] = []
@@ -212,10 +259,7 @@ def _capture_utterance_streaming(
         pcm_bytes = pcm16.tobytes()
 
         # Determine speech vs silence
-        if vad is not None:
-            speech = _frame_is_speech_webrtc(vad, pcm_bytes)
-        else:
-            speech = _frame_is_speech_energy(chunk)
+        speech = _frame_is_speech(backend, pcm_bytes, chunk)
 
         if not in_speech:
             pre_roll.append(pcm_bytes)
@@ -248,7 +292,7 @@ def _capture_utterance_streaming(
             samplerate=_SAMPLE_RATE,
             channels=_CHANNELS,
             dtype="float32",
-            blocksize=_FRAME_SAMPLES,
+            blocksize=backend.frame_samples,
             callback=callback,
         ):
             done_event.wait(timeout=max_seconds + 2)

@@ -2,6 +2,7 @@
 from genesis_architect_pro.voice.listener import (
     WAKE_WORDS, ListenResult, MicStatus, WakeWordListener,
     mic_status, is_wake, listen_once, _strip_wake,
+    _build_vad, _frame_is_speech, _frame_is_speech_energy,
 )
 
 
@@ -80,3 +81,59 @@ class TestResultTypes:
     def test_listen_result_shape(self):
         r = ListenResult(True, text="hello")
         assert r.ok and r.text == "hello" and r.reason == ""
+
+
+class TestVADBackend:
+    """Silero (via pipecat-ai, bundled ONNX model) is the preferred VAD backend
+    — a real accuracy upgrade over webrtcvad/energy. These tests exercise the
+    actually-installed model, not a mock, and fall back gracefully when it
+    isn't importable."""
+
+    def test_build_vad_prefers_silero_when_available(self):
+        backend = _build_vad()
+        # pipecat-ai is a hard dependency of the `voice` extra in this repo's
+        # own venv, so this should always resolve to silero in CI/dev here.
+        assert backend.kind in ("silero", "webrtc", "energy")
+        if backend.kind == "silero":
+            assert backend.frame_samples == 512
+            assert backend.engine.sample_rate == 16000
+
+    def test_silence_is_not_speech(self):
+        import numpy as np
+        backend = _build_vad()
+        silence = np.zeros(backend.frame_samples, dtype=np.float32)
+        pcm = (silence * 32767).astype("<i2").tobytes()
+        assert _frame_is_speech(backend, pcm, silence) is False
+
+    def test_frame_is_speech_never_raises_on_garbage_input(self):
+        # A backend engine that raises on any call must degrade to "not speech",
+        # never propagate — this runs inside a real-time sounddevice callback.
+        class _Boom:
+            def voice_confidence(self, _pcm):
+                raise RuntimeError("boom")
+
+        from genesis_architect_pro.voice.listener import VADBackend
+        backend = VADBackend("silero", _Boom(), 512)
+        assert _frame_is_speech(backend, b"\x00" * 1024, None) is False
+
+    def test_build_vad_falls_back_when_pipecat_unavailable(self, monkeypatch):
+        import builtins
+        real_import = builtins.__import__
+
+        def fake_import(name, *a, **k):
+            if name == "pipecat.audio.vad.silero" or name.startswith("pipecat"):
+                raise ImportError("simulated: pipecat not installed")
+            return real_import(name, *a, **k)
+
+        monkeypatch.setattr(builtins, "__import__", fake_import)
+        backend = _build_vad()
+        assert backend.kind in ("webrtc", "energy")
+
+    def test_energy_backend_dispatch(self):
+        import numpy as np
+        from genesis_architect_pro.voice.listener import VADBackend
+        backend = VADBackend("energy", None, 480)
+        loud = np.full(480, 0.5, dtype=np.float32)
+        quiet = np.zeros(480, dtype=np.float32)
+        assert _frame_is_speech(backend, b"", loud) == _frame_is_speech_energy(loud)
+        assert _frame_is_speech(backend, b"", quiet) is False

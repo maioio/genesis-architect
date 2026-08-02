@@ -241,8 +241,6 @@ class BargeInWatcher:
     closes; even while audio plays, we're watching for the user's voice.
     """
 
-    # ~30ms frames at 16kHz
-    _FRAME_SAMPLES = 480
     _ONSET_FRAMES  = 2   # this many consecutive speech frames = barge-in
 
     def __init__(self, tts, on_barge_in: Callable[[], None]) -> None:
@@ -271,11 +269,9 @@ class BargeInWatcher:
         except ImportError:
             return
 
-        from genesis_architect_pro.voice.listener import (
-            _build_vad, _frame_is_speech_webrtc, _frame_is_speech_energy
-        )
+        from genesis_architect_pro.voice.listener import _build_vad, _frame_is_speech
 
-        vad = _build_vad()
+        backend = _build_vad()
         onset_count = 0
 
         def callback(indata, frames, time_info, status):
@@ -284,10 +280,7 @@ class BargeInWatcher:
                 raise sd.CallbackStop()
             chunk = indata[:, 0] if indata.ndim > 1 else indata
             pcm16 = (np.clip(chunk, -1.0, 1.0) * 32767).astype("<i2")
-            if vad is not None:
-                speech = _frame_is_speech_webrtc(vad, pcm16.tobytes())
-            else:
-                speech = _frame_is_speech_energy(chunk)
+            speech = _frame_is_speech(backend, pcm16.tobytes(), chunk)
 
             if speech:
                 onset_count += 1
@@ -306,7 +299,7 @@ class BargeInWatcher:
                 samplerate=16000,
                 channels=1,
                 dtype="float32",
-                blocksize=self._FRAME_SAMPLES,
+                blocksize=backend.frame_samples,
                 callback=callback,
             ):
                 self._stop.wait()

@@ -16,11 +16,31 @@ def _ask_confirm(prompt: str) -> bool:
     return raw in ("y", "yes", "כן", "yes")
 
 
+def _run_prompt_step(fn, *args, reason: str, **kwargs):
+    """Run a function that may call typer.prompt(), converting a closed/
+    exhausted stdin into a clean, actionable error instead of a raw
+    traceback. typer.prompt() raises typer.Abort/EOFError when it can't read
+    a line — this only fires when that actually happens, so piping a real
+    pre-answered value (e.g. `echo A | genesis init ...`) still works exactly
+    as before; only a truly empty/closed stdin (no isatty() guess involved)
+    is treated as an error."""
+    try:
+        return fn(*args, **kwargs)
+    except (typer.Abort, EOFError):
+        typer.echo(f"\ngenesis init needs interactive input it didn't get ({reason}). "
+                   "Run it in a real terminal, or pipe an answer in "
+                   "(e.g. `echo A | genesis init ...`).", err=True)
+        raise typer.Exit(1)
+
+
 @app.command()
 def init(
     vision: str | None = typer.Argument(None, help="What you want to build"),
     output: str | None = typer.Option(None, "--output", "-o", help="Output directory"),
-    model: str = typer.Option("claude-sonnet-4-6", "--model", "-m", help="LLM model to use"),
+    model: str = typer.Option("claude-sonnet-4-6", "--model", "-m",
+                               help="LLM model, routed via LiteLLM — e.g. 'claude-sonnet-4-6' "
+                                    "(default), 'gpt-4o', 'gemini/gemini-2.0-flash', "
+                                    "'ollama/llama3' (local, no API key)"),
     name: str | None = typer.Option(None, "--name", "-n", help="Project name"),
     language: str | None = typer.Option(None, "--language", "-l", help="Primary language (python, typescript, go, rust, ...)"),
 ):
@@ -45,7 +65,8 @@ def init(
             typer.echo(f"\nDetected project: {inferred['description']}")
             vision = inferred["description"]
         else:
-            vision = typer.prompt("Describe what you want to build")
+            vision = _run_prompt_step(typer.prompt, "Describe what you want to build",
+                                      reason="describing what to build")
 
     project_name = name or (inferred["name"] if inferred["name"] else vision.lower().replace(" ", "_")[:20])
     out_dir = output or project_name
@@ -97,7 +118,8 @@ def init(
         return typer.prompt("Your choice (A/B/C/D or describe in words)")
     def confirm_fn():
         return _ask_confirm("Confirm")
-    arch_choice = nlu_gate.prompt_choice(ask_fn, confirm_fn)
+    arch_choice = _run_prompt_step(nlu_gate.prompt_choice, ask_fn, confirm_fn,
+                                   reason="choosing an architecture — A/B/C/D")
 
     if arch_choice == "__restart__":
         typer.echo("\nStarting over from the beginning...")
@@ -111,7 +133,12 @@ def init(
     def llm_fn(prompt):
         return llm.ask(prompt, model=model, api_key=llm_api_key)
 
-    created = scaffolder.generate(out_dir, vision, project_name, repos, all_issues, llm_fn)
+    try:
+        created = scaffolder.generate(out_dir, vision, project_name, repos, all_issues, llm_fn)
+    except llm.LLMError as e:
+        typer.echo(f"\n{e}", err=True)
+        typer.echo("Check your key with: genesis config get LLM_API_KEY", err=True)
+        raise typer.Exit(1)
 
     # Store result in vault for future runs
     if created:
@@ -127,7 +154,10 @@ def init(
 @app.command()
 def companion(
     project_path: str | None = typer.Argument(None, help="Project path (default: current dir)"),
-    model: str = typer.Option("claude-sonnet-4-6", "--model", "-m", help="LLM model to use"),
+    model: str = typer.Option("claude-sonnet-4-6", "--model", "-m",
+                               help="LLM model, routed via LiteLLM — e.g. 'claude-sonnet-4-6' "
+                                    "(default), 'gpt-4o', 'gemini/gemini-2.0-flash', "
+                                    "'ollama/llama3' (local, no API key)"),
 ):
     """Stay active after scaffold - answers questions, detects when to exit."""
     from genesis_architect import config as cfg
@@ -156,7 +186,7 @@ def companion(
     while True:
         try:
             user_input = typer.prompt(f"[{project_name}]")
-        except (EOFError, KeyboardInterrupt):
+        except (typer.Abort, EOFError, KeyboardInterrupt):
             typer.echo("\nCompanion mode closed.")
             break
 
@@ -172,7 +202,11 @@ def companion(
             history.append({"role": "user", "content": user_input})
             history.append({"role": "assistant", "content": cached.strip()})
         else:
-            response = llm.ask(user_input, model=model, api_key=llm_api_key, history=history)
+            try:
+                response = llm.ask(user_input, model=model, api_key=llm_api_key, history=history)
+            except llm.LLMError as e:
+                typer.echo(f"\n{e}\n", err=True)
+                continue
             history.append({"role": "user", "content": user_input})
             history.append({"role": "assistant", "content": response})
             typer.echo(f"\n{response}\n")
@@ -181,7 +215,10 @@ def companion(
 @app.command()
 def publish(
     project_path: str | None = typer.Argument(None, help="Project root (default: current dir)"),
-    model: str = typer.Option("claude-sonnet-4-6", "--model", "-m", help="LLM model to use"),
+    model: str = typer.Option("claude-sonnet-4-6", "--model", "-m",
+                               help="LLM model, routed via LiteLLM — e.g. 'claude-sonnet-4-6' "
+                                    "(default), 'gpt-4o', 'gemini/gemini-2.0-flash', "
+                                    "'ollama/llama3' (local, no API key)"),
 ):
     """Generate Show HN post and GitHub Release notes, with copy-paste and browser AI options."""
     from genesis_architect import config as cfg
@@ -208,7 +245,12 @@ def publish(
 
     def llm_fn(prompt):
         return llm.ask(prompt, model=model, api_key=llm_api_key)
-    content = publish_agent.generate_publish_content(data, llm_fn)
+    try:
+        content = publish_agent.generate_publish_content(data, llm_fn)
+    except llm.LLMError as e:
+        typer.echo(f"\n{e}", err=True)
+        typer.echo("Check your key with: genesis config get LLM_API_KEY", err=True)
+        raise typer.Exit(1)
 
     typer.echo(publish_agent.format_output(content, version=data["version"], psr_assets=psr))
 

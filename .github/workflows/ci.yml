@@ -139,10 +139,15 @@ jobs:
         # literal [—–] class degrades to a *byte* class when LANG is unset (as
         # in a bare container) and then matches box-drawing characters, so any
         # ASCII-art directory tree would fail this check.
+        #
+        # Scope is the hand-written Markdown only. docs/ is deliberately NOT
+        # included: it is the built site (a minified React bundle, images and
+        # generated demo pages), so scanning it flags compiled output and
+        # binaries. The site's prose lives in the separate genesis-react repo.
         run: |
           found=$(LC_ALL=C.UTF-8 grep -rnP '\x{2014}|\x{2013}' \
             README.md SKILL.md CONTRIBUTING.md SECURITY.md CODE_OF_CONDUCT.md \
-            docs/ 2>/dev/null || true)
+            2>/dev/null || true)
           if [ -n "$found" ]; then
             echo "FAIL: em/en dashes found in reader-facing docs:"
             echo "$found"

@@ -36,6 +36,7 @@ COPY SKILL.md ./
 COPY references/ ./references/
 COPY examples/ ./examples/
 COPY assets/ ./assets/
+COPY evals/ ./evals/
 
 COPY docker/smoke_test.sh /usr/local/bin/smoke_test
 RUN chmod +x /usr/local/bin/smoke_test

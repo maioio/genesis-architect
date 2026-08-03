@@ -32,57 +32,69 @@ Wait for green. The workflow now runs a Python 3.11/3.12/3.13 matrix, a
 packaged-install job in Docker, and a build job that checks the wheel actually
 contains its data files.
 
-## 2. Build and publish to PyPI
+## 2. Publish to PyPI, by tagging
 
-Do this **before** merging, so the install command on the site is true the
-moment the site goes live.
+Do **not** run `twine` by hand. `.github/workflows/publish.yml` already builds
+and publishes on any `v*` tag, using PyPI Trusted Publishing (OIDC), so there
+is no token to manage.
+
+**One-time prerequisite.** Trusted Publishing has to exist on the PyPI side or
+the tag job fails with an auth error. Check at
+<https://pypi.org/manage/project/genesis-architect/settings/publishing/> that a
+publisher is configured with:
+
+| Field | Value |
+|---|---|
+| Owner | `maioio` |
+| Repository | `genesis-architect` |
+| Workflow | `publish.yml` |
+| Environment | `pypi` |
+
+The GitHub side also needs an Environment named `pypi`
+(Settings, Environments). If either is missing, add it before tagging.
+
+Tag the release branch **before** merging, so PyPI has 8.0.0 while the site is
+still showing the old page:
 
 ```bash
-# from a clean checkout of the branch
-python -m pip install -U build twine
-rm -rf dist/ build/
-python -m build
-twine check dist/*
-
-# dry run against TestPyPI first if you want a rehearsal
-twine upload --repository testpypi dist/*
-
-# the real thing
-twine upload dist/*
+git checkout release/v8.0.0-open-source && git pull
+git tag -a v8.0.0 -m "v8.0.0 - fully free and open source"
+git push origin v8.0.0
 ```
+
+Watch the run: `gh run watch --repo maioio/genesis-architect`
 
 Then verify in a throwaway container, not on your own machine:
 
 ```bash
 docker run --rm python:3.11-slim sh -c '
   pip install -q genesis-architect &&
-  genesis --help >/dev/null &&
+  python -c "import genesis_architect; print(genesis_architect.__version__)" &&
   genesis license &&
-  python -c "import genesis_architect, genesis_architect.pro; print(genesis_architect.__version__)"
+  genesis --help >/dev/null && echo CLI-OK
 '
 ```
 
-That must print `8.0.0` and say the tool is free. If `genesis init` errors on a
-missing `folder-structures.toml`, the package data did not ship: stop and fix
-before going further. (That exact bug is why the CI wheel check exists.)
+That must print `8.0.0` and say the tool is free. If it reports a missing
+`folder-structures.toml`, the package data did not ship: stop, do not merge.
+(CI runs `Dockerfile.wheel` specifically to catch that before you get here.)
 
-## 3. Merge, tag, release
+## 3. Merge and cut the GitHub release
+
+Only once PyPI shows 8.0.0.
 
 ```bash
 gh pr merge --squash --repo maioio/genesis-architect   # or merge in the UI
 
-git checkout main && git pull
-git tag -a v8.0.0 -m "v8.0.0 - fully free and open source"
-git push origin v8.0.0
-
 gh release create v8.0.0 \
+  --repo maioio/genesis-architect \
   --title "v8.0.0 - Genesis Architect is now fully free and open source" \
-  --notes-file RELEASE_NOTES_v8.md \
-  dist/*
+  --notes-file RELEASE_NOTES_v8.md
 ```
 
-Merging to `main` also publishes the new site. Give Pages a couple of minutes,
-then hard-refresh <https://maioio.github.io/genesis-architect/>.
+Merging to `main` publishes the new site. Give Pages a couple of minutes, then
+hard-refresh <https://maioio.github.io/genesis-architect/> and confirm the
+pricing section is gone and the install section is there.
 
 ## 4. Retire the paid funnel
 

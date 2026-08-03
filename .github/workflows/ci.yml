@@ -172,6 +172,16 @@ jobs:
       - name: Suite + CLI smoke tests on the installed package
         run: docker run --rm genesis-test
 
+      # Dockerfile.test installs with `pip install -e`, which leaves the repo
+      # on sys.path and masks missing package data. This builds the wheel and
+      # installs it into a clean image with no source tree, so it fails if the
+      # artifact users actually download is broken.
+      - name: Build wheel acceptance image
+        run: docker build -f Dockerfile.wheel -t genesis-wheel .
+
+      - name: Acceptance test on the built wheel
+        run: docker run --rm genesis-wheel
+
   build-artifacts:
     name: Build sdist + wheel
     runs-on: ubuntu-latest

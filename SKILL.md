@@ -150,7 +150,7 @@ Merge results into pitfall candidates before Phase 3.
 Extract per result: title, platform, channel/author, signal type (lessons_learned/architecture_talk/community/tutorial). Cap: 5 video + 3 social. No transcription in Phase 2 - metadata only. Show in Phase 5 grouped by platform with `/watch` commands for YouTube. Before deep-diving any specific result, ask: "This [platform] content seems relevant - analyze in depth? A: Yes  B: Add to list  C: Skip"
 Merge all four streams before Phase 3. On MCP failure: report briefly, switch to web search, continue.
 
-**Pro multi-source default**: with `genesis-architect-pro`, Phase 2 always runs the fast tier (GitHub + Exa ecosystem + YouTube/Reddit metadata) in parallel. Heavy scrapers (Apify for Reddit threads, Instagram) escalate only when the fast tier is thin or the project is visual. Full policy and routing in `references/mcp-strategy.md` "Pro Multi-Source Default". Free tier stays GitHub + Exa only.
+**Multi-source default**: Phase 2 always runs the fast tier (GitHub + Exa ecosystem + YouTube/Reddit metadata) in parallel. Heavy scrapers (Apify for Reddit threads, Instagram) escalate only when the fast tier is thin or the project is visual. Full policy and routing in `references/mcp-strategy.md` "Pro Multi-Source Default". Everything is included; there is no paid tier.
 
 ### Ecosystem Velocity Scoring
 For key dependencies found in 3+ repos, check: commits in last 90 days, open CVEs (OSV.dev), and package registry activity (PyPI for Python, npm for JS/TS, crates.io for Rust). All APIs are public and require no key. Show in Phase 5 as one-line signals: `⚠ better-auth: 0 commits in 90 days  ✅ Prisma: actively maintained  ⚠ requests: CVE-2024-35195 (HIGH)`. Informational only - flag, never block.
@@ -356,10 +356,10 @@ After Phase 6, enter companion mode. Development Partner Rules remain active thr
 **`genesis check`**: CVE scan + CI action version audit via OSV.dev. CRITICAL/WARNING/INFO. Never auto-apply.
 **`genesis resolve [topic]`**: Knowledge Vault (`.genesis/vault/`) first, then Stack Overflow. Shows source URL.
 **`genesis research [topic]`**: Phase 2 repos first, then ecosystem. 1-3 ranked approaches.
-**`genesis research --video [url]`** (Pro): Deep video-to-pitfall analysis. Builds multi-platform research queries, extracts real pitfalls from watched videos into PITFALLS.md, and ranks them across sources. Requires `genesis-architect-pro`. See https://github.com/maioio/genesis-architect
+**`genesis research --video [url]`**: Deep video-to-pitfall analysis. Builds multi-platform research queries, extracts real pitfalls from watched videos into PITFALLS.md, and ranks them across sources. Included in `genesis-architect`. See https://github.com/maioio/genesis-architect
 **`genesis help [problem]`**: search analyzed repos, cite source. Ask before scanning wider ecosystem.
 **Feature complete**: suggest ROADMAP.md update, offer to research next phase.
-**New session** (Pro): with `genesis-architect-pro`, cross-session memory restores prior context and announces "Context restored - [N] repos, [M] pitfalls, last phase: [name]." Without Pro, each session starts fresh from `genesis init [description]`.
+**New session**: cross-session memory restores prior context and announces "Context restored - [N] repos, [M] pitfalls, last phase: [name]." With no saved state, a session starts fresh from `genesis init [description]`.
 **Exit**: unrelated task, new `genesis init`, or "done"/"exit companion mode".
 
 ---

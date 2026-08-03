@@ -1,0 +1,50 @@
+# Verifies the *shipped artifact*, not the repo.
+#
+#   docker build -f Dockerfile.wheel -t genesis-wheel .
+#   docker run --rm genesis-wheel
+#
+# Dockerfile.test installs with `pip install -e`, which leaves the repository
+# on sys.path. That masks an entire class of packaging bug: a data file that
+# never made it into the wheel still resolves through the source tree, so the
+# tests pass while real users get a broken install. That is exactly how
+# `genesis init` shipped dead in earlier versions.
+#
+# This build installs the built wheel into a clean image with NO source, NO
+# references/, NO tests. If something is missing from the distribution, it
+# fails here.
+
+# ---- stage 1: build the wheel from source -------------------------------
+ARG PYTHON_VERSION=3.11
+FROM python:${PYTHON_VERSION}-slim AS builder
+
+WORKDIR /src
+RUN pip install --no-cache-dir -q build
+COPY pyproject.toml README.md ./
+COPY src/ ./src/
+RUN python -m build --wheel --outdir /dist
+
+# ---- stage 2: install it the way a user would ---------------------------
+FROM python:${PYTHON_VERSION}-slim
+
+ENV PYTHONUNBUFFERED=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    GENESIS_NO_AUTO_INSTALL=1
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends git \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /dist/*.whl /tmp/
+RUN pip install --no-cache-dir /tmp/*.whl && rm -f /tmp/*.whl
+
+# Deliberately NOT the repo root: working from / proves nothing is being
+# resolved by accident through a source checkout.
+WORKDIR /work
+
+COPY docker/wheel_test.sh /usr/local/bin/wheel_test
+RUN chmod +x /usr/local/bin/wheel_test
+
+RUN git config --global user.email "ci@genesis.local" \
+    && git config --global user.name "Genesis CI"
+
+CMD ["wheel_test"]

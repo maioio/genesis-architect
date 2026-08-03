@@ -9,7 +9,7 @@ source (AGPL-3.0) and ship in the box - there is no license key and nothing
 is gated.
 """
 
-__version__ = "7.2.0"
+__version__ = "8.0.0"
 
 from genesis_architect.pro.decision_engine import GenesisDecisionEngine, run_session
 from genesis_architect.pro.intent_classifier import classify

@@ -1243,7 +1243,7 @@ def _build_parser() -> argparse.ArgumentParser:
     ui.add_argument("--open", action="store_true",
                     help="Open the workspace in the default browser after generating")
 
-    companion = sub.add_parser("companion", help="Start the Genesis PRO health page server")
+    companion = sub.add_parser("companion", help="Start the Genesis health page server")
     companion.add_argument("--dir", default=".", metavar="PATH",
                            help="Project directory (default: current directory)")
     companion.add_argument("--port", type=int, default=7433, metavar="PORT",

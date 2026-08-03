@@ -4,19 +4,29 @@ on:
   push:
     branches: [main]
   pull_request:
-    branches: [main]
+  workflow_dispatch:
+
+# Auto-provisioning shells out to pip and mutates the environment. CI must be
+# reproducible, so it is disabled everywhere in this workflow.
+env:
+  GENESIS_NO_AUTO_INSTALL: '1'
 
 jobs:
   quality-gates:
-    name: Quality Gates
+    name: Quality Gates (py${{ matrix.python-version }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # Must match the requires-python range and classifiers in pyproject.toml.
+        python-version: ['3.11', '3.12', '3.13']
     steps:
       - uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: ${{ matrix.python-version }}
 
       - name: Install dependencies
         run: pip install -e ".[dev]" -q
@@ -25,7 +35,9 @@ jobs:
         run: python scripts/env_probe.py --self-check
 
       - name: Run unit tests with coverage
-        run: python -m pytest tests/ -v --tb=short --cov=scripts --cov-report=xml:coverage.xml
+        # Coverage targets the installed package. It previously pointed at
+        # scripts/, which reported almost nothing about the real codebase.
+        run: python -m pytest tests/ -q --tb=short --cov=src/genesis_architect --cov-report=xml:coverage.xml
 
       - name: Run research validator on example
         run: python scripts/research_validator.py examples/typescript-cli/RESEARCH.md
@@ -114,20 +126,91 @@ jobs:
           lines=$(wc -l < SKILL.md)
           echo "SKILL.md lines: $lines"
           if [ "$lines" -gt 400 ]; then echo "FAIL: over 400 lines"; exit 1; fi
-          if grep -P "[—–]" SKILL.md; then echo "FAIL: em dashes found in SKILL.md"; exit 1; fi
+          if LC_ALL=C.UTF-8 grep -P '\x{2014}|\x{2013}' SKILL.md; then echo "FAIL: em dashes found in SKILL.md"; exit 1; fi
           echo "SKILL.md constraints OK"
 
-      - name: Check no em dashes in any file
+      - name: Check no em dashes in reader-facing docs
+        # Scoped deliberately to the prose a visitor actually reads. Source
+        # comments are exempt: en dashes are correct in numeric ranges there
+        # (confidence: 0.0-1.0), and rewriting ~2000 of them would churn code
+        # for no reader-facing gain. Historical files (CHANGELOG, release
+        # notes) are frozen records and are not rewritten.
+        # The pattern uses explicit codepoints and forces a UTF-8 locale. A
+        # literal [—–] class degrades to a *byte* class when LANG is unset (as
+        # in a bare container) and then matches box-drawing characters, so any
+        # ASCII-art directory tree would fail this check.
         run: |
-          found=$(grep -rP "[—–]" --include="*.md" --include="*.py" --include="*.json" \
-            --exclude-dir=".git" \
-            --exclude="ci.yml" . || true)
+          found=$(LC_ALL=C.UTF-8 grep -rnP '\x{2014}|\x{2013}' \
+            README.md SKILL.md CONTRIBUTING.md SECURITY.md CODE_OF_CONDUCT.md \
+            docs/ 2>/dev/null || true)
           if [ -n "$found" ]; then
-            echo "FAIL: em dashes found:"
+            echo "FAIL: em/en dashes found in reader-facing docs:"
             echo "$found"
             exit 1
           fi
-          echo "OK: no em dashes"
+          echo "OK: no em dashes in reader-facing docs"
+
+  packaged-install:
+    name: Packaged Install (Docker)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Runs the suite plus end-to-end CLI checks against a real `pip install`
+      # rather than the source checkout. This is what catches packaging bugs
+      # that are invisible from the repo: data files that never made it into
+      # the wheel, entry points that do not resolve, imports that only work
+      # because the repo root happens to be on sys.path.
+      - name: Build test image
+        run: docker build -f Dockerfile.test -t genesis-test .
+
+      - name: Suite + CLI smoke tests on the installed package
+        run: docker run --rm genesis-test
+
+  build-artifacts:
+    name: Build sdist + wheel
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Build
+        run: |
+          pip install -q build twine
+          python -m build
+
+      - name: Check metadata renders on PyPI
+        run: twine check dist/*
+
+      - name: Verify package data is actually in the wheel
+        # Regression guard: the scaffold layout catalog is read at import time,
+        # so if it stops shipping the installed package breaks on import.
+        run: |
+          set -e
+          wheel=$(ls dist/*.whl)
+          echo "Inspecting $wheel"
+          python - "$wheel" <<'PY'
+          import sys, zipfile
+          names = zipfile.ZipFile(sys.argv[1]).namelist()
+          required = [
+              "genesis_architect/core/data/folder-structures.toml",
+              "genesis_architect/pro/data/research_sources.json",
+          ]
+          missing = [r for r in required if r not in names]
+          if missing:
+              print("FAIL: missing from wheel:", missing)
+              sys.exit(1)
+          print("OK: required package data present in wheel")
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
 
   secrets-scan:
     name: Secret Scanning (Gitleaks)

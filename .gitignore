@@ -55,6 +55,7 @@ src/*.egg-info/
 validation/fastapi-api/genesis/tasks.db
 
 # Build artifacts - built in CI, never committed
+build/
 dist/
 *.whl
 *.tar.gz

@@ -1,8 +1,23 @@
-"""Genesis Architect - Research first. Build once."""
+"""Genesis Architect - Research first. Build once.
+
+Copyright (C) 2026 Maio Eshet
+
+This program is free software: you can redistribute it and/or modify it under
+the terms of the GNU Affero General Public License as published by the Free
+Software Foundation, either version 3 of the License, or (at your option) any
+later version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
+details. You should have received a copy of the license along with this
+program. If not, see <https://www.gnu.org/licenses/>.
+"""
 
 from pathlib import Path
 
-__version__ = "5.4.1"
+__version__ = "8.0.0"
+__license__ = "AGPL-3.0-or-later"
 
 
 def scaffold(vision: str, output_dir: str | Path, *, name: str | None = None,
@@ -13,10 +28,10 @@ def scaffold(vision: str, output_dir: str | Path, *, name: str | None = None,
     mine issues, generate with an LLM), minus Phase 3's vault-cache lookup
     and Phase 4's interactive architecture-choice prompt (which — same as in
     `init` — doesn't currently change generation output; it's echoed back to
-    the user but never passed into scaffolder.generate()). Used by genesis-
-    architect-pro's BUILD mode (`genesis decide "build ..."`), which runs
-    inside a GDE session with no terminal to prompt against. For the full
-    interactive experience, use `genesis init`.
+    the user but never passed into scaffolder.generate()). Used by the engine
+    layer's BUILD mode (`genesis decide "build ..."`), which runs inside a GDE
+    session with no terminal to prompt against. For the full interactive
+    experience, use `genesis init`.
 
     Raises RuntimeError on any unrecoverable failure (no LLM key, no repos
     found, GitHub rate limit) — never a raw exception from a third-party

@@ -40,10 +40,15 @@ class TestEnsureCompanionPackages:
         assert len(result.already_present) == len(COMPANION_PACKAGES)
 
     def test_installs_missing_via_pip(self):
-        calls = {}
+        # `subprocess.run` is patched globally, so this records EVERY
+        # subprocess in the process for the duration, not just ours. Anything
+        # running on a background thread (a leaked ContextPrefetcher loop, for
+        # instance) lands here too. Keep every call and search, rather than
+        # trusting the last one to be the pip invocation.
+        calls = []
 
         def fake_run(cmd, **kw):
-            calls["cmd"] = cmd
+            calls.append(cmd)
 
             class P:
                 returncode = 0
@@ -55,7 +60,7 @@ class TestEnsureCompanionPackages:
 
         def fake_avail(mod):
             # After "pip install" runs, report everything importable.
-            return mod in avail or "cmd" in calls
+            return mod in avail or bool(calls)
 
         with patch("genesis_architect.pro.voice.setup._pkg_available",
                    side_effect=fake_avail), \
@@ -63,7 +68,9 @@ class TestEnsureCompanionPackages:
             result = ensure_companion_packages()
 
         assert result.ok
-        assert "pip" in calls["cmd"]
+        pip_calls = [c for c in calls if "pip" in c]
+        assert pip_calls, f"no pip invocation among {calls!r}"
+        assert "install" in pip_calls[0]
         if sys.version_info < (3, 13):
             # kokoro is only offered on Python <3.13 — its spacy dependency
             # has no wheels on newer versions and pip falls back to a

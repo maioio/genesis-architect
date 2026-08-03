@@ -121,8 +121,16 @@ class ContextPrefetcher:
         self._root = Path(project_root)
         self._task: asyncio.Task | None = None
         self._loop: asyncio.AbstractEventLoop | None = None
+        self._thread: threading.Thread | None = None
         self.result: dict[str, Any] = {}
         self.last_entity: str | None = None
+
+    def __enter__(self) -> "ContextPrefetcher":
+        self.start_loop_in_thread()
+        return self
+
+    def __exit__(self, *_exc) -> None:
+        self.stop()
 
     def start_loop_in_thread(self) -> None:
         """Run an asyncio event loop in a daemon thread for background tasks."""
@@ -133,9 +141,36 @@ class ContextPrefetcher:
 
         t = threading.Thread(target=_run, daemon=True, name="genesis-prefetch-loop")
         t.start()
+        self._thread = t
         # Wait for the loop to be assigned
         while self._loop is None:
             time.sleep(0.01)
+
+    def stop(self, timeout: float = 2.0) -> None:
+        """Shut the background loop down and wait for the thread to exit.
+
+        Without this the loop runs forever. The thread is a daemon so a normal
+        process still exits, but anything long-lived (a test session, the
+        Companion restarting a session) accumulates loops that keep executing
+        real analysis in the background: git subprocesses, file walks, graph
+        loads. In a test run those escaped calls land inside unrelated tests
+        that patch `subprocess.run`, which is a genuinely confusing failure.
+
+        Safe to call more than once, and safe to call if the loop never started.
+        """
+        # Cancel in-flight work first. Stopping the loop out from under a
+        # pending coroutine leaves it un-awaited, which Python reports as a
+        # RuntimeWarning from whatever unrelated code happens to trigger GC.
+        task, self._task = self._task, None
+        if task is not None:
+            task.cancel()
+
+        loop, self._loop = self._loop, None
+        if loop is not None and loop.is_running():
+            loop.call_soon_threadsafe(loop.stop)
+        thread, self._thread = self._thread, None
+        if thread is not None and thread.is_alive():
+            thread.join(timeout=timeout)
 
     def prefetch(self, entity: str) -> None:
         """Schedule a context fetch for entity if the loop is running."""

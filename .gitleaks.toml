@@ -1,0 +1,35 @@
+# Gitleaks configuration for Genesis Architect.
+#
+# Genesis ships its own secrets scanner, so its test suite necessarily contains
+# strings shaped exactly like real credentials. Those fixtures are synthetic
+# (AKIAABCDEFGHIJKLMNOP and similar placeholders) and are the only reason
+# Gitleaks reports findings on this repository.
+#
+# The allowlist below is deliberately narrow: it exempts the scanner's own
+# fixture files and nothing else. Do not widen it to whole directories, and
+# never add `paths` entries covering src/. If a real secret is ever committed
+# anywhere else, this config must still catch it.
+
+# Start from the full upstream ruleset rather than replacing it.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Synthetic credentials used to test the built-in secrets scanner"
+
+paths = [
+  # Fixtures for secrets_scanner: fake AWS/GitHub/Slack/Stripe keys and a
+  # placeholder private key block, all asserted against by the tests.
+  '''^tests/test_secrets_scanner\.py$''',
+  # The scanner's own regexes, which contain credential-shaped patterns.
+  '''^src/genesis_architect/pro/secrets_scanner\.py$''',
+]
+
+regexes = [
+  # Documented placeholders that appear in prose and generated output.
+  '''AKIAABCDEFGHIJKLMNOP''',
+  '''AKIAXXXXXXXXXXXXXXXX''',
+  '''AKIAIOSFODNN7EXAMPLE''',
+  # Truncated key block used in a docstring example, never a real key.
+  '''MIIB\.\.\.''',
+]

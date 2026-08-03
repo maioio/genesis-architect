@@ -5,6 +5,8 @@ from __future__ import annotations
 import time
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 
 from genesis_architect.pro.voice.voice_pipeline import (
     BargeInWatcher,
@@ -86,43 +88,69 @@ class TestEntityExtractor:
 # ---------------------------------------------------------------------------
 
 class TestContextPrefetcher:
-    def test_start_loop_creates_running_event_loop(self):
-        p = ContextPrefetcher(".")
-        p.start_loop_in_thread()
-        time.sleep(0.05)
-        assert p._loop is not None
-        assert p._loop.is_running()
+    """These tests start real event-loop threads that run real analysis.
 
-    def test_prefetch_same_entity_skipped(self):
-        p = ContextPrefetcher(".")
-        p.start_loop_in_thread()
-        time.sleep(0.05)
-        p.last_entity = "AuthModule"
-        p.prefetch("AuthModule")   # should skip — same entity
-        assert p._task is None     # no new task launched
+    Two rules keep them from poisoning the rest of the suite:
 
-    def test_prefetch_sets_last_entity(self):
-        p = ContextPrefetcher(".")
-        p.start_loop_in_thread()
-        time.sleep(0.05)
-        p.prefetch("PaymentService")
-        assert p.last_entity == "PaymentService"
+    1. Always stop the prefetcher. The loop otherwise runs forever, and its
+       background work (git subprocesses, file walks) escapes into later tests.
+       That is how a pip assertion in test_voice_provision once received
+       ['git', 'log', '-1', ...] instead: a leaked prefetcher thread landed
+       inside that test's global `subprocess.run` patch.
+    2. Never point one at "." (the repository). Scanning a real tree is slow
+       and is what spawns the git subprocesses in the first place. tmp_path is
+       both faster and inert.
+    """
 
-    def test_await_result_returns_dict(self, tmp_path):
+    @pytest.fixture
+    def prefetcher(self, tmp_path):
         p = ContextPrefetcher(tmp_path)
         p.start_loop_in_thread()
-        time.sleep(0.05)
-        p.prefetch("SomeModule")
-        result = p.await_result(timeout=0.5)
+        try:
+            yield p
+        finally:
+            p.stop()
+
+    def test_start_loop_creates_running_event_loop(self, prefetcher):
+        assert prefetcher._loop is not None
+        assert prefetcher._loop.is_running()
+
+    def test_stop_is_idempotent_and_halts_the_loop(self, tmp_path):
+        p = ContextPrefetcher(tmp_path)
+        p.start_loop_in_thread()
+        p.stop()
+        p.stop()  # must not raise
+        assert p._loop is None
+
+    def test_stop_without_start_is_safe(self, tmp_path):
+        ContextPrefetcher(tmp_path).stop()  # must not raise
+
+    def test_context_manager_stops_the_loop(self, tmp_path):
+        with ContextPrefetcher(tmp_path) as p:
+            assert p._loop is not None and p._loop.is_running()
+        assert p._loop is None
+
+    def test_prefetch_same_entity_skipped(self, prefetcher):
+        prefetcher.last_entity = "AuthModule"
+        prefetcher.prefetch("AuthModule")   # should skip, same entity
+        assert prefetcher._task is None     # no new task launched
+
+    def test_prefetch_sets_last_entity(self, prefetcher):
+        prefetcher.prefetch("PaymentService")
+        assert prefetcher.last_entity == "PaymentService"
+
+    def test_await_result_returns_dict(self, prefetcher):
+        prefetcher.prefetch("SomeModule")
+        # Generous timeout: this does real (if trivial) analysis, and a loaded
+        # CI runner is far slower than a developer laptop. A tight bound here
+        # made the suite flaky on GitHub runners while passing locally.
+        result = prefetcher.await_result(timeout=30)
         assert isinstance(result, dict)
         assert result.get("entity") == "SomeModule"
 
-    def test_await_result_has_fragility_and_kg_keys(self, tmp_path):
-        p = ContextPrefetcher(tmp_path)
-        p.start_loop_in_thread()
-        time.sleep(0.05)
-        p.prefetch("TestModule")
-        result = p.await_result(timeout=0.5)
+    def test_await_result_has_fragility_and_kg_keys(self, prefetcher):
+        prefetcher.prefetch("TestModule")
+        result = prefetcher.await_result(timeout=30)
         assert "fragility" in result
         assert "kg" in result
 

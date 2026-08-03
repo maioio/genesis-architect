@@ -13,6 +13,8 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 
+from genesis_architect.core.urls import host_matches
+
 
 # ---------------------------------------------------------------------------
 # Data model
@@ -175,9 +177,12 @@ def from_github_issue(issue_dict: dict) -> RankedPitfall:
 def from_exa_result(result: dict) -> RankedPitfall:
     """Convert an Exa search result dict to RankedPitfall."""
     url = result.get("url", "")
-    source = "reddit" if "reddit.com" in url else \
-             "hn" if "ycombinator.com" in url else \
-             "stackoverflow" if "stackoverflow.com" in url else \
+    # Match on the parsed host, not a substring. The source label drives a
+    # confidence weight, so a URL like https://evil.test/reddit.com/x must not
+    # be able to borrow reddit's credibility.
+    source = "reddit" if host_matches(url, "reddit.com") else \
+             "hn" if host_matches(url, "ycombinator.com") else \
+             "stackoverflow" if host_matches(url, "stackoverflow.com") else \
              "exa_blog"
     engagement = result.get("score", 0)
     return RankedPitfall(

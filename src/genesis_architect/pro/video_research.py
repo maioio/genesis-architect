@@ -21,6 +21,8 @@ import os
 import shutil
 from dataclasses import dataclass, field
 
+from genesis_architect.core.urls import host_matches
+
 
 # ---------------------------------------------------------------------------
 # Data model
@@ -53,11 +55,13 @@ VideoSignal = MediaSignal
 # ---------------------------------------------------------------------------
 
 def _detect_platform(url: str) -> str:
-    if "youtube.com" in url or "youtu.be" in url:
+    # Host-based, not substring-based: https://evil.test/youtube.com/x is not
+    # YouTube, and neither is https://youtube.com.evil.test/x.
+    if host_matches(url, "youtube.com", "youtu.be"):
         return "youtube"
-    if "reddit.com" in url or "redd.it" in url:
+    if host_matches(url, "reddit.com", "redd.it"):
         return "reddit"
-    if "instagram.com" in url:
+    if host_matches(url, "instagram.com"):
         return "instagram"
     return "unknown"
 

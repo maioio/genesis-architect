@@ -9,6 +9,71 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+## [8.0.0] - 2026-08-03
+
+**Genesis Architect is now entirely free and open source.**
+
+The project shipped as open-core: a free package plus a paid, Ed25519
+license-gated `genesis-architect-pro` add-on. That split is gone. Every engine
+that was behind the paywall now ships in this package under AGPL-3.0.
+
+### Changed
+
+- **BREAKING**: `genesis-architect-pro` is discontinued. Its 56 modules moved to
+  `genesis_architect.pro.*`. Migrate with:
+  `pip uninstall genesis-architect-pro && pip install -U genesis-architect`
+- **BREAKING**: the license system is removed. `genesis license activate` is now
+  a friendly no-op, and `GENESIS_PRO_LICENSE` is ignored. `license.py` was
+  deleted rather than stubbed, so a paywall cannot silently return.
+- **BREAKING**: license changed from MIT to **AGPL-3.0-or-later**. Releases up
+  to v5.4.1 remain available under MIT.
+- Extras renamed: `genesis-architect-pro[voice]` is now `genesis-architect[voice]`.
+  `[companion-full]` and `[pro]` are consolidated into `[all]`.
+- Single `genesis` entry point via `genesis_architect.cli_entry`, replacing the
+  two competing console scripts that used to collide on install.
+- `cryptography` dropped from dependencies; it existed only to verify license
+  signatures.
+- `core/pro_bridge.py` now reports availability rather than entitlement, and
+  raises only on a genuinely broken install.
+
+### Fixed
+
+- **Scaffolding was broken in any real install.** `scaffold_generator` loaded
+  `references/folder-structures.toml` by walking up to the repo root, a path
+  that does not exist in an installed wheel. Because the read happens at import
+  time, the module was unimportable and `genesis init` failed for every user
+  who installed from PyPI rather than a git checkout. The catalog now ships as
+  package data, with the repo copy as a fallback and a guard test that the two
+  never drift apart.
+- **The test suite installed packages into its own environment.**
+  `genesis companion --ui` called the provisioner unconditionally, so any test
+  reaching that path ran a real `pip install`. It pulled in `websockets`
+  partway through a run, which flipped the streaming tests from skipped to
+  failing depending on execution order, and inflated the suite to about seven
+  minutes. Added the `GENESIS_NO_AUTO_INSTALL` opt-out plus a pytest safety net.
+  The suite is now 38 seconds and fully offline.
+- The CI em dash check matched box-drawing characters. With `LANG` unset, as in
+  a bare container, a literal `[--]` character class degrades to a byte class,
+  so any ASCII-art directory tree failed the check. Now uses explicit
+  codepoints under a forced UTF-8 locale.
+- Two voice tests imported `numpy` without an `importorskip` guard and failed
+  anywhere the optional `[voice]` extra was absent.
+- Install hints across the CLI pointed at the discontinued package name.
+
+### Added
+
+- `Dockerfile.test` and `docker/smoke_test.sh`: run the suite plus 11
+  end-to-end CLI checks against a real `pip install`, which is what surfaced
+  the scaffolding bug above.
+- CI now runs a Python 3.11 / 3.12 / 3.13 matrix, a packaged-install job, and a
+  build job that verifies required package data is actually present in the wheel.
+- Coverage now measures `src/genesis_architect` instead of `scripts/`.
+- `CODE_OF_CONDUCT.md`.
+
+### Verification
+
+2295 tests passing, 5 skipped, on a clean container install.
+
 ## [5.1.1] - 2026-05-30
 
 ### Fixed

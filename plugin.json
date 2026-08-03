@@ -1,13 +1,13 @@
 {
   "name": "genesis-architect",
-  "version": "2.1.0",
+  "version": "8.0.0",
   "description": "The AI Software Architect that researches before it builds.",
   "longDescription": "Before writing a single file, Genesis Architect scans 15-20 real GitHub repos, mines their Issues for production pitfalls, then builds a battle-tested scaffold with tests, CI/CD, and three security gates active from commit one. After scaffolding, enters Development Companion Mode.",
   "author": "Maio Eshet",
   "email": "maio.eshet@gmail.com",
   "homepage": "https://github.com/maioio-projects/genesis-architect",
   "repository": "https://github.com/maioio-projects/genesis-architect",
-  "license": "MIT",
+  "license": "AGPL-3.0-or-later",
   "skills": [
     "genesis-architect"
   ],

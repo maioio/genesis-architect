@@ -1,0 +1,215 @@
+# Release runbook: v8.0.0
+
+Everything is committed on `release/v8.0.0-open-source` and pushed. Nothing is
+live yet. This is the order to ship it in.
+
+---
+
+## Order matters
+
+The website says `pip install genesis-architect` and "free, AGPL-3.0". Until
+PyPI actually has 8.0.0, anyone following that gets **5.4.1**, which is the old
+MIT open-core build that still expects a Pro licence for the advanced engines.
+
+**So: PyPI first, site second.** The site ships from `main:docs/`, so merging
+this branch into `main` publishes the new site. Do not merge until the package
+is up.
+
+---
+
+## 0. Current state
+
+PR [#31](https://github.com/maioio/genesis-architect/pull/31) is open and every
+required check passes:
+
+| Check | Result |
+|---|---|
+| Quality Gates (py3.11 / 3.12 / 3.13) | pass |
+| Quality Gates (aggregate) | pass |
+| Tests (suite + CLI smoke + wheel acceptance, in Docker) | pass |
+| Build sdist + wheel | pass |
+| Secret Scanning | pass |
+| Code Scanning | pass |
+| Static Analysis (SonarCloud) | skipped, `SONAR_ENABLED` is not set |
+| Dependency Security (Snyk) | skipped, `SNYK_ENABLED` is not set |
+
+Sonar and Snyk are gated behind repository variables and are skipped, which
+still satisfies branch protection. Enable them by setting `SONAR_ENABLED` /
+`SNYK_ENABLED` to `true` in repository variables and adding the matching
+secrets, if you want them running.
+
+The `CodeQL` check (GitHub's default setup, separate from the `Code Scanning`
+job) reported 3 high-severity alerts when the engine code was scanned for the
+first time. Those were real and are fixed: URL sources were classified by
+substring, so `https://evil.test/reddit.com/x` could borrow reddit's
+credibility weighting. Four remaining error-level alerts were
+`py/non-iterable-in-for-loop` on `for mode in GDEMode:`, a false positive
+(CodeQL does not resolve the enum metaclass); they are dismissed with that
+reasoning recorded. What is left is 26 notes and 6 warnings, all code-quality,
+no security severity.
+
+## 1. Open the PR and let CI run
+
+```bash
+gh pr create \
+  --repo maioio/genesis-architect \
+  --base main \
+  --head release/v8.0.0-open-source \
+  --title "v8.0.0 - Genesis Architect is now fully free and open source" \
+  --body-file CHANGELOG.md
+```
+
+Wait for green. The workflow now runs a Python 3.11/3.12/3.13 matrix, a
+packaged-install job in Docker, and a build job that checks the wheel actually
+contains its data files.
+
+## 2. Publish to PyPI, by tagging
+
+Do **not** run `twine` by hand. `.github/workflows/publish.yml` already builds
+and publishes on any `v*` tag, using PyPI Trusted Publishing (OIDC), so there
+is no token to manage.
+
+**One-time prerequisite.** Trusted Publishing has to exist on the PyPI side or
+the tag job fails with an auth error. Check at
+<https://pypi.org/manage/project/genesis-architect/settings/publishing/> that a
+publisher is configured with:
+
+| Field | Value |
+|---|---|
+| Owner | `maioio` |
+| Repository | `genesis-architect` |
+| Workflow | `publish.yml` |
+| Environment | `pypi` |
+
+The GitHub side also needs an Environment named `pypi`
+(Settings, Environments). If either is missing, add it before tagging.
+
+Tag the release branch **before** merging, so PyPI has 8.0.0 while the site is
+still showing the old page:
+
+```bash
+git checkout release/v8.0.0-open-source && git pull
+git tag -a v8.0.0 -m "v8.0.0 - fully free and open source"
+git push origin v8.0.0
+```
+
+Watch the run: `gh run watch --repo maioio/genesis-architect`
+
+Then verify in a throwaway container, not on your own machine:
+
+```bash
+docker run --rm python:3.11-slim sh -c '
+  pip install -q genesis-architect &&
+  python -c "import genesis_architect; print(genesis_architect.__version__)" &&
+  genesis license &&
+  genesis --help >/dev/null && echo CLI-OK
+'
+```
+
+That must print `8.0.0` and say the tool is free. If it reports a missing
+`folder-structures.toml`, the package data did not ship: stop, do not merge.
+(CI runs `Dockerfile.wheel` specifically to catch that before you get here.)
+
+## 3. Merge and cut the GitHub release
+
+Only once PyPI shows 8.0.0.
+
+```bash
+gh pr merge --squash --repo maioio/genesis-architect   # or merge in the UI
+
+gh release create v8.0.0 \
+  --repo maioio/genesis-architect \
+  --title "v8.0.0 - Genesis Architect is now fully free and open source" \
+  --notes-file RELEASE_NOTES_v8.md
+```
+
+Merging to `main` publishes the new site. Give Pages a couple of minutes, then
+hard-refresh <https://maioio.github.io/genesis-architect/> and confirm the
+pricing section is gone and the install section is there.
+
+## 4. Retire the paid funnel
+
+- Unpublish or redirect the two Gumroad products (`dduhm`, `kzbpct`). Anyone
+  landing there should be pointed at the GitHub repo, not a dead checkout.
+- Archive `maioio/genesis-architect-pro` with a README pointing here. Do not
+  delete it; the commit history is part of the project's story.
+- Delete `~/.claude/skills/genesis-architect-pro-keys/` only once you are sure
+  no old signed licence needs verifying. Nothing in the codebase reads it now.
+- `.github/FUNDING.yml` still points at GitHub Sponsors and Buy Me a Coffee.
+  Those stay: donations are the honest revenue path for a free tool.
+
+---
+
+## Post-release checks
+
+```bash
+# the site is not advertising a version that does not exist
+curl -s https://pypi.org/pypi/genesis-architect/json | python -c "import sys,json; print(json.load(sys.stdin)['info']['version'])"
+
+# GitHub shows the licence correctly (should say AGPL-3.0)
+gh api repos/maioio/genesis-architect --jq .license.spdx_id
+```
+
+---
+
+## Then: the launch post
+
+The strongest thing about this project is not the feature list, it is the
+concrete result: it reads real GitHub issues and turns them into mitigations
+before you write code. Lead with that, and with the relicensing decision, which
+is genuinely interesting to developers.
+
+**Do not** post the feature matrix. It reads as marketing and gets downvoted.
+
+### Hacker News (Show HN)
+
+Post Tuesday to Thursday, roughly 09:00 to 11:00 ET. Title:
+
+> Show HN: Genesis Architect - mines GitHub issues to find bugs before you write code
+
+First comment, from you, in plain prose:
+
+> I built this over the past months. It scans repos solving the problem you
+> described, mines their closed issues for failures that keep recurring, and
+> generates a scaffold with those mitigations already in place. Afterwards it
+> sticks around to diagnose drift, score architecture and flag modules that are
+> too fragile to touch.
+>
+> It used to be open-core with a $9/mo Pro tier. I never got it in front of
+> enough people for that to mean anything, and the licence check was mostly
+> creating work for me. As of v8.0.0 everything is free under AGPL-3.0. The
+> decision engine, knowledge graph, threat modelling and the rest are all in the
+> one package.
+>
+> Two bugs I found while preparing the release are worth mentioning because
+> they only appear once you test the packaged install rather than the repo: the
+> scaffolder read a data file by walking up to the repo root, so `pip install`
+> shipped a version where `genesis init` could not even import; and the test
+> suite was quietly running `pip install` mid-run, which mutated its own
+> environment and made results depend on execution order.
+>
+> Happy to answer anything.
+
+Then stay in the thread for several hours and answer every comment. That
+matters more than the post.
+
+### Reddit
+
+`r/Python` (Saturday "Showcase" thread is safest), then `r/programming` and
+`r/opensource`. Rewrite for each, never cross-post the same text. Reddit
+punishes anything that reads like an ad; the honest "I tried charging for this
+and it did not work, here is everything for free" angle is the part people
+respond to.
+
+### The one thing worth being careful about
+
+AGPL-3.0 does what you asked for: it stops someone wrapping this as a paid SaaS
+without publishing their changes. The tradeoff is that many companies have a
+blanket ban on AGPL dependencies, so some developers will not adopt it at work.
+For a CLI that runs locally the network clause almost never triggers in
+practice, so it behaves like GPL for normal users.
+
+If adoption matters more to you than that protection, Apache-2.0 is the usual
+choice and you can still relicense later, since you hold the copyright. If the
+protection matters more, keep AGPL. Both are defensible; you already chose, and
+this is only here so the tradeoff is written down.

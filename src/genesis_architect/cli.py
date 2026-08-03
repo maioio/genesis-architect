@@ -16,11 +16,31 @@ def _ask_confirm(prompt: str) -> bool:
     return raw in ("y", "yes", "כן", "yes")
 
 
+def _run_prompt_step(fn, *args, reason: str, **kwargs):
+    """Run a function that may call typer.prompt(), converting a closed/
+    exhausted stdin into a clean, actionable error instead of a raw
+    traceback. typer.prompt() raises typer.Abort/EOFError when it can't read
+    a line — this only fires when that actually happens, so piping a real
+    pre-answered value (e.g. `echo A | genesis init ...`) still works exactly
+    as before; only a truly empty/closed stdin (no isatty() guess involved)
+    is treated as an error."""
+    try:
+        return fn(*args, **kwargs)
+    except (typer.Abort, EOFError):
+        typer.echo(f"\ngenesis init needs interactive input it didn't get ({reason}). "
+                   "Run it in a real terminal, or pipe an answer in "
+                   "(e.g. `echo A | genesis init ...`).", err=True)
+        raise typer.Exit(1)
+
+
 @app.command()
 def init(
     vision: str | None = typer.Argument(None, help="What you want to build"),
     output: str | None = typer.Option(None, "--output", "-o", help="Output directory"),
-    model: str = typer.Option("claude-sonnet-4-6", "--model", "-m", help="LLM model to use"),
+    model: str = typer.Option("claude-sonnet-4-6", "--model", "-m",
+                               help="LLM model, routed via LiteLLM — e.g. 'claude-sonnet-4-6' "
+                                    "(default), 'gpt-4o', 'gemini/gemini-2.0-flash', "
+                                    "'ollama/llama3' (local, no API key)"),
     name: str | None = typer.Option(None, "--name", "-n", help="Project name"),
     language: str | None = typer.Option(None, "--language", "-l", help="Primary language (python, typescript, go, rust, ...)"),
 ):
@@ -45,7 +65,8 @@ def init(
             typer.echo(f"\nDetected project: {inferred['description']}")
             vision = inferred["description"]
         else:
-            vision = typer.prompt("Describe what you want to build")
+            vision = _run_prompt_step(typer.prompt, "Describe what you want to build",
+                                      reason="describing what to build")
 
     project_name = name or (inferred["name"] if inferred["name"] else vision.lower().replace(" ", "_")[:20])
     out_dir = output or project_name
@@ -97,7 +118,8 @@ def init(
         return typer.prompt("Your choice (A/B/C/D or describe in words)")
     def confirm_fn():
         return _ask_confirm("Confirm")
-    arch_choice = nlu_gate.prompt_choice(ask_fn, confirm_fn)
+    arch_choice = _run_prompt_step(nlu_gate.prompt_choice, ask_fn, confirm_fn,
+                                   reason="choosing an architecture — A/B/C/D")
 
     if arch_choice == "__restart__":
         typer.echo("\nStarting over from the beginning...")
@@ -111,7 +133,12 @@ def init(
     def llm_fn(prompt):
         return llm.ask(prompt, model=model, api_key=llm_api_key)
 
-    created = scaffolder.generate(out_dir, vision, project_name, repos, all_issues, llm_fn)
+    try:
+        created = scaffolder.generate(out_dir, vision, project_name, repos, all_issues, llm_fn)
+    except llm.LLMError as e:
+        typer.echo(f"\n{e}", err=True)
+        typer.echo("Check your key with: genesis config get LLM_API_KEY", err=True)
+        raise typer.Exit(1)
 
     # Store result in vault for future runs
     if created:
@@ -127,7 +154,10 @@ def init(
 @app.command()
 def companion(
     project_path: str | None = typer.Argument(None, help="Project path (default: current dir)"),
-    model: str = typer.Option("claude-sonnet-4-6", "--model", "-m", help="LLM model to use"),
+    model: str = typer.Option("claude-sonnet-4-6", "--model", "-m",
+                               help="LLM model, routed via LiteLLM — e.g. 'claude-sonnet-4-6' "
+                                    "(default), 'gpt-4o', 'gemini/gemini-2.0-flash', "
+                                    "'ollama/llama3' (local, no API key)"),
 ):
     """Stay active after scaffold - answers questions, detects when to exit."""
     from genesis_architect import config as cfg
@@ -156,7 +186,7 @@ def companion(
     while True:
         try:
             user_input = typer.prompt(f"[{project_name}]")
-        except (EOFError, KeyboardInterrupt):
+        except (typer.Abort, EOFError, KeyboardInterrupt):
             typer.echo("\nCompanion mode closed.")
             break
 
@@ -172,7 +202,11 @@ def companion(
             history.append({"role": "user", "content": user_input})
             history.append({"role": "assistant", "content": cached.strip()})
         else:
-            response = llm.ask(user_input, model=model, api_key=llm_api_key, history=history)
+            try:
+                response = llm.ask(user_input, model=model, api_key=llm_api_key, history=history)
+            except llm.LLMError as e:
+                typer.echo(f"\n{e}\n", err=True)
+                continue
             history.append({"role": "user", "content": user_input})
             history.append({"role": "assistant", "content": response})
             typer.echo(f"\n{response}\n")
@@ -181,7 +215,10 @@ def companion(
 @app.command()
 def publish(
     project_path: str | None = typer.Argument(None, help="Project root (default: current dir)"),
-    model: str = typer.Option("claude-sonnet-4-6", "--model", "-m", help="LLM model to use"),
+    model: str = typer.Option("claude-sonnet-4-6", "--model", "-m",
+                               help="LLM model, routed via LiteLLM — e.g. 'claude-sonnet-4-6' "
+                                    "(default), 'gpt-4o', 'gemini/gemini-2.0-flash', "
+                                    "'ollama/llama3' (local, no API key)"),
 ):
     """Generate Show HN post and GitHub Release notes, with copy-paste and browser AI options."""
     from genesis_architect import config as cfg
@@ -208,9 +245,25 @@ def publish(
 
     def llm_fn(prompt):
         return llm.ask(prompt, model=model, api_key=llm_api_key)
-    content = publish_agent.generate_publish_content(data, llm_fn)
+    try:
+        content = publish_agent.generate_publish_content(data, llm_fn)
+    except llm.LLMError as e:
+        typer.echo(f"\n{e}", err=True)
+        typer.echo("Check your key with: genesis config get LLM_API_KEY", err=True)
+        raise typer.Exit(1)
 
     typer.echo(publish_agent.format_output(content, version=data["version"], psr_assets=psr))
+
+
+@app.command()
+def resolve(
+    query: list[str] = typer.Argument(..., help="What you're stuck on, e.g. path traversal python"),
+):
+    """Look up a known solution — local vault first, falls back to Stack Overflow."""
+    from genesis_architect.core.resolve_engine import resolve_with_output
+
+    text = resolve_with_output(" ".join(query))
+    typer.echo(f"\n{text}\n")
 
 
 @app.command()
@@ -246,8 +299,16 @@ def config(
 def research(
     topic: str = typer.Argument(..., help="Topic to research, or a video URL with --video"),
     video: bool = typer.Option(False, "--video", help="Deep video-to-pitfall analysis (Pro)"),
+    json_data: str = typer.Option(
+        None, "--json-data", help="Path to JSON file with pre-collected research data"
+    ),
 ):
-    """Research a topic. Use --video for Pro video-to-pitfall analysis."""
+    """Research a topic. Use --video for Pro video-to-pitfall analysis.
+
+    Multi-source research (Pro): checks the vault cache, then either prints a
+    data-collection guide or — with --json-data FILE — merges, ranks, and
+    returns a structured summary of pre-collected results.
+    """
     from genesis_architect.core import pro_bridge
 
     if video:
@@ -264,26 +325,26 @@ def research(
         return
 
     from genesis_architect.core import genesis_subcommands
-    raise typer.Exit(genesis_subcommands.cmd_research(topic))
+    raise typer.Exit(genesis_subcommands.cmd_research(topic, json_data=json_data))
 
 
 @app.command()
 def upgrade():
-    """Show Pro status and how to unlock advanced features."""
+    """Show install status. There is no paid tier - everything is included."""
     from genesis_architect.core import pro_bridge
 
-    if pro_bridge.pro_licensed():
-        typer.echo("Genesis Architect Pro: installed and licensed. All features unlocked.")
-    elif pro_bridge.pro_installed():
-        typer.echo("Pro is installed but not licensed.")
-        typer.echo("Set GENESIS_PRO_LICENSE=<your-key>.")
-        typer.echo(f"Get a license: {pro_bridge.UPGRADE_URL}")
+    if pro_bridge.pro_installed():
+        typer.echo("Genesis Architect is free and open source (AGPL-3.0).")
+        typer.echo("Every engine is included in this install - nothing is gated:")
+        typer.echo("multi-source research, pitfall ranking, video-to-pitfall,")
+        typer.echo("cross-session memory, the decision engine, and the Companion.")
+        typer.echo("")
+        typer.echo("Update to the latest release:  pip install -U genesis-architect")
+        typer.echo(f"Source: {pro_bridge.PROJECT_URL}")
     else:
-        typer.echo("Pro is not installed. The free core covers scaffolding and")
-        typer.echo("the top 3 GitHub pitfalls. Pro adds multi-source research,")
-        typer.echo("pitfall ranking, video-to-pitfall, and cross-session memory.")
-        typer.echo("Install: pip install genesis-architect-pro")
-        typer.echo(f"Learn more: {pro_bridge.UPGRADE_URL}")
+        typer.echo("The engine layer could not be imported - the install looks broken.")
+        typer.echo("Try: pip install --force-reinstall genesis-architect")
+        typer.echo(f"Issues: {pro_bridge.PROJECT_URL}/issues")
 
 
 def main():

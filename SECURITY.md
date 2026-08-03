@@ -2,17 +2,24 @@
 
 ## Supported Versions
 
-| Version | Supported |
-|---------|-----------|
-| 2.1.x   | Yes       |
-| 2.0.x   | Yes       |
-| < 2.0   | No        |
+| Version | Supported | Notes |
+|---------|-----------|-------|
+| 8.x     | Yes       | Current. Single package, AGPL-3.0, no paid tier. |
+| 5.4.x   | Security fixes only | Last open-core release (MIT). |
+| < 5.4   | No        | |
+
+The separate `genesis-architect-pro` package is discontinued as of v8.0.0. Its
+code is now part of this package. If you are still running it, upgrade with
+`pip uninstall genesis-architect-pro && pip install -U genesis-architect`.
 
 ## Reporting a Vulnerability
 
 Please do NOT open a public GitHub issue for security vulnerabilities.
 
-Report privately via GitHub: go to the Security tab and click "Report a vulnerability."
+Report privately via GitHub: open the
+[Security tab](https://github.com/maioio/genesis-architect/security/advisories/new)
+and click "Report a vulnerability". If that is unavailable to you, email
+**maio.eshet@gmail.com**.
 
 Include:
 - Description of the vulnerability
@@ -20,7 +27,29 @@ Include:
 - Potential impact
 - Suggested fix (if any)
 
-You will receive a response within 48 hours.
+You will receive a response within 48 hours, and a status update at least every
+7 days until the report is resolved. Please give us 90 days before public
+disclosure. Reporters are credited in the advisory unless they prefer otherwise.
+
+## What is in scope
+
+Genesis reads source code, calls external APIs, and writes files. The areas
+most worth scrutiny:
+
+- **Path handling.** Scaffolding and analysis write into user-supplied
+  directories. Path traversal outside the target root is a vulnerability.
+- **Code execution.** Genesis never executes code from analyzed repositories.
+  A report showing otherwise is in scope.
+- **Secrets handling.** The secrets scanner must redact everything it finds and
+  must never write an unredacted secret to disk or to a report.
+- **The provisioning path.** `genesis companion --ui` can install packages with
+  pip. Anything that lets a third party influence what gets installed is in
+  scope. Disable it with `GENESIS_NO_AUTO_INSTALL=1`.
+- **Prompt injection** from mined issue text influencing generated code in a
+  way that harms the user.
+
+Out of scope: vulnerabilities in the projects Genesis analyzes, and findings
+that require an already-compromised local machine.
 
 ## Security Defaults in Generated Scaffolds
 

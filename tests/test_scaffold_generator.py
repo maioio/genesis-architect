@@ -334,3 +334,42 @@ class TestMain:
             "--output", str(tmp_path),
         ]):
             main()   # should not raise
+
+
+# ---------------------------------------------------------------------------
+# Packaging guard
+#
+# scaffold_generator loads the layout catalog at IMPORT time. If the packaged
+# copy stops shipping, the installed module becomes unimportable and
+# `genesis init` dies for every user - a failure that never shows up when
+# running the tests from a repo checkout. These tests pin that down.
+# ---------------------------------------------------------------------------
+
+class TestLayoutCatalogPackaging:
+    def test_packaged_catalog_exists(self):
+        """The catalog must live inside the package, not just in references/."""
+        from genesis_architect.core.scaffold_generator import _TOML_PATH
+        assert _TOML_PATH.is_file(), (
+            f"{_TOML_PATH} is missing. It must ship as package data - see "
+            "[tool.setuptools.package-data] in pyproject.toml."
+        )
+
+    def test_packaged_catalog_matches_references_copy(self):
+        """references/ is the human-editable copy; the packaged one is what
+        actually ships. They must never drift apart."""
+        from genesis_architect.core.scaffold_generator import _TOML_PATH
+        repo_copy = ROOT / "references" / "folder-structures.toml"
+        if not repo_copy.is_file():
+            pytest.skip("references/ copy not present in this checkout")
+        assert _TOML_PATH.read_bytes() == repo_copy.read_bytes(), (
+            "references/folder-structures.toml and "
+            "src/genesis_architect/core/data/folder-structures.toml have drifted. "
+            "Copy the references/ version over the packaged one."
+        )
+
+    def test_catalog_resolves_without_a_repo_checkout(self, monkeypatch):
+        """Simulate an installed wheel: no repo root above the package."""
+        from genesis_architect.core import scaffold_generator as sg
+        monkeypatch.setattr(sg, "_REPO_TOML_PATH", ROOT / "does-not-exist.toml")
+        assert sg._structures_path() == sg._TOML_PATH
+        assert sg._load_structures()  # must still parse

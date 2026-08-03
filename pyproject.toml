@@ -4,20 +4,84 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "genesis-architect"
-version = "5.4.1"
-description = "The AI Software Architect that researches before it builds - and partners with you on every major decision."
+version = "8.0.0"
+description = "Research before you build. Genesis Architect mines real GitHub issues, forks and post-mortems to find the failures others hit building what you are building - then scaffolds a project with those mitigations already in place."
 readme = "README.md"
 requires-python = ">=3.11"
+license = { text = "AGPL-3.0-or-later" }
+authors = [{ name = "Maio Eshet" }]
+keywords = [
+    "architecture", "scaffolding", "code-analysis", "static-analysis",
+    "technical-debt", "cli", "developer-tools", "ai", "llm", "c4",
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Quality Assurance",
+    "Topic :: Software Development :: Code Generators",
+    "Typing :: Typed",
+]
 dependencies = [
     "typer>=0.12",
     "anthropic>=0.40,<1.0",
+    "litellm>=1.50",
 ]
+
+[project.urls]
+Homepage = "https://github.com/maioio/genesis-architect"
+Repository = "https://github.com/maioio/genesis-architect"
+Issues = "https://github.com/maioio/genesis-architect/issues"
+Changelog = "https://github.com/maioio/genesis-architect/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
 dev = ["pytest>=8", "ruff>=0.4", "pytest-cov>=5"]
 
+# --- Optional subsystems -------------------------------------------------
+# Everything below is optional. The code degrades gracefully without these
+# and prints the matching `pip install genesis-architect[<extra>]` hint.
+tui = ["rich>=13"]
+companion = ["plyer>=2.1"]
+streaming = ["websockets>=12"]
+committee = ["anthropic>=0.40"]
+voice = [
+    "faster-whisper>=1.0", "sounddevice>=0.4", "numpy>=1.24",
+    "webrtcvad-wheels>=2.0.10",
+    # VAD only (base package - no extras): a self-contained, ONNX-bundled neural
+    # VAD, much more accurate than webrtcvad/energy fallback at telling speech
+    # from noise. Deliberately NOT pipecat-ai[whisper] or [kokoro]: [whisper]
+    # just wraps the same faster-whisper already used directly above (no gain,
+    # only async-pipeline complexity); [kokoro] currently fails to install on
+    # Python >=3.14 (kokoro-onnx's numba pin has no 3.14 wheel yet).
+    "pipecat-ai>=1.7",
+]
+# Everything for the full desktop Companion experience.
+all = [
+    "plyer>=2.1", "rich>=13", "websockets>=12",
+    "faster-whisper>=1.0", "sounddevice>=0.4", "numpy>=1.24",
+    "webrtcvad-wheels>=2.0.10", "pipecat-ai>=1.7", "anthropic>=0.40",
+    # kokoro >=0.8 pins Python <3.13 - 0.7.x is the newest that installs everywhere.
+    "kokoro>=0.7", "soundfile>=0.12", "sherpa-onnx>=1.10",
+    # Native floating window (frameless, always-on-top) for the Companion panel.
+    "pywebview>=5.0",
+]
+
 [project.scripts]
-genesis = "genesis_architect.cli:main"
+genesis = "genesis_architect.cli_entry:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+# Read at import time - if these stop shipping, the installed package breaks.
+"genesis_architect.core" = ["data/*.toml"]
+"genesis_architect.pro" = ["data/*.json"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

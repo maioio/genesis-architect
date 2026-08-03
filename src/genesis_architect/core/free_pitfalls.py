@@ -1,12 +1,12 @@
-"""Free-tier pitfall hook.
+"""Lightweight pitfall hook.
 
-The free core gives users a real taste of Genesis: the top GitHub pitfalls
-from similar repos. It uses simple engagement ordering only. The Pro
-ranking algorithm (multi-source merge, recency/corroboration scoring,
-video and registry signals) lives in genesis-architect-pro.
+Returns the top GitHub pitfalls from similar repos using simple engagement
+ordering. It is intentionally cheap and dependency-free, which makes it the
+right choice for fast paths and previews.
 
-This is deliberately capped so the free experience shows value without
-exposing the moat.
+For the full picture use :mod:`genesis_architect.pro.research_orchestrator`,
+which does a multi-source merge with recency/corroboration scoring plus video
+and registry signals. Both ship in this package - nothing here is gated.
 """
 
 from __future__ import annotations

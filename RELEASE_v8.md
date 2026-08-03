@@ -17,6 +17,37 @@ is up.
 
 ---
 
+## 0. Current state
+
+PR [#31](https://github.com/maioio/genesis-architect/pull/31) is open and every
+required check passes:
+
+| Check | Result |
+|---|---|
+| Quality Gates (py3.11 / 3.12 / 3.13) | pass |
+| Quality Gates (aggregate) | pass |
+| Tests (suite + CLI smoke + wheel acceptance, in Docker) | pass |
+| Build sdist + wheel | pass |
+| Secret Scanning | pass |
+| Code Scanning | pass |
+| Static Analysis (SonarCloud) | skipped, `SONAR_ENABLED` is not set |
+| Dependency Security (Snyk) | skipped, `SNYK_ENABLED` is not set |
+
+Sonar and Snyk are gated behind repository variables and are skipped, which
+still satisfies branch protection. Enable them by setting `SONAR_ENABLED` /
+`SNYK_ENABLED` to `true` in repository variables and adding the matching
+secrets, if you want them running.
+
+The `CodeQL` check (GitHub's default setup, separate from the `Code Scanning`
+job) reported 3 high-severity alerts when the engine code was scanned for the
+first time. Those were real and are fixed: URL sources were classified by
+substring, so `https://evil.test/reddit.com/x` could borrow reddit's
+credibility weighting. Four remaining error-level alerts were
+`py/non-iterable-in-for-loop` on `for mode in GDEMode:`, a false positive
+(CodeQL does not resolve the enum metaclass); they are dismissed with that
+reasoning recorded. What is left is 26 notes and 6 warnings, all code-quality,
+no security severity.
+
 ## 1. Open the PR and let CI run
 
 ```bash

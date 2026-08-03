@@ -250,13 +250,10 @@ def cmd_research(topic: str, json_data: str | None = None) -> int:
 
     try:
         orchestrator = pro_bridge.get_pro_module("research_orchestrator")
-    except pro_bridge.ProUnavailable:
-        print(
-            f"genesis research '{topic}': Pro is not installed or not licensed.\n"
-            "Install:  pip install genesis-architect-pro\n"
-            "License:  set GENESIS_PRO_LICENSE=<your-key>",
-            file=sys.stderr,
-        )
+    except pro_bridge.ProUnavailable as exc:
+        # Not a paywall - the engines ship in this package, so this only fires
+        # on a broken or partial install.
+        print(f"genesis research '{topic}': {exc}", file=sys.stderr)
         return 2
 
     cwd = Path.cwd()

@@ -14,13 +14,37 @@ import re
 import sys
 from pathlib import Path
 
-# Single source of truth: references/folder-structures.toml
-# Loaded once at import time via tomllib (Python 3.11+ stdlib).
-_TOML_PATH = Path(__file__).parent.parent.parent.parent / "references" / "folder-structures.toml"
+# Single source of truth for the scaffold layouts, shipped as package data so
+# it resolves from an installed wheel and not just from a repo checkout.
+#
+# This MUST stay package-relative: it is read at import time, so a path that
+# only exists in the source tree makes the installed module unimportable and
+# takes `genesis init` down with it.
+_TOML_PATH = Path(__file__).with_name("data") / "folder-structures.toml"
+
+# Repo checkouts keep the human-editable copy under references/. Fall back to
+# it when the packaged copy is absent (e.g. an editable install made before
+# the data file was added).
+_REPO_TOML_PATH = (
+    Path(__file__).parent.parent.parent.parent / "references" / "folder-structures.toml"
+)
+
+
+def _structures_path() -> Path:
+    """Resolve the layout catalog, preferring the packaged copy."""
+    if _TOML_PATH.is_file():
+        return _TOML_PATH
+    if _REPO_TOML_PATH.is_file():
+        return _REPO_TOML_PATH
+    raise FileNotFoundError(
+        f"Scaffold layout catalog not found at {_TOML_PATH} or {_REPO_TOML_PATH}. "
+        "This usually means a broken install - try: "
+        "pip install --force-reinstall genesis-architect"
+    )
 
 
 def _load_structures() -> dict:
-    """Load STRUCTURES from references/folder-structures.toml using stdlib tomllib."""
+    """Load STRUCTURES from the layout catalog using stdlib tomllib."""
     try:
         import tomllib  # Python 3.11+
     except ImportError:
@@ -31,7 +55,7 @@ def _load_structures() -> dict:
                 "tomllib is required (stdlib in Python 3.11+). "
                 "On Python 3.10 or earlier, install 'tomli': pip install tomli"
             )
-    with open(_TOML_PATH, "rb") as f:
+    with open(_structures_path(), "rb") as f:
         raw = tomllib.load(f)
     # raw shape: {language: {tier: {files: [...]}}}
     # Normalise to {language: {tier: [files]}}

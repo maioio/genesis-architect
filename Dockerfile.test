@@ -1,0 +1,52 @@
+# Reproducible test + smoke-check environment for Genesis Architect.
+#
+#   docker build -f Dockerfile.test -t genesis-test .
+#   docker run --rm genesis-test              # full suite + CLI smoke tests
+#   docker run --rm genesis-test pytest -q    # just the suite
+#
+# Deliberately installs from the packaged project (not a bind mount) so this
+# exercises the same path a user gets from `pip install genesis-architect`.
+ARG PYTHON_VERSION=3.11
+FROM python:${PYTHON_VERSION}-slim
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+# git is a real runtime dependency: the history-intelligence engines shell out
+# to it. Without it those engines degrade instead of being exercised.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends git \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+COPY pyproject.toml README.md ./
+COPY src/ ./src/
+
+RUN pip install --no-cache-dir -e ".[dev]"
+
+COPY tests/ ./tests/
+COPY scripts/ ./scripts/
+
+# Repo fixtures the suite asserts against (docs contracts, example projects,
+# templates). These are part of the project under test, not package data - if
+# they are missing the tests fail with confusing FileNotFoundErrors.
+COPY SKILL.md ./
+COPY references/ ./references/
+COPY examples/ ./examples/
+COPY assets/ ./assets/
+
+COPY docker/smoke_test.sh /usr/local/bin/smoke_test
+RUN chmod +x /usr/local/bin/smoke_test
+
+# Auto-provisioning shells out to pip and mutates this environment; a test run
+# must be reproducible and offline-safe.
+ENV GENESIS_NO_AUTO_INSTALL=1
+
+# Engines that read git history need a repo to look at.
+RUN git config --global user.email "ci@genesis.local" \
+    && git config --global user.name "Genesis CI" \
+    && git config --global init.defaultBranch main
+
+CMD ["smoke_test"]

@@ -453,15 +453,17 @@ class TestCmdCheck:
 class TestSubcommandStubs:
     """Tests for genesis research (real, Pro-bridged) and genesis harden (still a stub)."""
 
-    def test_cmd_research_without_pro_returns_2(self, capsys, monkeypatch):
+    def test_cmd_research_with_broken_install_returns_2(self, capsys, monkeypatch):
+        """The engines ship in-package, so the only failure mode left is a
+        broken install - and the message must not imply a paywall."""
         from genesis_architect.core import pro_bridge
         from genesis_architect.core.genesis_subcommands import cmd_research
         monkeypatch.setattr(pro_bridge, "pro_installed", lambda: False)
-        monkeypatch.setattr(pro_bridge, "pro_licensed", lambda: False)
         rc = cmd_research("gpx parsing")
         assert rc == 2
-        err = capsys.readouterr().err
-        assert "not installed" in err.lower() or "not licensed" in err.lower()
+        err = capsys.readouterr().err.lower()
+        assert "broken or partial install" in err
+        assert "licen" not in err
 
     def test_cmd_research_no_cache_no_json_data_prints_collection_guide(self, capsys, monkeypatch):
         from genesis_architect.core import pro_bridge

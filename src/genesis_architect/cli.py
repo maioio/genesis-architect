@@ -330,21 +330,21 @@ def research(
 
 @app.command()
 def upgrade():
-    """Show Pro status and how to unlock advanced features."""
+    """Show install status. There is no paid tier - everything is included."""
     from genesis_architect.core import pro_bridge
 
-    if pro_bridge.pro_licensed():
-        typer.echo("Genesis Architect Pro: installed and licensed. All features unlocked.")
-    elif pro_bridge.pro_installed():
-        typer.echo("Pro is installed but not licensed.")
-        typer.echo("Set GENESIS_PRO_LICENSE=<your-key>.")
-        typer.echo(f"Get a license: {pro_bridge.UPGRADE_URL}")
+    if pro_bridge.pro_installed():
+        typer.echo("Genesis Architect is free and open source (AGPL-3.0).")
+        typer.echo("Every engine is included in this install - nothing is gated:")
+        typer.echo("multi-source research, pitfall ranking, video-to-pitfall,")
+        typer.echo("cross-session memory, the decision engine, and the Companion.")
+        typer.echo("")
+        typer.echo("Update to the latest release:  pip install -U genesis-architect")
+        typer.echo(f"Source: {pro_bridge.PROJECT_URL}")
     else:
-        typer.echo("Pro is not installed. The free core covers scaffolding and")
-        typer.echo("the top 3 GitHub pitfalls. Pro adds multi-source research,")
-        typer.echo("pitfall ranking, video-to-pitfall, and cross-session memory.")
-        typer.echo("Install: pip install genesis-architect-pro")
-        typer.echo(f"Learn more: {pro_bridge.UPGRADE_URL}")
+        typer.echo("The engine layer could not be imported - the install looks broken.")
+        typer.echo("Try: pip install --force-reinstall genesis-architect")
+        typer.echo(f"Issues: {pro_bridge.PROJECT_URL}/issues")
 
 
 def main():

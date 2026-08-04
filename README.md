@@ -21,7 +21,7 @@ modules are too fragile to touch.
 [![PyPI](https://img.shields.io/pypi/v/genesis-architect?style=flat-square)](https://pypi.org/project/genesis-architect/)
 [![Python](https://img.shields.io/pypi/pyversions/genesis-architect?style=flat-square)](https://pypi.org/project/genesis-architect/)
 [![License: AGPL v3](https://img.shields.io/badge/license-AGPL--3.0-blue?style=flat-square)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-2295-brightgreen?style=flat-square)](tests/)
+[![Tests](https://img.shields.io/badge/tests-2337-brightgreen?style=flat-square)](tests/)
 
 </div>
 

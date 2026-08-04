@@ -72,7 +72,7 @@ that was behind the paywall now ships in this package under AGPL-3.0.
 
 ### Verification
 
-2295 tests passing, 5 skipped, on a clean container install.
+2337 tests passing, 5 skipped, on a clean container install.
 
 ## [5.1.1] - 2026-05-30
 

@@ -233,10 +233,26 @@ def _():
 
 @check("Companion", "genesis companion --ui writes a working offline page")
 def _():
+    # Force the offline path: with websockets present this starts a real
+    # server and blocks forever, which is correct behaviour but not testable
+    # inline. The live server has its own checks below.
+    import builtins
     from genesis_architect.pro.gde_cli import cmd_companion_ui
+
+    real_import = builtins.__import__
+
+    def offline(name, *a, **k):
+        if "streaming.server" in name:
+            raise ImportError("forced offline for audit")
+        return real_import(name, *a, **k)
+
     d = TMP / "comp"
     d.mkdir(exist_ok=True)
-    rc = cmd_companion_ui(d, no_browser=True)
+    builtins.__import__ = offline
+    try:
+        rc = cmd_companion_ui(d, no_browser=True)
+    finally:
+        builtins.__import__ = real_import
     ui = d / ".genesis" / "ui" / "companion.html"
     assert rc == 0 and ui.is_file(), (rc, ui)
 
@@ -302,10 +318,9 @@ def _():
 
 @check("Companion", "engine event envelopes")
 def _():
-    from genesis_architect.pro.streaming.events import engine_start, engine_done, session_done
-    for fn in (engine_start, engine_done):
-        m = fn("import_graph")
-        assert m.type and m.id and m.ts
+    from genesis_architect.pro.streaming.events import engine_start, session_done
+    m = engine_start("import_graph", 1, 7)
+    assert m.type and m.id and m.ts
     assert session_done
 
 
@@ -315,10 +330,10 @@ def _():
 
 @check("Committee", "5 advisors defined")
 def _():
-    from genesis_architect.pro.engines.committee.advisors import ADVISORS
-    names = [getattr(a, "name", a) for a in (ADVISORS.values() if isinstance(ADVISORS, dict) else ADVISORS)]
+    from genesis_architect.pro.engines.committee.advisors import get_all_advisors
+    names = [a.name for a in get_all_advisors()]
     assert len(names) == 5, names
-    return ("PASS", ", ".join(str(n) for n in names))
+    return ("PASS", ", ".join(names))
 
 
 @check("Committee", "manufactured-consensus detection")
@@ -351,9 +366,9 @@ def _():
 def _():
     from genesis_architect.pro.architecture_scorer import score_project
     s = score_project(PROJECT)
-    val = s.get("score") if isinstance(s, dict) else s
-    assert 0 <= float(val) <= 100, s
-    return ("PASS", f"score={float(val):.1f}")
+    assert s["scored"] is True, s
+    assert 0 <= float(s["total"]) <= 100, s
+    return ("PASS", f"total={s['total']} over {s['module_count']} modules")
 
 
 @check("Analysis", "anti-pattern detectors find the planted god-class")
@@ -395,7 +410,7 @@ def _():
 @check("Analysis", "STRIDE + OWASP security docs")
 def _():
     from genesis_architect.pro.security_templates import generate_security_docs
-    out = generate_security_docs(project_type="api")
+    out = generate_security_docs(PROJECT, write=False)
     text = out if isinstance(out, str) else json.dumps(out, default=str)
     assert "STRIDE" in text or "Spoofing" in text, text[:200]
 
@@ -412,9 +427,8 @@ def _():
 
 @check("Analysis", "git churn / bus-factor on real history")
 def _():
-    from genesis_architect.pro.git_analyzer import per_module_churn, build_timeline
+    from genesis_architect.pro.git_analyzer import per_module_churn
     churn = per_module_churn(PROJECT)
-    build_timeline(PROJECT)
     assert churn is not None
     return ("PASS", f"churn computed for {len(churn) if hasattr(churn,'__len__') else '?'} modules")
 
@@ -436,7 +450,7 @@ def _():
 @check("Analysis", "decay forecast from score history")
 def _():
     from genesis_architect.pro.decay_regressor import forecast_from_history
-    hist = [{"timestamp": f"2026-0{i}-01T00:00:00Z", "score": 90 - i * 4} for i in range(1, 7)]
+    hist = [{"timestamp": f"2026-0{i}-01T00:00:00Z", "total": 90 - i * 4} for i in range(1, 7)]
     fc = forecast_from_history(hist)
     assert fc is not None, "no forecast from a clearly declining history"
     return ("PASS", "declining trend detected and forecast produced")
@@ -565,20 +579,25 @@ def _():
 
 @check("Engine", "telemetry is off by default")
 def _():
-    from genesis_architect.pro import telemetry as t
+    from genesis_architect.pro.product_intelligence import is_enabled, needs_consent_prompt
     d = TMP / "tele"
     d.mkdir(exist_ok=True)
-    fns = [f for f in dir(t) if not f.startswith("_")]
-    assert fns
-    return ("PASS", "telemetry module present, opt-in")
+    assert is_enabled(d) is False, "telemetry must default to off"
+    assert needs_consent_prompt(d) is True
+    return ("PASS", "off by default, consent required")
 
 
 # =====================================================================
 # CLI surface
 # =====================================================================
 
+_GENESIS = str(Path(sys.executable).with_name("genesis.exe"))
+if not Path(_GENESIS).exists():
+    _GENESIS = str(Path(sys.executable).with_name("genesis"))
+
+
 def _cli(args, expect_zero=True):
-    p = subprocess.run(["genesis", *args], capture_output=True, text=True, timeout=60)
+    p = subprocess.run([_GENESIS, *args], capture_output=True, text=True, timeout=60)
     if expect_zero and p.returncode != 0:
         raise AssertionError(f"exit {p.returncode}: {(p.stderr or p.stdout)[:200]}")
     return p
@@ -637,13 +656,13 @@ def _():
 
 @check("CLI", "genesis explain")
 def _():
-    subprocess.run(["genesis", "explain", "--dir", str(PROJECT)],
+    subprocess.run([_GENESIS, "explain", "--dir", str(PROJECT)],
                    capture_output=True, text=True, timeout=60)
 
 
 @check("CLI", "genesis resolve (delegates to core)")
 def _():
-    p = subprocess.run(["genesis", "resolve", "path", "traversal", "python"],
+    p = subprocess.run([_GENESIS, "resolve", "path", "traversal", "python"],
                        capture_output=True, text=True, timeout=60)
     assert p.returncode == 0, p.stderr[:200]
 
@@ -655,7 +674,7 @@ def _():
 
 @check("CLI", "genesis init requires a key rather than failing obscurely")
 def _():
-    p = subprocess.run(["genesis", "init", "a python cli"], input="",
+    p = subprocess.run([_GENESIS, "init", "a python cli"], input="",
                        capture_output=True, text=True, timeout=60)
     out = (p.stdout + p.stderr).lower()
     assert "key" in out or "llm" in out or "config" in out, out[:300]
@@ -664,7 +683,7 @@ def _():
 
 @check("CLI", "unknown command is rejected cleanly")
 def _():
-    p = subprocess.run(["genesis", "totallyfake"], capture_output=True, text=True, timeout=60)
+    p = subprocess.run([_GENESIS, "totallyfake"], capture_output=True, text=True, timeout=60)
     assert p.returncode != 0 and "unknown" in (p.stdout + p.stderr).lower()
 
 

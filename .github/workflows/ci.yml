@@ -282,7 +282,7 @@ jobs:
           python -m pytest tests/ -q --cov=scripts --cov-report=xml:coverage.xml
 
       - name: SonarCloud Scan
-        uses: SonarSource/sonarqube-scan-action@v8
+        uses: SonarSource/sonarqube-scan-action@22918119ff8e1ca75a623e15c8296b6ea4fbe28f # v8.2.1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -306,7 +306,7 @@ jobs:
         run: pip install -e ".[dev]" -q
 
       - name: Run Snyk scan
-        uses: snyk/actions/python@master
+        uses: snyk/actions/python@8e119fbb6c251787721d34ba683ed48eba792766 # master
         continue-on-error: true
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}

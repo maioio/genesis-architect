@@ -16,8 +16,14 @@ program. If not, see <https://www.gnu.org/licenses/>.
 
 from pathlib import Path
 
-__version__ = "8.0.0"
+__version__ = "8.0.1"
 __license__ = "AGPL-3.0-or-later"
+
+
+def _short(text: str, limit: int = 60) -> str:
+    """One-line, length-capped echo of user input for error messages."""
+    text = " ".join(text.split())
+    return text if len(text) <= limit else text[:limit].rstrip() + "..."
 
 
 def scaffold(vision: str, output_dir: str | Path, *, name: str | None = None,
@@ -54,8 +60,21 @@ def scaffold(vision: str, output_dir: str | Path, *, name: str | None = None,
         repos = github.search_repos(vision, token=github_token, limit=15, language=language)
     except GitHubRateLimitError as exc:
         raise RuntimeError(str(exc)) from exc
+    except github.GitHubQueryError as exc:
+        raise RuntimeError(str(exc)) from exc
     if not repos:
-        raise RuntimeError(f"No GitHub repos found for '{vision}'. Try a more specific vision.")
+        # The usual cause is the opposite of "too vague": a long, highly
+        # specific vision gets trimmed to fit GitHub's query limit and still
+        # matches nothing. Advising more specificity here sends people the
+        # wrong way, so describe the actual fix.
+        raise RuntimeError(
+            f"No GitHub repos matched '{_short(vision)}'.\n"
+            "Genesis searches for existing projects solving the same problem, "
+            "so a very long or very niche description finds nothing.\n"
+            "Try naming the core thing you are building in a few words, for "
+            "example 'python multi-agent orchestration' rather than a full "
+            "paragraph. You can keep the detailed vision for the build itself."
+        )
 
     all_issues: list[dict] = []
     for repo in repos[:5]:

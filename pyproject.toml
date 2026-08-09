@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "genesis-architect"
-version = "8.0.0"
+version = "8.0.1"
 description = "Research before you build. Genesis Architect mines real GitHub issues, forks and post-mortems to find the failures others hit building what you are building - then scaffolds a project with those mitigations already in place."
 readme = "README.md"
 requires-python = ">=3.11"

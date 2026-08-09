@@ -1,0 +1,30 @@
+# Full-capability audit image.
+#
+#   docker build -f Dockerfile.capabilities -t genesis-caps .
+#   docker run --rm genesis-caps
+#
+# Installs genesis-architect[all] from PyPI exactly as a user would, then
+# exercises every capability the website claims. Nothing is mocked except the
+# things that physically cannot exist in a container (a microphone, a speaker)
+# and network calls that need a paid API key.
+FROM python:3.11-slim
+
+ENV PYTHONUNBUFFERED=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    GENESIS_NO_AUTO_INSTALL=1
+
+# git for history engines, ffmpeg for the video pipeline, libsndfile for audio.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends git ffmpeg libsndfile1 \
+    && rm -rf /var/lib/apt/lists/*
+
+# From PyPI, not the source tree: this audits the published artifact.
+RUN pip install --no-cache-dir genesis-architect
+
+WORKDIR /audit
+COPY docker/capability_audit.py /audit/capability_audit.py
+
+RUN git config --global user.email "audit@genesis.local" \
+    && git config --global user.name "Genesis Audit"
+
+CMD ["python", "/audit/capability_audit.py"]

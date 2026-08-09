@@ -603,13 +603,11 @@ def gde_run_committee_analysis(ctx: SessionContext) -> dict[str, Any]:
                     f" Note: the following lenses show divergent signals: {', '.join(divergent)}."
                 )
 
-            # Detect license tier from ctx session memory
-            license_tier = ctx.session_memory.get("license_tier", "free")
-            profile = (
-                TransparencyProfile.PRO
-                if license_tier == "pro"
-                else TransparencyProfile.FREE
-            )
+            # Genesis has no tiers any more, so everyone gets the full
+            # transcript and reasoning. This used to branch on a license tier
+            # read from session memory: a leftover of the paid product that
+            # quietly withheld transparency from free users.
+            profile = TransparencyProfile.PRO
 
             request = CommitteeRequest(
                 question=question,
@@ -661,12 +659,26 @@ def gde_run_committee_analysis(ctx: SessionContext) -> dict[str, Any]:
 
         except Exception as exc:
             warnings.append(f"Committee engine unavailable, falling back: {exc}")
+    elif perspectives:
+        # The advisor debate needs an LLM. Skipping it silently made the
+        # fallback look like a Committee run: users reported seeing three code
+        # perspectives where five debating advisors were advertised.
+        warnings.append(
+            "The 5-advisor debate did not run: no ANTHROPIC_API_KEY is set. "
+            "What follows is an aggregation of the analysis engines, not a "
+            "Committee debate. Set ANTHROPIC_API_KEY to enable it."
+        )
 
-    # --- Legacy fallback: perspective aggregation only ---
+    # --- Fallback: perspective aggregation only, clearly labelled as such ---
     if not perspectives:
         warnings.append("no upstream engine results to consolidate — run analysis engines first")
 
-    report_lines = [f"# Committee Analysis — {project_dir.name}\n"]
+    report_lines = [
+        f"# Engine Perspectives — {project_dir.name}\n",
+        "\n_This is an aggregation of the analysis engines, not a Committee "
+        "debate. The 5-advisor debate requires an LLM; set ANTHROPIC_API_KEY "
+        "to enable it._\n",
+    ]
     for p in perspectives:
         report_lines.append(f"\n## {p['lens']} Perspective\n{p['summary']}")
     if divergent:
@@ -674,7 +686,16 @@ def gde_run_committee_analysis(ctx: SessionContext) -> dict[str, Any]:
 
     rel_path = str(Path(".genesis") / "committee_report.md")
 
-    fallback_confidence = max(0.2, 1.0 - (0.10 * len(divergent)))
+    # Confidence used to start at 1.0 and only fall when lenses disagreed, so
+    # aggregating a handful of perspectives with nothing to disagree about
+    # reported total certainty - including on an empty project, where every
+    # engine trivially agrees because none of them found anything. Cap the
+    # fallback well below a real debate, and scale it by how much evidence
+    # actually came back.
+    evidence = sum(1 for p in perspectives if p.get("summary"))
+    fallback_confidence = round(
+        max(0.1, min(0.6, 0.15 * evidence) - 0.10 * len(divergent)), 2
+    )
     return {
         "perspectives": perspectives,
         "perspective_count": len(perspectives),

@@ -80,8 +80,19 @@ def init(
     except GitHubRateLimitError as e:
         typer.echo(str(e), err=True)
         raise typer.Exit(1)
+    except github.GitHubQueryError as e:
+        typer.echo(str(e), err=True)
+        raise typer.Exit(1)
     if not repos:
-        typer.echo("No repos found. Try a different vision description.", err=True)
+        typer.echo(
+            "No repos matched that description.\n"
+            "Genesis looks for existing projects solving the same problem, so a "
+            "very long or very niche description finds nothing. Try naming the "
+            "core thing you are building in a few words, for example\n"
+            "  genesis init python multi-agent orchestration\n"
+            "rather than a full paragraph.",
+            err=True,
+        )
         raise typer.Exit(1)
     for r in repos[:5]:
         typer.echo(f"  {r['name']} ({r['stars']} stars)")

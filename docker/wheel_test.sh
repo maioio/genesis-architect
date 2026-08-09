@@ -16,7 +16,14 @@ pass "clean environment, wheel only"
 
 step "Package metadata"
 version=$(python -c "import genesis_architect; print(genesis_architect.__version__)")
-[ "$version" = "8.0.0" ] || fail "expected version 8.0.0, got $version"
+# Checked against the installed distribution metadata rather than a literal,
+# so a release bump does not require editing this file. What matters is that
+# __version__ and the packaged metadata agree: a mismatch means the wheel was
+# built from a tree where one of them was not updated.
+dist_version=$(python -c "from importlib.metadata import version; print(version('genesis-architect'))")
+[ -n "$version" ] || fail "__version__ is empty"
+[ "$version" = "$dist_version" ] \
+  || fail "__version__ ($version) disagrees with package metadata ($dist_version)"
 pass "version $version"
 
 license=$(python -c "import genesis_architect; print(genesis_architect.__license__)")

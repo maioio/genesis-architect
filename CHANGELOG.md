@@ -9,6 +9,44 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+## [8.0.1] - 2026-08-09
+
+First field report against 8.0.0, from someone running it on a real project.
+Four fixes, three of which were the tool quietly overstating its own results.
+
+### Fixed
+
+- **`genesis init` crashed on a long vision.** GitHub caps search queries at
+  256 characters and answers anything longer with HTTP 422, which surfaced as
+  a bare `HTTPError` traceback. Queries are now trimmed on a word boundary
+  before the call, and a 422 that still gets through raises an explanation
+  rather than a stack trace.
+- **The "no repos found" advice pointed the wrong way.** It said "try a more
+  specific vision" when over-specificity is exactly what causes an empty
+  result. It now explains that Genesis searches for existing projects solving
+  the same problem, so a paragraph-length description finds nothing.
+- **An empty project scored a perfect 100/100.** Every dimension scores
+  "100 minus penalties", so a directory with nothing to analyse collected no
+  penalties and reported flawless architecture, with 0.65 confidence attached
+  to zero evidence. An unanalysable project is now reported as unscored, with
+  the reason, and confidence for zero modules is 0.0.
+- **The Committee silently degraded.** Without `ANTHROPIC_API_KEY` the
+  5-advisor debate is skipped and the engine aggregates analysis perspectives
+  instead, which it then reported at up to 100% confidence under a heading
+  reading "Committee Analysis". The fallback now says plainly that no debate
+  ran, is titled "Engine Perspectives", and is capped well below the
+  confidence of a real debate.
+
+### Changed
+
+- Removed a leftover of the paid tier: the Committee chose its transparency
+  profile from a `license_tier` in session memory, withholding the full
+  transcript from "free" users. There are no tiers, so everyone gets it.
+
+### Verification
+
+2358 tests passing.
+
 ## [8.0.0] - 2026-08-03
 
 **Genesis Architect is now entirely free and open source.**

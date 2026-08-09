@@ -268,8 +268,25 @@ def score_project(project_path: str | Path, profile: str | None = None,
     penalty = _cycle_penalty(len(cycles))
     total = max(0, round(weighted - penalty))
 
+    # Every dimension scores "100 minus penalties", so a project with nothing
+    # to analyse collects no penalties and lands on a perfect 100. That is a
+    # false green: an empty directory, a mistyped --dir, or a language the
+    # import graph cannot parse would all report flawless architecture. Report
+    # it as unscored instead, so callers can say so rather than show a grade.
+    module_count = graph.get("module_count", len(modules))
+    scored = module_count > 0
+    if not scored:
+        total = None
+
     result = {
         "total": total,
+        "scored": scored,
+        "unscored_reason": (
+            None if scored else
+            "No analysable modules found. The directory may be empty, may not "
+            "contain source in a supported language (Python, TypeScript, "
+            "JavaScript, Go, Rust), or the path may be wrong."
+        ),
         "modularity": mod_score,
         "coupling": cpl_score,
         "cohesion": coh_score,

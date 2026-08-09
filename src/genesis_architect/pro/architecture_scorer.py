@@ -86,7 +86,17 @@ def _score_confidence(module_count: int, cycle_count: int,
 
     More modules → stronger signal. Historical comparisons → higher confidence.
     Many cycles → graph is uncertain → slightly lower confidence.
+
+    The floor matters as much as the ceiling: this used to start at 0.65 no
+    matter what, so a run that analysed nothing still claimed moderate
+    confidence. Confidence in a conclusion drawn from zero evidence is zero.
     """
+    if module_count == 0:
+        return 0.0, "0 modules analysed, nothing to draw a conclusion from"
+    if module_count < 3:
+        # A handful of files is a real but very weak signal.
+        return 0.3, f"only {module_count} module(s) analysed"
+
     base = 0.65
     if module_count >= 10:
         base += 0.05

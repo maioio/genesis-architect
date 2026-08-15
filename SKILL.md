@@ -69,6 +69,28 @@ When the user writes anything that is NOT an explicit `genesis` command, detect 
 
 ---
 
+## Evidence Discipline (governs every phase)
+
+Genesis already refuses to ship an architecture without verified issue URLs and a research floor. This extends that same standard to every sentence it writes.
+
+Every sentence stating a fact - in conversation, in RESEARCH.md, in PITFALLS.md, in a code comment - carries exactly one of three statuses. There is no fourth. An untagged claim of fact is a defect, the same class as a 404 issue URL.
+
+| Status | Means | Example |
+|---|---|---|
+| `(user)` | the user said it, this session | `Scale: production (user)` |
+| `(verified: [source])` | established this session from a named source: a tool call, a command, a file read, a URL fetched | `FastAPI 0.115 (verified: PyPI JSON API)` |
+| `[assumed: default X - if wrong: Y]` | a default, tagged, with the risk stated inline | `[assumed: Postgres - if wrong: swap the driver in Phase 6, no structural change]` |
+
+**Training data is never a valid source.** A version number, an API shape, a CLI flag or a config key that is only known from model memory is `[assumed]`, never `(verified)`. `(verified)` requires a concrete artifact from this session that could be shown to the user. This single rule is what separates a researched architecture from a confident-sounding one, and it is the claim the whole tool rests on.
+
+**Versions come from a lockfile, a registry API, or a live check.** Never from memory. Phase 2 already queries PyPI, npm and crates.io for velocity scoring - use those same responses as the source.
+
+**A default is not an invention.** Torn between stating an unverified fact and spending one of the 8 questions, do neither: adopt a default, tag it, add an Assumptions Ledger row. Silence and invention are both worse than a disclosed guess.
+
+**Before Phase 6, run the provenance scan.** Read back every factual sentence in the deliverables. Any untagged claim is either verified now or downgraded to `[assumed]`. Any `(verified)` whose source is "general knowledge" is downgraded.
+
+---
+
 ## Phase 0: Environment Probe
 
 Run `python scripts/env_probe.py` and parse the JSON. Fields: `os`, `wsl`, `python_version`, `package_managers.{python,node}`, `windows_scripts_path`. Store the result for use in Phases 3, 5, and 6. If the script fails (e.g. Python missing), ask once: "What OS and Python version are you on?"
@@ -123,14 +145,37 @@ Why C: [one sentence]. Risk otherwise: [one sentence]. Enter = accept C.
 
 ## Phase 1: Vision Alignment
 
-Ask 2-3 focused questions (A/B/C format, D = free-text):
+Four topics must be settled before research starts: core purpose, archetype, scale, language. Each is settled by a question, by a lookup, or by a tagged default. Never by a guess.
 
-**Q1** - Core purpose: "What does this project do? (one sentence)"
-**Q2** - Archetype (skip if obvious): "A: CLI (no server)  B: Library/SDK (no main())  C: Web Service/API (Dockerfile+/health)  D: Frontend (build pipeline)  E: Other"
-**Q3** - Scale: "A: Personal  B: Team  C: Production/enterprise  D: Other"
-**Q4** - Language (skip if clear): "A: JS/TS  B: Python  C: Let research decide  D: Other"
+### The question contract
 
-Wait for answers. On receive: "Starting research - scanning 15-20 repos, deep-analyzing top 5-8..."
+1. **One question per turn, always last in the message.** Exactly one question mark. A single "A or B" fork counts as one.
+2. **Every question ships a `Recommended:` line** - a concrete answer acceptable with one word, plus a one-line basis. A bare "yes" takes the recommendation, never the literal polarity of the question.
+3. **Show the budget.** Open each question turn with `Locked: [one line] | Open forks: [n] | Q[k]/8`. **Hard cap: 8 questions** across all phases, including Phase 3 language confirmation and the Phase 5 checkpoint. Target 3-5. Finishing in two with a tight architecture is success, not a shortcut.
+4. **Necessity test before every question.** Name the two architectures the answer forks between. Same architecture either way, or Phase 0/Phase 2 can answer it, then do not ask: decide, tag `[assumed]`, move on.
+5. **Look before asking.** Phase 0 probed the environment and Phase 2 will scan the ecosystem. A fact either of them settles is a lookup, not a question.
+
+### Turn shape
+
+```
+Locked: [what is settled] | Open forks: [n] | Q[k]/8
+[1-2 sentences naming the fork, citing any source]
+Q[k]. [one specific question]
+Recommended: [concrete answer] - [one-line basis].
+```
+
+### The four topics
+
+| Topic | Options | Default when not asked |
+|---|---|---|
+| Core purpose | free text, one sentence | never defaulted - always ask if unstated |
+| Archetype | A: CLI (no server)  B: Library/SDK (no main())  C: Web Service/API (Dockerfile + /health)  D: Frontend (build pipeline)  E: Other | infer from the vision, tag `[assumed]`, confirm in Phase 3 |
+| Scale | A: Personal  B: Team  C: Production/enterprise  D: Other | A for a solo vision, B when the user says "we", tag it |
+| Language | A: JS/TS  B: Python  C: Let research decide  D: Other | C - research decides, which is the honest answer |
+
+Every topic answered by default rather than asked gets an Assumptions Ledger row (see Mandatory Deliverables) and is confirmed at the Phase 5 checkpoint. A default is a disclosed decision; a guess presented as fact is a defect.
+
+On receiving the answers: "Starting research - scanning 15-20 repos, deep-analyzing top 5-8..."
 
 ---
 
@@ -191,6 +236,27 @@ On success: `python scripts/genesis_state.py write-phase3-validation .`
 ---
 
 ## Phase 4: Pitfall Identification
+
+Two sources, and they are not interchangeable. **Pitfalls** come from other people's repos: what went wrong for projects like this one. **Landmines** come from this user's context: the constraint that makes the obvious architecture the wrong one here. A project can have zero pitfalls and still be sunk by a landmine.
+
+### Landmine sweep (run before compiling pitfalls)
+
+Six probes. Each becomes a question only when it opens a fork expensive to get wrong, and it spends from the Phase 1 budget of 8. Otherwise it becomes a tagged default.
+
+| Probe | Asks | Detonates when |
+|---|---|---|
+| Runtime home | laptop, server, browser, phone, CI, embedded, air-gapped | the target cannot reach the network or a package registry |
+| Neighbors | versions, systems, file formats, APIs it must not break | an existing consumer constrains the interface |
+| Actors and load | who uses it, how many, how concurrently | production-sized data differs from the dev assumption |
+| Data gravity | where data lives, how much, who owns the source of truth | the data cannot move to where the design wants it |
+| Hard walls | compliance, PII, offline, budget, licensing, deadline, mandated or forbidden tech | a rule forbids the ecosystem's default answer |
+| Success shape | what the user will look at to judge it worked | the stated goal and the judged goal differ |
+
+**A detonated landmine must visibly change the architecture**, not get a sentence in the docs. "No internet on the factory floor" does not add a deployment note: it moves storage on-device, changes the dependency policy, and adds an offline smoke test. Re-run Phase 3 synthesis from the top when one fires.
+
+Record each in PITFALLS.md under a **Landmines and Adaptations** heading as `constraint -> what the architecture does about it`. When the sweep finds nothing, write "None found - probed: [the six]". An empty section is a silent omission; an explicit "none" is a finding.
+
+### Pitfalls from research
 
 Compile top pitfalls from the issue scan. For each pitfall write all of the following fields. Aim for 3-7 pitfalls.
 
@@ -263,6 +329,14 @@ Present research summary and architectural options in a **single message** conta
 
 **Section 5 - Phase 6 smoke gate**: `python scripts/scaffold_smoke_test.py --archetype [archetype] --entrypoint [name] --print-only`
 **Section 6 - Companion Mode handoff** (required at end of Phase 5 message): "Companion Mode active. Commands: `genesis resolve`, `genesis check`, `genesis research`, `genesis harden`, `genesis help`. Cache: `.genesis/vault/`."
+
+**Section 7 - The checkpoint (required, one question)**: one question is an invitation to falsify, and it is the counterweight to a user agreeing with everything so far. Before the A/B/C/D gate, name the assumption whose failure would most damage this architecture and ask whether it holds:
+
+> The claim most likely to sink this architecture is that [X].
+> Q[k]. Does it hold?
+> Recommended: it holds - [basis]. A bare "yes" confirms; if it is wrong, say what is true instead and I will re-synthesize from Phase 3.
+
+Pick X from the Assumptions Ledger by blast radius, not by doubt: the load-bearing assumption nobody has questioned is the dangerous one. Also list every `[assumed]` topic from Phase 1 here so any of them can be corrected in one word. Corrections are free and expected.
 
 **Hard gate**: user must confirm one of A, B, C, or D. Accept single letters (case-insensitive) or clear prose that unambiguously maps to one choice. If the prose is ambiguous, confirm: "I'll take that as [X] - correct?" and proceed on yes. After 3 unresolvable responses, ask: 'Start over from Phase 1? [Y/N]'. Do not start Phase 6 until confirmed.
 
@@ -369,7 +443,15 @@ After Phase 6, enter companion mode. Development Partner Rules remain active thr
 All files go inside the project directory. Everything must be Git-portable.
 **Privacy:** Environment-specific values from Phase 0 (Scripts paths, home directory paths, usernames embedded in paths) must appear as placeholders in deliverables: use `[Scripts path]`, `[home]`, etc. Never write the literal measured path into RESEARCH.md, PITFALLS.md, or ROADMAP.md - these files get committed to public repos.
 
-Use templates in `assets/RESEARCH.template.md`, `assets/PITFALLS.template.md`, `assets/ROADMAP.template.md`. Required RESEARCH.md sections: Executive Summary, Search Scope, Analyzed Repositories (min 5 rows), Market Landscape, Architecture Decision Rationale, Sources (min 3 links). Must contain "Genesis Architect" in header.
+Use templates in `assets/RESEARCH.template.md`, `assets/PITFALLS.template.md`, `assets/ROADMAP.template.md`. Required RESEARCH.md sections: Executive Summary, Search Scope, Analyzed Repositories (min 5 rows), Market Landscape, Architecture Decision Rationale, Sources (min 3 links), Assumptions Ledger. Must contain "Genesis Architect" in header.
+
+**Assumptions Ledger (required in RESEARCH.md).** Every default adopted without asking gets one row. This is the complete list of what Genesis decided on the user's behalf, and it is what makes the build readable by someone who was not in the conversation.
+
+| ID | Assumption | Basis | Blast radius if wrong | Where it is checked |
+|---|---|---|---|---|
+| A1 | [the default] | convention (verified: source) / stated stack (user) / ecosystem norm | what has to change | Phase 6 step, or ROADMAP phase |
+
+Reference rows inline elsewhere as `[A1]`. An empty ledger is only valid when every decision is `(user)` or `(verified)`; write "None - every decision is sourced" rather than deleting the section.
 
 ---
 

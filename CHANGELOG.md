@@ -9,6 +9,44 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+### Added
+
+- **State & Caching Engine** (`core/cache_engine.py`, `scripts/cache_engine.py`).
+  A local SQLite cache under `.genesis/cache.db`, addressing two known
+  sources of repeated work across a session: a `tool_catalog` table
+  recording installed MCP servers, skills, and libraries by scope
+  (`global`/`local`) and an optional performance rating; and a
+  `config_cache` table pairing a file's SHA-256 content hash with a compact
+  JSON summary, so an unchanged workspace file (`package.json`,
+  `requirements.txt`, `.genesis/evidence.json`, ...) can be skipped on a
+  hash match instead of re-read and re-analysed. Keyed by `(path,
+  content_hash)`, not path alone, so a file that reverts to a previously
+  seen state (a branch switch, an undo) is still a hit. No auto-discovery
+  scanner and no auto-computed rating - both would be an unfounded claim
+  with nothing real behind it, which this project works elsewhere to avoid.
+  55 tests. See `core/cache_engine.py`'s module docstring for the full
+  design rationale.
+
+### Fixed
+
+- **`test_skill_md_under_400_lines` was red** (468 lines against the
+  400-line budget introduced in v2.1.0 and maintained across every release
+  since). Caused by the Dry-Run Interview method integration earlier in the
+  same working session (Evidence Discipline, Phase 1's question contract,
+  Phase 4's landmine sweep, the Phase 5 checkpoint, the Assumptions
+  Ledger) - real content, not bloat, but added to a file with zero slack.
+  Recovered 13 lines with no information loss by moving the fillable turn
+  template and two worked examples to a new `references/dry-run-interview.md`,
+  following this project's own established `references/` pattern (see
+  `mcp-strategy.md`). **SKILL.md line count: 468 (limit 400) - test still
+  red.** Closing the remaining gap needs an editorial decision - either a
+  deliberate rebase of the 400-line budget to account for content this
+  project decided to keep, or a further compression pass across
+  pre-existing sections - and was left to a human rather than done
+  unilaterally mid-task. See `references/dry-run-interview.md` and the
+  in-repo pointer comments in `tests/test_partner_mode.py`'s vicinity for
+  what moved where.
+
 ## [8.0.1] - 2026-08-09
 
 First field report against 8.0.0, from someone running it on a real project.

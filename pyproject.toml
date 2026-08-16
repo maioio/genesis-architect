@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "genesis-architect-pro"
-version = "7.2.0"
-description = "Genesis Architect Pro - architecture analysis, anti-pattern detection, security hardening, C4 diagrams, deep research intelligence, a decision engine for every mode, and a voice-capable IDE-aware Companion. Requires a license."
+version = "8.0.0"
+description = "Genesis Architect Pro - architecture analysis, anti-pattern detection, security hardening, C4 diagrams, deep research intelligence, a decision engine for every mode, and a voice-capable IDE-aware Companion. Fully open source (AGPL-3.0)."
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [

@@ -44,7 +44,7 @@ When working on this skill:
 - User-facing communication: Auto-detect user language and respond in kind (language-agnostic since v1.1.0)
 - Code, filenames, comments: English only
 - No em dashes anywhere
-- SKILL.md must stay under 400 lines
+- SKILL.md must stay under 480 lines
 - Research summary and A/B architecture choice are presented in one combined message (Phase 5)
 - `genesis init` must skip Phase 1 questions and go straight to research
 

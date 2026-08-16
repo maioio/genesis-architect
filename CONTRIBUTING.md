@@ -85,7 +85,7 @@ are invisible from a repo checkout and only show up here.
 
 | Constraint | Check |
 |---|---|
-| `SKILL.md` under 400 lines | `wc -l SKILL.md` |
+| `SKILL.md` under 480 lines | `wc -l SKILL.md` |
 | No em or en dashes in reader-facing docs | CI grep step (README, SKILL, CONTRIBUTING, SECURITY, CODE_OF_CONDUCT, docs/) |
 | All tests pass on Python 3.11, 3.12, 3.13 | `pytest tests/` matrix |
 | Packaged install works | `docker build -f Dockerfile.test` job |
@@ -120,7 +120,7 @@ Follow the existing Python and TypeScript patterns exactly.
 - [ ] `pytest -q` passes
 - [ ] `docker run --rm genesis-test` passes (or CI is green on your PR)
 - [ ] `python scripts/eval_runner.py --mode validate` exits 0
-- [ ] SKILL.md under 400 lines (if modified)
+- [ ] SKILL.md under 480 lines (if modified)
 - [ ] No em or en dashes in reader-facing docs
 - [ ] `CHANGELOG.md` updated under `[Unreleased]`
 

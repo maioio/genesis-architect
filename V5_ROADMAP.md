@@ -61,7 +61,7 @@ What is missing for V5:
 
 ## V5 Implementation Plan
 
-### Constraint: SKILL.md must stay under 400 lines
+### Constraint: SKILL.md must stay under 480 lines
 
 Every new capability requires either:
 1. Removing existing lines

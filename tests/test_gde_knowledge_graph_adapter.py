@@ -70,13 +70,13 @@ class TestTestCoverageWiring:
             output={"fragility_map": [
                 {"module": "src/demo/core.py", "has_test": True, "status": "STABLE"},
             ]})
-        out = gde_run_knowledge_graph(ctx)
+        gde_run_knowledge_graph(ctx)
         assert (project / ".genesis" / "knowledge" / "graph.json").exists()
         graph = kg_load(project)
         assert graph.query(["test", "covers", "module"])
 
     def test_no_fragility_result_adds_no_test_nodes(self, project):
-        out = gde_run_knowledge_graph(_ctx(project))
+        gde_run_knowledge_graph(_ctx(project))
         graph = kg_load(project)
         assert graph.query(["test", "covers", "module"]) == []
 

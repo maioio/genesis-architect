@@ -28,6 +28,10 @@ from genesis_architect_pro.gde_gate_engine import evaluate_gates
 from genesis_architect_pro.red_team_critic import (
     RedTeamFinding, critique_session, critique_with_llm, run_red_team,
 )
+from genesis_architect_pro.ephemeral_purge import (
+    PurgeCandidate, ProtectedItem, PurgeReport,
+    hygiene_notice, mark_ephemeral, purge,
+)
 
 from genesis_architect_pro.import_graph import build_graph, load_or_build
 from genesis_architect_pro.architecture_scorer import score_project, score_label
@@ -153,6 +157,8 @@ __all__ = [
     # Existing exports
     "__version__",
     "RedTeamFinding", "critique_session", "critique_with_llm", "run_red_team",
+    "PurgeCandidate", "ProtectedItem", "PurgeReport",
+    "hygiene_notice", "mark_ephemeral", "purge",
     "build_graph", "load_or_build",
     "score_project", "score_label",
     "detect_all",

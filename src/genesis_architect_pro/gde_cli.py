@@ -1128,6 +1128,59 @@ def cmd_harden(args: argparse.Namespace) -> int:
     return cmd_decide(decide_args)
 
 
+def cmd_purge(args: argparse.Namespace) -> int:
+    """`genesis purge [--apply]` — Auto-Purge for expired ephemeral resources.
+
+    Dry run by default: it reports what expired and what it refused to touch,
+    and deletes nothing. `--apply` is the only path that removes anything.
+    """
+    from genesis_architect_pro.ephemeral_purge import (
+        DEFAULT_LOCK_TTL_HOURS, DEFAULT_WORKTREE_TTL_HOURS, format_report, purge,
+    )
+
+    project_dir = Path(args.dir).expanduser().resolve()
+    if not project_dir.is_dir():
+        print(f"\n  Not a directory: {project_dir}\n", file=sys.stderr)
+        return 1
+
+    worktree_ttl = args.worktree_ttl if args.worktree_ttl is not None else DEFAULT_WORKTREE_TTL_HOURS
+    lock_ttl = args.lock_ttl if args.lock_ttl is not None else DEFAULT_LOCK_TTL_HOURS
+
+    report = purge(
+        project_dir,
+        apply=bool(args.apply),
+        worktree_ttl_hours=worktree_ttl,
+        lock_ttl_hours=lock_ttl,
+    )
+
+    if getattr(args, "json_output", False):
+        import json as _json
+        print(_json.dumps({
+            "dry_run": report.dry_run,
+            "candidates": [
+                {"path": str(c.path), "kind": c.kind, "reason": c.reason,
+                 "age_hours": (None if c.age_hours == float("inf") else round(c.age_hours, 2)),
+                 "branch": c.branch}
+                for c in report.candidates
+            ],
+            "protected": [
+                {"path": str(p.path), "kind": p.kind, "reason": p.reason}
+                for p in report.protected
+            ],
+            "purged": report.purged,
+            "errors": report.errors,
+        }, indent=2))
+    else:
+        print(format_report(report))
+
+    # Exit 1 on a dry run that found debris, so CI can gate on a dirty tree.
+    if report.errors:
+        return 1
+    if report.dry_run and report.candidates:
+        return 1
+    return 0
+
+
 def cmd_telemetry(args: argparse.Namespace) -> int:
     """Manage anonymous, opt-in product telemetry (default OFF, local-first).
 
@@ -1297,6 +1350,19 @@ def _build_parser() -> argparse.ArgumentParser:
     harden.add_argument("--no-commit", action="store_true",
                         help="Skip APPROVE/COMMIT — analysis only")
 
+    purge_p = sub.add_parser(
+        "purge", help="Auto-Purge: find (and optionally remove) expired ephemeral resources")
+    purge_p.add_argument("--dir", default=".", metavar="PATH",
+                         help="Project directory (default: current directory)")
+    purge_p.add_argument("--apply", action="store_true",
+                         help="Actually remove what was found (default: dry run only)")
+    purge_p.add_argument("--worktree-ttl", type=float, default=None, metavar="HOURS",
+                         help="Idle hours before a clean worktree is expired (default: 168)")
+    purge_p.add_argument("--lock-ttl", type=float, default=None, metavar="HOURS",
+                         help="Age in hours before a dead-owner lock is expired (default: 1)")
+    purge_p.add_argument("--json", dest="json_output", action="store_true",
+                         help="Output structured JSON (for piping / CI)")
+
     telemetry_p = sub.add_parser(
         "telemetry", help="Manage anonymous, opt-in product telemetry (default OFF)")
     telemetry_p.add_argument("--dir", default=".", metavar="PATH",
@@ -1340,7 +1406,7 @@ def main(argv: list[str] | None = None) -> int:
     # last wins the launcher — so Pro's entry point must delegate core
     # commands to the core app instead of forcing everything into `decide`.
     _pro_cmds = ("decide", "explain", "memory", "ui", "companion", "sync",
-                 "doctor", "recover", "harden", "telemetry")
+                 "doctor", "recover", "harden", "telemetry", "purge")
     _core_cmds = ("init", "config", "research", "publish", "upgrade", "resolve")
     if argv and argv[0] in _core_cmds:
         from genesis_architect.cli import app as _core_app
@@ -1373,29 +1439,51 @@ def main(argv: list[str] | None = None) -> int:
 
     args = parser.parse_args(argv)
 
-    if args.command == "decide":
-        return cmd_decide(args)
-    if args.command == "explain":
-        return cmd_explain(args)
-    if args.command == "memory":
-        return cmd_memory(args)
-    if args.command == "ui":
-        return cmd_ui(args)
-    if args.command == "companion":
-        return cmd_companion(args)
-    if args.command == "sync":
-        return cmd_sync(args)
-    if args.command == "doctor":
-        return cmd_doctor(args)
-    if args.command == "recover":
-        return cmd_recover(args)
-    if args.command == "harden":
-        return cmd_harden(args)
-    if args.command == "telemetry":
-        return cmd_telemetry(args)
+    _dispatch = {
+        "decide": cmd_decide,
+        "explain": cmd_explain,
+        "memory": cmd_memory,
+        "ui": cmd_ui,
+        "companion": cmd_companion,
+        "sync": cmd_sync,
+        "doctor": cmd_doctor,
+        "recover": cmd_recover,
+        "harden": cmd_harden,
+        "telemetry": cmd_telemetry,
+        "purge": cmd_purge,
+    }
+    handler = _dispatch.get(args.command)
+    if handler is None:
+        parser.print_help()
+        return 0
 
-    parser.print_help()
-    return 0
+    rc = handler(args)
+    _emit_hygiene_notice(args)
+    return rc
+
+
+def _emit_hygiene_notice(args: argparse.Namespace) -> None:
+    """Surface expired ephemeral resources at the end of a run.
+
+    Read-only: it runs Auto-Purge in dry-run mode and only prints. It exists
+    so debris announces itself instead of waiting to be remembered — but it
+    must never delete anything on its own, and never break the command that
+    just succeeded, so every failure here is swallowed.
+
+    Skipped for `purge` itself (which just reported in full) and `doctor`
+    (a readiness surface that shouldn't grow unrelated noise).
+    """
+    if getattr(args, "command", None) in ("purge", "doctor"):
+        return
+    try:
+        from genesis_architect_pro.ephemeral_purge import hygiene_notice
+
+        project_dir = Path(getattr(args, "dir", None) or getattr(args, "path", ".") or ".")
+        notice = hygiene_notice(project_dir.expanduser().resolve())
+        if notice:
+            print(f"\n  {notice}\n")
+    except Exception:  # noqa: BLE001 — a hygiene hint must never break a command
+        pass
 
 
 if __name__ == "__main__":

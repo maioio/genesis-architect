@@ -32,6 +32,10 @@ from genesis_architect_pro.ephemeral_purge import (
     PurgeCandidate, ProtectedItem, PurgeReport,
     hygiene_notice, mark_ephemeral, purge,
 )
+from genesis_architect_pro.mcp_advisor import (
+    AdvisorReport, ProjectSignals, ToolRecommendation, ToolSpec, CATALOG,
+    advise, advise_global, advise_local, detect_signals,
+)
 
 from genesis_architect_pro.import_graph import build_graph, load_or_build
 from genesis_architect_pro.architecture_scorer import score_project, score_label
@@ -159,6 +163,8 @@ __all__ = [
     "RedTeamFinding", "critique_session", "critique_with_llm", "run_red_team",
     "PurgeCandidate", "ProtectedItem", "PurgeReport",
     "hygiene_notice", "mark_ephemeral", "purge",
+    "AdvisorReport", "ProjectSignals", "ToolRecommendation", "ToolSpec", "CATALOG",
+    "advise", "advise_global", "advise_local", "detect_signals",
     "build_graph", "load_or_build",
     "score_project", "score_label",
     "detect_all",

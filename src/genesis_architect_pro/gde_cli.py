@@ -1128,6 +1128,46 @@ def cmd_harden(args: argparse.Namespace) -> int:
     return cmd_decide(decide_args)
 
 
+def cmd_advise(args: argparse.Namespace) -> int:
+    """`genesis advise` — dual-level MCP & skill recommendations.
+
+    Read-only and non-installing by design: it explains what each tool would
+    buy and how Genesis would drive it, then stops. Acting on that is the
+    user's decision, not the advisor's.
+    """
+    from genesis_architect_pro.mcp_advisor import advise, format_report
+
+    project_dir = Path(args.dir).expanduser().resolve()
+    if not project_dir.is_dir():
+        print(f"\n  Not a directory: {project_dir}\n", file=sys.stderr)
+        return 1
+
+    include_global = not getattr(args, "local_only", False)
+    include_local = not getattr(args, "global_only", False)
+
+    report = advise(
+        project_dir,
+        include_global=include_global,
+        include_local=include_local,
+    )
+
+    if getattr(args, "json_output", False):
+        import json as _json
+        print(_json.dumps({
+            "signals": {
+                "languages": sorted(report.signals.languages),
+                "frameworks": sorted(report.signals.frameworks),
+                "evidence": report.signals.evidence,
+            },
+            "local": [r.to_dict() for r in report.local],
+            "global": [r.to_dict() for r in report.global_],
+            "notes": report.notes,
+        }, indent=2))
+    else:
+        print(format_report(report))
+    return 0
+
+
 def cmd_purge(args: argparse.Namespace) -> int:
     """`genesis purge [--apply]` — Auto-Purge for expired ephemeral resources.
 
@@ -1350,6 +1390,17 @@ def _build_parser() -> argparse.ArgumentParser:
     harden.add_argument("--no-commit", action="store_true",
                         help="Skip APPROVE/COMMIT — analysis only")
 
+    advise_p = sub.add_parser(
+        "advise", help="Recommend MCP servers and skills for this project (installs nothing)")
+    advise_p.add_argument("--dir", default=".", metavar="PATH",
+                          help="Project directory (default: current directory)")
+    advise_p.add_argument("--local-only", action="store_true",
+                          help="Only project-level recommendations")
+    advise_p.add_argument("--global-only", action="store_true",
+                          help="Only cross-project recommendations from learning history")
+    advise_p.add_argument("--json", dest="json_output", action="store_true",
+                          help="Output structured JSON (for piping / CI)")
+
     purge_p = sub.add_parser(
         "purge", help="Auto-Purge: find (and optionally remove) expired ephemeral resources")
     purge_p.add_argument("--dir", default=".", metavar="PATH",
@@ -1406,7 +1457,7 @@ def main(argv: list[str] | None = None) -> int:
     # last wins the launcher — so Pro's entry point must delegate core
     # commands to the core app instead of forcing everything into `decide`.
     _pro_cmds = ("decide", "explain", "memory", "ui", "companion", "sync",
-                 "doctor", "recover", "harden", "telemetry", "purge")
+                 "doctor", "recover", "harden", "telemetry", "purge", "advise")
     _core_cmds = ("init", "config", "research", "publish", "upgrade", "resolve")
     if argv and argv[0] in _core_cmds:
         from genesis_architect.cli import app as _core_app
@@ -1451,6 +1502,7 @@ def main(argv: list[str] | None = None) -> int:
         "harden": cmd_harden,
         "telemetry": cmd_telemetry,
         "purge": cmd_purge,
+        "advise": cmd_advise,
     }
     handler = _dispatch.get(args.command)
     if handler is None:

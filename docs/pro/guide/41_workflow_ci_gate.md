@@ -32,8 +32,6 @@ jobs:
         with: { python-version: "3.12" }
       - run: pip install genesis-architect-pro
       - run: python -m genesis_architect_pro.rules_engine .
-        env:
-          GENESIS_PRO_LICENSE: ${{ secrets.GENESIS_PRO_LICENSE }}
 ```
 
 Exit `1` fails the job and blocks the merge; `0` passes; `2` means a config

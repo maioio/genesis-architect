@@ -5,7 +5,7 @@ End-to-end, the way Genesis runs it.
 ## 1. Point Genesis at the project
 
 ```bash
-export GENESIS_PRO_LICENSE=<key>
+pip install genesis-architect-pro
 ```
 
 Run the recovery flow (the Decision Engine drives it in `RECOVERY` mode). The

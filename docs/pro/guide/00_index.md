@@ -40,7 +40,7 @@ output.
 - [Set up a CI architecture gate](41_workflow_ci_gate.md)
 
 ### Part V — Product
-- [Install + license (the 4-step flow)](50_install_license.md)
+- [Install (the 3-step flow)](50_install_license.md)
 - [Privacy + telemetry](51_privacy.md)
 - [Offline / degraded mode](52_offline.md)
 

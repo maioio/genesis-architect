@@ -40,7 +40,6 @@ report = run_check(".")          # load_rules → gather_facts → evaluate
 
 ```yaml
 - run: pip install genesis-architect-pro
-  env: { GENESIS_PRO_LICENSE: ${{ secrets.GENESIS_PRO_LICENSE }} }
 - run: python -m genesis_architect_pro.rules_engine .    # exit 1 fails the job
 ```
 

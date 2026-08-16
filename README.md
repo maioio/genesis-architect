@@ -1,4 +1,4 @@
-# Genesis Architect Pro — v6.3.0
+# Genesis Architect Pro — v8.0.0
 
 The intelligence layer for [Genesis Architect](https://github.com/maioio/genesis-architect).
 
@@ -45,7 +45,6 @@ All other gates (CONFIDENCE_LOW, DRIFT_CRITICAL, SECURITY_RISK, WRITE_SCOPE, DEG
 
 ```bash
 pip install genesis-architect-pro
-export GENESIS_PRO_LICENSE=<your-key>
 ```
 
 ## CLI
@@ -105,4 +104,4 @@ plan   = generate_plan("/path/to/project")
 
 ## License
 
-Commercial. Not open source. Requires a valid license key. See LICENSE.
+AGPL-3.0. Fully open source — no license key, no gate. See LICENSE.

@@ -180,4 +180,7 @@ All Free features plus:
 
 ## License Gate
 
-All Pro features gated behind Ed25519 license verification in `license.py`. Free tier runs without any license check.
+Removed. There is no license gate — `license.py` was deleted and every Pro
+feature runs unconditionally, same as Free. The Free/Pro split above now
+describes packaging (`genesis-architect` vs. `genesis-architect-pro`), not
+an access boundary.

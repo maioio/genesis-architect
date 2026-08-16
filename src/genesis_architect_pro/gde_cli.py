@@ -910,9 +910,38 @@ def cmd_companion_ui(project_dir: Path, *, no_browser: bool = False) -> int:
         print("  error: could not write the UI file.", file=sys.stderr)
         return 1
     print(f"  Floating Assistant: {ui_path}")
+
+    def _shutdown() -> None:
+        if wake_listener is not None:
+            try:
+                wake_listener.stop()
+            except Exception:
+                pass
+        if ws_server is not None:
+            try:
+                ws_server.stop()
+            except Exception:
+                pass
+
+    # Prefer a real floating window (frameless, always-on-top, sized to the
+    # bubble/panel) over an ordinary browser tab — a browser tab with a URL
+    # bar and bookmarks is not the "system-wide floating bubble" the product
+    # promises. Falls back to the browser honestly if pywebview (or its
+    # native WebView2 runtime) isn't available here.
     if not no_browser:
+        from genesis_architect_pro.companion_ui import render_companion_html
+        from genesis_architect_pro.companion_window import run_floating_window
+
+        html = render_companion_html(ws_port=port, ws_token=token)
+        print("  Opening the floating window. Close it (or Ctrl+C here) to stop.\n")
+        started = run_floating_window(html, on_close=_shutdown)
+        if started:
+            _shutdown()
+            print("\n  Companion stopped.")
+            return 0
+        print("  Native window unavailable — opening in your browser instead.")
         webbrowser.open(ui_path.as_uri())
-        print("  Opened in your browser. Close this terminal (Ctrl+C) to stop.\n")
+        print("  Close this terminal (Ctrl+C) to stop.\n")
 
     if ws_server is None:
         return 0  # offline UI written; nothing to keep alive
@@ -928,15 +957,7 @@ def cmd_companion_ui(project_dir: Path, *, no_browser: bool = False) -> int:
             time.sleep(0.5)
     except KeyboardInterrupt:
         pass
-    if wake_listener is not None:
-        try:
-            wake_listener.stop()
-        except Exception:
-            pass
-    try:
-        ws_server.stop()
-    except Exception:
-        pass
+    _shutdown()
     print("\n  Companion stopped.")
     return 0
 

@@ -195,7 +195,7 @@ body{font-family:var(--sans);background:transparent;color:var(--ink);-webkit-fon
 <body>
 
 <!-- BUBBLE -->
-<div class="bubble" id="bubble" onclick="Companion.expand()">
+<div class="bubble pywebview-drag-region" id="bubble" onclick="Companion.expand()">
   <div class="mark">G<div class="ring" id="ring"></div></div>
   <div class="b-body">
     <div class="b-title" id="bTitle">Genesis — idle</div>
@@ -207,8 +207,8 @@ body{font-family:var(--sans);background:transparent;color:var(--ink);-webkit-fon
 <!-- PANEL -->
 <div class="panel" id="panel">
   <div class="p-head">
-    <div class="mark">G</div>
-    <div class="p-name">Genesis Assistant<small><span class="conn off" id="conn">● offline</span></small></div>
+    <div class="mark pywebview-drag-region">G</div>
+    <div class="p-name pywebview-drag-region">Genesis Assistant<small><span class="conn off" id="conn">● offline</span></small></div>
     <button class="icn" title="Open Canvas" onclick="Companion.canvas()">⛶</button>
     <button class="icn" title="Collapse" onclick="Companion.collapse()">×</button>
   </div>
@@ -377,8 +377,9 @@ const Companion = (() => {
   function setLevel(l){ level=l; document.querySelectorAll('#levels .lvl').forEach(x=>x.classList.toggle('on',x.dataset.lvl===l)); if(ws&&ws.readyState===1)ws.send(JSON.stringify({type:'user.intent',payload:{instruction:'set activity level '+l}})); }
   function theme(t){ document.documentElement.setAttribute('data-theme', t==='dark'?'dark':''); }
 
-  function expand(){ el('bubble').classList.add('hidden'); el('panel').classList.add('open'); el('input').focus(); }
-  function collapse(){ el('panel').classList.remove('open'); el('bubble').classList.remove('hidden'); }
+  function nativeResize(mode){ if(window.pywebview && window.pywebview.api && window.pywebview.api.resize_window) window.pywebview.api.resize_window(mode); }
+  function expand(){ el('bubble').classList.add('hidden'); el('panel').classList.add('open'); el('input').focus(); nativeResize('panel'); }
+  function collapse(){ el('panel').classList.remove('open'); el('bubble').classList.remove('hidden'); nativeResize('bubble'); }
   function canvas(){ botMsg('Opening the Canvas for deep analysis…'); if(ws&&ws.readyState===1)ws.send(JSON.stringify({type:'user.intent',payload:{instruction:'open canvas'}})); }
   function tab(v){ document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('on',t.dataset.view===v)); document.querySelectorAll('.view').forEach(x=>x.classList.remove('on')); el('v-'+v).classList.add('on'); }
 

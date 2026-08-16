@@ -574,6 +574,54 @@ class TestEngineHandoffs:
         errors = [e for e in get_default_registry().validate() if "hands off" in e]
         assert errors == []
 
+    def test_production_registry_actually_declares_handoffs(self) -> None:
+        """Guards against the forward edge silently regressing to empty."""
+        import genesis_architect_pro.gde_engine_registration  # noqa: F401
+        from genesis_architect_pro.engine_registry import get_default_registry
+
+        reg = get_default_registry()
+        populated = [d for d in reg._descriptors.values() if d.handoffs]
+        assert len(populated) >= 15, "most engines should declare a next step"
+
+    def test_production_handoff_graph_contains_a_tolerated_cycle(self) -> None:
+        """The design decision, asserted against production rather than a fixture.
+
+        recovery_report → refactoring_planner → rules_engine → recovery_report
+        is a real loop in the shipped registry: diagnose, plan, enforce,
+        re-diagnose. It must coexist with a CLEAN validate().
+        """
+        import genesis_architect_pro.gde_engine_registration  # noqa: F401
+        from genesis_architect_pro.engine_registry import get_default_registry
+
+        reg = get_default_registry()
+        edges = {i: list(d.handoffs) for i, d in reg._descriptors.items()}
+
+        def has_cycle() -> bool:
+            WHITE, GREY, BLACK = 0, 1, 2
+            color = dict.fromkeys(edges, WHITE)
+
+            def visit(node: str) -> bool:
+                color[node] = GREY
+                for nxt in edges.get(node, []):
+                    if color.get(nxt) == GREY:
+                        return True
+                    if color.get(nxt, BLACK) == WHITE and visit(nxt):
+                        return True
+                color[node] = BLACK
+                return False
+
+            return any(visit(n) for n in edges if color[n] == WHITE)
+
+        assert has_cycle(), "expected an iterative loop in the forward edge"
+        assert reg.validate() == [], "a handoff cycle must not make the registry invalid"
+
+    def test_red_team_critic_is_terminal(self) -> None:
+        """The final gate must not suggest continuing past itself."""
+        import genesis_architect_pro.gde_engine_registration  # noqa: F401
+        from genesis_architect_pro.engine_registry import get_default_registry
+
+        assert get_default_registry()._descriptors["red_team_critic"].handoffs == []
+
 
 # ---------------------------------------------------------------------------
 # EngineRegistry topological sort tests

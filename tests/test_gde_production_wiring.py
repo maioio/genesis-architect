@@ -345,12 +345,6 @@ class TestApproveCommit:
 
 
 class TestCLI:
-    @pytest.fixture(autouse=True)
-    def _licensed(self, monkeypatch):
-        """The CLI entry point enforces the Pro license; these tests assert
-        wiring, not the gate (covered by test_license.py)."""
-        monkeypatch.setattr("genesis_architect_pro.license.is_licensed", lambda: True)
-
     def _run_cli(self, argv, capsys=None):
         from genesis_architect_pro.gde_cli import main
         return main(argv)
@@ -387,21 +381,6 @@ class TestCLI:
         rc = main(["decide", "--classify-only", "diagnose", "--dir", "/nonexistent/path/xyz"])
         assert rc == 1
 
-    def test_unlicensed_cli_is_blocked(self, monkeypatch, capsys):
-        """Without a valid license every CLI command exits 2 with guidance."""
-        monkeypatch.setattr("genesis_architect_pro.license.is_licensed", lambda: False)
-        from genesis_architect_pro.gde_cli import main
-        rc = main(["decide", "--classify-only", "diagnose the project"])
-        assert rc == 2
-        assert "license" in capsys.readouterr().err.lower()
-
-    def test_help_works_without_license(self, monkeypatch):
-        monkeypatch.setattr("genesis_architect_pro.license.is_licensed", lambda: False)
-        from genesis_architect_pro.gde_cli import main
-        with pytest.raises(SystemExit) as exc:
-            main(["--help"])
-        assert exc.value.code == 0
-
     # -----------------------------------------------------------------
     # Regression tests for the QA report (genesis-pro-qa-report.md)
     # -----------------------------------------------------------------
@@ -426,52 +405,10 @@ class TestCLI:
         assert rc == 0
         assert (tmp_path / ".genesis" / "ui" / "workspace.html").is_file()
 
-    def test_doctor_runs_without_license_and_reports_missing(self, monkeypatch):
-        monkeypatch.setattr("genesis_architect_pro.license.is_licensed", lambda: False)
-        from genesis_architect_pro.gde_cli import main
-        rc = main(["doctor"])
-        assert rc == 1
-
-    def test_doctor_runs_with_license_and_reports_ready(self):
+    def test_doctor_reports_ready(self):
         from genesis_architect_pro.gde_cli import main
         rc = main(["doctor"])
         assert rc == 0
-
-    def test_license_activate_invalid_key_fails_cleanly(self, capsys):
-        from genesis_architect_pro.gde_cli import main
-        rc = main(["license", "activate", "gpro_not-a-real-key.bad"])
-        assert rc == 1
-        captured = capsys.readouterr()
-        assert "invalid" in (captured.out + captured.err).lower()
-
-    def test_license_activate_valid_key_writes_file(self, tmp_path, monkeypatch):
-        """Uses a monkeypatched parse_key rather than a real signed key — the
-        private signing key deliberately never lives in this package (see
-        license.py). The Docker QA simulation covers the real Ed25519 path
-        end-to-end with an actual signed test key."""
-        fake_file = tmp_path / "pro_license"
-        monkeypatch.setattr("genesis_architect_pro.license.LICENSE_FILE", fake_file)
-        monkeypatch.setattr("genesis_architect_pro.license.parse_key",
-                            lambda key: {"sub": "test@example.com"})
-        from genesis_architect_pro.gde_cli import main
-        rc = main(["license", "activate", "gpro_fake.fake"])
-        assert rc == 0
-        assert fake_file.is_file()
-        assert "gpro_fake.fake" in fake_file.read_text(encoding="utf-8")
-
-    def test_license_status_reports_active(self, monkeypatch, capsys):
-        monkeypatch.setattr("genesis_architect_pro.license.is_licensed", lambda: True)
-        from genesis_architect_pro.gde_cli import main
-        rc = main(["license", "status"])
-        assert rc == 0
-        assert "active" in capsys.readouterr().out.lower()
-
-    def test_license_status_reports_inactive(self, monkeypatch, capsys):
-        monkeypatch.setattr("genesis_architect_pro.license.is_licensed", lambda: False)
-        from genesis_architect_pro.gde_cli import main
-        rc = main(["license", "status"])
-        assert rc == 1
-        assert "not active" in capsys.readouterr().out.lower()
 
     def test_recover_command_classifies_as_recovery_high_confidence(self, tmp_path, capsys):
         """genesis recover <path> is a thin wrapper around decide — the site

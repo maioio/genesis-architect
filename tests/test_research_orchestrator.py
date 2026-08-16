@@ -3,8 +3,6 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-import pytest
-
 from genesis_architect_pro.research_orchestrator import (
     ResearchSummary,
     RepoResult,
@@ -16,14 +14,6 @@ from genesis_architect_pro.research_orchestrator import (
     FLOOR_MIN_REPOS,
     FLOOR_MIN_DEEP,
 )
-
-
-@pytest.fixture(autouse=True)
-def _licensed(monkeypatch):
-    """Orchestrator is a licensed Pro feature. These tests assert behavior, not
-    the gate (the gate itself is covered by test_license.py), so grant a license
-    for their duration."""
-    monkeypatch.setattr("genesis_architect_pro.license.is_licensed", lambda: True)
 
 
 # --- helpers ---

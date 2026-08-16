@@ -1,16 +1,14 @@
 """
 First-run readiness + customer doctor for Genesis Architect (Pro).
 
-The promise (Constitution 13 / packaging spec): the customer experience is four
-steps - Download -> Install -> Enter license key -> Start working - with NO
-manual infrastructure (no Docker, Python, Node, DB, Redis, MCP server by hand).
+The promise (Constitution 13 / packaging spec): the customer experience is three
+steps - Download -> Install -> Start working - with NO manual infrastructure
+(no Docker, Python, Node, DB, Redis, MCP server by hand), and no license.
 
 This module is the single readiness surface that backs that promise. It is
-READ-ONLY and never blocks: it reports what is ready, what is optional, and what
-(if anything) needs the one license key. It composes existing pieces rather than
-reimplementing them:
+READ-ONLY and never blocks: it reports what is ready and what is optional. It
+composes existing pieces rather than reimplementing them:
 
-  - license.is_licensed()         -> is Pro unlocked? (offline, no phone-home)
   - env_probe.probe()             -> OS / python / package managers (free core)
   - pro_bridge.pro_installed()    -> is the Pro package importable? (free core)
   - optional-dep checks           -> ffmpeg/yt-dlp for video (self-heal pattern)
@@ -27,8 +25,6 @@ from __future__ import annotations
 
 import shutil
 from dataclasses import dataclass, field
-
-from genesis_architect_pro import license as _license
 
 
 # ---------------------------------------------------------------------------
@@ -50,7 +46,6 @@ class Check:
 
 @dataclass
 class Readiness:
-    licensed: bool
     pro_installed: bool
     checks: list[Check] = field(default_factory=list)
 
@@ -80,13 +75,6 @@ def _pro_installed() -> bool:
         return True
 
 
-def _licensed() -> bool:
-    try:
-        return bool(_license.is_licensed())
-    except Exception:
-        return False
-
-
 # Optional dependencies: each is (name, what it unlocks). Absence never blocks
 # the default path - the relevant feature simply shows "unavailable" until the
 # customer opts to enable it (one prompt, via ensure_optional_dep).
@@ -113,21 +101,12 @@ def _have(binary: str) -> bool:
 def check_readiness() -> Readiness:
     """Assemble the full readiness picture. Pure status, no side effects.
 
-    The ONLY required check for the default path is the license. Everything else
-    is optional and degrades gracefully.
+    The only required check for the default path is that the Pro package
+    itself is installed. Everything else is optional and degrades gracefully.
     """
-    licensed = _licensed()
     pro = _pro_installed()
 
     checks: list[Check] = [
-        Check(
-            name="license",
-            ok=licensed,
-            required=True,
-            detail=("Pro unlocked (offline-verified)." if licensed else
-                    "Set GENESIS_PRO_LICENSE=<key> from your Gumroad email. "
-                    "Free core keeps working until then."),
-        ),
         Check(
             name="pro_package",
             ok=pro,
@@ -144,7 +123,7 @@ def check_readiness() -> Readiness:
                     else f"{dep} not found - {unlocks} stays unavailable until "
                          f"enabled (one prompt)."),
         ))
-    return Readiness(licensed=licensed, pro_installed=pro, checks=checks)
+    return Readiness(pro_installed=pro, checks=checks)
 
 
 # ---------------------------------------------------------------------------
@@ -154,8 +133,7 @@ def check_readiness() -> Readiness:
 CUSTOMER_FLOW = (
     "1. Download Genesis\n"
     "2. Install\n"
-    "3. Enter license key\n"
-    "4. Start working"
+    "3. Start working"
 )
 
 

@@ -4,10 +4,11 @@ Multi-source research orchestration, pitfall ranking, video-to-pitfall
 extraction, cross-session memory, package-registry validation,
 recovery diagnosis, and deep codebase analysis.
 
-Requires a valid license and the free genesis-architect core package.
+Fully open source. No license required - requires only the free
+genesis-architect core package.
 """
 
-__version__ = "7.2.0"
+__version__ = "8.0.0"
 
 from genesis_architect_pro.decision_engine import GenesisDecisionEngine, run_session
 from genesis_architect_pro.intent_classifier import classify
@@ -25,7 +26,6 @@ from genesis_architect_pro.gde_planner import build_plan
 from genesis_architect_pro.gde_runner import run_plan
 from genesis_architect_pro.gde_gate_engine import evaluate_gates
 
-from genesis_architect_pro.license import require_license, LicenseError
 from genesis_architect_pro.import_graph import build_graph, load_or_build
 from genesis_architect_pro.architecture_scorer import score_project, score_label
 from genesis_architect_pro.antipattern_detector import detect_all
@@ -148,7 +148,7 @@ __all__ = [
     "append_decision_log", "read_decision_log", "session_file_exists",
     "build_plan", "run_plan", "evaluate_gates",
     # Existing exports
-    "require_license", "LicenseError", "__version__",
+    "__version__",
     "build_graph", "load_or_build",
     "score_project", "score_label",
     "detect_all",

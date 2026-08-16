@@ -1,6 +1,6 @@
 """Tests for first_run - the no-setup customer readiness surface.
 
-Encodes the packaging promise (Constitution 13): license is the only required
+Encodes the packaging promise (Constitution 13): install is the only required
 step; everything else is optional and never blocks; status checks never install
 or phone home; offline reporting is honest.
 """
@@ -16,32 +16,24 @@ from genesis_architect_pro.first_run import (
 
 
 @pytest.fixture
-def no_license(monkeypatch):
-    monkeypatch.delenv("GENESIS_PRO_LICENSE", raising=False)
-    # also neutralize a license file if is_licensed reads one
-    monkeypatch.setattr("genesis_architect_pro.license.is_licensed",
+def pro_missing(monkeypatch):
+    monkeypatch.setattr("genesis_architect_pro.first_run._pro_installed",
                         lambda: False)
-
-
-@pytest.fixture
-def licensed(monkeypatch):
-    monkeypatch.setattr("genesis_architect_pro.license.is_licensed",
-                        lambda: True)
 
 
 class TestReadinessModel:
     def test_required_gap_blocks_ready(self):
-        r = Readiness(licensed=False, pro_installed=True, checks=[
-            Check("license", ok=False, required=True),
+        r = Readiness(pro_installed=False, checks=[
+            Check("pro_package", ok=False, required=True),
             Check("ffmpeg", ok=False, required=False),
         ])
         assert r.ready_to_work is False
-        assert [c.name for c in r.missing_required()] == ["license"]
+        assert [c.name for c in r.missing_required()] == ["pro_package"]
         assert [c.name for c in r.optional_gaps()] == ["ffmpeg"]
 
     def test_only_optional_gaps_is_ready(self):
-        r = Readiness(licensed=True, pro_installed=True, checks=[
-            Check("license", ok=True, required=True),
+        r = Readiness(pro_installed=True, checks=[
+            Check("pro_package", ok=True, required=True),
             Check("ffmpeg", ok=False, required=False),
         ])
         assert r.ready_to_work is True
@@ -53,43 +45,43 @@ class TestReadinessModel:
 
 
 class TestCheckReadiness:
-    def test_license_required(self, no_license):
+    def test_pro_package_required(self, pro_missing):
         r = check_readiness()
-        lic = next(c for c in r.checks if c.name == "license")
-        assert lic.required is True and lic.ok is False
-        assert r.ready_to_work is False  # no license -> not ready (by default path)
+        pkg = next(c for c in r.checks if c.name == "pro_package")
+        assert pkg.required is True and pkg.ok is False
+        assert r.ready_to_work is False
 
-    def test_licensed_marks_ready_when_pro_present(self, licensed):
+    def test_pro_installed_marks_ready(self):
         r = check_readiness()
-        assert r.licensed is True
-        lic = next(c for c in r.checks if c.name == "license")
-        assert lic.ok is True
+        assert r.pro_installed is True
+        pkg = next(c for c in r.checks if c.name == "pro_package")
+        assert pkg.ok is True
 
-    def test_optional_deps_present_in_checks(self, licensed):
+    def test_optional_deps_present_in_checks(self):
         names = {c.name for c in check_readiness().checks}
         for dep in OPTIONAL_DEPS:
             assert dep in names
 
-    def test_optional_deps_never_required(self, licensed):
+    def test_optional_deps_never_required(self):
         for c in check_readiness().checks:
             if c.name in OPTIONAL_DEPS:
                 assert c.required is False
 
 
 class TestDoctorReport:
-    def test_report_when_not_ready(self, no_license):
+    def test_report_when_not_ready(self, pro_missing):
         out = doctor_report()
         assert "readiness check" in out
-        assert "MISSING" in out and "GENESIS_PRO_LICENSE" in out
+        assert "MISSING" in out and "pip install genesis-architect-pro" in out
 
-    def test_report_when_ready(self, licensed):
+    def test_report_when_ready(self):
         out = doctor_report()
         # may still list optional gaps, but no required item is missing
         assert "Ready" in out or "Almost there" not in out
 
-    def test_customer_flow_is_four_steps(self):
-        assert CUSTOMER_FLOW.count("\n") == 3  # 4 lines
-        assert "license key" in CUSTOMER_FLOW.lower()
+    def test_customer_flow_is_three_steps(self):
+        assert CUSTOMER_FLOW.count("\n") == 2  # 3 lines
+        assert "license" not in CUSTOMER_FLOW.lower()
 
 
 class TestOfflineReport:
@@ -137,9 +129,11 @@ class TestSelfHeal:
 
 class TestResilience:
     def test_check_readiness_never_raises(self, monkeypatch):
-        # even if license probing explodes, status must degrade, not crash
-        def boom():
+        # even if the underlying pro_bridge probe explodes, _pro_installed's
+        # own fallback (we're running inside the Pro package, so we know it's
+        # installed) must absorb it - check_readiness must not crash.
+        def boom(*a, **kw):
             raise RuntimeError("x")
-        monkeypatch.setattr("genesis_architect_pro.license.is_licensed", boom)
+        monkeypatch.setattr("genesis_architect.core.pro_bridge.pro_installed", boom)
         r = check_readiness()  # must not raise
-        assert r.licensed is False
+        assert r.pro_installed is True

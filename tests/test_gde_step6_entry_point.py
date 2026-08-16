@@ -266,7 +266,6 @@ class TestInitExports:
     def test_existing_exports_still_present(self):
         import genesis_architect_pro as pkg
         for name in [
-            "require_license", "LicenseError",
             "build_graph", "load_or_build",
             "score_project", "score_label",
             "detect_all", "classify_all",

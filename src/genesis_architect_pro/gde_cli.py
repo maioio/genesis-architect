@@ -1087,46 +1087,6 @@ def cmd_doctor(args: argparse.Namespace) -> int:
     return 0 if check_readiness().ready_to_work else 1
 
 
-def cmd_license(args: argparse.Namespace) -> int:
-    """Activate or report the Pro license (offline Ed25519 check, no phone-home).
-
-    License-exempt in main() — `activate` is how a customer unlocks Pro in
-    the first place, so it must work before a license exists.
-    """
-    from genesis_architect_pro.license import ENV_VAR, LICENSE_FILE, is_licensed, parse_key
-
-    action = getattr(args, "license_action", None)
-
-    if action == "activate":
-        key = args.key.strip()
-        payload = parse_key(key)
-        if payload is None:
-            print(
-                "\n  Invalid license key — signature check failed, or the key "
-                "is malformed/expired.\n"
-                "  Get a license: https://github.com/maioio/genesis-architect\n",
-                file=sys.stderr,
-            )
-            return 1
-        try:
-            LICENSE_FILE.parent.mkdir(parents=True, exist_ok=True)
-            LICENSE_FILE.write_text(key + "\n", encoding="utf-8")
-        except OSError as exc:
-            print(f"\n  Could not write license file at {LICENSE_FILE}: {exc}\n", file=sys.stderr)
-            return 1
-        sub = payload.get("sub", "licensee")
-        print(f"\n  License activated for '{sub}'. Genesis Architect Pro is unlocked.")
-        print(f"  Key stored at {LICENSE_FILE}\n")
-        return 0
-
-    # "status" or bare `genesis license` — report current state.
-    if is_licensed():
-        print("\n  License: active. All Pro features unlocked.\n")
-        return 0
-    print("\n  License: not active.")
-    print("  Activate with:  genesis license activate <YOUR-KEY>")
-    print(f"  Or set {ENV_VAR}=<key>, or place a key at {LICENSE_FILE}\n")
-    return 1
 
 
 def cmd_recover(args: argparse.Namespace) -> int:
@@ -1305,13 +1265,7 @@ def _build_parser() -> argparse.ArgumentParser:
     sync.add_argument("--ci-mode", action="store_true",
                       help="Exit 1 if any yellow/red findings (for CI pipelines)")
 
-    sub.add_parser("doctor", help="Readiness check: license, Pro install, optional deps")
-
-    license_p = sub.add_parser("license", help="Activate or check the Pro license key")
-    license_sub = license_p.add_subparsers(dest="license_action")
-    activate_p = license_sub.add_parser("activate", help="Activate a Pro license key")
-    activate_p.add_argument("key", help="License key from your purchase email (starts with gpro_)")
-    license_sub.add_parser("status", help="Show current license status")
+    sub.add_parser("doctor", help="Readiness check: Pro install, optional deps")
 
     recover = sub.add_parser(
         "recover", help="Diagnose project health: drift, broken imports, anti-patterns, decay")
@@ -1386,7 +1340,7 @@ def main(argv: list[str] | None = None) -> int:
     # last wins the launcher — so Pro's entry point must delegate core
     # commands to the core app instead of forcing everything into `decide`.
     _pro_cmds = ("decide", "explain", "memory", "ui", "companion", "sync",
-                 "doctor", "license", "recover", "harden", "telemetry")
+                 "doctor", "recover", "harden", "telemetry")
     _core_cmds = ("init", "config", "research", "publish", "upgrade", "resolve")
     if argv and argv[0] in _core_cmds:
         from genesis_architect.cli import app as _core_app
@@ -1419,18 +1373,6 @@ def main(argv: list[str] | None = None) -> int:
 
     args = parser.parse_args(argv)
 
-    # Every command in this CLI is a Pro feature — enforce the license once
-    # here at the entry point (offline Ed25519 check, no phone-home).
-    # `doctor` and `license` are exempt: they're how a customer diagnoses and
-    # unlocks the license in the first place, so they must work without one.
-    if args.command not in ("doctor", "license"):
-        from genesis_architect_pro.license import LicenseError, require_license
-        try:
-            require_license(f"genesis {args.command or ''}".strip())
-        except LicenseError as exc:
-            print(f"\n{exc}\n", file=sys.stderr)
-            return 2
-
     if args.command == "decide":
         return cmd_decide(args)
     if args.command == "explain":
@@ -1445,8 +1387,6 @@ def main(argv: list[str] | None = None) -> int:
         return cmd_sync(args)
     if args.command == "doctor":
         return cmd_doctor(args)
-    if args.command == "license":
-        return cmd_license(args)
     if args.command == "recover":
         return cmd_recover(args)
     if args.command == "harden":

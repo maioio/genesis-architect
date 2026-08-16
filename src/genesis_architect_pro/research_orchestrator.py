@@ -172,9 +172,6 @@ def merge_streams(
     Convert all stream outputs to RankedPitfall, rank them.
     Returns (ranked_pitfalls, video_signals).
     """
-    from genesis_architect_pro.license import require_license
-    require_license("multi-source research orchestration")
-
     candidates: list[RankedPitfall] = []
 
     # Stream C: GitHub issues

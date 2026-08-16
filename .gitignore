@@ -41,3 +41,9 @@ a_cli_podcast_downlo/
 *.pdf
 *.zip
 *.docx
+
+# Engine-generated artifacts. Written by a Genesis run, never hand-edited,
+# and regenerated on the next run - so a committed copy is stale the moment
+# the engine executes again.
+FRAGILITY_MAP.md
+logs/

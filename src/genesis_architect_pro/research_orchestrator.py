@@ -36,7 +36,7 @@ from genesis_architect_pro.video_research import (
 @dataclass
 class RepoResult:
     slug: str           # owner/repo
-    stars: int
+    stars: int | None   # None = source didn't report a star count (not "0 stars")
     url: str
     description: str
     deep_analyzed: bool = False
@@ -223,9 +223,16 @@ def format_summary(summary: ResearchSummary) -> str:
         lines.append("### Analyzed Repositories")
         lines.append("| Repository | Stars | Deep Analyzed |")
         lines.append("|-----------|-------|---------------|")
-        for r in sorted(summary.repos, key=lambda x: x.stars, reverse=True)[:15]:
+        # Unknown star counts sort last, never treated as equal to (or below) 0.
+        ranked_repos = sorted(
+            summary.repos,
+            key=lambda x: (-1, 0) if x.stars is None else (0, x.stars),
+            reverse=True,
+        )
+        for r in ranked_repos[:15]:
             deep = "Yes" if r.deep_analyzed else "-"
-            lines.append(f"| [{r.slug}]({r.url}) | {r.stars:,} | {deep} |")
+            stars_display = f"{r.stars:,}" if r.stars is not None else "unknown"
+            lines.append(f"| [{r.slug}]({r.url}) | {stars_display} | {deep} |")
         lines.append("")
 
     # Ecosystem notes
@@ -272,7 +279,10 @@ def build_summary_from_raw(
     repo_results = [
         RepoResult(
             slug=r.get("name", r.get("slug", "")),
-            stars=r.get("stars", r.get("stargazers_count", 0)),
+            # Some search sources (e.g. the GitHub MCP repo-search tool) don't
+            # report a star count at all - leave it None rather than coercing
+            # to 0, which would misrepresent "unreported" as "unpopular".
+            stars=r.get("stars", r.get("stargazers_count")),
             url=r.get("url", r.get("html_url", "")),
             description=r.get("description", ""),
             deep_analyzed=r.get("deep_analyzed", False),

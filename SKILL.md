@@ -81,13 +81,7 @@ Every sentence stating a fact - in conversation, in RESEARCH.md, in PITFALLS.md,
 | `(verified: [source])` | established this session from a named source: a tool call, a command, a file read, a URL fetched | `FastAPI 0.115 (verified: PyPI JSON API)` |
 | `[assumed: default X - if wrong: Y]` | a default, tagged, with the risk stated inline | `[assumed: Postgres - if wrong: swap the driver in Phase 6, no structural change]` |
 
-**Training data is never a valid source.** A version number, an API shape, a CLI flag or a config key that is only known from model memory is `[assumed]`, never `(verified)`. `(verified)` requires a concrete artifact from this session that could be shown to the user. This single rule is what separates a researched architecture from a confident-sounding one, and it is the claim the whole tool rests on.
-
-**Versions come from a lockfile, a registry API, or a live check.** Never from memory. Phase 2 already queries PyPI, npm and crates.io for velocity scoring - use those same responses as the source.
-
-**A default is not an invention.** Torn between stating an unverified fact and spending one of the 8 questions, do neither: adopt a default, tag it, add an Assumptions Ledger row. Silence and invention are both worse than a disclosed guess.
-
-**Before Phase 6, run the provenance scan.** Read back every factual sentence in the deliverables. Any untagged claim is either verified now or downgraded to `[assumed]`. Any `(verified)` whose source is "general knowledge" is downgraded.
+**Training data is never a valid source** (only a this-session artifact counts as `(verified)`), **and a default is not an invention** (torn between stating an unverified fact and spending a question, tag it `[assumed]` with a basis instead of either). Versions come from a lockfile, a registry API, or a live check, never memory. Before Phase 6, run the provenance scan: read back every factual sentence in the deliverables and downgrade anything untagged, or any `(verified)` whose real source is "general knowledge." Full rationale and edge cases: `references/dry-run-interview.md`.
 
 ---
 
@@ -155,14 +149,7 @@ Four topics must be settled before research starts: core purpose, archetype, sca
 4. **Necessity test before every question.** Name the two architectures the answer forks between. Same architecture either way, or Phase 0/Phase 2 can answer it, then do not ask: decide, tag `[assumed]`, move on.
 5. **Look before asking.** Phase 0 probed the environment and Phase 2 will scan the ecosystem. A fact either of them settles is a lookup, not a question.
 
-### Turn shape
-
-```
-Locked: [what is settled] | Open forks: [n] | Q[k]/8
-[1-2 sentences naming the fork, citing any source]
-Q[k]. [one specific question]
-Recommended: [concrete answer] - [one-line basis].
-```
+Fillable turn template and a worked example: `references/dry-run-interview.md`.
 
 ### The four topics
 
@@ -252,7 +239,7 @@ Six probes. Each becomes a question only when it opens a fork expensive to get w
 | Hard walls | compliance, PII, offline, budget, licensing, deadline, mandated or forbidden tech | a rule forbids the ecosystem's default answer |
 | Success shape | what the user will look at to judge it worked | the stated goal and the judged goal differ |
 
-**A detonated landmine must visibly change the architecture**, not get a sentence in the docs. "No internet on the factory floor" does not add a deployment note: it moves storage on-device, changes the dependency policy, and adds an offline smoke test. Re-run Phase 3 synthesis from the top when one fires.
+**A detonated landmine must visibly change the architecture**, not get a sentence in the docs - re-run Phase 3 synthesis from the top when one fires. Worked example: `references/dry-run-interview.md`.
 
 Record each in PITFALLS.md under a **Landmines and Adaptations** heading as `constraint -> what the architecture does about it`. When the sweep finds nothing, write "None found - probed: [the six]". An empty section is a silent omission; an explicit "none" is a finding.
 

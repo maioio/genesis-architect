@@ -25,6 +25,9 @@ from genesis_architect_pro.gde_session import save_session, load_session, delete
 from genesis_architect_pro.gde_planner import build_plan
 from genesis_architect_pro.gde_runner import run_plan
 from genesis_architect_pro.gde_gate_engine import evaluate_gates
+from genesis_architect_pro.red_team_critic import (
+    RedTeamFinding, critique_session, critique_with_llm, run_red_team,
+)
 
 from genesis_architect_pro.import_graph import build_graph, load_or_build
 from genesis_architect_pro.architecture_scorer import score_project, score_label
@@ -149,6 +152,7 @@ __all__ = [
     "build_plan", "run_plan", "evaluate_gates",
     # Existing exports
     "__version__",
+    "RedTeamFinding", "critique_session", "critique_with_llm", "run_red_team",
     "build_graph", "load_or_build",
     "score_project", "score_label",
     "detect_all",

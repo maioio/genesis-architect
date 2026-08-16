@@ -297,6 +297,32 @@ _DESCRIPTORS: list[EngineDescriptor] = [
         timeout_seconds=30,
         modes=[GDEMode.COMMITTEE],
     ),
+
+    # 18. Red-Team Self-Critique — attacks the session's own plan before approval.
+    # `requires` spans every mode's write-producing engine(s) on purpose: a
+    # dependency ID not present in a given mode's engine subset is silently
+    # ignored for that mode's ordering (EngineRegistry.parallel_groups_for_mode),
+    # so this single descriptor safely runs last in every mode it's registered
+    # for without needing a separate descriptor per mode.
+    EngineDescriptor(
+        id="red_team_critic",
+        name="Red-Team Self-Critique",
+        module=_ADAPTER_MODULE,
+        entry_point="gde_run_red_team_critic",
+        category=EngineCategory.GATE,
+        input_keys=["pending_write_operations", "engine_results", "overall_confidence"],
+        output_keys=["findings", "critical_findings", "finding_count"],
+        requires=[
+            "recovery_report", "refactoring_planner", "evidence_pack",
+            "build_scaffold", "c4_generator", "committee_analysis",
+            "fragility_classifier", "security_templates",
+        ],
+        is_optional=True,
+        write_operations=[],
+        timeout_seconds=45,
+        modes=[GDEMode.RECOVERY, GDEMode.RESEARCH, GDEMode.REFACTOR, GDEMode.GATE,
+               GDEMode.BUILD, GDEMode.DOCUMENT, GDEMode.COMMITTEE],
+    ),
 ]
 
 # ---------------------------------------------------------------------------

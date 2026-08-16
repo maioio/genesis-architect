@@ -327,6 +327,47 @@ class TestCommitConflictGate:
 
 
 # ---------------------------------------------------------------------------
+# RED_TEAM_CRITICAL — soft block, overridable
+# ---------------------------------------------------------------------------
+
+
+class TestRedTeamCriticalGate:
+    def test_no_red_team_result_passes(self):
+        ctx = _ctx()
+        report = evaluate_gates(ctx, ["RED_TEAM_CRITICAL"])
+        assert report.overall is GateOutcome.PASS
+
+    def test_zero_critical_findings_passes(self):
+        ctx = _ctx()
+        _add_engine_result(ctx, "red_team_critic", {"critical_findings": 0, "findings": []})
+        report = evaluate_gates(ctx, ["RED_TEAM_CRITICAL"])
+        assert report.overall is GateOutcome.PASS
+
+    def test_critical_finding_blocks(self):
+        ctx = _ctx()
+        _add_engine_result(ctx, "red_team_critic", {
+            "critical_findings": 1,
+            "findings": [{"severity": "critical", "category": "x", "description": "boom"}],
+        })
+        report = evaluate_gates(ctx, ["RED_TEAM_CRITICAL"])
+        assert report.overall is GateOutcome.BLOCK
+        assert report.blocks[0].override_allowed is True
+        assert "boom" in report.blocks[0].detail
+
+    def test_never_hard_block(self):
+        # unlike PLAN_WRITE/RULES_FAIL, red-team findings are heuristic —
+        # must always be overridable, never HARD_BLOCK.
+        ctx = _ctx()
+        _add_engine_result(ctx, "red_team_critic", {
+            "critical_findings": 3,
+            "findings": [{"severity": "critical", "category": "x", "description": "d"} for _ in range(3)],
+        })
+        report = evaluate_gates(ctx, ["RED_TEAM_CRITICAL"])
+        assert report.overall is not GateOutcome.HARD_BLOCK
+        assert report.hard_blocks == []
+
+
+# ---------------------------------------------------------------------------
 # Overall outcome precedence
 # ---------------------------------------------------------------------------
 

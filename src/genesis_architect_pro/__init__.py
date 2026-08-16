@@ -36,6 +36,10 @@ from genesis_architect_pro.mcp_advisor import (
     AdvisorReport, ProjectSignals, ToolRecommendation, ToolSpec, CATALOG,
     advise, advise_global, advise_local, detect_signals,
 )
+from genesis_architect_pro.skill_fetcher import (
+    REGISTRY, FetchRefused, FetchResult, SkillDefinition, TrustedSource,
+    discard, fetch, list_sources, read_skills, sandbox_for, validate_source,
+)
 
 from genesis_architect_pro.import_graph import build_graph, load_or_build
 from genesis_architect_pro.architecture_scorer import score_project, score_label
@@ -165,6 +169,8 @@ __all__ = [
     "hygiene_notice", "mark_ephemeral", "purge",
     "AdvisorReport", "ProjectSignals", "ToolRecommendation", "ToolSpec", "CATALOG",
     "advise", "advise_global", "advise_local", "detect_signals",
+    "REGISTRY", "FetchRefused", "FetchResult", "SkillDefinition", "TrustedSource",
+    "discard", "fetch", "list_sources", "read_skills", "sandbox_for", "validate_source",
     "build_graph", "load_or_build",
     "score_project", "score_label",
     "detect_all",

@@ -1168,6 +1168,49 @@ def cmd_advise(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_fetch(args: argparse.Namespace) -> int:
+    """`genesis fetch` — fetch a trusted skill pack into the project sandbox.
+
+    Whitelist-only and read-only: it clones a registered source, marks the
+    sandbox ephemeral so Auto-Purge owns its cleanup, reads the skill
+    definitions as text, and never executes anything it downloaded.
+    """
+    from genesis_architect_pro.skill_fetcher import (
+        FetchRefused, discard, fetch, format_result, format_sources,
+    )
+
+    if getattr(args, "list_sources", False) or not getattr(args, "source_id", None):
+        print(format_sources())
+        return 0
+
+    project_dir = Path(args.dir).expanduser().resolve()
+    if not project_dir.is_dir():
+        print(f"\n  Not a directory: {project_dir}\n", file=sys.stderr)
+        return 1
+
+    try:
+        if getattr(args, "discard", False):
+            removed = discard(args.source_id, project_dir)
+            print(f"\n  {'Removed' if removed else 'Nothing to remove for'} "
+                  f"{args.source_id}\n")
+            return 0
+        result = fetch(
+            args.source_id, project_dir,
+            ttl_hours=getattr(args, "ttl", None) or 2.0,
+            force=bool(getattr(args, "force", False)),
+        )
+    except FetchRefused as exc:
+        print(f"\n  {exc}\n", file=sys.stderr)
+        return 2
+
+    if getattr(args, "json_output", False):
+        import json as _json
+        print(_json.dumps(result.to_dict(), indent=2))
+    else:
+        print(format_result(result))
+    return 0 if result.ok else 1
+
+
 def cmd_purge(args: argparse.Namespace) -> int:
     """`genesis purge [--apply]` — Auto-Purge for expired ephemeral resources.
 
@@ -1401,6 +1444,23 @@ def _build_parser() -> argparse.ArgumentParser:
     advise_p.add_argument("--json", dest="json_output", action="store_true",
                           help="Output structured JSON (for piping / CI)")
 
+    fetch_p = sub.add_parser(
+        "fetch", help="Fetch a trusted skill pack into the sandbox (read-only, never executed)")
+    fetch_p.add_argument("source_id", nargs="?", default=None, metavar="SOURCE",
+                         help="Trusted source id (omit to list what's fetchable)")
+    fetch_p.add_argument("--dir", default=".", metavar="PATH",
+                         help="Project directory (default: current directory)")
+    fetch_p.add_argument("--list", dest="list_sources", action="store_true",
+                         help="List the trusted registry and exit")
+    fetch_p.add_argument("--ttl", type=float, default=None, metavar="HOURS",
+                         help="Sandbox TTL in hours (default and maximum: 2)")
+    fetch_p.add_argument("--force", action="store_true",
+                         help="Re-clone even if the sandbox already exists")
+    fetch_p.add_argument("--discard", action="store_true",
+                         help="Remove this source's sandbox now instead of fetching")
+    fetch_p.add_argument("--json", dest="json_output", action="store_true",
+                         help="Output structured JSON (for piping / CI)")
+
     purge_p = sub.add_parser(
         "purge", help="Auto-Purge: find (and optionally remove) expired ephemeral resources")
     purge_p.add_argument("--dir", default=".", metavar="PATH",
@@ -1457,7 +1517,7 @@ def main(argv: list[str] | None = None) -> int:
     # last wins the launcher — so Pro's entry point must delegate core
     # commands to the core app instead of forcing everything into `decide`.
     _pro_cmds = ("decide", "explain", "memory", "ui", "companion", "sync",
-                 "doctor", "recover", "harden", "telemetry", "purge", "advise")
+                 "doctor", "recover", "harden", "telemetry", "purge", "advise", "fetch")
     _core_cmds = ("init", "config", "research", "publish", "upgrade", "resolve")
     if argv and argv[0] in _core_cmds:
         from genesis_architect.cli import app as _core_app
@@ -1503,6 +1563,7 @@ def main(argv: list[str] | None = None) -> int:
         "telemetry": cmd_telemetry,
         "purge": cmd_purge,
         "advise": cmd_advise,
+        "fetch": cmd_fetch,
     }
     handler = _dispatch.get(args.command)
     if handler is None:

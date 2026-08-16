@@ -38,7 +38,9 @@ from __future__ import annotations
 import json
 import os
 import shutil
+import stat
 import subprocess
+import sys
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
@@ -164,6 +166,31 @@ def _pid_alive(pid: int) -> bool:
     except OSError:
         return True
     return True
+
+
+def remove_tree(path: Path) -> None:
+    """`shutil.rmtree` that copes with read-only files.
+
+    git writes pack files (`.git/objects/pack/*.idx`) with the read-only bit
+    set. On Windows plain rmtree then fails with "Access is denied", so a
+    fetched repository would be detected as expired and still be impossible to
+    remove. Clearing the bit and retrying is the standard fix.
+
+    Found by a live fetch of a real repository — a fake clone with no `.git/`
+    directory never reproduces it.
+    """
+
+    def _retry_readonly(func, target, _exc_info):
+        try:
+            os.chmod(target, stat.S_IWRITE)
+        except OSError:
+            raise
+        func(target)
+
+    if sys.version_info >= (3, 12):
+        shutil.rmtree(path, onexc=_retry_readonly)
+    else:  # pragma: no cover - onerror is the pre-3.12 spelling
+        shutil.rmtree(path, onerror=_retry_readonly)
 
 
 def _git(args: list[str], cwd: Path) -> tuple[bool, str]:
@@ -601,7 +628,7 @@ def purge(
                     report.errors.append(f"{candidate.path}: {err}")
                     continue
             elif candidate.kind == "ephemeral_dir":
-                shutil.rmtree(candidate.path)
+                remove_tree(candidate.path)
             elif candidate.kind == "stale_lock":
                 candidate.path.unlink()
             else:

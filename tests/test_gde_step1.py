@@ -56,6 +56,7 @@ def _make_descriptor(
     modes: list[GDEMode] | None = None,
     is_optional: bool = True,
     write_ops: list[str] | None = None,
+    handoffs: list[str] | None = None,
 ) -> EngineDescriptor:
     return EngineDescriptor(
         id=engine_id,
@@ -66,6 +67,7 @@ def _make_descriptor(
         input_keys=["import_graph"],
         output_keys=["result"],
         requires=requires or [],
+        handoffs=handoffs or [],
         is_optional=is_optional,
         write_operations=write_ops or [],
         modes=modes or [GDEMode.RECOVERY],
@@ -485,6 +487,92 @@ class TestEngineRegistryValidation:
     def test_empty_registry_valid(self) -> None:
         reg = EngineRegistry()
         assert reg.validate() == []
+
+
+# ---------------------------------------------------------------------------
+# Handoffs — the forward edge
+# ---------------------------------------------------------------------------
+
+
+class TestEngineHandoffs:
+    """`handoffs` is advisory: existence-checked, deliberately cycle-exempt."""
+
+    def test_defaults_to_empty(self) -> None:
+        assert _make_descriptor("a").handoffs == []
+
+    def test_valid_handoff_passes(self) -> None:
+        reg = EngineRegistry()
+        reg.register(_make_descriptor("a", handoffs=["b"]))
+        reg.register(_make_descriptor("b"))
+        assert reg.validate() == []
+
+    def test_dangling_handoff_reported(self) -> None:
+        reg = EngineRegistry()
+        reg.register(_make_descriptor("a", handoffs=["ghost"]))
+        errors = reg.validate()
+        assert any("ghost" in e and "hands off" in e for e in errors)
+
+    def test_self_handoff_reported(self) -> None:
+        reg = EngineRegistry()
+        reg.register(_make_descriptor("a", handoffs=["a"]))
+        errors = reg.validate()
+        assert any("itself" in e for e in errors)
+
+    def test_multiple_dangling_handoffs_all_reported(self) -> None:
+        reg = EngineRegistry()
+        reg.register(_make_descriptor("a", handoffs=["ghost1", "ghost2"]))
+        errors = reg.validate()
+        assert sum(1 for e in errors if "hands off" in e) == 2
+
+    def test_handoff_cycle_is_allowed(self) -> None:
+        """The load-bearing design test.
+
+        analyse → decide → re-analyse is a legitimate iterative workflow, so a
+        cycle in the FORWARD edge must not be an error — unlike the same shape
+        in `requires`, which is an ordering constraint and must stay acyclic.
+        """
+        reg = EngineRegistry()
+        reg.register(_make_descriptor("a", handoffs=["b"]))
+        reg.register(_make_descriptor("b", handoffs=["a"]))
+        assert reg.validate() == []
+
+    def test_requires_cycle_still_detected_alongside_handoffs(self) -> None:
+        reg = EngineRegistry()
+        reg.register(_make_descriptor("a", requires=["b"], handoffs=["b"]))
+        reg.register(_make_descriptor("b", requires=["a"]))
+        errors = reg.validate()
+        assert any("cycle" in e.lower() for e in errors)
+
+    def test_handoffs_do_not_affect_execution_order(self) -> None:
+        reg = EngineRegistry()
+        # b hands off to a, but requires nothing — ordering must ignore that.
+        reg.register(_make_descriptor("a"))
+        reg.register(_make_descriptor("b", handoffs=["a"]))
+        ordered = [d.id for d in reg.ordered_for_mode(GDEMode.RECOVERY)]
+        assert set(ordered) == {"a", "b"}
+
+    def test_handoffs_do_not_affect_parallel_groups(self) -> None:
+        reg = EngineRegistry()
+        reg.register(_make_descriptor("a", handoffs=["b"]))
+        reg.register(_make_descriptor("b", handoffs=["a"]))
+        groups = reg.parallel_groups_for_mode(GDEMode.RECOVERY)
+        # No `requires` between them, so they stay in one parallel phase.
+        assert len(groups) == 1
+        assert {d.id for d in groups[0]} == {"a", "b"}
+
+    def test_validate_strict_raises_on_dangling_handoff(self) -> None:
+        reg = EngineRegistry()
+        reg.register(_make_descriptor("a", handoffs=["ghost"]))
+        with pytest.raises(RegistryError):
+            reg.validate_strict()
+
+    def test_production_registry_handoffs_are_valid(self) -> None:
+        """Whatever the real registry declares must actually resolve."""
+        import genesis_architect_pro.gde_engine_registration  # noqa: F401
+        from genesis_architect_pro.engine_registry import get_default_registry
+
+        errors = [e for e in get_default_registry().validate() if "hands off" in e]
+        assert errors == []
 
 
 # ---------------------------------------------------------------------------

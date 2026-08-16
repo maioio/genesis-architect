@@ -115,7 +115,26 @@ class EngineRegistry:
                         f"Engine '{desc.id}' requires '{dep_id}' which is not registered."
                     )
 
-        # Cycle detection via Kahn's algorithm
+            # Handoff existence check. Handoffs are advisory rather than
+            # ordering constraints, so they are deliberately excluded from
+            # cycle detection below — but an advisory pointing at an engine
+            # that does not exist is just a dangling reference, and the whole
+            # value of declaring the forward edge is that it stays truthful as
+            # engines are added and renamed.
+            for handoff_id in desc.handoffs:
+                if handoff_id == desc.id:
+                    errors.append(
+                        f"Engine '{desc.id}' hands off to itself, which cannot "
+                        f"advance a session."
+                    )
+                elif handoff_id not in self._descriptors:
+                    errors.append(
+                        f"Engine '{desc.id}' hands off to '{handoff_id}' which is "
+                        f"not registered."
+                    )
+
+        # Cycle detection via Kahn's algorithm — `requires` only. See
+        # EngineDescriptor for why handoffs are exempt.
         cycle_errors = self._detect_cycles()
         errors.extend(cycle_errors)
 

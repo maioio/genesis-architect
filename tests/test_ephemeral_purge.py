@@ -51,6 +51,26 @@ def _write_manifest(directory: Path, *, age_hours: float, ttl_hours: float) -> P
     return directory
 
 
+def _make_dir_link(link: Path, target: Path) -> None:
+    """Create a directory link that a resolver will follow, without needing
+    elevated privileges on any platform.
+
+    POSIX: a real symlink (unprivileged by default). Windows: a directory
+    junction via `mklink /J`, which — unlike `mklink /D` (symlink) — needs no
+    Developer Mode or admin rights, and still resolves through `Path.resolve()`
+    exactly like a symlink would.
+    """
+    if os.name == "nt":
+        result = subprocess.run(
+            ["cmd", "/c", "mklink", "/J", str(link), str(target)],
+            capture_output=True, text=True,
+        )
+        if result.returncode != 0:
+            pytest.skip(f"could not create a directory junction: {result.stderr.strip()}")
+    else:
+        link.symlink_to(target, target_is_directory=True)
+
+
 def _dead_pid() -> int:
     """A PID that is almost certainly not running."""
     # Spawn a trivial process, wait for it, and reuse its now-free PID.
@@ -249,7 +269,6 @@ class TestContainment:
         root.mkdir()
         assert _within_root(tmp_path, root) is False
 
-    @pytest.mark.skipif(os.name == "nt", reason="symlink creation needs privileges on Windows")
     def test_symlink_escaping_root_is_refused(self, tmp_path):
         root = tmp_path / "project"
         outside = tmp_path / "outside_target"
@@ -257,8 +276,9 @@ class TestContainment:
         outside.mkdir()
         (outside / "keepme.txt").write_text("precious", encoding="utf-8")
         link = root / "sneaky"
-        link.symlink_to(outside, target_is_directory=True)
-        # Symlinks resolve BEFORE the containment check, so this is outside.
+        _make_dir_link(link, outside)
+        # Symlinks (and, on Windows, directory junctions) resolve BEFORE the
+        # containment check, so this is outside.
         assert _within_root(link, root) is False
 
 

@@ -615,6 +615,75 @@ class TestNewModeWiring:
             assert result["perspective_count"] >= 1
             assert any(p["lens"] == "Architecture" for p in result["perspectives"])
 
+    def test_red_team_adapter_discloses_missing_api_key(self):
+        """D-7: the wrapper GDE actually calls must itself disclose the skip,
+        not just the underlying critique_with_llm — this is the code path
+        that a real GDE run exercises, and it had no direct test before."""
+        import os
+        from genesis_architect_pro.gde_engine_adapters import gde_run_red_team_critic
+        from genesis_architect_pro.gde_types import GDEMode, SessionContext
+
+        with tempfile.TemporaryDirectory() as tmp:
+            ctx = SessionContext(mode=GDEMode.GATE)
+            ctx.project_dir = Path(tmp)
+
+            with patch.dict(os.environ, {}, clear=False):
+                os.environ.pop("ANTHROPIC_API_KEY", None)
+                result = gde_run_red_team_critic(ctx)
+
+            assert any("ANTHROPIC_API_KEY" in w for w in result["_warnings"])
+            assert any("skipped" in w for w in result["_warnings"])
+
+    def test_red_team_adapter_discloses_llm_failure_not_silent_success(self):
+        """A broken LLM call must surface a warning, never masquerade as a
+        clean adversarial pass that simply found nothing."""
+        import os
+        from genesis_architect_pro.gde_engine_adapters import gde_run_red_team_critic
+        from genesis_architect_pro.gde_types import GDEMode, SessionContext
+
+        with tempfile.TemporaryDirectory() as tmp:
+            ctx = SessionContext(mode=GDEMode.GATE)
+            ctx.project_dir = Path(tmp)
+
+            with patch.dict(os.environ, {"ANTHROPIC_API_KEY": "test-key"}):
+                with patch(
+                    "genesis_architect_pro.red_team_critic.critique_with_llm",
+                    side_effect=RuntimeError("network unavailable"),
+                ):
+                    result = gde_run_red_team_critic(ctx)
+
+            assert any("Red-team LLM pass failed" in w for w in result["_warnings"])
+
+    def test_red_team_adapter_merges_llm_findings_on_success(self):
+        """The success path: a present key and a working call must actually
+        fold LLM findings into the result, not just avoid warning."""
+        import os
+        from genesis_architect_pro.gde_engine_adapters import gde_run_red_team_critic
+        from genesis_architect_pro.gde_types import GDEMode, SessionContext
+        from genesis_architect_pro.red_team_critic import RedTeamFinding
+
+        with tempfile.TemporaryDirectory() as tmp:
+            ctx = SessionContext(mode=GDEMode.GATE)
+            ctx.project_dir = Path(tmp)
+
+            fake_finding = RedTeamFinding(
+                severity="high", category="llm_check",
+                description="a finding only the LLM pass could surface",
+                evidence="observed via injected fake", inference="test inference",
+            )
+            with patch.dict(os.environ, {"ANTHROPIC_API_KEY": "test-key"}):
+                with patch(
+                    "genesis_architect_pro.red_team_critic.critique_with_llm",
+                    return_value=[fake_finding],
+                ):
+                    result = gde_run_red_team_critic(ctx)
+
+            assert any(
+                f["description"] == "a finding only the LLM pass could surface"
+                for f in result["findings"]
+            )
+            assert not any("ANTHROPIC_API_KEY" in w for w in result["_warnings"])
+
     def test_build_scaffold_adapter_missing_vision(self):
         from genesis_architect_pro.gde_engine_adapters import gde_run_build_scaffold
         from genesis_architect_pro.gde_types import GDEMode, SessionContext

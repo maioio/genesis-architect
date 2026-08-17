@@ -32,10 +32,30 @@ class EngineRegistry:
 
     def __init__(self) -> None:
         self._descriptors: dict[str, EngineDescriptor] = {}
+        self._optional_ids: set[str] = set()
 
     # ------------------------------------------------------------------
     # Registration
     # ------------------------------------------------------------------
+
+    def declare_optional(self, engine_id: str) -> None:
+        """Mark `engine_id` as a legitimate handoff target that may not be
+        registered yet (or ever, in a given process).
+
+        Some engines register conditionally — `knowledge_graph` only joins
+        the registry if its dependency is present and a caller opts in, by
+        design (see gde_knowledge_graph_adapter.register_knowledge_graph).
+        Without this declaration, any descriptor that hands off to such an
+        engine would fail validate() in the default (not-yet-opted-in)
+        state, which is a false alarm: the target is known and intentional,
+        just not always present. Declaring it here lets validate() tell
+        "dangling reference to something that doesn't exist" apart from
+        "reference to something that exists elsewhere, conditionally."
+
+        Idempotent. Safe to call whether or not the engine is registered,
+        and whether or not it ever will be in this process.
+        """
+        self._optional_ids.add(engine_id)
 
     def register(self, descriptor: EngineDescriptor) -> None:
         """Register one engine descriptor.
@@ -127,7 +147,10 @@ class EngineRegistry:
                         f"Engine '{desc.id}' hands off to itself, which cannot "
                         f"advance a session."
                     )
-                elif handoff_id not in self._descriptors:
+                elif (
+                    handoff_id not in self._descriptors
+                    and handoff_id not in self._optional_ids
+                ):
                     errors.append(
                         f"Engine '{desc.id}' hands off to '{handoff_id}' which is "
                         f"not registered."

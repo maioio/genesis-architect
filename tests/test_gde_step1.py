@@ -711,6 +711,82 @@ class TestEngineHandoffs:
         assert get_default_registry()._descriptors["red_team_critic"].handoffs == []
 
 
+class TestOptionalHandoffTargets:
+    """D-4: conditionally-registered engines must not read as dangling handoffs.
+
+    `knowledge_graph` only joins a registry if its dependency is present and
+    a caller opts in (see gde_knowledge_graph_adapter.register_knowledge_graph).
+    Before this fix, a handoff pointing at it would falsely fail validate()
+    in exactly the degraded state that conditional registration exists to
+    tolerate — the gap the audit called convention-only enforcement.
+    """
+
+    def test_handoff_to_undeclared_target_still_reported(self) -> None:
+        reg = EngineRegistry()
+        reg.register(_make_descriptor("a", handoffs=["ghost"]))
+        errors = reg.validate()
+        assert any("ghost" in e for e in errors)
+
+    def test_handoff_to_declared_optional_target_passes_even_if_unregistered(self) -> None:
+        reg = EngineRegistry()
+        reg.declare_optional("ghost")
+        reg.register(_make_descriptor("a", handoffs=["ghost"]))
+        assert reg.validate() == []
+
+    def test_declare_optional_is_idempotent(self) -> None:
+        reg = EngineRegistry()
+        reg.declare_optional("ghost")
+        reg.declare_optional("ghost")
+        reg.register(_make_descriptor("a", handoffs=["ghost"]))
+        assert reg.validate() == []
+
+    def test_self_handoff_still_reported_even_when_declared_optional(self) -> None:
+        reg = EngineRegistry()
+        reg.declare_optional("a")
+        reg.register(_make_descriptor("a", handoffs=["a"]))
+        errors = reg.validate()
+        assert any("itself" in e for e in errors)
+
+    def test_declaring_optional_target_that_later_registers_is_harmless(self) -> None:
+        """Declaring optional doesn't block real registration or double-count."""
+        reg = EngineRegistry()
+        reg.declare_optional("b")
+        reg.register(_make_descriptor("a", handoffs=["b"]))
+        reg.register(_make_descriptor("b"))
+        assert reg.validate() == []
+
+    def test_production_registry_declares_knowledge_graph_optional(self) -> None:
+        """The real fix site: importing the adapter must declare the exemption
+        against the default registry, independent of whether registration
+        itself succeeded in this process."""
+        from genesis_architect_pro.engine_registry import get_default_registry
+        from genesis_architect_pro.gde_knowledge_graph_adapter import (
+            register_knowledge_graph,
+        )
+
+        reg = get_default_registry()
+        register_knowledge_graph()
+        assert "knowledge_graph" in reg._optional_ids
+
+    def test_hypothetical_handoff_to_knowledge_graph_would_validate_clean(self) -> None:
+        """Simulates the exact scenario the audit flagged: some other engine
+        hands off to knowledge_graph. Must validate clean regardless of
+        whether knowledge_graph actually registered in this process."""
+        import genesis_architect_pro.gde_engine_registration  # noqa: F401
+        from genesis_architect_pro.engine_registry import get_default_registry
+
+        reg = get_default_registry()
+        original = reg._descriptors["red_team_critic"]
+        try:
+            reg._descriptors["red_team_critic"] = _make_descriptor(
+                "red_team_critic", handoffs=["knowledge_graph"]
+            )
+            errors = [e for e in reg.validate() if "knowledge_graph" in e]
+            assert errors == []
+        finally:
+            reg._descriptors["red_team_critic"] = original
+
+
 # ---------------------------------------------------------------------------
 # EngineRegistry topological sort tests
 # ---------------------------------------------------------------------------

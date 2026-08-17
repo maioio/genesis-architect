@@ -938,7 +938,8 @@ def gde_run_red_team_critic(ctx: SessionContext) -> dict[str, Any]:
     return {
         "findings": [
             {"severity": f.severity, "category": f.category,
-             "description": f.description, "evidence": f.evidence}
+             "description": f.description, "evidence": f.evidence,
+             "inference": f.inference}
             for f in findings
         ],
         "critical_findings": len(critical),

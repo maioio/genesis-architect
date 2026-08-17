@@ -57,6 +57,7 @@ def _make_descriptor(
     is_optional: bool = True,
     write_ops: list[str] | None = None,
     handoffs: list[str] | None = None,
+    failure_modes: list[str] | None = None,
 ) -> EngineDescriptor:
     return EngineDescriptor(
         id=engine_id,
@@ -68,6 +69,7 @@ def _make_descriptor(
         output_keys=["result"],
         requires=requires or [],
         handoffs=handoffs or [],
+        failure_modes=failure_modes or [],
         is_optional=is_optional,
         write_operations=write_ops or [],
         modes=modes or [GDEMode.RECOVERY],
@@ -492,6 +494,92 @@ class TestEngineRegistryValidation:
 # ---------------------------------------------------------------------------
 # Handoffs — the forward edge
 # ---------------------------------------------------------------------------
+
+
+class TestEngineFailureModes:
+    """A5: `failure_modes` declares how an engine misleads when it goes wrong,
+    next to the engine rather than centrally, so the constraint sits with the
+    thing it constrains."""
+
+    def test_defaults_to_empty(self) -> None:
+        assert _make_descriptor("a").failure_modes == []
+
+    def test_free_text_content_passes(self) -> None:
+        reg = EngineRegistry()
+        reg.register(_make_descriptor(
+            "a", failure_modes=["silently returns an empty result on a "
+                                "language it does not parse"]))
+        assert reg.validate() == []
+
+    def test_empty_string_entry_is_rejected(self) -> None:
+        reg = EngineRegistry()
+        reg.register(_make_descriptor("a", failure_modes=[""]))
+        errors = reg.validate()
+        assert any("empty failure mode" in e for e in errors)
+
+    def test_whitespace_only_entry_is_rejected(self) -> None:
+        reg = EngineRegistry()
+        reg.register(_make_descriptor("a", failure_modes=["   "]))
+        assert any("empty failure mode" in e for e in reg.validate())
+
+    def test_not_checked_against_cycles_or_other_engines(self) -> None:
+        # Free text describing a failure mode is never a graph reference, so it
+        # must never be validated as if it were one.
+        reg = EngineRegistry()
+        reg.register(_make_descriptor(
+            "a", failure_modes=["behaves like engine 'b' when starved of input"]))
+        assert reg.validate() == []
+
+    def test_production_registry_has_no_empty_failure_modes(self) -> None:
+        import genesis_architect_pro.gde_engine_registration  # noqa: F401
+        from genesis_architect_pro.engine_registry import get_default_registry
+
+        errors = [e for e in get_default_registry().validate()
+                 if "empty failure mode" in e]
+        assert errors == []
+
+    def test_production_registry_declares_some_failure_modes(self) -> None:
+        """Guards against the field silently regressing to empty."""
+        import genesis_architect_pro.gde_engine_registration  # noqa: F401
+        from genesis_architect_pro.engine_registry import get_default_registry
+
+        reg = get_default_registry()
+        declared = [d for d in reg._descriptors.values() if d.failure_modes]
+        assert len(declared) >= 5
+
+
+class TestFailureModeSurfacing:
+    """A5's other half: failure_modes must be surfaced when they matter (a
+    non-success result) and silent otherwise, or they train the reader to
+    skip them."""
+
+    def test_shown_on_failure(self) -> None:
+        from genesis_architect_pro.gde_cli import _failure_modes_for
+        import genesis_architect_pro.gde_engine_registration  # noqa: F401
+
+        result = _make_engine_result("import_graph", status=EngineStatus.FAILED)
+        modes = _failure_modes_for("import_graph", result)
+        assert modes, "import_graph declares failure modes and just failed"
+
+    def test_shown_on_degraded(self) -> None:
+        from genesis_architect_pro.gde_cli import _failure_modes_for
+        import genesis_architect_pro.gde_engine_registration  # noqa: F401
+
+        result = _make_engine_result("import_graph", status=EngineStatus.DEGRADED)
+        assert _failure_modes_for("import_graph", result)
+
+    def test_hidden_on_success(self) -> None:
+        from genesis_architect_pro.gde_cli import _failure_modes_for
+        import genesis_architect_pro.gde_engine_registration  # noqa: F401
+
+        result = _make_engine_result("import_graph", status=EngineStatus.SUCCESS)
+        assert _failure_modes_for("import_graph", result) == []
+
+    def test_unknown_engine_id_is_safe(self) -> None:
+        from genesis_architect_pro.gde_cli import _failure_modes_for
+
+        result = _make_engine_result("not-a-real-engine", status=EngineStatus.FAILED)
+        assert _failure_modes_for("not-a-real-engine", result) == []
 
 
 class TestEngineHandoffs:

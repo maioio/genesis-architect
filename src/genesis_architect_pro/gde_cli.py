@@ -260,11 +260,33 @@ def _print_report_summary(report) -> None:
         for eid, r in report.engine_results.items():
             conf = f"conf={r.confidence:.2f}" if hasattr(r, "confidence") else ""
             print(f"    {r.status.value:9} {eid}  {conf}")
+            # An engine that did not cleanly succeed is exactly when its known
+            # failure modes are worth reading: they say whether this result is
+            # a documented way of being wrong or something new.
+            for mode in _failure_modes_for(eid, r):
+                print(f"              known mode: {mode}")
 
     n = len(report.decision_log)
     print()
     print(f"  Decision log: {n} entr{'y' if n == 1 else 'ies'}")
     print(_hr())
+
+
+def _failure_modes_for(engine_id: str, result) -> list[str]:
+    """Declared failure modes for an engine, but only when it did not cleanly
+    succeed. Printing them on every success would train the reader to skip
+    them, which costs exactly the attention they exist to buy.
+    """
+    status = getattr(getattr(result, "status", None), "value", "")
+    if status == "success":
+        return []
+    try:
+        from genesis_architect_pro.engine_registry import get_default_registry
+
+        desc = get_default_registry().get(engine_id)
+    except Exception:  # noqa: BLE001 — reporting must never break the report
+        return []
+    return list(desc.failure_modes) if desc is not None else []
 
 
 def _prompt_approval(request) -> str:

@@ -129,6 +129,12 @@ class EngineDescriptor:
     output_keys: list[str]
     requires: list[str] = field(default_factory=list)
     handoffs: list[str] = field(default_factory=list)
+    # Known ways this engine misleads when it goes wrong. Declared next to the
+    # engine rather than centrally, so the constraint sits with the thing it
+    # constrains. Surfaced when the engine fails or degrades, which is exactly
+    # when an operator is deciding whether a bad result is a known mode or a
+    # new problem.
+    failure_modes: list[str] = field(default_factory=list)
     is_optional: bool = True
     write_operations: list[str] = field(default_factory=list)
     timeout_seconds: int = 60

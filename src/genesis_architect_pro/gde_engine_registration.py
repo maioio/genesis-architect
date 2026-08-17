@@ -44,6 +44,13 @@ _DESCRIPTORS: list[EngineDescriptor] = [
         output_keys=["graph", "cycles", "dark_modules", "layer_map"],
         requires=[],
         handoffs=["architecture_scorer", "antipattern_detector"],
+        failure_modes=[
+            "A language the parser does not cover yields an empty graph that "
+            "looks like a clean, dependency-free project rather than an "
+            "unparsed one.",
+            "Dynamic imports are invisible, so a real edge can be missing "
+            "without any indication that it was missed.",
+        ],
         is_optional=False,
         write_operations=[],
         timeout_seconds=60,
@@ -61,6 +68,12 @@ _DESCRIPTORS: list[EngineDescriptor] = [
         output_keys=["score", "score_label", "dimensions", "history"],
         requires=["import_graph"],
         handoffs=["antipattern_detector", "refactoring_planner"],
+        failure_modes=[
+            "Scoring a near-empty graph produces a high score, because few "
+            "modules means few violations — absence of findings is not health.",
+            "The adaptive profile is inferred; a mis-detected profile scores "
+            "the project against the wrong expectations without saying so.",
+        ],
         is_optional=True,
         write_operations=["score_history"],
         timeout_seconds=30,
@@ -78,6 +91,12 @@ _DESCRIPTORS: list[EngineDescriptor] = [
         output_keys=["patterns", "critical_count", "high_count"],
         requires=["import_graph"],
         handoffs=["fragility_classifier", "refactoring_planner"],
+        failure_modes=[
+            "Thresholds are structural, not contextual: a deliberate facade or "
+            "a generated file can be reported as a god class or hub file.",
+            "Zero detections on an unparsed graph reads identically to zero "
+            "detections on a genuinely clean one.",
+        ],
         is_optional=True,
         write_operations=[],
         timeout_seconds=30,
@@ -202,6 +221,12 @@ _DESCRIPTORS: list[EngineDescriptor] = [
         output_keys=["findings", "verified_count", "queries"],
         requires=["source_registry"],
         handoffs=["evidence_pack"],
+        failure_modes=[
+            "Offline or with a dead API key it returns nothing, which is not "
+            "the same as having found no community signal.",
+            "Community sentiment is self-selected toward complaint; volume of "
+            "pain is not proportional to prevalence of pain.",
+        ],
         is_optional=True,
         write_operations=[],
         timeout_seconds=60,
@@ -259,6 +284,10 @@ _DESCRIPTORS: list[EngineDescriptor] = [
         output_keys=["rules_passed", "rules_file", "rule_count", "failed_rules"],
         requires=["architecture_scorer", "antipattern_detector"],
         handoffs=["recovery_report"],
+        failure_modes=[
+            "With no rules file present it passes trivially — a green gate can "
+            "mean 'nothing was checked', not 'everything held'.",
+        ],
         is_optional=True,
         write_operations=[],
         timeout_seconds=30,
@@ -276,6 +305,12 @@ _DESCRIPTORS: list[EngineDescriptor] = [
         output_keys=["churn_map", "high_churn_count", "stale_count", "bus_factor_1_count"],
         requires=["import_graph"],
         handoffs=["fragility_classifier"],
+        failure_modes=[
+            "A shallow clone or a freshly-imported repository has almost no "
+            "history, so everything looks stable and low-churn.",
+            "Bulk reformatting or a migration commit inflates churn for files "
+            "nobody actually changed in substance.",
+        ],
         is_optional=True,
         write_operations=[],
         timeout_seconds=60,

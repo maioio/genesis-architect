@@ -133,6 +133,16 @@ class EngineRegistry:
                         f"not registered."
                     )
 
+            # Failure modes are free text by design — they describe how an
+            # engine misleads, which is not machine-checkable. What IS checkable
+            # is that a declared entry actually says something: a blank string
+            # in this list is a placeholder that reads as a declaration.
+            for mode in desc.failure_modes:
+                if not isinstance(mode, str) or not mode.strip():
+                    errors.append(
+                        f"Engine '{desc.id}' declares an empty failure mode."
+                    )
+
         # Cycle detection via Kahn's algorithm — `requires` only. See
         # EngineDescriptor for why handoffs are exempt.
         cycle_errors = self._detect_cycles()

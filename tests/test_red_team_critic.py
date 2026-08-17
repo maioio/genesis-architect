@@ -256,6 +256,80 @@ class TestRunRedTeam:
 # ---------------------------------------------------------------------------
 
 
+class TestEvidenceInferenceSeparation:
+    """A4: evidence holds only what was observed; inference holds what follows.
+
+    This module previously stated "Confidence in a conclusion drawn from no
+    evidence is zero" in its evidence field — a claim about epistemics, not an
+    observation. These tests keep that from coming back.
+    """
+
+    def test_finding_has_both_fields(self):
+        f = RedTeamFinding(severity="low", category="x", description="d")
+        assert f.evidence == "" and f.inference == ""
+
+    def test_conflicting_writes_populates_both(self):
+        ctx = _ctx()
+        ctx.overall_confidence = 0.5
+        ctx.pending_write_operations.append(_write_op("a", "op1", "shared.md"))
+        ctx.pending_write_operations.append(_write_op("b", "op2", "shared.md"))
+        f = next(x for x in critique_session(ctx) if x.category == "conflicting_writes")
+        assert f.evidence and f.inference
+        assert "shared.md" in f.evidence and "engines=" in f.evidence
+
+    def test_unfounded_confidence_evidence_is_measurements_only(self):
+        ctx = _ctx()
+        ctx.overall_confidence = 0.9
+        f = next(x for x in critique_session(ctx) if x.category == "unfounded_confidence")
+        # Evidence must be readable values, not the argument about them.
+        assert "overall_confidence=0.90" in f.evidence
+        assert "engines_run=0" in f.evidence
+        assert "zero" not in f.evidence.lower(), "the epistemic claim belongs in inference"
+        assert "Confidence in a conclusion" in f.inference
+
+    def test_irreversible_findings_populate_both(self):
+        ctx = _ctx()
+        ctx.overall_confidence = 0.5
+        ctx.pending_write_operations.append(
+            _write_op("a", "op1", "x.md", is_reversible=False))
+        ctx.engine_results["a"] = _result("a", confidence=0.2)
+        f = next(x for x in critique_session(ctx)
+                 if x.category == "irreversible_low_confidence")
+        assert "is_reversible=False" in f.evidence and "confidence=0.20" in f.evidence
+        assert f.inference
+
+    def test_every_deterministic_finding_has_an_inference(self):
+        ctx = _ctx()
+        ctx.overall_confidence = 0.9
+        ctx.pending_write_operations.append(_write_op("a", "op1", "s.md"))
+        ctx.pending_write_operations.append(_write_op("b", "op2", "s.md"))
+        ctx.pending_write_operations.append(
+            _write_op("c", "op3", "y.md", is_reversible=False))
+        findings = critique_session(ctx)
+        assert findings
+        for f in findings:
+            assert f.inference, f"{f.category} has no inference"
+            assert f.evidence, f"{f.category} has no evidence"
+
+    def test_llm_parses_evidence_and_inference_separately(self):
+        raw = ("FINDING: high\nCATEGORY: c\nDESCRIPTION: d\n"
+               "EVIDENCE: pending_writes=2\nINFERENCE: they collide\n---\n")
+        f = _parse_llm_findings(raw)[0]
+        assert f.evidence == "pending_writes=2"
+        assert f.inference == "they collide"
+        assert f.description == "d", "description must not swallow the later fields"
+
+    def test_llm_missing_optional_fields_still_parses(self):
+        f = _parse_llm_findings("FINDING: low\nCATEGORY: c\nDESCRIPTION: d\n---\n")[0]
+        assert f.evidence == "" and f.inference == ""
+
+    def test_run_red_team_exposes_inference(self):
+        ctx = _ctx()
+        ctx.overall_confidence = 0.9
+        out = run_red_team(ctx)
+        assert "inference" in out["findings"][0]
+
+
 class TestParseLLMFindings:
     def test_empty_string(self):
         assert _parse_llm_findings("") == []

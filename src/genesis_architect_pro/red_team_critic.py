@@ -33,10 +33,23 @@ RedTeamCallable = Callable[[str, str], str]
 
 @dataclass
 class RedTeamFinding:
+    """One finding, with evidence and inference kept apart.
+
+    The separation is the point. `evidence` holds only what was OBSERVED —
+    values read out of the session, no interpretation. `inference` holds what
+    FOLLOWS from it. A reader can then disagree with the reasoning while still
+    trusting the facts, which is impossible when the two are blended.
+
+    This module previously stated "Confidence in a conclusion drawn from no
+    evidence is zero" in its `evidence` field. That is a claim about
+    epistemics, not an observation — exactly the conflation this split fixes.
+    """
+
     severity: str  # "critical" | "high" | "medium" | "low"
     category: str
     description: str
-    evidence: str = ""
+    evidence: str = ""    # observed facts only — no interpretation
+    inference: str = ""   # what follows from the evidence
 
 
 # ---------------------------------------------------------------------------
@@ -57,7 +70,10 @@ def _check_conflicting_writes(ctx: SessionContext) -> list[RedTeamFinding]:
                 severity="critical",
                 category="conflicting_writes",
                 description=f"Multiple engines propose writing to the same path: {path!r}",
-                evidence=f"engines={sorted(engine_ids)!r}",
+                evidence=f"target_path={path!r}, engines={sorted(engine_ids)!r}",
+                inference="Both writes would execute; whichever lands last silently "
+                          "overwrites the other, so one engine's output is lost with "
+                          "no error raised.",
             ))
     return findings
 
@@ -77,7 +93,13 @@ def _check_irreversible_low_confidence(ctx: SessionContext) -> list[RedTeamFindi
                     f"Irreversible write {op.operation_id!r} proposed by "
                     f"{op.engine_id!r}, which has no recorded engine result"
                 ),
-                evidence=f"target_path={op.target_path!r}",
+                evidence=(
+                    f"operation_id={op.operation_id!r}, engine_id={op.engine_id!r}, "
+                    f"target_path={op.target_path!r}, is_reversible=False, "
+                    f"engine_results has no entry for {op.engine_id!r}"
+                ),
+                inference="Nothing justifies this write and nothing can undo it: "
+                          "the engine that proposed it produced no result to inspect.",
             ))
         elif result.status != EngineStatus.SUCCESS or result.confidence < _LOW_CONFIDENCE_THRESHOLD:
             findings.append(RedTeamFinding(
@@ -88,7 +110,15 @@ def _check_irreversible_low_confidence(ctx: SessionContext) -> list[RedTeamFindi
                     f"{op.engine_id!r} (status={result.status.value}, "
                     f"confidence={result.confidence:.2f})"
                 ),
-                evidence=f"target_path={op.target_path!r}",
+                evidence=(
+                    f"operation_id={op.operation_id!r}, engine_id={op.engine_id!r}, "
+                    f"target_path={op.target_path!r}, is_reversible=False, "
+                    f"status={result.status.value}, confidence={result.confidence:.2f}"
+                ),
+                inference=f"The write cannot be undone, and the analysis behind it "
+                          f"is below the {_LOW_CONFIDENCE_THRESHOLD:.2f} threshold or "
+                          f"did not succeed — so an unrecoverable change would rest "
+                          f"on a result not trusted enough to act on.",
             ))
     return findings
 
@@ -107,7 +137,15 @@ def _check_unfounded_confidence(ctx: SessionContext) -> list[RedTeamFinding]:
                 f"{len(successes)} successful engine result(s) out of "
                 f"{len(ctx.engine_results)} run"
             ),
-            evidence="Confidence in a conclusion drawn from no evidence is zero.",
+            evidence=(
+                f"overall_confidence={ctx.overall_confidence:.2f}, "
+                f"threshold={_UNFOUNDED_CONFIDENCE_THRESHOLD:.2f}, "
+                f"engines_run={len(ctx.engine_results)}, "
+                f"engines_succeeded={len(successes)}"
+            ),
+            inference="Confidence in a conclusion drawn from no evidence is zero. "
+                      "A high score here reflects the absence of penalties, not the "
+                      "presence of support.",
         )]
     return []
 
@@ -174,11 +212,16 @@ def _build_attack_prompt(ctx: SessionContext) -> tuple[str, str]:
         f"OVERALL CONFIDENCE: {ctx.overall_confidence:.2f}\n\n"
         f"PENDING WRITES:\n{writes}\n\n"
         f"ENGINE RESULTS:\n{results}\n\n"
+        "Keep evidence and inference apart: EVIDENCE is only what you can point "
+        "to in the data above, quoted or named. INFERENCE is what you conclude "
+        "from it. Do not put reasoning in EVIDENCE.\n\n"
         "For each vulnerability found, respond with a block in exactly this "
         "format (repeat as needed):\n"
         "FINDING: <critical|high|medium|low>\n"
         "CATEGORY: <short category>\n"
         "DESCRIPTION: <what could go wrong, one or two sentences>\n"
+        "EVIDENCE: <the specific values or entries you are reasoning from>\n"
+        "INFERENCE: <what follows from that evidence>\n"
         "---\n"
         "If there are no real vulnerabilities, respond with exactly: NONE"
     )
@@ -192,7 +235,17 @@ def _parse_llm_findings(raw: str) -> list[RedTeamFinding]:
     for block in raw.split("---"):
         severity_match = re.search(r"^FINDING:\s*(\w+)", block, re.MULTILINE)
         category_match = re.search(r"^CATEGORY:\s*(.+)$", block, re.MULTILINE)
-        desc_match = re.search(r"^DESCRIPTION:\s*(.+)$", block, re.MULTILINE | re.DOTALL)
+        # Stop each field at the next label so DESCRIPTION does not swallow
+        # EVIDENCE and INFERENCE, which would undo the separation.
+        desc_match = re.search(
+            r"^DESCRIPTION:\s*(.+?)(?=^\s*(?:EVIDENCE|INFERENCE|FINDING|CATEGORY):|\Z)",
+            block, re.MULTILINE | re.DOTALL)
+        evidence_match = re.search(
+            r"^EVIDENCE:\s*(.+?)(?=^\s*(?:INFERENCE|FINDING|CATEGORY|DESCRIPTION):|\Z)",
+            block, re.MULTILINE | re.DOTALL)
+        inference_match = re.search(
+            r"^INFERENCE:\s*(.+?)(?=^\s*(?:EVIDENCE|FINDING|CATEGORY|DESCRIPTION):|\Z)",
+            block, re.MULTILINE | re.DOTALL)
         if not severity_match or not desc_match:
             continue
         severity = severity_match.group(1).strip().lower()
@@ -202,6 +255,8 @@ def _parse_llm_findings(raw: str) -> list[RedTeamFinding]:
             severity=severity,
             category=category_match.group(1).strip() if category_match else "llm_finding",
             description=desc_match.group(1).strip(),
+            evidence=evidence_match.group(1).strip() if evidence_match else "",
+            inference=inference_match.group(1).strip() if inference_match else "",
         ))
     return findings
 
@@ -241,7 +296,8 @@ def run_red_team(
     return {
         "findings": [
             {"severity": f.severity, "category": f.category,
-             "description": f.description, "evidence": f.evidence}
+             "description": f.description, "evidence": f.evidence,
+             "inference": f.inference}
             for f in findings
         ],
         "critical_count": len(critical),

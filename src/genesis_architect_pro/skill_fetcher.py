@@ -78,6 +78,11 @@ class TrustedSource:
     description: str
     kind: str = "skill_pack"
     license: str = ""
+    # Expected commit SHA. The whitelist establishes WHO is trusted; without a
+    # pin it says nothing about WHAT arrives, so a force-push or a compromise
+    # of a trusted repo would be fetched silently. An empty pin is allowed but
+    # is reported as unpinned rather than passing quietly.
+    commit: str = ""
 
     @property
     def url(self) -> str:
@@ -87,6 +92,10 @@ class TrustedSource:
     def slug(self) -> str:
         return f"{self.owner}/{self.repo}"
 
+    @property
+    def is_pinned(self) -> bool:
+        return bool(self.commit)
+
 
 REGISTRY: dict[str, TrustedSource] = {
     "software-architecture-skills": TrustedSource(
@@ -95,6 +104,7 @@ REGISTRY: dict[str, TrustedSource] = {
         description="Platform-neutral architecture skill pack: ADR writing, tradeoff "
                     "analysis, quality-attribute scenarios, deployment views.",
         license="MIT",
+        commit="14966b2ccf3df92d37d73a1862699e5aa3f1f652",
     ),
     "deep-research-skills": TrustedSource(
         source_id="deep-research-skills",
@@ -102,6 +112,7 @@ REGISTRY: dict[str, TrustedSource] = {
         description="Two-phase research workflow: outline generation, then deep "
                     "investigation with human oversight.",
         license="MIT",
+        commit="e5479f857f484cde13fe69d2f3ce8de7af193bc7",
     ),
 }
 
@@ -188,6 +199,28 @@ def _default_cloner(url: str, dest: Path) -> tuple[bool, str]:
     if proc.returncode != 0:
         return False, (proc.stderr or "git clone failed").strip()
     return True, ""
+
+
+HeadResolver = Callable[[Path], str]
+
+
+def _default_head_resolver(dest: Path) -> str:
+    """Return the checked-out commit SHA, or "" if it cannot be determined.
+
+    An unreadable HEAD returns empty, which `fetch()` treats as a pin failure
+    rather than a pass — an unverifiable checkout is not a verified one.
+    """
+    try:
+        proc = subprocess.run(
+            ["git", "-C", str(dest), "rev-parse", "HEAD"],
+            capture_output=True, text=True, encoding="utf-8",
+            errors="replace", timeout=30,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return ""
+    if proc.returncode != 0:
+        return ""
+    return (proc.stdout or "").strip()
 
 
 # ---------------------------------------------------------------------------
@@ -294,6 +327,8 @@ class FetchResult:
     skills: list[SkillDefinition] = field(default_factory=list)
     error: str = ""
     reused_existing: bool = False
+    commit: str = ""            # what actually arrived
+    pinned: bool = False        # whether the registry declared an expected SHA
 
     @property
     def skill_count(self) -> int:
@@ -305,6 +340,7 @@ class FetchResult:
             "sandbox_dir": self.sandbox_dir, "manifest_path": self.manifest_path,
             "ttl_hours": self.ttl_hours, "error": self.error,
             "reused_existing": self.reused_existing,
+            "commit": self.commit, "pinned": self.pinned,
             "skills": [
                 {"name": s.name, "description": s.description,
                  "path": s.path, "body_chars": s.body_chars}
@@ -319,6 +355,7 @@ def fetch(
     *,
     ttl_hours: float = DEFAULT_TTL_HOURS,
     cloner: Cloner = _default_cloner,
+    head_resolver: HeadResolver | None = None,
     force: bool = False,
 ) -> FetchResult:
     """Fetch a trusted skill pack into the project sandbox and read it.
@@ -358,13 +395,36 @@ def fetch(
     ok, err = cloner(source.url, dest)
     if not ok:
         # Leave nothing half-fetched behind.
-        if dest.exists():
-            try:
-                remove_tree(dest)
-            except OSError:
-                shutil.rmtree(dest, ignore_errors=True)
+        _discard_quietly(dest)
         return FetchResult(source_id=source_id, ok=False,
                            error=err or "clone failed")
+
+    # Verify the pin BEFORE the content is marked usable or read. A mismatch
+    # means the trusted repository moved: the whitelist still vouches for the
+    # publisher, but not for this revision, so the safe answer is to refuse
+    # and leave nothing behind rather than read content nobody vouched for.
+    # Resolved at call time, not bound as a default, so the resolver stays
+    # substitutable for callers and tests.
+    resolve = head_resolver or _default_head_resolver
+    actual = (resolve(dest) or "").strip()
+    if source.is_pinned:
+        if not actual:
+            _discard_quietly(dest)
+            return FetchResult(
+                source_id=source_id, ok=False, pinned=True,
+                error="could not determine the fetched commit; refusing an "
+                      "unverifiable checkout",
+            )
+        if actual.lower() != source.commit.lower():
+            _discard_quietly(dest)
+            return FetchResult(
+                source_id=source_id, ok=False, pinned=True, commit=actual,
+                error=(
+                    f"commit mismatch: expected {source.commit[:12]}, got "
+                    f"{actual[:12]}. The trusted repository moved. Review the "
+                    f"change, then update the pin in REGISTRY to accept it."
+                ),
+            )
 
     # Mark ephemeral immediately — before reading, before returning — so the
     # sandbox can never exist in an untracked state.
@@ -375,7 +435,18 @@ def fetch(
     return FetchResult(
         source_id=source_id, ok=True, sandbox_dir=str(dest),
         manifest_path=str(manifest), ttl_hours=ttl, skills=skills,
+        commit=actual, pinned=source.is_pinned,
     )
+
+
+def _discard_quietly(dest: Path) -> None:
+    """Remove a partial or rejected sandbox, never raising."""
+    if not dest.exists():
+        return
+    try:
+        remove_tree(dest)
+    except OSError:
+        shutil.rmtree(dest, ignore_errors=True)
 
 
 def discard(source_id: str, project_dir: Path) -> bool:
@@ -420,9 +491,12 @@ def format_sources() -> str:
     for source in list_sources():
         lines.append(f"    {source.source_id}")
         lines.append(f"      {source.slug}  ({source.license or 'license unknown'})")
+        pin = f"pinned @ {source.commit[:12]}" if source.is_pinned else "UNPINNED"
+        lines.append(f"      {pin}")
         lines.append(f"      {source.description}")
         lines.append("")
     lines.append("  Only these are fetchable. Arbitrary URLs are never fetched.")
+    lines.append("  A pinned source is refused if the repository's HEAD has moved.")
     lines.append("")
     return "\n".join(lines)
 
@@ -436,6 +510,11 @@ def format_result(result: FetchResult) -> str:
 
     state = "reused existing sandbox" if result.reused_existing else "cloned"
     lines.append(f"  {state}: {result.sandbox_dir}")
+    if result.commit:
+        pin = "pin verified" if result.pinned else "UNPINNED — content not verified"
+        lines.append(f"  Commit: {result.commit[:12]} ({pin})")
+    elif not result.pinned:
+        lines.append("  Commit: unknown (UNPINNED — content not verified)")
     lines.append(f"  Ephemeral: expires in {result.ttl_hours:g}h "
                  f"(manifest: {Path(result.manifest_path).name})")
     lines.append("")

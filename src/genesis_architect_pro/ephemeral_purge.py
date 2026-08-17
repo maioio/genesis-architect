@@ -46,6 +46,16 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 MANIFEST_NAME = ".ephemeral.json"
+IGNORE_FILE = ".claudeignore"
+
+# Directories never worth descending into when hunting for manifests. Machine
+# generated, frequently enormous, and none of them can hold a sandbox we own.
+# Scanning them was measured at 0.85s per command on a tree with a 4 GB .venv —
+# paid after every CLI invocation, for nothing.
+DEFAULT_PRUNE_DIRS = frozenset({
+    ".venv", "venv", "node_modules", "__pycache__", ".git",
+    "dist", "build", ".mypy_cache", ".pytest_cache", ".ruff_cache",
+})
 
 # Branches never removed alongside a worktree, whatever their age.
 PROTECTED_BRANCHES = frozenset({"main", "master", "develop", "trunk", "release"})
@@ -168,6 +178,60 @@ def _pid_alive(pid: int) -> bool:
     return True
 
 
+def load_ignore_patterns(project_root: Path) -> set[str]:
+    """Directory names to prune, from `.claudeignore` plus built-in defaults.
+
+    Reads the project's own `.claudeignore` first, then the user-level one at
+    `~/.claudeignore`. That file already exists to keep heavy machine-generated
+    directories out of scans and backups; honouring it here means the exclusion
+    list is declared in one place rather than duplicated in code.
+
+    Only plain directory names are used — this is a scan optimisation, not a
+    gitignore implementation, and quietly mis-parsing a complex pattern would
+    be worse than ignoring it.
+    """
+    patterns = set(DEFAULT_PRUNE_DIRS)
+    for candidate in (Path(project_root) / IGNORE_FILE, Path.home() / IGNORE_FILE):
+        try:
+            if not candidate.is_file():
+                continue
+            text = candidate.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        for raw in text.splitlines():
+            line = raw.strip()
+            if not line or line.startswith("#"):
+                continue
+            line = line.rstrip("/")
+            # Skip anything path-like or globbed; only bare directory names.
+            if "/" in line or "\\" in line or "*" in line or "?" in line:
+                continue
+            if line:
+                patterns.add(line)
+    return patterns
+
+
+def iter_manifest_dirs(project_root: Path, prune: set[str]) -> list[Path]:
+    """Directories holding a manifest, pruning heavy trees during the walk.
+
+    `Path.rglob` cannot prune: it descends everything and filters afterwards,
+    so the cost of a 4 GB `.venv` is paid whether or not anything matches.
+    `os.walk` allows mutating `dirnames` in place to skip a subtree entirely,
+    which is what makes this cheap.
+    """
+    found: list[Path] = []
+    root = Path(project_root)
+    try:
+        walker = os.walk(root, topdown=True, followlinks=False)
+        for dirpath, dirnames, filenames in walker:
+            dirnames[:] = [d for d in dirnames if d not in prune]
+            if MANIFEST_NAME in filenames:
+                found.append(Path(dirpath))
+    except (OSError, RuntimeError):
+        return found
+    return found
+
+
 def remove_tree(path: Path) -> None:
     """`shutil.rmtree` that copes with read-only files.
 
@@ -257,14 +321,8 @@ def scan_ephemeral_dirs(project_root: Path) -> tuple[list[PurgeCandidate], list[
     candidates: list[PurgeCandidate] = []
     protected: list[ProtectedItem] = []
 
-    try:
-        manifests = list(project_root.rglob(MANIFEST_NAME))
-    except (OSError, RuntimeError):
-        return candidates, protected
-
-    for manifest_path in manifests:
-        directory = manifest_path.parent
-
+    prune = load_ignore_patterns(project_root)
+    for directory in iter_manifest_dirs(project_root, prune):
         if not _within_root(directory, project_root):
             protected.append(ProtectedItem(
                 path=directory, kind="ephemeral_dir",

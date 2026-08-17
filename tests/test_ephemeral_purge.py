@@ -16,9 +16,12 @@ from pathlib import Path
 import pytest
 
 from genesis_architect_pro.ephemeral_purge import (
+    DEFAULT_PRUNE_DIRS,
     MANIFEST_NAME,
     PROTECTED_BRANCHES,
     PurgeReport,
+    iter_manifest_dirs,
+    load_ignore_patterns,
     _parse_worktree_list,
     _pid_alive,
     _within_root,
@@ -169,6 +172,60 @@ class TestEphemeralDirs:
 # ---------------------------------------------------------------------------
 # Containment — nothing outside the project root
 # ---------------------------------------------------------------------------
+
+
+class TestScanPruning:
+    """D-3: scanning must skip heavy machine-generated trees, and the exclusion
+    list must come from the .claudeignore that already exists rather than a
+    second hardcoded copy."""
+
+    def test_defaults_include_the_usual_offenders(self):
+        for name in (".venv", "node_modules", "__pycache__", ".git"):
+            assert name in DEFAULT_PRUNE_DIRS
+
+    def test_manifest_inside_pruned_dir_is_not_found(self, tmp_path):
+        buried = tmp_path / ".venv" / "lib" / "pkg"
+        _write_manifest(buried, age_hours=999, ttl_hours=1)
+        report = purge(tmp_path, apply=True)
+        assert report.candidates == [], "a pruned tree must not be scanned"
+        assert buried.is_dir(), "and certainly must not be deleted"
+
+    def test_manifest_outside_pruned_dir_is_still_found(self, tmp_path):
+        _write_manifest(tmp_path / "work" / "scratch", age_hours=999, ttl_hours=1)
+        assert purge(tmp_path).candidates, "normal directories must still scan"
+
+    def test_project_claudeignore_is_honoured(self, tmp_path):
+        (tmp_path / ".claudeignore").write_text(
+            "# comment\nvendor_stuff/\n\n", encoding="utf-8")
+        _write_manifest(tmp_path / "vendor_stuff" / "x", age_hours=999, ttl_hours=1)
+        patterns = load_ignore_patterns(tmp_path)
+        assert "vendor_stuff" in patterns
+        assert purge(tmp_path).candidates == []
+
+    def test_ignore_file_comments_and_blanks_skipped(self, tmp_path):
+        (tmp_path / ".claudeignore").write_text(
+            "# nope\n\n   \nreal_dir/\n", encoding="utf-8")
+        patterns = load_ignore_patterns(tmp_path)
+        assert "real_dir" in patterns
+        assert "# nope" not in patterns and "" not in patterns
+
+    def test_path_like_and_glob_patterns_ignored(self, tmp_path):
+        # Only bare directory names are honoured; mis-parsing a complex
+        # pattern would be worse than skipping it.
+        (tmp_path / ".claudeignore").write_text(
+            "a/b/c\n*.log\nsrc/**\nplain\n", encoding="utf-8")
+        patterns = load_ignore_patterns(tmp_path)
+        assert "plain" in patterns
+        for bad in ("a/b/c", "*.log", "src/**"):
+            assert bad not in patterns
+
+    def test_missing_ignore_file_still_yields_defaults(self, tmp_path):
+        assert DEFAULT_PRUNE_DIRS <= load_ignore_patterns(tmp_path)
+
+    def test_walk_does_not_follow_symlinks(self, tmp_path):
+        # followlinks=False, so a self-referential link cannot cause a loop.
+        found = iter_manifest_dirs(tmp_path, set())
+        assert found == []
 
 
 class TestContainment:

@@ -35,6 +35,29 @@ from genesis_architect_pro.skill_fetcher import (
 
 
 # ---------------------------------------------------------------------------
+# Isolation
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture(autouse=True)
+def _matching_head(monkeypatch):
+    """Make the fake clones satisfy the commit pin.
+
+    A fake cloner writes files but no `.git`, so the real resolver returns ""
+    and the pin check correctly refuses. Tests that are not about pinning need
+    a resolver that reports the SHA the registry expects; the sandbox
+    directory is named after the source_id, so it can be looked up.
+    Pin-specific tests override this by passing `head_resolver=` explicitly.
+    """
+    def resolver(dest):
+        source = REGISTRY.get(dest.name)
+        return source.commit if source else ""
+
+    monkeypatch.setattr(
+        "genesis_architect_pro.skill_fetcher._default_head_resolver", resolver)
+
+
+# ---------------------------------------------------------------------------
 # Fake cloner — stands in for the network
 # ---------------------------------------------------------------------------
 
@@ -338,6 +361,65 @@ class TestPurgeIntegration:
         report = purge(tmp_path)
         assert any("deep-research-skills" in str(c.path) for c in report.candidates)
         assert sandbox.is_dir(), "dry run must not delete"
+
+
+class TestCommitPinning:
+    """D-1: the whitelist establishes WHO is trusted; the pin establishes WHAT
+    arrives. Without it, a force-push to a trusted repo is fetched silently."""
+
+    def test_every_registry_entry_is_pinned(self):
+        for source in list_sources():
+            assert source.is_pinned, f"{source.source_id} has no commit pin"
+            assert len(source.commit) == 40, "expect a full SHA, not an abbreviation"
+
+    def test_matching_commit_is_accepted(self, tmp_path):
+        sha = REGISTRY["deep-research-skills"].commit
+        result = fetch("deep-research-skills", tmp_path,
+                       cloner=_fake_pack(), head_resolver=lambda d: sha)
+        assert result.ok is True
+        assert result.pinned is True
+        assert result.commit == sha
+
+    def test_mismatched_commit_is_refused(self, tmp_path):
+        result = fetch("deep-research-skills", tmp_path,
+                       cloner=_fake_pack(), head_resolver=lambda d: "b" * 40)
+        assert result.ok is False
+        assert "commit mismatch" in result.error
+        assert "update the pin" in result.error
+
+    def test_mismatch_leaves_nothing_on_disk(self, tmp_path):
+        fetch("deep-research-skills", tmp_path,
+              cloner=_fake_pack(), head_resolver=lambda d: "b" * 40)
+        assert not (tmp_path / ".genesis" / "sandbox" / "deep-research-skills").exists()
+
+    def test_mismatched_content_is_never_read(self, tmp_path):
+        result = fetch("software-architecture-skills", tmp_path,
+                       cloner=_fake_pack(), head_resolver=lambda d: "c" * 40)
+        assert result.skills == [], "content must not be read before the pin verifies"
+
+    def test_unresolvable_head_is_refused(self, tmp_path):
+        result = fetch("deep-research-skills", tmp_path,
+                       cloner=_fake_pack(), head_resolver=lambda d: "")
+        assert result.ok is False
+        assert "unverifiable" in result.error
+
+    def test_pin_comparison_is_case_insensitive(self, tmp_path):
+        sha = REGISTRY["deep-research-skills"].commit
+        result = fetch("deep-research-skills", tmp_path,
+                       cloner=_fake_pack(), head_resolver=lambda d: sha.upper())
+        assert result.ok is True
+
+    def test_no_manifest_written_on_mismatch(self, tmp_path):
+        """The sandbox must never be marked ephemeral if it was rejected —
+        a rejected fetch should leave no trace for purge to reason about."""
+        fetch("deep-research-skills", tmp_path,
+              cloner=_fake_pack(), head_resolver=lambda d: "d" * 40)
+        assert list(tmp_path.rglob(MANIFEST_NAME)) == []
+
+    def test_registry_listing_shows_pins(self):
+        text = format_sources()
+        assert "pinned @" in text
+        assert "HEAD has moved" in text
 
 
 class TestReadOnlyFiles:

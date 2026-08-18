@@ -50,6 +50,9 @@ pip install genesis-architect-pro
 ## CLI
 
 ```bash
+# Which command runs which engine — the authoritative list
+genesis engines
+
 # Full 7-stage pipeline: classify → plan → execute → gate → report → approve → commit
 genesis decide "diagnose the project and identify drift"
 
@@ -62,9 +65,45 @@ genesis decide --yes "run a full recovery scan"
 # Analysis without committing any files
 genesis decide --no-commit "check compliance and security"
 
+# Third-party dependencies per module, plus their advisories
+genesis deps .
+genesis deps --package httpx --ecosystem pypi
+
+# Restorable research/build context from a previous session
+genesis memory --sessions
+
 # Print decision log
 genesis explain
 ```
+
+Every command above takes `--json` for machine-readable output. On `decide`,
+`recover` and `harden`, `--json` implies `--no-commit`: a piped consumer cannot
+answer the approval prompt, so those runs are analysis-only.
+
+`genesis engines` is generated from the capability map, and a test fails if any
+module in the package is neither mapped to a command nor declared internal — so
+the list above cannot quietly drift from what actually ships. The tables in this
+README are a summary; `genesis engines` is the source of truth.
+
+### Research
+
+```bash
+# Print the collection contract: full JSON schema, one filled example per stream
+genesis research "a Python HTTP client library"
+
+# Merge, rank and summarise pre-collected streams
+genesis research "<topic>" --json-data research_data.json
+
+# Feed a /watch analysis back in as cited PITFALLS.md entries
+genesis research "<topic>" --absorb watch-output.txt
+
+# Force the research floor's unit when the vision has no repo corpus
+genesis research "<topic>" --json-data data.json --domain non-code
+```
+
+The research floor is a gate, not a suggestion: it reports thin research rather
+than presenting it as sufficient. What adapts is the unit it counts — repos for
+a software vision, authoritative sources for a vision with no repo corpus.
 
 ## Python API
 

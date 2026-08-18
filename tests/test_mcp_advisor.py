@@ -393,6 +393,22 @@ class TestCatalog:
         assert CATALOG["software-architecture-skills"].kind == "skill"
         assert CATALOG["deep-research-skills"].kind == "skill"
 
+    def test_deep_research_orchestration_names_all_three_phases(self):
+        """R6: the text must name Genesis's own outline -> deep -> report
+        chain (R1-R5), not just describe the external skill in the abstract."""
+        text = CATALOG["deep-research-skills"].orchestration
+        assert "research_outline.py" in text
+        assert "coverage" in text
+        assert "check_floor" in text
+        assert "[uncertain]" in text
+
+    def test_deep_research_orchestration_does_not_overclaim_the_deep_phase(self):
+        """Genesis has the outline and report ends of the chain built; the
+        per-item deep-investigation fan-out is not a Genesis engine yet -
+        the text must not claim otherwise."""
+        text = CATALOG["deep-research-skills"].orchestration
+        assert "not yet a dedicated" in text
+
 
 # ---------------------------------------------------------------------------
 # Formatting

@@ -129,9 +129,18 @@ CATALOG: dict[str, ToolSpec] = {
     "deep-research-skills": ToolSpec(
         tool_id="deep-research-skills", kind="skill",
         title="Deep Research Skills (Weizhena)",
-        optimizes="Two-phase research — outline first, then deep investigation with human review.",
-        orchestration="Structures the RESEARCH mode's scouting phase before an Evidence Pack "
-                      "is assembled, so gathering is planned rather than opportunistic.",
+        optimizes="Three-phase research — outline first, then deep investigation per "
+                  "item with human review, then a report that skips unconfident values.",
+        orchestration="Structures the RESEARCH mode's scouting phase before an Evidence "
+                      "Pack is assembled: Genesis's own research_outline.py states the "
+                      "items x fields grid first (this skill's Phase 1 - outline), "
+                      "coverage tracks how much of it got filled and check_floor() gates "
+                      "on that once an outline exists (the measurable half of Phase 2 - "
+                      "deep), and format_summary() skips [uncertain] values at report "
+                      "time rather than printing them (Phase 3 - report). The per-item "
+                      "fan-out that actually fills the grid still comes from following "
+                      "this skill directly - Genesis has the shape, not yet a dedicated "
+                      "engine for that step.",
         install_hint="https://github.com/Weizhena/Deep-Research-skills",
     ),
 }

@@ -10,6 +10,7 @@ from genesis_architect_pro.video_to_pitfall import (
     PitfallEntry,
     _slug,
     _classify_category,
+    _extract_timestamp,
 )
 
 
@@ -200,3 +201,49 @@ def test_classify_arch_regret():
 
 def test_classify_default_pitfall():
     assert _classify_category("something went wrong last week") == "pitfall"
+
+
+# --- timestamp citation across the formats /watch really emits ---
+
+def test_timestamp_from_bracketed_transcript_line():
+    assert _extract_timestamp("[04:12] the mistake we made was caching too early") == "04:12"
+
+
+def test_timestamp_from_frame_label():
+    """watch.py labels frames `t=MM:SS` on the absolute timeline."""
+    assert _extract_timestamp("frame_007.jpg t=11:40 shows the broken dashboard") == "11:40"
+
+
+def test_timestamp_from_prose_citation():
+    assert _extract_timestamp("At 00:19:02 the speaker warns about tenant leakage") == "00:19:02"
+
+
+def test_aspect_ratio_is_not_mistaken_for_a_timestamp():
+    """A bare colon-separated pair must not be read as a citation."""
+    assert _extract_timestamp("we exported everything at 16:9 which was a mistake") == ""
+
+
+def test_absorbed_entry_cites_its_timestamp():
+    watch_text = (
+        "[04:12] The biggest mistake we made was storing session tokens in "
+        "localStorage, because any XSS immediately becomes full account takeover "
+        "and we learned this the hard way in production."
+    )
+    entries = extract_from_watch_output(watch_text, "https://youtu.be/DEMO", "a SaaS backend")
+    assert entries
+    assert entries[0].timestamp_cited == "04:12"
+    assert "unknown timestamp" not in entries[0].why
+
+
+def test_title_drops_the_leading_timestamp():
+    """The timestamp lives in `timestamp_cited`; leaving it in the title also
+    defeated the sentence-start anchor and produced a raw 60-char slice."""
+    watch_text = (
+        "[04:12] Storing session tokens in localStorage was our biggest mistake, "
+        "because any XSS immediately becomes full account takeover."
+    )
+    entries = extract_from_watch_output(watch_text, "https://youtu.be/DEMO", "a SaaS backend")
+    assert entries
+    assert not entries[0].title.startswith("[")
+    assert entries[0].timestamp_cited == "04:12"
+    assert entries[0].title.startswith("Storing session tokens")

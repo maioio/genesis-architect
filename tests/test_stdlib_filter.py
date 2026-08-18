@@ -26,3 +26,12 @@ class TestIsStdlibImport:
         assert isinstance(PYTHON_STDLIB, frozenset)
         assert len(PYTHON_STDLIB) > 100  # 3.11 stdlib is large
         assert "os" in PYTHON_STDLIB
+
+
+def test_future_is_stdlib():
+    """`from __future__ import annotations` is not a third-party dependency.
+
+    Omitting it put __future__ at the top of the dependency report for any
+    modern codebase, since nearly every module imports it.
+    """
+    assert is_stdlib_import("__future__") is True

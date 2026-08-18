@@ -13,6 +13,8 @@ from genesis_architect_pro.research_orchestrator import (
     format_summary,
     FLOOR_MIN_REPOS,
     FLOOR_MIN_DEEP,
+    classify_domain,
+    normalize_streams,
 )
 
 
@@ -179,3 +181,119 @@ def test_format_summary_floor_warning_when_not_met():
 # --- SKILL.md integration ---
 
 
+
+
+# --- domain-aware floor (a non-code vision has no repo corpus) ---
+
+def test_classify_domain_code_vision():
+    assert classify_domain("build a FastAPI service with a Postgres backend") == "code"
+    assert classify_domain("a CLI tool for log parsing") == "code"
+
+
+def test_classify_domain_non_code_vision():
+    assert classify_domain(
+        "extract a house standard from a design studio archive"
+    ) == "non_code"
+    assert classify_domain("write onboarding guidelines for new editorial hires") == "non_code"
+
+
+def test_classify_domain_ties_resolve_to_code():
+    """Biased toward code: weakening the repo floor is the costlier mistake."""
+    assert classify_domain("something entirely ambiguous") == "code"
+
+
+def test_non_code_floor_counts_sources_not_repos():
+    """A non-repo-shaped problem must not fail on a repo count it can never meet."""
+    topics = ["tracking metrics", "baseline grid", "colour proofing", "kerning pairs",
+              "paper stock", "logo clearspace", "export presets", "archive naming",
+              "print bleed"]
+    web = [
+        {"url": f"https://community.example{i}.com/thread/{i}",
+         "title": f"House rule for {topic}",
+         "text": "```css\n.tracking { letter-spacing: 0.02em; }\n```"}
+        for i, topic in enumerate(topics)
+    ]
+    s = build_summary_from_raw(
+        "extract a house standard from a studio archive",
+        repos=[], github_issues=[], web_results=web, media_results=[],
+    )
+    assert s.domain == "non_code"
+    passed, message = check_floor(s)
+    assert passed, message
+    assert "repos are not the unit" in message
+
+
+def test_non_code_floor_still_blocks_thin_research():
+    """The gate must survive the domain switch - only its unit changes."""
+    s = build_summary_from_raw(
+        "extract a house standard from a studio archive",
+        repos=[], github_issues=[],
+        web_results=[{"url": "https://a-blog.com/p", "title": "One post", "text": "prose"}],
+        media_results=[],
+    )
+    assert check_floor(s)[0] is False
+    assert "Floor not met" in check_floor(s)[1]
+
+
+def test_code_floor_message_offers_the_domain_escape():
+    s = build_summary_from_raw("build a CLI tool", _repos(2), [], [], [])
+    assert "--domain non-code" in check_floor(s)[1]
+
+
+# --- stream naming (provider-neutral, back-compatible) ---
+
+def test_legacy_stream_keys_still_load():
+    raw = {"exa_results": [{"url": "https://a.com", "title": "t", "text": "x"}],
+           "video_exa_results": [{"url": "https://youtube.com/watch?v=1", "title": "talk"}]}
+    normalized = normalize_streams(raw)
+    assert "exa_results" not in normalized
+    assert len(normalized["web_results"]) == 1
+    assert len(normalized["media_results"]) == 1
+
+
+def test_legacy_and_canonical_keys_merge_rather_than_overwrite():
+    raw = {"web_results": [{"url": "https://a.com", "title": "a"}],
+           "exa_results": [{"url": "https://b.com", "title": "b"}]}
+    assert len(normalize_streams(raw)["web_results"]) == 2
+
+
+def test_build_summary_accepts_legacy_kwargs():
+    s = build_summary_from_raw(
+        "test", _repos(1), [],
+        exa_results=[{"url": "https://a.com", "title": "t", "text": "x"}],
+    )
+    assert len(s.pitfall_candidates) == 1
+
+
+def test_provider_recorded_per_item_not_in_the_field_name():
+    s = build_summary_from_raw(
+        "test", [], [],
+        web_results=[{"url": "https://a.com", "title": "t", "text": "x",
+                      "provider": "tavily"}],
+    )
+    assert s.pitfall_candidates[0].provider == "tavily"
+
+
+# --- machine-readable output ---
+
+def test_to_dict_is_json_serializable_and_carries_the_verdict():
+    import json
+    s = build_summary_from_raw("build a CLI tool", _repos(3), [], [], [])
+    payload = s.to_dict()
+    assert json.loads(json.dumps(payload))["domain"] == "code"
+    assert payload["floor_met"] is False
+    assert "floor_message" in payload
+    assert payload["repos"][0]["slug"] == "owner/repo0"
+
+
+def test_summary_names_the_command_that_closes_the_video_loop():
+    """Stream D hands out /watch commands; the return leg must be named too."""
+    s = build_summary_from_raw(
+        "a task queue service", repos=[], github_issues=[], web_results=[],
+        media_results=[{"url": "https://www.youtube.com/watch?v=1",
+                        "title": "Lessons learned running queues",
+                        "text": "what we wish we knew"}],
+    )
+    output = format_summary(s)
+    assert "--absorb" in output
+    assert "a task queue service" in output

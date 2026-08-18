@@ -10,6 +10,7 @@ from genesis_architect_pro.pitfall_ranker import (
     rank,
     from_github_issue,
     from_exa_result,
+    why_ranked,
     format_ranked,
     _title_tokens,
     _similar,
@@ -135,18 +136,83 @@ def test_from_github_issue_low_engagement():
 
 def test_from_exa_result_reddit():
     r = {"url": "https://reddit.com/r/python/comments/abc", "title": "Pitfalls using asyncio",
-         "text": "Avoid mixing sync and async", "score": 100}
+         "text": "Avoid mixing sync and async", "comments": 60, "provider": "tavily"}
     p = from_exa_result(r)
     assert p.source == "reddit"
+    assert p.engagement == 60
     assert p.confidence == "high"
+    assert p.provider == "tavily"
+
+
+def test_provider_relevance_is_not_engagement():
+    """A search provider's `score` is query relevance, not human attention.
+
+    Feeding it into engagement is what made every web result rank identically:
+    the value is a 0.0-1.0 float, so the engagement bonus could never fire and
+    the confidence upgrade fired on nothing.
+    """
+    r = {"url": "https://reddit.com/r/python/comments/abc", "title": "Pitfalls",
+         "text": "Avoid mixing sync and async", "score": 0.93}
+    p = from_exa_result(r)
+    assert p.relevance == 0.93
+    assert p.engagement == 0
+    assert p.confidence == "medium"   # not upgraded by a relevance float
 
 
 def test_from_exa_result_blog():
     r = {"url": "https://some-blog.com/post", "title": "My experience",
-         "text": "Lessons learned", "score": 5}
+         "text": "Lessons learned", "score": 0.5}
     p = from_exa_result(r)
-    assert p.source == "exa_blog"
+    assert p.source == "web"
     assert p.confidence == "low"
+
+
+# --- engagement-free ranking signals ---
+
+def test_official_host_outranks_marketing_page_without_engagement():
+    """The tie the ranker used to produce: neither result carries engagement."""
+    forum = from_exa_result({
+        "url": "https://community.adobe.com/t5/photoshop/scripting-crash/td-p/1",
+        "title": "Script crashes on batch export",
+        "text": "app.activeDocument.exportDocument(file, ExportType.SAVEFORWEB);\n"
+                "Fails after 250 files, takes 1200ms per doc on v24.1.",
+    })
+    agency = from_exa_result({
+        "url": "https://some-agency.com/services/photoshop-automation",
+        "title": "Photoshop automation done right",
+        "text": "We help brands scale their creative production with automation.",
+    })
+    ranked = rank([agency, forum])
+    assert ranked[0].url.startswith("https://community.adobe.com")
+    assert ranked[0].score > ranked[1].score
+
+
+def test_days_old_parsed_from_source_dates():
+    """Recency was dead code: every converter hard-coded days_old=-1."""
+    from datetime import datetime, timedelta, timezone
+    recent = (datetime.now(timezone.utc) - timedelta(days=30)).strftime("%Y-%m-%d")
+    p = from_exa_result({"url": "https://x.com/a", "title": "t", "text": "b",
+                         "published_date": recent})
+    assert 25 <= p.days_old <= 35
+    assert score(p) > score(from_exa_result(
+        {"url": "https://x.com/a", "title": "t", "text": "b"}))
+
+
+def test_missing_date_stays_unknown():
+    p = from_exa_result({"url": "https://x.com/a", "title": "t", "text": "b"})
+    assert p.days_old == -1
+
+
+def test_score_breakdown_explains_the_rank():
+    p = from_exa_result({
+        "url": "https://forums.example.org/thread/1",
+        "title": "Export pipeline breaks",
+        "text": "```python\nexport(doc)\n```",
+    })
+    score(p)
+    assert p.score_breakdown["authority"] == 2.0
+    assert p.score_breakdown["substance"] >= 1.0
+    assert "authoritative host" in why_ranked(p)
 
 
 # --- formatting ---
@@ -188,3 +254,19 @@ def test_not_similar_different_topics():
     a = _make("Memory leak in pool")
     b = _make("Authentication bypass vulnerability")
     assert not _similar(a, b)
+
+
+def test_authority_cannot_be_borrowed_by_substring():
+    """A lookalike host must not inherit an official host's authority bonus."""
+    real = from_exa_result({"url": "https://github.com/a/b/issues/1", "title": "t", "text": ""})
+    fake = from_exa_result({"url": "https://github.com.attacker.test/a", "title": "t", "text": ""})
+    assert score(real) > score(fake)
+    assert fake.score_breakdown["authority"] == 0.0
+
+
+def test_subdomain_of_official_domain_still_counts():
+    p = from_exa_result({"url": "https://old.reddit.com/r/x/comments/1",
+                         "title": "t", "text": ""})
+    assert p.source == "reddit"
+    score(p)
+    assert p.score_breakdown["authority"] == 1.0

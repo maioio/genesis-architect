@@ -60,6 +60,11 @@ class ResearchSummary:
     # None = no outline was used, not "0% covered" - same discipline as
     # RepoResult.stars: an absent metric must never render as a real zero.
     coverage: float | None = None
+    # "item:field" entries not confidently known - see is_uncertain(). A
+    # value literally equal to "[uncertain]" is uncertain too, without
+    # needing an entry here; this list exists for callers that keep the
+    # marker and the value apart (Phase 2's own per-item JSON does both).
+    uncertain: list[str] = field(default_factory=list)
 
     def quality_reason(self) -> str:
         deep = sum(1 for r in self.repos if r.deep_analyzed)
@@ -96,6 +101,7 @@ class ResearchSummary:
             "outline": self.outline.__dict__ if self.outline else None,
             "item_findings": self.item_findings,
             "coverage": self.coverage,
+            "uncertain": self.uncertain,
         }
 
 
@@ -135,6 +141,7 @@ def load_from_vault(vision: str, project_root: Path) -> ResearchSummary | None:
         summary.outline = Outline(**outline_raw) if outline_raw else None
         summary.item_findings = data.get("item_findings", {})
         summary.coverage = data.get("coverage")
+        summary.uncertain = data.get("uncertain", [])
         return summary
     except Exception:
         return None
@@ -154,6 +161,7 @@ def save_to_vault(summary: ResearchSummary, project_root: Path) -> None:
         "outline": summary.outline.__dict__ if summary.outline else None,
         "item_findings": summary.item_findings,
         "coverage": summary.coverage,
+        "uncertain": summary.uncertain,
     }
     _vault.put(
         key=_vault_key(summary.vision),
@@ -207,6 +215,17 @@ def compute_coverage(summary: ResearchSummary) -> float | None:
                 filled += 1
 
     return filled / total
+
+
+def is_uncertain(summary: ResearchSummary, item: str, field_name: str) -> bool:
+    """True if this cell of the grid is flagged unconfident, by either
+    mechanism the source pack uses: the value itself literally reads
+    "[uncertain]", or the "item:field" pair is named in summary.uncertain.
+    """
+    value = summary.item_findings.get(item, {}).get(field_name)
+    if isinstance(value, str) and value.strip() == "[uncertain]":
+        return True
+    return f"{item}:{field_name}" in summary.uncertain
 
 
 # ---------------------------------------------------------------------------
@@ -396,6 +415,28 @@ def format_summary(summary: ResearchSummary) -> str:
             "not repositories._"
         )
     lines.append("")
+
+    # Research grid (outline-driven): uncertain cells are skipped, not
+    # printed - the same discipline as never coercing an unreported star
+    # count to look like a confirmed 0.
+    outline = summary.outline
+    if outline and outline.items and outline.fields:
+        grid_lines = []
+        for item in outline.items:
+            values = summary.item_findings.get(item, {})
+            rows = [
+                f"  - {f}: {values[f]}"
+                for f in outline.fields
+                if isinstance(values.get(f), str) and values[f].strip()
+                and not is_uncertain(summary, item, f)
+            ]
+            if rows:
+                grid_lines.append(f"- **{item}**")
+                grid_lines.extend(rows)
+        if grid_lines:
+            lines.append("### Research Grid")
+            lines.extend(grid_lines)
+            lines.append("")
 
     # Repo table
     if summary.repos:

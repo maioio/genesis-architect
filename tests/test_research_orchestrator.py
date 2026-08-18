@@ -10,6 +10,7 @@ from genesis_architect_pro.research_orchestrator import (
     check_floor,
     compute_quality,
     compute_coverage,
+    is_uncertain,
     merge_streams,
     format_summary,
     FLOOR_MIN_REPOS,
@@ -465,3 +466,147 @@ class TestOutlineVaultRoundTrip:
         assert loaded.outline is not None
         assert loaded.outline.topic == "t"
         assert loaded.coverage == 1.0
+
+
+# --- R3: uncertain values are skipped in the rendered report, not printed ---
+
+class TestIsUncertain:
+    def test_default_is_not_uncertain(self):
+        s = ResearchSummary(
+            vision="test", item_findings={"a": {"license": "MIT"}},
+        )
+        assert is_uncertain(s, "a", "license") is False
+
+    def test_literal_marker_value_is_uncertain(self):
+        s = ResearchSummary(
+            vision="test", item_findings={"a": {"license": "[uncertain]"}},
+        )
+        assert is_uncertain(s, "a", "license") is True
+
+    def test_uncertain_list_entry_marks_it_even_with_a_real_value(self):
+        """The two mechanisms are independent: a caller who kept the marker
+        separate from the value must still get skipped."""
+        s = ResearchSummary(
+            vision="test",
+            item_findings={"a": {"license": "MIT"}},
+            uncertain=["a:license"],
+        )
+        assert is_uncertain(s, "a", "license") is True
+
+    def test_missing_value_is_not_uncertain_just_absent(self):
+        """Absent and uncertain are different states - absent means never
+        looked up, uncertain means looked up and not trusted."""
+        s = ResearchSummary(vision="test")
+        assert is_uncertain(s, "a", "license") is False
+
+    def test_uncertain_entry_for_a_different_item_does_not_leak(self):
+        s = ResearchSummary(
+            vision="test",
+            item_findings={"a": {"license": "MIT"}, "b": {"license": "MIT"}},
+            uncertain=["b:license"],
+        )
+        assert is_uncertain(s, "a", "license") is False
+        assert is_uncertain(s, "b", "license") is True
+
+
+class TestFormatSummaryResearchGrid:
+    def test_no_outline_omits_the_grid_section_entirely(self):
+        s = build_summary_from_raw("test", [], [])
+        assert "Research Grid" not in format_summary(s)
+
+    def test_filled_field_is_rendered(self):
+        outline = Outline(topic="t", items=["fastapi"], fields=["license"])
+        s = build_summary_from_raw(
+            "test", [], [], outline=outline,
+            item_findings={"fastapi": {"license": "MIT"}},
+        )
+        output = format_summary(s)
+        assert "Research Grid" in output
+        assert "fastapi" in output
+        assert "license: MIT" in output
+
+    def test_marker_value_is_skipped_not_printed(self):
+        """The literal string "[uncertain]" must never reach the reader -
+        that would misrepresent a guess as a confirmed finding."""
+        outline = Outline(topic="t", items=["fastapi"], fields=["license"])
+        s = build_summary_from_raw(
+            "test", [], [], outline=outline,
+            item_findings={"fastapi": {"license": "[uncertain]"}},
+        )
+        output = format_summary(s)
+        assert "[uncertain]" not in output
+
+    def test_uncertain_list_entry_is_also_skipped(self):
+        outline = Outline(topic="t", items=["fastapi"], fields=["license"])
+        s = build_summary_from_raw(
+            "test", [], [], outline=outline,
+            item_findings={"fastapi": {"license": "MIT"}},
+        )
+        s.uncertain = ["fastapi:license"]
+        output = format_summary(s)
+        assert "license: MIT" not in output
+
+    def test_item_with_only_uncertain_fields_does_not_appear_at_all(self):
+        """An item whose every field got skipped shouldn't leave a bare,
+        empty header behind."""
+        outline = Outline(topic="t", items=["fastapi"], fields=["license"])
+        s = build_summary_from_raw(
+            "test", [], [], outline=outline,
+            item_findings={"fastapi": {"license": "[uncertain]"}},
+        )
+        output = format_summary(s)
+        assert "fastapi" not in output
+
+    def test_mixed_certain_and_uncertain_fields_only_shows_certain(self):
+        outline = Outline(
+            topic="t", items=["fastapi"], fields=["license", "maintenance"]
+        )
+        s = build_summary_from_raw(
+            "test", [], [], outline=outline,
+            item_findings={
+                "fastapi": {"license": "MIT", "maintenance": "[uncertain]"}
+            },
+        )
+        output = format_summary(s)
+        assert "license: MIT" in output
+        assert "maintenance" not in output
+
+    def test_empty_grid_section_omitted_when_nothing_filled_yet(self):
+        outline = Outline(topic="t", items=["fastapi"], fields=["license"])
+        s = build_summary_from_raw("test", [], [], outline=outline)
+        assert "Research Grid" not in format_summary(s)
+
+
+class TestUncertainPersistence:
+    def test_to_dict_carries_uncertain_list(self):
+        s = build_summary_from_raw("test", [], [])
+        s.uncertain = ["a:license"]
+        assert s.to_dict()["uncertain"] == ["a:license"]
+
+    def test_uncertain_defaults_to_empty_list(self):
+        s = build_summary_from_raw("test", [], [])
+        assert s.uncertain == []
+
+    def test_uncertain_round_trips_through_vault(self, tmp_path):
+        summary = ResearchSummary(vision="uncertain vault test", uncertain=["a:license"])
+        save_to_vault(summary, tmp_path)
+        loaded = load_from_vault("uncertain vault test", tmp_path)
+
+        assert loaded is not None
+        assert loaded.uncertain == ["a:license"]
+
+    def test_missing_uncertain_key_in_old_vault_entry_defaults_to_empty(self, tmp_path):
+        """A vault entry saved before R3 existed has no 'uncertain' key at
+        all - loading it must not raise."""
+        import json as _json
+        from genesis_architect.core import vault as _vault
+
+        _vault.put(
+            key="research:pre-r3 entry",
+            solution=_json.dumps({"vision": "pre-r3 entry"}),
+            source_url="genesis:research_orchestrator",
+            project_root=tmp_path,
+        )
+        loaded = load_from_vault("pre-r3 entry", tmp_path)
+        assert loaded is not None
+        assert loaded.uncertain == []

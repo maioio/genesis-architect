@@ -9,7 +9,11 @@ is_stdlib_import(name) is the public API; everything else is implementation deta
 
 PYTHON_STDLIB: frozenset[str] = frozenset({
     # --- builtins / internals ---
-    "_thread", "builtins",
+    # __future__ belongs here: it is a real stdlib module, and omitting it made
+    # `from __future__ import annotations` - present in almost every modern
+    # module - register as a third-party dependency, so it topped the
+    # dependency report of any codebase that uses it.
+    "__future__", "_thread", "builtins",
     # --- A ---
     "abc", "aifc", "argparse", "array", "ast", "asynchat", "asyncio", "asyncore", "atexit",
     # --- B ---

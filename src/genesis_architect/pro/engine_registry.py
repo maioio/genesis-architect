@@ -32,10 +32,30 @@ class EngineRegistry:
 
     def __init__(self) -> None:
         self._descriptors: dict[str, EngineDescriptor] = {}
+        self._optional_ids: set[str] = set()
 
     # ------------------------------------------------------------------
     # Registration
     # ------------------------------------------------------------------
+
+    def declare_optional(self, engine_id: str) -> None:
+        """Mark `engine_id` as a legitimate handoff target that may not be
+        registered yet (or ever, in a given process).
+
+        Some engines register conditionally — `knowledge_graph` only joins
+        the registry if its dependency is present and a caller opts in, by
+        design (see gde_knowledge_graph_adapter.register_knowledge_graph).
+        Without this declaration, any descriptor that hands off to such an
+        engine would fail validate() in the default (not-yet-opted-in)
+        state, which is a false alarm: the target is known and intentional,
+        just not always present. Declaring it here lets validate() tell
+        "dangling reference to something that doesn't exist" apart from
+        "reference to something that exists elsewhere, conditionally."
+
+        Idempotent. Safe to call whether or not the engine is registered,
+        and whether or not it ever will be in this process.
+        """
+        self._optional_ids.add(engine_id)
 
     def register(self, descriptor: EngineDescriptor) -> None:
         """Register one engine descriptor.
@@ -115,7 +135,39 @@ class EngineRegistry:
                         f"Engine '{desc.id}' requires '{dep_id}' which is not registered."
                     )
 
-        # Cycle detection via Kahn's algorithm
+            # Handoff existence check. Handoffs are advisory rather than
+            # ordering constraints, so they are deliberately excluded from
+            # cycle detection below — but an advisory pointing at an engine
+            # that does not exist is just a dangling reference, and the whole
+            # value of declaring the forward edge is that it stays truthful as
+            # engines are added and renamed.
+            for handoff_id in desc.handoffs:
+                if handoff_id == desc.id:
+                    errors.append(
+                        f"Engine '{desc.id}' hands off to itself, which cannot "
+                        f"advance a session."
+                    )
+                elif (
+                    handoff_id not in self._descriptors
+                    and handoff_id not in self._optional_ids
+                ):
+                    errors.append(
+                        f"Engine '{desc.id}' hands off to '{handoff_id}' which is "
+                        f"not registered."
+                    )
+
+            # Failure modes are free text by design — they describe how an
+            # engine misleads, which is not machine-checkable. What IS checkable
+            # is that a declared entry actually says something: a blank string
+            # in this list is a placeholder that reads as a declaration.
+            for mode in desc.failure_modes:
+                if not isinstance(mode, str) or not mode.strip():
+                    errors.append(
+                        f"Engine '{desc.id}' declares an empty failure mode."
+                    )
+
+        # Cycle detection via Kahn's algorithm — `requires` only. See
+        # EngineDescriptor for why handoffs are exempt.
         cycle_errors = self._detect_cycles()
         errors.extend(cycle_errors)
 

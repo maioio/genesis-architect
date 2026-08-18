@@ -26,6 +26,21 @@ from genesis_architect.pro.gde_session import save_session, load_session, delete
 from genesis_architect.pro.gde_planner import build_plan
 from genesis_architect.pro.gde_runner import run_plan
 from genesis_architect.pro.gde_gate_engine import evaluate_gates
+from genesis_architect.pro.red_team_critic import (
+    RedTeamFinding, critique_session, critique_with_llm, run_red_team,
+)
+from genesis_architect.pro.ephemeral_purge import (
+    PurgeCandidate, ProtectedItem, PurgeReport,
+    hygiene_notice, mark_ephemeral, purge,
+)
+from genesis_architect.pro.mcp_advisor import (
+    AdvisorReport, ProjectSignals, ToolRecommendation, ToolSpec, CATALOG,
+    advise, advise_global, advise_local, detect_signals,
+)
+from genesis_architect.pro.skill_fetcher import (
+    REGISTRY, FetchRefused, FetchResult, SkillDefinition, TrustedSource,
+    discard, fetch, list_sources, read_skills, sandbox_for, validate_source,
+)
 
 from genesis_architect.pro.import_graph import build_graph, load_or_build
 from genesis_architect.pro.architecture_scorer import score_project, score_label
@@ -150,6 +165,13 @@ __all__ = [
     "build_plan", "run_plan", "evaluate_gates",
     # Existing exports
     "__version__",
+    "RedTeamFinding", "critique_session", "critique_with_llm", "run_red_team",
+    "PurgeCandidate", "ProtectedItem", "PurgeReport",
+    "hygiene_notice", "mark_ephemeral", "purge",
+    "AdvisorReport", "ProjectSignals", "ToolRecommendation", "ToolSpec", "CATALOG",
+    "advise", "advise_global", "advise_local", "detect_signals",
+    "REGISTRY", "FetchRefused", "FetchResult", "SkillDefinition", "TrustedSource",
+    "discard", "fetch", "list_sources", "read_skills", "sandbox_for", "validate_source",
     "build_graph", "load_or_build",
     "score_project", "score_label",
     "detect_all",

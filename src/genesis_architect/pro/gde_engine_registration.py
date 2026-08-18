@@ -43,6 +43,14 @@ _DESCRIPTORS: list[EngineDescriptor] = [
         input_keys=["project_dir"],
         output_keys=["graph", "cycles", "dark_modules", "layer_map"],
         requires=[],
+        handoffs=["architecture_scorer", "antipattern_detector"],
+        failure_modes=[
+            "A language the parser does not cover yields an empty graph that "
+            "looks like a clean, dependency-free project rather than an "
+            "unparsed one.",
+            "Dynamic imports are invisible, so a real edge can be missing "
+            "without any indication that it was missed.",
+        ],
         is_optional=False,
         write_operations=[],
         timeout_seconds=60,
@@ -59,6 +67,13 @@ _DESCRIPTORS: list[EngineDescriptor] = [
         input_keys=["project_dir", "graph"],
         output_keys=["score", "score_label", "dimensions", "history"],
         requires=["import_graph"],
+        handoffs=["antipattern_detector", "refactoring_planner"],
+        failure_modes=[
+            "Scoring a near-empty graph produces a high score, because few "
+            "modules means few violations — absence of findings is not health.",
+            "The adaptive profile is inferred; a mis-detected profile scores "
+            "the project against the wrong expectations without saying so.",
+        ],
         is_optional=True,
         write_operations=["score_history"],
         timeout_seconds=30,
@@ -75,6 +90,13 @@ _DESCRIPTORS: list[EngineDescriptor] = [
         input_keys=["project_dir", "graph"],
         output_keys=["patterns", "critical_count", "high_count"],
         requires=["import_graph"],
+        handoffs=["fragility_classifier", "refactoring_planner"],
+        failure_modes=[
+            "Thresholds are structural, not contextual: a deliberate facade or "
+            "a generated file can be reported as a god class or hub file.",
+            "Zero detections on an unparsed graph reads identically to zero "
+            "detections on a genuinely clean one.",
+        ],
         is_optional=True,
         write_operations=[],
         timeout_seconds=30,
@@ -91,6 +113,7 @@ _DESCRIPTORS: list[EngineDescriptor] = [
         input_keys=["project_dir", "patterns", "score"],
         output_keys=["fragility_map", "volatile_count", "fragile_count", "stable_count"],
         requires=["antipattern_detector", "architecture_scorer"],
+        handoffs=["recovery_report", "refactoring_planner"],
         is_optional=True,
         write_operations=["fragility_map_md"],
         timeout_seconds=45,
@@ -107,6 +130,10 @@ _DESCRIPTORS: list[EngineDescriptor] = [
         input_keys=["project_dir", "score", "fragility_map", "patterns"],
         output_keys=["report_path", "risk_level", "recommendations"],
         requires=["fragility_classifier"],
+        # Diagnosis hands off to the plan that acts on it. That plan hands back
+        # here to re-measure — a legitimate loop, and exactly why handoffs are
+        # exempt from cycle detection.
+        handoffs=["refactoring_planner", "committee_analysis"],
         is_optional=True,
         write_operations=["recovery_report_md"],
         timeout_seconds=30,
@@ -123,6 +150,7 @@ _DESCRIPTORS: list[EngineDescriptor] = [
         input_keys=["project_dir", "patterns", "score"],
         output_keys=["plan_path", "tier1_count", "tier2_count"],
         requires=["antipattern_detector", "architecture_scorer"],
+        handoffs=["rules_engine", "recovery_report"],
         is_optional=True,
         write_operations=["refactoring_plan_md"],
         timeout_seconds=30,
@@ -139,6 +167,7 @@ _DESCRIPTORS: list[EngineDescriptor] = [
         input_keys=["project_dir"],
         output_keys=["doc_path"],
         requires=["import_graph"],
+        handoffs=["security_templates"],
         is_optional=True,
         write_operations=["c4_architecture_md"],
         timeout_seconds=30,
@@ -155,6 +184,7 @@ _DESCRIPTORS: list[EngineDescriptor] = [
         input_keys=["project_dir"],
         output_keys=["stride_path", "owasp_path", "secrets_path"],
         requires=[],
+        handoffs=["rules_engine"],
         is_optional=True,
         write_operations=["stride_md", "owasp_md", "secrets_scan_md"],
         timeout_seconds=30,
@@ -173,9 +203,27 @@ _DESCRIPTORS: list[EngineDescriptor] = [
         input_keys=["project_dir"],
         output_keys=["registry", "source_count"],
         requires=[],
+        handoffs=["field_intelligence"],
         is_optional=True,
         write_operations=[],
         timeout_seconds=10,
+        modes=[GDEMode.RESEARCH],
+    ),
+
+    # 19. Research Outline — items x fields grid, if one has been confirmed
+    EngineDescriptor(
+        id="research_outline",
+        name="Research Outline",
+        module=_ADAPTER_MODULE,
+        entry_point="gde_run_research_outline",
+        category=EngineCategory.ANALYSIS,
+        input_keys=["project_dir"],
+        output_keys=["topic", "items", "fields"],
+        requires=[],
+        handoffs=["field_intelligence"],
+        is_optional=True,
+        write_operations=[],
+        timeout_seconds=5,
         modes=[GDEMode.RESEARCH],
     ),
 
@@ -188,7 +236,14 @@ _DESCRIPTORS: list[EngineDescriptor] = [
         category=EngineCategory.ANALYSIS,
         input_keys=["project_dir", "instruction"],
         output_keys=["findings", "verified_count", "queries"],
-        requires=["source_registry"],
+        requires=["source_registry", "research_outline"],
+        handoffs=["evidence_pack"],
+        failure_modes=[
+            "Offline or with a dead API key it returns nothing, which is not "
+            "the same as having found no community signal.",
+            "Community sentiment is self-selected toward complaint; volume of "
+            "pain is not proportional to prevalence of pain.",
+        ],
         is_optional=True,
         write_operations=[],
         timeout_seconds=60,
@@ -205,6 +260,7 @@ _DESCRIPTORS: list[EngineDescriptor] = [
         input_keys=["project_dir", "findings", "registry"],
         output_keys=["pack_path", "item_count"],
         requires=["field_intelligence"],
+        handoffs=["committee_analysis"],
         is_optional=True,
         write_operations=["evidence_pack_json"],
         timeout_seconds=15,
@@ -223,6 +279,9 @@ _DESCRIPTORS: list[EngineDescriptor] = [
         input_keys=["project_dir", "instruction"],
         output_keys=["scaffold_path", "vision"],
         requires=[],
+        # Freshly scaffolded code is worth analysing — a cross-mode handoff
+        # (BUILD suggests RECOVERY's entry engine).
+        handoffs=["import_graph"],
         is_optional=False,
         write_operations=["project_scaffold"],
         timeout_seconds=120,
@@ -241,6 +300,11 @@ _DESCRIPTORS: list[EngineDescriptor] = [
         input_keys=["project_dir"],
         output_keys=["rules_passed", "rules_file", "rule_count", "failed_rules"],
         requires=["architecture_scorer", "antipattern_detector"],
+        handoffs=["recovery_report"],
+        failure_modes=[
+            "With no rules file present it passes trivially — a green gate can "
+            "mean 'nothing was checked', not 'everything held'.",
+        ],
         is_optional=True,
         write_operations=[],
         timeout_seconds=30,
@@ -257,6 +321,13 @@ _DESCRIPTORS: list[EngineDescriptor] = [
         input_keys=["project_dir"],
         output_keys=["churn_map", "high_churn_count", "stale_count", "bus_factor_1_count"],
         requires=["import_graph"],
+        handoffs=["fragility_classifier"],
+        failure_modes=[
+            "A shallow clone or a freshly-imported repository has almost no "
+            "history, so everything looks stable and low-churn.",
+            "Bulk reformatting or a migration commit inflates churn for files "
+            "nobody actually changed in substance.",
+        ],
         is_optional=True,
         write_operations=[],
         timeout_seconds=60,
@@ -274,6 +345,8 @@ _DESCRIPTORS: list[EngineDescriptor] = [
         output_keys=["audit_consistent", "declared_links", "actual_edges",
                      "missing_count", "undeclared_count"],
         requires=["import_graph"],
+        # An audit that found the diagram lying hands off to regenerating it.
+        handoffs=["c4_generator"],
         is_optional=True,
         write_operations=[],
         timeout_seconds=30,
@@ -292,10 +365,41 @@ _DESCRIPTORS: list[EngineDescriptor] = [
         input_keys=["project_dir"],
         output_keys=["perspectives", "perspective_count", "divergent_lenses", "report_path"],
         requires=["fragility_classifier"],
+        handoffs=["recovery_report"],
         is_optional=True,
         write_operations=["committee_report_md"],
         timeout_seconds=30,
         modes=[GDEMode.COMMITTEE],
+    ),
+
+    # 18. Red-Team Self-Critique — attacks the session's own plan before approval.
+    # `requires` spans every mode's write-producing engine(s) on purpose: a
+    # dependency ID not present in a given mode's engine subset is silently
+    # ignored for that mode's ordering (EngineRegistry.parallel_groups_for_mode),
+    # so this single descriptor safely runs last in every mode it's registered
+    # for without needing a separate descriptor per mode.
+    EngineDescriptor(
+        id="red_team_critic",
+        name="Red-Team Self-Critique",
+        module=_ADAPTER_MODULE,
+        entry_point="gde_run_red_team_critic",
+        category=EngineCategory.GATE,
+        input_keys=["pending_write_operations", "engine_results", "overall_confidence"],
+        output_keys=["findings", "critical_findings", "finding_count"],
+        requires=[
+            "recovery_report", "refactoring_planner", "evidence_pack",
+            "build_scaffold", "c4_generator", "committee_analysis",
+            "fragility_classifier", "security_templates",
+        ],
+        # Deliberately terminal. The red-team critique is the last thing to run
+        # before APPROVE; suggesting a "next engine" from here would invite
+        # continuing past the very gate that just fired.
+        handoffs=[],
+        is_optional=True,
+        write_operations=[],
+        timeout_seconds=45,
+        modes=[GDEMode.RECOVERY, GDEMode.RESEARCH, GDEMode.REFACTOR, GDEMode.GATE,
+               GDEMode.BUILD, GDEMode.DOCUMENT, GDEMode.COMMITTEE],
     ),
 ]
 

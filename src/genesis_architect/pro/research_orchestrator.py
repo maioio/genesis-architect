@@ -27,6 +27,7 @@ from genesis_architect.pro.video_research import (
     parse_exa_results,
     format_media_signals,
 )
+from genesis_architect.pro.research_outline import Outline
 
 
 # ---------------------------------------------------------------------------
@@ -54,6 +55,16 @@ class ResearchSummary:
     duration_seconds: float = 0.0
     from_vault: bool = False
     domain: str = ""   # code | non_code | "" = classify from the vision
+    outline: Outline | None = None
+    item_findings: dict[str, dict[str, str]] = field(default_factory=dict)
+    # None = no outline was used, not "0% covered" - same discipline as
+    # RepoResult.stars: an absent metric must never render as a real zero.
+    coverage: float | None = None
+    # "item:field" entries not confidently known - see is_uncertain(). A
+    # value literally equal to "[uncertain]" is uncertain too, without
+    # needing an entry here; this list exists for callers that keep the
+    # marker and the value apart (Phase 2's own per-item JSON does both).
+    uncertain: list[str] = field(default_factory=list)
 
     def quality_reason(self) -> str:
         deep = sum(1 for r in self.repos if r.deep_analyzed)
@@ -87,6 +98,10 @@ class ResearchSummary:
                 s.__dict__ if hasattr(s, "__dict__") else s for s in self.video_signals
             ],
             "ecosystem_notes": self.ecosystem_notes,
+            "outline": self.outline.__dict__ if self.outline else None,
+            "item_findings": self.item_findings,
+            "coverage": self.coverage,
+            "uncertain": self.uncertain,
         }
 
 
@@ -122,6 +137,11 @@ def load_from_vault(vision: str, project_root: Path) -> ResearchSummary | None:
         summary.from_vault = True
         pitfalls_raw = data.get("pitfall_candidates", [])
         summary.pitfall_candidates = [RankedPitfall(**p) for p in pitfalls_raw]
+        outline_raw = data.get("outline")
+        summary.outline = Outline(**outline_raw) if outline_raw else None
+        summary.item_findings = data.get("item_findings", {})
+        summary.coverage = data.get("coverage")
+        summary.uncertain = data.get("uncertain", [])
         return summary
     except Exception:
         return None
@@ -138,6 +158,10 @@ def save_to_vault(summary: ResearchSummary, project_root: Path) -> None:
         "research_quality": summary.research_quality,
         "floor_met": summary.floor_met,
         "domain": summary.domain,
+        "outline": summary.outline.__dict__ if summary.outline else None,
+        "item_findings": summary.item_findings,
+        "coverage": summary.coverage,
+        "uncertain": summary.uncertain,
     }
     _vault.put(
         key=_vault_key(summary.vision),
@@ -163,6 +187,47 @@ def compute_quality(summary: ResearchSummary) -> str:
     return "THIN"
 
 
+def compute_coverage(summary: ResearchSummary) -> float | None:
+    """Fields filled / fields defined, across the outline's items x fields grid.
+
+    None when there is nothing to measure against - no outline, or an
+    outline with no items or no fields - rather than 0.0, which would read
+    as "measured and found empty" instead of "not applicable here".
+
+    Coverage counts presence, not confidence: a field marked [uncertain] by
+    the caller still counts as filled, because completeness (did we look?)
+    and confidence (do we trust what we found?) are different questions -
+    the second is what R3's `uncertain` list is for, not this one.
+    Only items and fields the outline actually declares are counted, so a
+    stray entry in item_findings can't inflate coverage past what was asked.
+    """
+    outline = summary.outline
+    if outline is None or not outline.items or not outline.fields:
+        return None
+
+    total = len(outline.items) * len(outline.fields)
+    filled = 0
+    for item in outline.items:
+        values = summary.item_findings.get(item, {})
+        for f in outline.fields:
+            value = values.get(f)
+            if isinstance(value, str) and value.strip():
+                filled += 1
+
+    return filled / total
+
+
+def is_uncertain(summary: ResearchSummary, item: str, field_name: str) -> bool:
+    """True if this cell of the grid is flagged unconfident, by either
+    mechanism the source pack uses: the value itself literally reads
+    "[uncertain]", or the "item:field" pair is named in summary.uncertain.
+    """
+    value = summary.item_findings.get(item, {}).get(field_name)
+    if isinstance(value, str) and value.strip() == "[uncertain]":
+        return True
+    return f"{item}:{field_name}" in summary.uncertain
+
+
 # ---------------------------------------------------------------------------
 # Research floor gate
 # ---------------------------------------------------------------------------
@@ -176,6 +241,13 @@ FLOOR_MIN_DEEP = 5
 # authoritative sources while the gate itself stays exactly as strict.
 FLOOR_MIN_SOURCES = 8
 FLOOR_MIN_AUTHORITATIVE = 3
+
+# An outline states the target before gathering, so once one is in use the
+# floor no longer needs to guess a domain-specific unit (repos vs sources) -
+# coverage against the declared grid replaces both. Stricter than the gate's
+# own 0.50 pause-and-ask threshold in gde_gate_engine.py: the floor decides
+# whether to show results at all, the gate decides whether to pause first.
+FLOOR_MIN_COVERAGE = 0.70
 
 # Signals that the vision is about software someone publishes as a repo.
 _CODE_DOMAIN_SIGNALS = (
@@ -247,13 +319,30 @@ def check_floor(summary: ResearchSummary) -> tuple[bool, str]:
     Returns (passed, message).
     Phase 5 prerequisite gate - must pass before showing architecture choice.
 
-    The gate never disappears; only its unit adapts to the domain. For a
-    software vision it counts repos, because that is where the evidence is.
-    For a vision with no repo corpus (extracting a house standard from a
-    studio archive, say) counting repos measures the wrong thing entirely and
-    would report failure for a problem that was never repo-shaped - so it
-    counts authoritative sources instead, at equivalent strictness.
+    The gate never disappears; only its unit adapts to what is actually
+    available to measure against. When an outline was used, coverage against
+    its declared grid IS the floor - domain-agnostic, since the grid already
+    states exactly what "enough" means for this research, without needing to
+    guess a unit from a code/non-code split. Without an outline, the gate
+    falls back to counting: repos for a software vision, because that is
+    where the evidence is; authoritative sources for a vision with no repo
+    corpus (extracting a house standard from a studio archive, say), where
+    counting repos would measure the wrong thing entirely and report failure
+    for a problem that was never repo-shaped, at equivalent strictness.
     """
+    coverage = compute_coverage(summary)
+    if coverage is not None:
+        if coverage >= FLOOR_MIN_COVERAGE:
+            return True, (
+                f"Floor met: {coverage:.0%} coverage on the outline grid "
+                f"({FLOOR_MIN_COVERAGE:.0%} required, outline-driven)"
+            )
+        return False, (
+            f"Floor not met: {coverage:.0%}/{FLOOR_MIN_COVERAGE:.0%} coverage "
+            f"on the outline grid. Options: A) Fill in more of the grid  "
+            f"B) Accept thin research (--override)  C) Architect Mode"
+        )
+
     domain = summary.domain or classify_domain(summary.vision)
 
     if domain == "non_code":
@@ -351,6 +440,28 @@ def format_summary(summary: ResearchSummary) -> str:
         )
     lines.append("")
 
+    # Research grid (outline-driven): uncertain cells are skipped, not
+    # printed - the same discipline as never coercing an unreported star
+    # count to look like a confirmed 0.
+    outline = summary.outline
+    if outline and outline.items and outline.fields:
+        grid_lines = []
+        for item in outline.items:
+            values = summary.item_findings.get(item, {})
+            rows = [
+                f"  - {f}: {values[f]}"
+                for f in outline.fields
+                if isinstance(values.get(f), str) and values[f].strip()
+                and not is_uncertain(summary, item, f)
+            ]
+            if rows:
+                grid_lines.append(f"- **{item}**")
+                grid_lines.extend(rows)
+        if grid_lines:
+            lines.append("### Research Grid")
+            lines.extend(grid_lines)
+            lines.append("")
+
     # Repo table
     if summary.repos:
         lines.append("### Analyzed Repositories")
@@ -435,6 +546,8 @@ def build_summary_from_raw(
     *,
     exa_results: list[dict] | None = None,        # legacy alias for web_results
     video_exa_results: list[dict] | None = None,  # legacy alias for media_results
+    outline: Outline | None = None,
+    item_findings: dict[str, dict[str, str]] | None = None,
 ) -> ResearchSummary:
     """
     Build a ResearchSummary from raw data collected by Genesis during Phase 2.
@@ -468,9 +581,12 @@ def build_summary_from_raw(
         video_signals=media_signals,
         duration_seconds=time.time() - start,
         domain=domain or classify_domain(vision),
+        outline=outline,
+        item_findings=item_findings or {},
     )
     summary.research_quality = compute_quality(summary)
     summary.floor_met = check_floor(summary)[0]
+    summary.coverage = compute_coverage(summary)
 
     if project_root:
         save_to_vault(summary, project_root)

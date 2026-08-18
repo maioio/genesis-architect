@@ -260,11 +260,33 @@ def _print_report_summary(report) -> None:
         for eid, r in report.engine_results.items():
             conf = f"conf={r.confidence:.2f}" if hasattr(r, "confidence") else ""
             print(f"    {r.status.value:9} {eid}  {conf}")
+            # An engine that did not cleanly succeed is exactly when its known
+            # failure modes are worth reading: they say whether this result is
+            # a documented way of being wrong or something new.
+            for mode in _failure_modes_for(eid, r):
+                print(f"              known mode: {mode}")
 
     n = len(report.decision_log)
     print()
     print(f"  Decision log: {n} entr{'y' if n == 1 else 'ies'}")
     print(_hr())
+
+
+def _failure_modes_for(engine_id: str, result) -> list[str]:
+    """Declared failure modes for an engine, but only when it did not cleanly
+    succeed. Printing them on every success would train the reader to skip
+    them, which costs exactly the attention they exist to buy.
+    """
+    status = getattr(getattr(result, "status", None), "value", "")
+    if status == "success":
+        return []
+    try:
+        from genesis_architect.pro.engine_registry import get_default_registry
+
+        desc = get_default_registry().get(engine_id)
+    except Exception:  # noqa: BLE001 — reporting must never break the report
+        return []
+    return list(desc.failure_modes) if desc is not None else []
 
 
 def _prompt_approval(request) -> str:
@@ -303,6 +325,27 @@ def _prompt_approval(request) -> str:
 # ---------------------------------------------------------------------------
 
 
+def _jsonable(value):
+    """Recursively convert a GDE dataclass tree into JSON-safe primitives."""
+    import dataclasses
+    from enum import Enum
+    from pathlib import Path as _Path
+
+    if isinstance(value, Enum):
+        return value.value
+    if dataclasses.is_dataclass(value) and not isinstance(value, type):
+        return {k: _jsonable(v) for k, v in dataclasses.asdict(value).items()}
+    if isinstance(value, dict):
+        return {str(k): _jsonable(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple, set)):
+        return [_jsonable(v) for v in value]
+    if isinstance(value, _Path):
+        return str(value)
+    if isinstance(value, (str, int, float, bool)) or value is None:
+        return value
+    return str(value)
+
+
 def cmd_decide(args: argparse.Namespace) -> int:
     import genesis_architect.pro.gde_engine_registration  # noqa: F401
     from genesis_architect.pro import GenesisDecisionEngine, __version__
@@ -313,11 +356,18 @@ def cmd_decide(args: argparse.Namespace) -> int:
         print(f"  error: --dir '{project_dir}' is not a directory", file=sys.stderr)
         return 1
 
-    rich = _use_rich()
+    json_output = bool(getattr(args, "json_output", False))
+    # JSON is for a consumer that pipes the output, and a pipe cannot answer an
+    # approval prompt. Rather than hang on one, --json runs analysis-only: the
+    # report is emitted in full and no write is attempted.
+    if json_output:
+        args.no_commit = True
+
+    rich = _use_rich() and not json_output
 
     if rich:
         _rich_header(__version__, project_dir, args.instruction)
-    else:
+    elif not json_output:
         print()
         print(f"  Genesis Decision Engine  v{__version__}")
         print(f"  Project: {project_dir}")
@@ -329,6 +379,15 @@ def cmd_decide(args: argparse.Namespace) -> int:
     # Classify-only mode
     if args.classify_only:
         intent = gde.classify_intent(args.instruction)
+        if json_output:
+            import json as _json
+            print(_json.dumps({
+                "version": __version__,
+                "project": str(project_dir),
+                "instruction": args.instruction,
+                "intent": _jsonable(intent),
+            }, indent=2))
+            return 0
         if rich:
             _rich_classify(intent)
         else:
@@ -361,6 +420,16 @@ def cmd_decide(args: argparse.Namespace) -> int:
         _rich_report(report)
     else:
         report = gde.run(args.instruction, resume=args.resume)
+        if json_output:
+            import json as _json
+            print(_json.dumps({
+                "version": __version__,
+                "project": str(project_dir),
+                "instruction": args.instruction,
+                "committed": False,   # --json is analysis-only, see above
+                "report": _jsonable(report),
+            }, indent=2))
+            return 2 if report.gate_report.overall == GateOutcome.HARD_BLOCK else 0
         _print_report_summary(report)
 
     # HARD_BLOCK
@@ -431,6 +500,9 @@ def cmd_memory(args: argparse.Namespace) -> int:
         print(f"  Memory initialised at {project_dir / '.genesis'}")
         return 0
 
+    if getattr(args, "sessions", False):
+        return _cmd_memory_sessions(project_dir, args)
+
     if args.status:
         status = memory_status(project_dir)
         if _use_rich():
@@ -476,6 +548,163 @@ def cmd_memory(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_memory_sessions(project_dir: Path, args: argparse.Namespace) -> int:
+    """`genesis memory --sessions` — the cross-session memory door.
+
+    `genesis memory` shows the .genesis/*.md files; cross-session memory is a
+    different thing entirely (the restorable research/build context), and it
+    had no command at all. Sharing the `memory` noun keeps the two where a
+    reader will look for them, separated by an explicit flag.
+    """
+    from genesis_architect.pro.cross_session_memory import (
+        list_analyzed_videos, no_session_message, restore_session,
+    )
+
+    context = restore_session(project_dir)
+    videos = list_analyzed_videos(project_dir)
+
+    if getattr(args, "json_output", False):
+        import json as _json
+        print(_json.dumps({
+            "restored": context.restored,
+            "context": context.__dict__,
+            "age_hours": round(context.age_hours(), 2) if context.restored else None,
+            "announcement": context.announce(),
+            "analyzed_videos": videos,
+        }, indent=2, default=str))
+        return 0
+
+    print()
+    if not context.restored:
+        print(f"  {no_session_message()}")
+        print()
+        return 0
+
+    print("  Cross-Session Memory")
+    print(_hr())
+    print(f"  {context.announce()}")
+    print()
+    print(f"  Vision           {context.vision}")
+    print(f"  Last phase       {context.last_phase}")
+    print(f"  Research quality {context.research_quality}")
+    print(f"  Repos            {context.repo_count} ({context.deep_count} deep-analyzed)")
+    print(f"  Pitfalls         {context.pitfall_count}")
+    print(f"  Vault cache      {'hit' if context.vault_hit else 'miss'}")
+    if videos:
+        print(f"  Videos absorbed  {len(videos)}")
+        for url in videos[:5]:
+            print(f"                   {url}")
+    print(_hr())
+    print()
+    return 0
+
+
+def cmd_engines(args: argparse.Namespace) -> int:
+    """`genesis engines` — the capability map: every engine and its command.
+
+    Exists because an engine nobody can find is an engine nobody has. See
+    capability_map for the drift guard that keeps this list honest.
+    """
+    from genesis_architect.pro.capability_map import format_map, to_dict
+
+    if getattr(args, "json_output", False):
+        import json as _json
+        print(_json.dumps(to_dict(), indent=2))
+        return 0
+
+    print(format_map(show_modules=getattr(args, "modules", False)))
+    return 0
+
+
+def cmd_deps(args: argparse.Namespace) -> int:
+    """`genesis deps [PATH]` — dependency and package-health door.
+
+    Wraps two engines that previously had no command of their own: the
+    dependency scanner (third-party imports per module, plus their CVEs) and
+    the package registry (release recency and advisories from PyPI, npm,
+    crates.io, Maven, NuGet and OSV).
+    """
+    from genesis_architect.pro.dependency_scanner import (
+        find_python_dependencies, scan_dependency_cves,
+    )
+
+    project_dir = Path(getattr(args, "path", ".")).expanduser().resolve()
+    if not project_dir.is_dir():
+        print(f"\n  Not a directory: {project_dir}\n", file=sys.stderr)
+        return 1
+
+    # --- single-package lookup: registry only, no project scan needed ---
+    requested = getattr(args, "package", None)
+    if requested:
+        from genesis_architect.pro.package_registry import query_package
+
+        ecosystem = getattr(args, "ecosystem", None) or "pypi"
+        signal = query_package(requested, ecosystem)
+        if getattr(args, "json_output", False):
+            import json as _json
+            print(_json.dumps(signal.__dict__, indent=2, default=str))
+            return 0
+        print()
+        print(f"  {requested} ({ecosystem})")
+        print(_hr())
+        for key, value in signal.__dict__.items():
+            print(f"  {key:18} {value}")
+        print(_hr())
+        print()
+        return 0
+
+    deps = find_python_dependencies(project_dir)
+    cves = scan_dependency_cves(project_dir) if deps and not getattr(args, "no_cve", False) else []
+
+    packages: dict[str, list[str]] = {}
+    for module, names in deps.items():
+        for name in names:
+            packages.setdefault(name, []).append(module)
+
+    if getattr(args, "json_output", False):
+        import json as _json
+        print(_json.dumps({
+            "project": str(project_dir),
+            "packages": {name: sorted(mods) for name, mods in sorted(packages.items())},
+            "modules_scanned": len(deps),
+            "cves": cves,
+            "cve_scan_ran": bool(deps) and not getattr(args, "no_cve", False),
+        }, indent=2, default=str))
+        return 0
+
+    print()
+    if not deps:
+        # Say which case this is. "0 dependencies" and "this scanner only
+        # speaks Python" look identical in the output otherwise.
+        print(f"  No third-party Python imports found under {project_dir}.")
+        print("  (This scanner covers Python projects; other ecosystems are not "
+              "scanned yet.)")
+        print()
+        return 0
+
+    print(f"  Dependencies — {project_dir}")
+    print(_hr())
+    print(f"  {len(packages)} third-party package(s) across {len(deps)} module(s)")
+    print()
+    for name, mods in sorted(packages.items()):
+        print(f"  {name:<28} {len(mods)} module(s)")
+    print()
+
+    if cves:
+        print(f"  {len(cves)} advisory/ies found")
+        print()
+        for cve in cves:
+            print(f"  {cve['id']:<22} {cve['package']}")
+            print(f"  {'':22} in {', '.join(cve['modules'][:3])}")
+        print()
+    elif not getattr(args, "no_cve", False):
+        print("  No advisories found for the scanned packages.")
+        print()
+    print(_hr())
+    print()
+    return 0 if not cves else 1
+
+
 def cmd_ui(args: argparse.Namespace) -> int:
     """Generate (or open) the self-contained HTML workspace."""
     from genesis_architect.pro.ui_workspace import write_workspace
@@ -515,6 +744,15 @@ def cmd_explain(args: argparse.Namespace) -> int:
 
     project_dir = Path(args.dir).expanduser().resolve()
     entries = read_decision_log(project_dir)
+
+    if getattr(args, "json_output", False):
+        import json as _json
+        print(_json.dumps({
+            "project": str(project_dir),
+            "entry_count": len(entries),
+            "entries": _jsonable(entries),
+        }, indent=2))
+        return 0
 
     if _use_rich():
         from rich.console import Console
@@ -935,9 +1173,38 @@ def cmd_companion_ui(project_dir: Path, *, no_browser: bool = False) -> int:
         print("  error: could not write the UI file.", file=sys.stderr)
         return 1
     print(f"  Floating Assistant: {ui_path}")
+
+    def _shutdown() -> None:
+        if wake_listener is not None:
+            try:
+                wake_listener.stop()
+            except Exception:
+                pass
+        if ws_server is not None:
+            try:
+                ws_server.stop()
+            except Exception:
+                pass
+
+    # Prefer a real floating window (frameless, always-on-top, sized to the
+    # bubble/panel) over an ordinary browser tab — a browser tab with a URL
+    # bar and bookmarks is not the "system-wide floating bubble" the product
+    # promises. Falls back to the browser honestly if pywebview (or its
+    # native WebView2 runtime) isn't available here.
     if not no_browser:
+        from genesis_architect.pro.companion_ui import render_companion_html
+        from genesis_architect.pro.companion_window import run_floating_window
+
+        html = render_companion_html(ws_port=port, ws_token=token)
+        print("  Opening the floating window. Close it (or Ctrl+C here) to stop.\n")
+        started = run_floating_window(html, on_close=_shutdown)
+        if started:
+            _shutdown()
+            print("\n  Companion stopped.")
+            return 0
+        print("  Native window unavailable — opening in your browser instead.")
         webbrowser.open(ui_path.as_uri())
-        print("  Opened in your browser. Close this terminal (Ctrl+C) to stop.\n")
+        print("  Close this terminal (Ctrl+C) to stop.\n")
 
     if ws_server is None:
         return 0  # offline UI written; nothing to keep alive
@@ -953,15 +1220,7 @@ def cmd_companion_ui(project_dir: Path, *, no_browser: bool = False) -> int:
             time.sleep(0.5)
     except KeyboardInterrupt:
         pass
-    if wake_listener is not None:
-        try:
-            wake_listener.stop()
-        except Exception:
-            pass
-    try:
-        ws_server.stop()
-    except Exception:
-        pass
+    _shutdown()
     print("\n  Companion stopped.")
     return 0
 
@@ -1079,16 +1338,29 @@ def cmd_sync(args: argparse.Namespace) -> int:
 
 
 def cmd_doctor(args: argparse.Namespace) -> int:
-    """Customer-facing readiness report: license, Pro install, optional deps.
+    """Readiness report: install health and optional dependencies.
 
-    Deliberately license-exempt (main() skips the license gate for this
-    command) — this is the tool you run to find out *why* nothing else works.
+    This is the tool you run to find out *why* nothing else works, so it must
+    stay answerable even when the rest of the CLI cannot run.
     """
     from genesis_architect.pro.first_run import check_readiness, doctor_report
+
+    readiness = check_readiness()
+    if getattr(args, "json_output", False):
+        import json as _json
+        print(_json.dumps({
+            "ready_to_work": readiness.ready_to_work,
+            "readiness": _jsonable(readiness),
+            "report": doctor_report(),
+        }, indent=2))
+        return 0 if readiness.ready_to_work else 1
+
     print()
     print(doctor_report())
     print()
-    return 0 if check_readiness().ready_to_work else 1
+    return 0 if readiness.ready_to_work else 1
+
+
 
 
 def cmd_license(args: argparse.Namespace) -> int:
@@ -1098,10 +1370,13 @@ def cmd_license(args: argparse.Namespace) -> int:
     under AGPL-3.0. This command is kept so that muscle memory and old scripts
     (`genesis license activate ...`) get a clear answer instead of an error.
     """
-    print("\n  Genesis Architect is free and open source (AGPL-3.0).")
+    print()
+    print("  Genesis Architect is free and open source (AGPL-3.0).")
     print("  There is no license key, no paid tier, and nothing gated —")
-    print("  every engine is available in this install.\n")
-    print("  Source:  https://github.com/maioio/genesis-architect\n")
+    print("  every engine is available in this install.")
+    print()
+    print("  Source:  https://github.com/maioio/genesis-architect")
+    print()
     return 0
 
 
@@ -1121,6 +1396,7 @@ def cmd_recover(args: argparse.Namespace) -> int:
         classify_only=args.classify_only,
         yes=args.yes,
         no_commit=args.no_commit,
+        json_output=getattr(args, "json_output", False),
     )
     return cmd_decide(decide_args)
 
@@ -1140,8 +1416,145 @@ def cmd_harden(args: argparse.Namespace) -> int:
         classify_only=args.classify_only,
         yes=args.yes,
         no_commit=args.no_commit,
+        json_output=getattr(args, "json_output", False),
     )
     return cmd_decide(decide_args)
+
+
+def cmd_advise(args: argparse.Namespace) -> int:
+    """`genesis advise` — dual-level MCP & skill recommendations.
+
+    Read-only and non-installing by design: it explains what each tool would
+    buy and how Genesis would drive it, then stops. Acting on that is the
+    user's decision, not the advisor's.
+    """
+    from genesis_architect.pro.mcp_advisor import advise, format_report
+
+    project_dir = Path(args.dir).expanduser().resolve()
+    if not project_dir.is_dir():
+        print(f"\n  Not a directory: {project_dir}\n", file=sys.stderr)
+        return 1
+
+    include_global = not getattr(args, "local_only", False)
+    include_local = not getattr(args, "global_only", False)
+
+    report = advise(
+        project_dir,
+        include_global=include_global,
+        include_local=include_local,
+    )
+
+    if getattr(args, "json_output", False):
+        import json as _json
+        print(_json.dumps({
+            "signals": {
+                "languages": sorted(report.signals.languages),
+                "frameworks": sorted(report.signals.frameworks),
+                "evidence": report.signals.evidence,
+            },
+            "local": [r.to_dict() for r in report.local],
+            "global": [r.to_dict() for r in report.global_],
+            "notes": report.notes,
+        }, indent=2))
+    else:
+        print(format_report(report))
+    return 0
+
+
+def cmd_fetch(args: argparse.Namespace) -> int:
+    """`genesis fetch` — fetch a trusted skill pack into the project sandbox.
+
+    Whitelist-only and read-only: it clones a registered source, marks the
+    sandbox ephemeral so Auto-Purge owns its cleanup, reads the skill
+    definitions as text, and never executes anything it downloaded.
+    """
+    from genesis_architect.pro.skill_fetcher import (
+        FetchRefused, discard, fetch, format_result, format_sources,
+    )
+
+    if getattr(args, "list_sources", False) or not getattr(args, "source_id", None):
+        print(format_sources())
+        return 0
+
+    project_dir = Path(args.dir).expanduser().resolve()
+    if not project_dir.is_dir():
+        print(f"\n  Not a directory: {project_dir}\n", file=sys.stderr)
+        return 1
+
+    try:
+        if getattr(args, "discard", False):
+            removed = discard(args.source_id, project_dir)
+            print(f"\n  {'Removed' if removed else 'Nothing to remove for'} "
+                  f"{args.source_id}\n")
+            return 0
+        result = fetch(
+            args.source_id, project_dir,
+            ttl_hours=getattr(args, "ttl", None) or 2.0,
+            force=bool(getattr(args, "force", False)),
+        )
+    except FetchRefused as exc:
+        print(f"\n  {exc}\n", file=sys.stderr)
+        return 2
+
+    if getattr(args, "json_output", False):
+        import json as _json
+        print(_json.dumps(result.to_dict(), indent=2))
+    else:
+        print(format_result(result))
+    return 0 if result.ok else 1
+
+
+def cmd_purge(args: argparse.Namespace) -> int:
+    """`genesis purge [--apply]` — Auto-Purge for expired ephemeral resources.
+
+    Dry run by default: it reports what expired and what it refused to touch,
+    and deletes nothing. `--apply` is the only path that removes anything.
+    """
+    from genesis_architect.pro.ephemeral_purge import (
+        DEFAULT_LOCK_TTL_HOURS, DEFAULT_WORKTREE_TTL_HOURS, format_report, purge,
+    )
+
+    project_dir = Path(args.dir).expanduser().resolve()
+    if not project_dir.is_dir():
+        print(f"\n  Not a directory: {project_dir}\n", file=sys.stderr)
+        return 1
+
+    worktree_ttl = args.worktree_ttl if args.worktree_ttl is not None else DEFAULT_WORKTREE_TTL_HOURS
+    lock_ttl = args.lock_ttl if args.lock_ttl is not None else DEFAULT_LOCK_TTL_HOURS
+
+    report = purge(
+        project_dir,
+        apply=bool(args.apply),
+        worktree_ttl_hours=worktree_ttl,
+        lock_ttl_hours=lock_ttl,
+    )
+
+    if getattr(args, "json_output", False):
+        import json as _json
+        print(_json.dumps({
+            "dry_run": report.dry_run,
+            "candidates": [
+                {"path": str(c.path), "kind": c.kind, "reason": c.reason,
+                 "age_hours": (None if c.age_hours == float("inf") else round(c.age_hours, 2)),
+                 "branch": c.branch}
+                for c in report.candidates
+            ],
+            "protected": [
+                {"path": str(p.path), "kind": p.kind, "reason": p.reason}
+                for p in report.protected
+            ],
+            "purged": report.purged,
+            "errors": report.errors,
+        }, indent=2))
+    else:
+        print(format_report(report))
+
+    # Exit 1 on a dry run that found debris, so CI can gate on a dirty tree.
+    if report.errors:
+        return 1
+    if report.dry_run and report.candidates:
+        return 1
+    return 0
 
 
 def cmd_telemetry(args: argparse.Namespace) -> int:
@@ -1202,6 +1615,8 @@ def _build_parser() -> argparse.ArgumentParser:
             "  publish    Generate Show HN post and GitHub Release notes\n"
             "  config     Manage API keys (set / get / show)\n"
             "  upgrade    Show Pro status and how to unlock advanced features\n"
+            "\nNot sure which command runs the engine you want?\n"
+            "  genesis engines        Every engine, and the command that reaches it\n"
             "\nRun `genesis <command> --help` for details on any command."
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -1222,10 +1637,14 @@ def _build_parser() -> argparse.ArgumentParser:
                         help="Auto-approve all write operations (CI mode)")
     decide.add_argument("--no-commit", action="store_true",
                         help="Skip APPROVE/COMMIT — analysis only")
+    decide.add_argument("--json", dest="json_output", action="store_true",
+                        help="Output structured JSON (implies --no-commit)")
 
     explain = sub.add_parser("explain", help="Print the last session's decision log")
     explain.add_argument("--dir", default=".", metavar="PATH",
                          help="Project directory (default: current directory)")
+    explain.add_argument("--json", dest="json_output", action="store_true",
+                         help="Output structured JSON (for piping / CI)")
 
     memory = sub.add_parser("memory", help="Show or manage per-project memory (.genesis/*.md)")
     memory.add_argument("--dir", default=".", metavar="PATH",
@@ -1234,6 +1653,31 @@ def _build_parser() -> argparse.ArgumentParser:
                         help="Initialise memory files under .genesis/")
     memory.add_argument("--status", action="store_true",
                         help="Show memory file status (exists, size)")
+    memory.add_argument("--sessions", action="store_true",
+                        help="Show restorable cross-session context instead of the .genesis/ files")
+    memory.add_argument("--json", dest="json_output", action="store_true",
+                        help="Output structured JSON (for piping / CI)")
+
+    engines_p = sub.add_parser(
+        "engines", help="List every engine and the command that reaches it")
+    engines_p.add_argument("--modules", action="store_true",
+                           help="Show the implementing module next to each engine")
+    engines_p.add_argument("--json", dest="json_output", action="store_true",
+                           help="Output structured JSON (for piping / CI)")
+
+    deps_p = sub.add_parser(
+        "deps", help="Third-party dependencies per module, plus their advisories")
+    deps_p.add_argument("path", nargs="?", default=".", metavar="PATH",
+                        help="Project directory to scan (default: current directory)")
+    deps_p.add_argument("--package", default=None, metavar="NAME",
+                        help="Skip the project scan and report on one package instead")
+    deps_p.add_argument("--ecosystem", default=None, metavar="NAME",
+                        help="Registry for --package: pypi | npm | crates | maven | nuget "
+                             "(default: pypi)")
+    deps_p.add_argument("--no-cve", action="store_true",
+                        help="Skip the advisory lookup (no network calls)")
+    deps_p.add_argument("--json", dest="json_output", action="store_true",
+                        help="Output structured JSON (for piping / CI)")
 
     ui = sub.add_parser("ui", help="Generate the self-contained HTML Canvas workspace")
     ui.add_argument("--dir", default=".", metavar="PATH",
@@ -1243,7 +1687,7 @@ def _build_parser() -> argparse.ArgumentParser:
     ui.add_argument("--open", action="store_true",
                     help="Open the workspace in the default browser after generating")
 
-    companion = sub.add_parser("companion", help="Start the Genesis health page server")
+    companion = sub.add_parser("companion", help="Start the Genesis PRO health page server")
     companion.add_argument("--dir", default=".", metavar="PATH",
                            help="Project directory (default: current directory)")
     companion.add_argument("--port", type=int, default=7433, metavar="PORT",
@@ -1281,7 +1725,9 @@ def _build_parser() -> argparse.ArgumentParser:
     sync.add_argument("--ci-mode", action="store_true",
                       help="Exit 1 if any yellow/red findings (for CI pipelines)")
 
-    sub.add_parser("doctor", help="Readiness check: install health and optional deps")
+    doctor_p = sub.add_parser("doctor", help="Readiness check: install health and optional deps")
+    doctor_p.add_argument("--json", dest="json_output", action="store_true",
+                          help="Output structured JSON (for piping / CI)")
 
     # Kept only so old scripts and muscle memory get a clear answer: Genesis
     # is free and open source, there is no key to activate.
@@ -1305,6 +1751,8 @@ def _build_parser() -> argparse.ArgumentParser:
                          help="Auto-approve all write operations (CI mode)")
     recover.add_argument("--no-commit", action="store_true",
                          help="Skip APPROVE/COMMIT — analysis only")
+    recover.add_argument("--json", dest="json_output", action="store_true",
+                         help="Output structured JSON (implies --no-commit)")
 
     harden = sub.add_parser(
         "harden", help="Security gate: STRIDE threat model + OWASP Top 10 + secrets scan")
@@ -1320,6 +1768,49 @@ def _build_parser() -> argparse.ArgumentParser:
                         help="Auto-approve all write operations (CI mode)")
     harden.add_argument("--no-commit", action="store_true",
                         help="Skip APPROVE/COMMIT — analysis only")
+    harden.add_argument("--json", dest="json_output", action="store_true",
+                        help="Output structured JSON (implies --no-commit)")
+
+    advise_p = sub.add_parser(
+        "advise", help="Recommend MCP servers and skills for this project (installs nothing)")
+    advise_p.add_argument("--dir", default=".", metavar="PATH",
+                          help="Project directory (default: current directory)")
+    advise_p.add_argument("--local-only", action="store_true",
+                          help="Only project-level recommendations")
+    advise_p.add_argument("--global-only", action="store_true",
+                          help="Only cross-project recommendations from learning history")
+    advise_p.add_argument("--json", dest="json_output", action="store_true",
+                          help="Output structured JSON (for piping / CI)")
+
+    fetch_p = sub.add_parser(
+        "fetch", help="Fetch a trusted skill pack into the sandbox (read-only, never executed)")
+    fetch_p.add_argument("source_id", nargs="?", default=None, metavar="SOURCE",
+                         help="Trusted source id (omit to list what's fetchable)")
+    fetch_p.add_argument("--dir", default=".", metavar="PATH",
+                         help="Project directory (default: current directory)")
+    fetch_p.add_argument("--list", dest="list_sources", action="store_true",
+                         help="List the trusted registry and exit")
+    fetch_p.add_argument("--ttl", type=float, default=None, metavar="HOURS",
+                         help="Sandbox TTL in hours (default and maximum: 2)")
+    fetch_p.add_argument("--force", action="store_true",
+                         help="Re-clone even if the sandbox already exists")
+    fetch_p.add_argument("--discard", action="store_true",
+                         help="Remove this source's sandbox now instead of fetching")
+    fetch_p.add_argument("--json", dest="json_output", action="store_true",
+                         help="Output structured JSON (for piping / CI)")
+
+    purge_p = sub.add_parser(
+        "purge", help="Auto-Purge: find (and optionally remove) expired ephemeral resources")
+    purge_p.add_argument("--dir", default=".", metavar="PATH",
+                         help="Project directory (default: current directory)")
+    purge_p.add_argument("--apply", action="store_true",
+                         help="Actually remove what was found (default: dry run only)")
+    purge_p.add_argument("--worktree-ttl", type=float, default=None, metavar="HOURS",
+                         help="Idle hours before a clean worktree is expired (default: 168)")
+    purge_p.add_argument("--lock-ttl", type=float, default=None, metavar="HOURS",
+                         help="Age in hours before a dead-owner lock is expired (default: 1)")
+    purge_p.add_argument("--json", dest="json_output", action="store_true",
+                         help="Output structured JSON (for piping / CI)")
 
     telemetry_p = sub.add_parser(
         "telemetry", help="Manage anonymous, opt-in product telemetry (default OFF)")
@@ -1359,12 +1850,13 @@ def main(argv: list[str] | None = None) -> int:
     if argv is None:
         argv = sys.argv[1:]
 
-    # Pro owns these subcommands; the core Typer CLI owns the rest. The two
-    # packages both ship a `genesis` console-script, and whichever installs
-    # last wins the launcher — so Pro's entry point must delegate core
-    # commands to the core app instead of forcing everything into `decide`.
+    # One binary, two command families: the engine commands below are argparse
+    # (this module), the scaffolding ones are Typer (genesis_architect.cli).
+    # This dispatcher owns the former and delegates the latter, so an unknown
+    # first token is never silently forced into `decide`.
     _pro_cmds = ("decide", "explain", "memory", "ui", "companion", "sync",
-                 "doctor", "license", "recover", "harden", "telemetry")
+                 "doctor", "recover", "harden", "telemetry", "purge", "advise", "fetch",
+                 "engines", "deps", "license")
     _core_cmds = ("init", "config", "research", "publish", "upgrade", "resolve")
     if argv and argv[0] in _core_cmds:
         from genesis_architect.cli import app as _core_app
@@ -1397,34 +1889,56 @@ def main(argv: list[str] | None = None) -> int:
 
     args = parser.parse_args(argv)
 
-    # No license check. Every engine in Genesis Architect is free and
-    # open source — there is no paid tier and nothing is gated.
+    _dispatch = {
+        "decide": cmd_decide,
+        "explain": cmd_explain,
+        "memory": cmd_memory,
+        "ui": cmd_ui,
+        "companion": cmd_companion,
+        "sync": cmd_sync,
+        "doctor": cmd_doctor,
+        "recover": cmd_recover,
+        "harden": cmd_harden,
+        "telemetry": cmd_telemetry,
+        "purge": cmd_purge,
+        "advise": cmd_advise,
+        "fetch": cmd_fetch,
+        "engines": cmd_engines,
+        "deps": cmd_deps,
+        "license": cmd_license,
+    }
+    handler = _dispatch.get(args.command)
+    if handler is None:
+        parser.print_help()
+        return 0
 
-    if args.command == "decide":
-        return cmd_decide(args)
-    if args.command == "explain":
-        return cmd_explain(args)
-    if args.command == "memory":
-        return cmd_memory(args)
-    if args.command == "ui":
-        return cmd_ui(args)
-    if args.command == "companion":
-        return cmd_companion(args)
-    if args.command == "sync":
-        return cmd_sync(args)
-    if args.command == "doctor":
-        return cmd_doctor(args)
-    if args.command == "license":
-        return cmd_license(args)
-    if args.command == "recover":
-        return cmd_recover(args)
-    if args.command == "harden":
-        return cmd_harden(args)
-    if args.command == "telemetry":
-        return cmd_telemetry(args)
+    rc = handler(args)
+    _emit_hygiene_notice(args)
+    return rc
 
-    parser.print_help()
-    return 0
+
+def _emit_hygiene_notice(args: argparse.Namespace) -> None:
+    """Surface expired ephemeral resources at the end of a run.
+
+    Read-only: it runs Auto-Purge in dry-run mode and only prints. It exists
+    so debris announces itself instead of waiting to be remembered — but it
+    must never delete anything on its own, and never break the command that
+    just succeeded, so every failure here is swallowed.
+
+    Skipped for `purge` itself (which just reported in full) and `doctor`
+    (a readiness surface that shouldn't grow unrelated noise).
+    """
+    if getattr(args, "command", None) in ("purge", "doctor"):
+        return
+    try:
+        from genesis_architect.pro.ephemeral_purge import hygiene_notice
+
+        project_dir = Path(getattr(args, "dir", None) or getattr(args, "path", ".") or ".")
+        notice = hygiene_notice(project_dir.expanduser().resolve())
+        if notice:
+            print(f"\n  {notice}\n")
+    except Exception:  # noqa: BLE001 — a hygiene hint must never break a command
+        pass
 
 
 if __name__ == "__main__":

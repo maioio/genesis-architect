@@ -405,6 +405,28 @@ def gde_run_source_registry(ctx: SessionContext) -> dict[str, Any]:
     }
 
 
+def gde_run_research_outline(ctx: SessionContext) -> dict[str, Any]:
+    """Surface the confirmed research outline for this project, if one
+    exists - the items x fields target grid downstream research engines can
+    consult before gathering opportunistically."""
+    from genesis_architect.pro.research_outline import load_outline
+
+    outline = load_outline(_project_dir(ctx))
+    if outline is None:
+        return {
+            "topic": "", "items": [], "fields": [],
+            "_confidence": 0.5,
+            "_warnings": ["no research outline confirmed yet — gathering stays opportunistic"],
+        }
+
+    return {
+        "topic": outline.topic,
+        "items": outline.items,
+        "fields": outline.fields,
+        "_confidence": 1.0,
+        "_warnings": [],
+    }
+
 def gde_run_field_intelligence(ctx: SessionContext) -> dict[str, Any]:
     """Run the Reddit Answers field intelligence workflow to surface developer sentiment."""
     from genesis_architect.pro.field_intelligence import run_field_workflow
@@ -923,5 +945,48 @@ def gde_run_import_audit(ctx: SessionContext) -> dict[str, Any]:
         "audit_report": format_report(report),
         "audit_notes": report.notes,
         "_confidence": 1.0 if report.declared_links > 0 else 0.6,
+        "_warnings": warnings,
+    }
+
+
+def gde_run_red_team_critic(ctx: SessionContext) -> dict[str, Any]:
+    """Attack this session's own plan before it's approved.
+
+    Runs last (requires every write-producing engine across every mode it's
+    registered for — see gde_engine_registration.py) so it can see the full
+    set of pending writes and engine results. Deterministic checks always
+    run. The LLM adversarial pass is attempted only if ANTHROPIC_API_KEY is
+    set — same disclosed-skip pattern as gde_run_committee_analysis: never
+    silently claim coverage that didn't happen.
+    """
+    import os
+
+    from genesis_architect.pro.red_team_critic import critique_session, critique_with_llm
+
+    findings = critique_session(ctx)
+    warnings: list[str] = []
+
+    if os.environ.get("ANTHROPIC_API_KEY"):
+        try:
+            findings = findings + critique_with_llm(ctx)
+        except Exception as exc:
+            warnings.append(f"Red-team LLM pass failed, deterministic checks only: {exc}")
+    else:
+        warnings.append(
+            "No ANTHROPIC_API_KEY — red-team LLM pass skipped, deterministic checks only."
+        )
+
+    critical = [f for f in findings if f.severity == "critical"]
+
+    return {
+        "findings": [
+            {"severity": f.severity, "category": f.category,
+             "description": f.description, "evidence": f.evidence,
+             "inference": f.inference}
+            for f in findings
+        ],
+        "critical_findings": len(critical),
+        "finding_count": len(findings),
+        "_confidence": 0.6 if critical else 1.0,
         "_warnings": warnings,
     }

@@ -1,6 +1,6 @@
 """Genesis Decision Engine — gate engine.
 
-Evaluates the 12 named approval gates against a SessionContext and
+Evaluates the 13 named approval gates against a SessionContext and
 produces a GateReport. Gate policy is a static table here — not scattered
 in orchestration logic.
 
@@ -8,18 +8,21 @@ Hard-block gates (PLAN_WRITE, RULES_FAIL) are NEVER overridable.
 All other gates may be overridden if override_allowed=True.
 
 Gate IDs and their trigger conditions:
-  PLAN_WRITE       — any write op targeting planned.json → HARD_BLOCK
-  RULES_FAIL       — rules engine returned a hard failure → HARD_BLOCK
-  CONFIDENCE_LOW   — overall_confidence < 0.40 → BLOCK_AND_ASK
-  DRIFT_CRITICAL   — drift score > 80 in engine results → BLOCK_AND_ASK
-  WRITE_SCOPE      — pending_write_operations non-empty → WARN
-  SECURITY_RISK    — security signal detected in engine output → BLOCK_AND_ASK
-  POLICY_VIOLATION — rules engine returned policy violation → BLOCK_AND_ASK
-  REQUIRED_FAILED  — any required engine failed → WARN
-  DEGRADED_MODE    — overall_confidence < 0.60 → WARN
-  NO_ENGINES       — zero engines ran for the mode → WARN
-  RESEARCH_STALE   — research results older than 24h signal → WARN
-  COMMIT_CONFLICT  — write op conflicts with existing committed model → BLOCK_AND_ASK
+  PLAN_WRITE        — any write op targeting planned.json → HARD_BLOCK
+  RULES_FAIL        — rules engine returned a hard failure → HARD_BLOCK
+  CONFIDENCE_LOW    — overall_confidence < 0.40 → BLOCK_AND_ASK
+  DRIFT_CRITICAL    — drift score > 80 in engine results → BLOCK_AND_ASK
+  WRITE_SCOPE       — pending_write_operations non-empty → WARN
+  SECURITY_RISK     — security signal detected in engine output → BLOCK_AND_ASK
+  POLICY_VIOLATION  — rules engine returned policy violation → BLOCK_AND_ASK
+  REQUIRED_FAILED   — any required engine failed → WARN
+  DEGRADED_MODE     — overall_confidence < 0.60 → WARN
+  NO_ENGINES        — zero engines ran for the mode → WARN
+  RESEARCH_STALE    — research results older than 24h signal → WARN
+  COMMIT_CONFLICT   — write op conflicts with existing committed model → BLOCK_AND_ASK
+  RED_TEAM_CRITICAL — red_team_critic found a critical-severity finding → BLOCK_AND_ASK
+  RESEARCH_COVERAGE_LOW — an outline-driven research pass reports coverage
+                     below threshold → BLOCK_AND_ASK
 """
 
 from __future__ import annotations
@@ -43,6 +46,11 @@ _CONFIDENCE_DEGRADED_THRESHOLD = 0.60
 # Drift score threshold (stored in engine output under 'drift_score' key)
 _DRIFT_CRITICAL_SCORE = 80.0
 
+# Research coverage threshold (stored in engine output under 'coverage' key,
+# 0.0-1.0). None means no outline was used and is never "low" - only an
+# actual measured fraction below this counts.
+_RESEARCH_COVERAGE_LOW_THRESHOLD = 0.50
+
 # ---------------------------------------------------------------------------
 # Gate policy table
 # ---------------------------------------------------------------------------
@@ -58,6 +66,8 @@ _GATE_POLICY: list[tuple[str, str, bool, GateAction, float]] = [
     ("SECURITY_RISK",    "Security risk in proposed changes",   True,  GateAction.BLOCK_AND_ASK, 0.15),
     ("POLICY_VIOLATION", "Policy violation detected",           True,  GateAction.BLOCK_AND_ASK, 0.15),
     ("COMMIT_CONFLICT",  "Write conflict with committed model", True,  GateAction.BLOCK_AND_ASK, 0.10),
+    ("RED_TEAM_CRITICAL", "Red-team found a critical vulnerability", True, GateAction.BLOCK_AND_ASK, 0.15),
+    ("RESEARCH_COVERAGE_LOW", "Research coverage below threshold",   True,  GateAction.BLOCK_AND_ASK, 0.10),
     # Warnings — surface and continue
     ("WRITE_SCOPE",      "Write operations pending",            True,  GateAction.WARN,          0.05),
     ("REQUIRED_FAILED",  "Required engine(s) failed",           True,  GateAction.WARN,          0.05),
@@ -282,6 +292,49 @@ def _check_commit_conflict(ctx: SessionContext) -> tuple[bool, str, str]:
     return False, "", ""
 
 
+def _check_red_team_critical(ctx: SessionContext) -> tuple[bool, str, str]:
+    result = ctx.engine_results.get("red_team_critic")
+    if result is None:
+        return False, "", ""
+    critical_count = result.output.get("critical_findings", 0)
+    if critical_count:
+        findings = result.output.get("findings", [])
+        critical_descriptions = [
+            f["description"] for f in findings if f.get("severity") == "critical"
+        ]
+        return (
+            True,
+            f"Red-team critique found {critical_count} critical finding(s)",
+            "; ".join(critical_descriptions[:3]),
+        )
+    return False, "", ""
+
+
+def _check_research_coverage_low(ctx: SessionContext) -> tuple[bool, str, str]:
+    """Fires when an outline-driven research pass reports coverage below
+    threshold. `coverage` is None whenever no outline was used at all - that
+    is "not applicable", never "low", so it is skipped rather than treated
+    as a failure. Scans every engine's output rather than one named engine
+    ID, since research coverage is a signal any research-producing engine
+    may report, not a property of one fixed engine.
+    """
+    for engine_id, result in ctx.engine_results.items():
+        coverage = result.output.get("coverage")
+        if coverage is None:
+            continue
+        if float(coverage) < _RESEARCH_COVERAGE_LOW_THRESHOLD:
+            outline = result.output.get("outline") or {}
+            topic = outline.get("topic", "")
+            return (
+                True,
+                f"Engine '{engine_id}' reports research coverage "
+                f"{float(coverage):.0%}, below the "
+                f"{_RESEARCH_COVERAGE_LOW_THRESHOLD:.0%} threshold",
+                f"outline={topic!r}" if topic else "",
+            )
+    return False, "", ""
+
+
 # ---------------------------------------------------------------------------
 # Gate check dispatch table
 # ---------------------------------------------------------------------------
@@ -299,4 +352,6 @@ _GATE_CHECKS: dict[str, object] = {
     "NO_ENGINES":       _check_no_engines,
     "RESEARCH_STALE":   _check_research_stale,
     "COMMIT_CONFLICT":  _check_commit_conflict,
+    "RED_TEAM_CRITICAL": _check_red_team_critical,
+    "RESEARCH_COVERAGE_LOW": _check_research_coverage_low,
 }

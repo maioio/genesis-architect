@@ -106,6 +106,18 @@ class EngineDescriptor:
     All engines are registered via this descriptor. The GDE uses it to
     discover engines, resolve execution order, enforce isolation, and
     collect write-operation declarations for approval gating.
+
+    `requires` and `handoffs` are the two edges of the engine graph and mean
+    different things:
+
+      requires  — BACKWARD edge, a hard ordering constraint. The planner
+                  topologically sorts on it, and it must stay acyclic.
+      handoffs  — FORWARD edge, advisory. "Having run, this is what is most
+                  useful next." It is deliberately NOT part of cycle
+                  detection: an iterative loop (analyse → decide → re-analyse)
+                  is a legitimate workflow, not a structural defect. Handoff
+                  targets are existence-checked so they cannot rot into
+                  dangling references, and nothing more.
     """
 
     id: str
@@ -116,6 +128,13 @@ class EngineDescriptor:
     input_keys: list[str]
     output_keys: list[str]
     requires: list[str] = field(default_factory=list)
+    handoffs: list[str] = field(default_factory=list)
+    # Known ways this engine misleads when it goes wrong. Declared next to the
+    # engine rather than centrally, so the constraint sits with the thing it
+    # constrains. Surfaced when the engine fails or degrades, which is exactly
+    # when an operator is deciding whether a bad result is a known mode or a
+    # new problem.
+    failure_modes: list[str] = field(default_factory=list)
     is_optional: bool = True
     write_operations: list[str] = field(default_factory=list)
     timeout_seconds: int = 60

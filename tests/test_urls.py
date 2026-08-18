@@ -64,7 +64,9 @@ class TestCallSitesAreHardened:
         genuine = from_exa_result({"url": "https://www.reddit.com/r/x"})
         assert genuine.source == "reddit"
         spoofed = from_exa_result({"url": "https://evil.test/reddit.com/x"})
-        assert spoofed.source == "exa_blog"
+        # The fallback label is "web", not "exa_blog": stream B runs on Exa,
+        # Tavily or Firecrawl interchangeably, so it no longer names a provider.
+        assert spoofed.source == "web"
         # and the spoof must not inherit reddit's confidence weight
         assert spoofed.confidence != genuine.confidence
 

@@ -18,7 +18,7 @@ from genesis_architect.core import vault as _vault
 from genesis_architect.pro.pitfall_ranker import (
     RankedPitfall,
     from_github_issue,
-    from_exa_result,
+    from_web_result,
     from_video_signal,
     rank,
     format_ranked,
@@ -36,7 +36,7 @@ from genesis_architect.pro.video_research import (
 @dataclass
 class RepoResult:
     slug: str           # owner/repo
-    stars: int
+    stars: int | None   # None = source didn't report a star count (not "0 stars")
     url: str
     description: str
     deep_analyzed: bool = False
@@ -47,12 +47,13 @@ class ResearchSummary:
     vision: str
     repos: list[RepoResult] = field(default_factory=list)
     pitfall_candidates: list[RankedPitfall] = field(default_factory=list)
-    video_signals: list = field(default_factory=list)   # VideoSignal list
+    video_signals: list = field(default_factory=list)   # MediaSignal list
     ecosystem_notes: list[str] = field(default_factory=list)
     research_quality: str = "THIN"   # FULL | PARTIAL | THIN
     floor_met: bool = False
     duration_seconds: float = 0.0
     from_vault: bool = False
+    domain: str = ""   # code | non_code | "" = classify from the vision
 
     def quality_reason(self) -> str:
         deep = sum(1 for r in self.repos if r.deep_analyzed)
@@ -62,6 +63,31 @@ class ResearchSummary:
         if deep >= 5 or issues >= 2:
             return f"PARTIAL ({deep} repos deep-analyzed, {issues} issues)"
         return f"THIN ({deep} repos deep-analyzed, {issues} issues)"
+
+    def to_dict(self) -> dict:
+        """Machine-readable form, for `--json` consumers.
+
+        Agents read this CLI far more often than humans do, and parsing Rich
+        output is guesswork. Everything the rendered summary shows is here,
+        including the floor verdict and each candidate's score breakdown.
+        """
+        floor_ok, floor_msg = check_floor(self)
+        return {
+            "vision": self.vision,
+            "domain": self.domain or classify_domain(self.vision),
+            "research_quality": self.research_quality,
+            "quality_reason": self.quality_reason(),
+            "floor_met": floor_ok,
+            "floor_message": floor_msg,
+            "from_vault": self.from_vault,
+            "duration_seconds": round(self.duration_seconds, 3),
+            "repos": [r.__dict__ for r in self.repos],
+            "pitfall_candidates": [p.__dict__ for p in self.pitfall_candidates],
+            "media_signals": [
+                s.__dict__ if hasattr(s, "__dict__") else s for s in self.video_signals
+            ],
+            "ecosystem_notes": self.ecosystem_notes,
+        }
 
 
 # ---------------------------------------------------------------------------
@@ -92,6 +118,7 @@ def load_from_vault(vision: str, project_root: Path) -> ResearchSummary | None:
         summary.ecosystem_notes = data.get("ecosystem_notes", [])
         summary.research_quality = data.get("research_quality", "THIN")
         summary.floor_met = data.get("floor_met", False)
+        summary.domain = data.get("domain", "")
         summary.from_vault = True
         pitfalls_raw = data.get("pitfall_candidates", [])
         summary.pitfall_candidates = [RankedPitfall(**p) for p in pitfalls_raw]
@@ -110,6 +137,7 @@ def save_to_vault(summary: ResearchSummary, project_root: Path) -> None:
         "ecosystem_notes": summary.ecosystem_notes,
         "research_quality": summary.research_quality,
         "floor_met": summary.floor_met,
+        "domain": summary.domain,
     }
     _vault.put(
         key=_vault_key(summary.vision),
@@ -142,19 +170,117 @@ def compute_quality(summary: ResearchSummary) -> str:
 FLOOR_MIN_REPOS = 12
 FLOOR_MIN_DEEP = 5
 
+# Non-code domains have no GitHub corpus to meet a repo floor against. The gate
+# still has to hold - it is the one thing that stops Genesis from presenting
+# thin research as if it were sufficient - so for these the *unit* changes to
+# authoritative sources while the gate itself stays exactly as strict.
+FLOOR_MIN_SOURCES = 8
+FLOOR_MIN_AUTHORITATIVE = 3
+
+# Signals that the vision is about software someone publishes as a repo.
+_CODE_DOMAIN_SIGNALS = (
+    "api", "cli", "sdk", "library", "framework", "app", "application", "service",
+    "server", "backend", "frontend", "database", "compiler", "parser", "plugin",
+    "extension", "package", "microservice", "webhook", "daemon", "bot",
+    "dashboard", "pipeline", "scraper", "crawler", "runtime", "kernel", "driver",
+    "container", "kubernetes", "docker", "terraform", "react", "python",
+    "typescript", "rust", "golang", "build", "deploy", "refactor", "migrate",
+)
+
+# Signals that the answer lives in standards, archives, and practice - not repos.
+_NON_CODE_DOMAIN_SIGNALS = (
+    "standard", "guideline", "guidelines", "convention", "conventions",
+    "brand", "branding", "identity", "typography", "editorial", "archive",
+    "studio", "portfolio", "curriculum", "syllabus", "policy", "regulation",
+    "compliance", "legal", "contract", "workflow", "process", "methodology",
+    "taxonomy", "glossary", "style guide", "specification document",
+    "onboarding", "hiring", "pricing", "positioning", "market", "audience",
+)
+
+
+def classify_domain(vision: str) -> str:
+    """``code`` | ``non_code`` - which floor unit applies to this vision.
+
+    Deliberately keyword-based and biased toward ``code``: mis-routing a
+    software vision to the source floor would weaken the gate that matters
+    most, while mis-routing a non-software vision merely restores the old
+    behaviour. Ties resolve to ``code``.
+    """
+    text = f" {vision.lower()} "
+    code_hits = sum(1 for kw in _CODE_DOMAIN_SIGNALS if f" {kw} " in text or f" {kw}s " in text)
+    non_code_hits = sum(
+        1 for kw in _NON_CODE_DOMAIN_SIGNALS if f" {kw} " in text or f" {kw}s " in text
+    )
+    return "non_code" if non_code_hits > code_hits else "code"
+
+
+def _source_hosts(summary: ResearchSummary) -> set[str]:
+    """Every distinct host behind the candidates, corroborating URLs included.
+
+    Deduplication folds repeat findings into ``corroborated_by`` and ranking
+    caps the visible list, so counting candidates would undercount the sources
+    actually consulted - the exact mistake that makes a source floor unfair.
+    """
+    from genesis_architect.core.urls import host_of
+
+    hosts: set[str] = set()
+    for p in summary.pitfall_candidates:
+        for url in [p.url, *p.corroborated_by]:
+            host = host_of(url) if url else ""
+            if host:
+                hosts.add(host)
+    return hosts
+
+
+def _authoritative_source_count(summary: ResearchSummary) -> int:
+    """Distinct hosts that are official or high-signal community, not just any host."""
+    from genesis_architect.pro.pitfall_ranker import _authority_tier
+
+    return sum(
+        1 for host in _source_hosts(summary)
+        if _authority_tier(f"https://{host}/") in ("official", "community")
+    )
+
 
 def check_floor(summary: ResearchSummary) -> tuple[bool, str]:
     """
     Returns (passed, message).
     Phase 5 prerequisite gate - must pass before showing architecture choice.
+
+    The gate never disappears; only its unit adapts to the domain. For a
+    software vision it counts repos, because that is where the evidence is.
+    For a vision with no repo corpus (extracting a house standard from a
+    studio archive, say) counting repos measures the wrong thing entirely and
+    would report failure for a problem that was never repo-shaped - so it
+    counts authoritative sources instead, at equivalent strictness.
     """
+    domain = summary.domain or classify_domain(summary.vision)
+
+    if domain == "non_code":
+        sources = len(_source_hosts(summary))
+        authoritative = _authoritative_source_count(summary)
+        if sources >= FLOOR_MIN_SOURCES and authoritative >= FLOOR_MIN_AUTHORITATIVE:
+            return True, (
+                f"Floor met: {sources} sources, {authoritative} authoritative hosts "
+                f"(non-code domain - repos are not the unit here)"
+            )
+        return False, (
+            f"Floor not met: {sources}/{FLOOR_MIN_SOURCES} sources, "
+            f"{authoritative}/{FLOOR_MIN_AUTHORITATIVE} authoritative hosts. "
+            f"This vision has no repo corpus, so the floor counts sources, not repos. "
+            f"Options: A) Broaden to more authoritative sources  "
+            f"B) Accept thin research (--override)  C) Architect Mode"
+        )
+
     total = len(summary.repos)
     deep = sum(1 for r in summary.repos if r.deep_analyzed)
     if total >= FLOOR_MIN_REPOS and deep >= FLOOR_MIN_DEEP:
         return True, f"Floor met: {total} repos, {deep} deep-analyzed"
     return False, (
         f"Floor not met: {total}/{FLOOR_MIN_REPOS} repos, {deep}/{FLOOR_MIN_DEEP} deep-analyzed. "
-        f"Options: A) Broaden search  B) Accept thin research (--override)  C) Architect Mode"
+        f"Options: A) Broaden search  B) Accept thin research (--override)  "
+        f"C) Architect Mode  D) Not a repo-shaped problem - rerun with "
+        f"--domain non-code to have the floor count authoritative sources instead"
     )
 
 
@@ -163,14 +289,19 @@ def check_floor(summary: ResearchSummary) -> tuple[bool, str]:
 # ---------------------------------------------------------------------------
 
 def merge_streams(
-    github_issues: list,        # list of issue_miner.Issue objects
-    exa_results: list[dict],    # raw Exa results from stream B
-    video_exa_results: list[dict],  # raw Exa results from stream D
+    github_issues: list,          # list of issue_miner.Issue objects
+    web_results: list[dict],      # stream B: web/ecosystem results, any provider
+    media_results: list[dict],    # stream D: video/social results, any provider
     vision: str,
 ) -> tuple[list[RankedPitfall], list]:
     """
     Convert all stream outputs to RankedPitfall, rank them.
-    Returns (ranked_pitfalls, video_signals).
+    Returns (ranked_pitfalls, media_signals).
+
+    The stream parameters are named for what they carry, not for who fetched
+    it: stream B runs on Exa, Tavily or Firecrawl interchangeably, and naming
+    the field after one provider makes the stored JSON claim a provenance it
+    does not have. Each item may carry its own ``provider`` field instead.
     """
     candidates: list[RankedPitfall] = []
 
@@ -178,18 +309,18 @@ def merge_streams(
     for issue in github_issues:
         candidates.append(from_github_issue(issue))
 
-    # Stream B: Exa ecosystem results
-    for result in exa_results:
-        candidates.append(from_exa_result(result))
+    # Stream B: web ecosystem results
+    for result in web_results:
+        candidates.append(from_web_result(result))
 
-    # Stream D: Video signals -> pitfall candidates
-    video_signals = parse_exa_results(video_exa_results, vision)
-    for signal in video_signals:
+    # Stream D: media signals -> pitfall candidates
+    media_signals = parse_exa_results(media_results, vision)
+    for signal in media_signals:
         if signal.signal_type in ("lessons_learned", "architecture_talk"):
             candidates.append(from_video_signal(signal))
 
     ranked = rank(candidates, top_n=10)
-    return ranked, video_signals
+    return ranked, media_signals
 
 
 # ---------------------------------------------------------------------------
@@ -213,6 +344,11 @@ def format_summary(summary: ResearchSummary) -> str:
     from_cache = " (from vault cache)" if summary.from_vault else ""
     lines.append(f"## Research Summary{from_cache}")
     lines.append(f"**Research quality: {quality}** ({reason})")
+    if (summary.domain or classify_domain(summary.vision)) == "non_code":
+        lines.append(
+            "_Non-code domain: the research floor counts authoritative sources, "
+            "not repositories._"
+        )
     lines.append("")
 
     # Repo table
@@ -220,9 +356,16 @@ def format_summary(summary: ResearchSummary) -> str:
         lines.append("### Analyzed Repositories")
         lines.append("| Repository | Stars | Deep Analyzed |")
         lines.append("|-----------|-------|---------------|")
-        for r in sorted(summary.repos, key=lambda x: x.stars, reverse=True)[:15]:
+        # Unknown star counts sort last, never treated as equal to (or below) 0.
+        ranked_repos = sorted(
+            summary.repos,
+            key=lambda x: (-1, 0) if x.stars is None else (0, x.stars),
+            reverse=True,
+        )
+        for r in ranked_repos[:15]:
             deep = "Yes" if r.deep_analyzed else "-"
-            lines.append(f"| [{r.slug}]({r.url}) | {r.stars:,} | {deep} |")
+            stars_display = f"{r.stars:,}" if r.stars is not None else "unknown"
+            lines.append(f"| [{r.slug}]({r.url}) | {stars_display} | {deep} |")
         lines.append("")
 
     # Ecosystem notes
@@ -236,9 +379,15 @@ def format_summary(summary: ResearchSummary) -> str:
     if summary.pitfall_candidates:
         lines.append(format_ranked(summary.pitfall_candidates))
 
-    # Video signals
+    # Media signals, followed by the command that brings the result back.
+    # Stream D hands out /watch commands; without naming the return leg here,
+    # the loop looks one-way and the watched talk never re-enters the research.
     if summary.video_signals:
         lines.append(format_media_signals(summary.video_signals))
+        lines.append(
+            f"After running a `/watch` command above, feed its analysis back in:\n"
+            f'    genesis research "{summary.vision}" --absorb watch-output.txt\n'
+        )
 
     # Floor status
     floor_ok, floor_msg = check_floor(summary)
@@ -252,13 +401,40 @@ def format_summary(summary: ResearchSummary) -> str:
 # Shim helpers (for use when full MCP results are passed in as dicts)
 # ---------------------------------------------------------------------------
 
+STREAM_ALIASES = {
+    "exa_results": "web_results",
+    "video_exa_results": "media_results",
+}
+
+
+def normalize_streams(raw: dict) -> dict:
+    """Map legacy provider-named stream keys onto the canonical names.
+
+    Data collected before the rename still loads unchanged; if a payload
+    carries both spellings, the canonical key wins and the alias is appended
+    rather than dropped.
+    """
+    out = dict(raw)
+    for legacy, canonical in STREAM_ALIASES.items():
+        if legacy not in out:
+            continue
+        legacy_items = out.pop(legacy) or []
+        existing = out.get(canonical) or []
+        out[canonical] = list(existing) + list(legacy_items)
+    return out
+
+
 def build_summary_from_raw(
     vision: str,
     repos: list[dict],
     github_issues: list,
-    exa_results: list[dict],
-    video_exa_results: list[dict],
+    web_results: list[dict] | None = None,
+    media_results: list[dict] | None = None,
     project_root: Path | None = None,
+    domain: str = "",
+    *,
+    exa_results: list[dict] | None = None,        # legacy alias for web_results
+    video_exa_results: list[dict] | None = None,  # legacy alias for media_results
 ) -> ResearchSummary:
     """
     Build a ResearchSummary from raw data collected by Genesis during Phase 2.
@@ -266,10 +442,16 @@ def build_summary_from_raw(
     """
     start = time.time()
 
+    web_results = list(web_results or []) + list(exa_results or [])
+    media_results = list(media_results or []) + list(video_exa_results or [])
+
     repo_results = [
         RepoResult(
             slug=r.get("name", r.get("slug", "")),
-            stars=r.get("stars", r.get("stargazers_count", 0)),
+            # Some search sources (e.g. the GitHub MCP repo-search tool) don't
+            # report a star count at all - leave it None rather than coercing
+            # to 0, which would misrepresent "unreported" as "unpopular".
+            stars=r.get("stars", r.get("stargazers_count")),
             url=r.get("url", r.get("html_url", "")),
             description=r.get("description", ""),
             deep_analyzed=r.get("deep_analyzed", False),
@@ -277,14 +459,15 @@ def build_summary_from_raw(
         for r in repos
     ]
 
-    ranked, video_signals = merge_streams(github_issues, exa_results, video_exa_results, vision)
+    ranked, media_signals = merge_streams(github_issues, web_results, media_results, vision)
 
     summary = ResearchSummary(
         vision=vision,
         repos=repo_results,
         pitfall_candidates=ranked,
-        video_signals=video_signals,
+        video_signals=media_signals,
         duration_seconds=time.time() - start,
+        domain=domain or classify_domain(vision),
     )
     summary.research_quality = compute_quality(summary)
     summary.floor_met = check_floor(summary)[0]

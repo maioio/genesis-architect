@@ -234,14 +234,157 @@ def cmd_validate(project_dir: str, json_output: bool = False) -> int:
     return 0
 
 
-def cmd_research(topic: str, json_data: str | None = None) -> int:
+# The collection guide has to be a complete contract, not a list of topics.
+# A caller that cannot read research_orchestrator.py has no other way to learn
+# the field names, and a caller that guesses them fails silently: unknown keys
+# are ignored, so a wrong shape looks like "no results found". Every field the
+# orchestrator reads appears here, with one filled example per stream.
+RESEARCH_SCHEMA = {
+    "repos": [
+        {
+            "slug": "encode/httpx",
+            "stars": 14200,
+            "url": "https://github.com/encode/httpx",
+            "description": "A next-generation HTTP client for Python.",
+            "deep_analyzed": True,
+        }
+    ],
+    "github_issues": [
+        {
+            "title": "Connection pool exhausted under sustained load",
+            "url": "https://github.com/encode/httpx/issues/1234",
+            "body": "After ~500 concurrent requests the pool stops handing out "
+                    "connections and every call times out at 5s.",
+            "comments": 23,
+            "reactions": 8,
+            "category": "pitfall",
+            "created_at": "2026-02-11",
+        }
+    ],
+    "web_results": [
+        {
+            "title": "What we learned running httpx in production for two years",
+            "url": "https://community.example.org/t/httpx-in-production/812",
+            "text": "The default 5s timeout is too low once you add retries; "
+                    "we measured p99 at 7400ms under load.",
+            "provider": "tavily",
+            "published_date": "2026-01-30",
+            "relevance": 0.87,
+            "comments": 41,
+        }
+    ],
+    "media_results": [
+        {
+            "title": "Scaling Python HTTP clients - lessons learned",
+            "url": "https://www.youtube.com/watch?v=EXAMPLE",
+            "text": "Conference talk on connection pooling mistakes.",
+            "channel": "PyCon",
+            "provider": "exa",
+            "published_date": "2025-10-04",
+        }
+    ],
+}
+
+# Only these keys are read. Anything else in the file is ignored silently, so
+# the guide states the whole set rather than leaving it to be discovered.
+RESEARCH_STREAM_DOCS = (
+    ("repos", "A", "GitHub repos matching the vision",
+     "slug, stars, url, description, deep_analyzed"),
+    ("github_issues", "C", "issues mined from the top repos",
+     "title, url, body, comments, reactions, category, created_at"),
+    ("web_results", "B", "web/ecosystem signals (any provider)",
+     "title, url, text, provider, published_date, relevance, comments"),
+    ("media_results", "D", "conference talks / video / social lessons-learned",
+     "title, url, text, channel, provider, published_date"),
+)
+
+# Field-level notes for the fields where a wrong guess is silently costly.
+RESEARCH_FIELD_NOTES = (
+    "stars           omit entirely if the source did not report a count. "
+    "0 means 'zero stars', not 'unknown'.",
+    "deep_analyzed   true only if you actually read the repo (README + source), "
+    "not if it merely appeared in search results. The research floor counts these.",
+    "relevance       the provider's own 0.0-1.0 query-match score. Never put it in "
+    "`comments` - relevance is not human attention and is not scored as such.",
+    "comments        real human counts only (comments, replies, upvotes). "
+    "Omit when the source reports none.",
+    "published_date  any ISO-8601 form (2026-01-30 or 2026-01-30T12:00:00Z). "
+    "Without it a result earns no recency points at all.",
+    "provider        which tool actually fetched this item (exa, tavily, "
+    "firecrawl, ...). The stream is provider-neutral; the item records its own.",
+)
+
+
+def _research_guide(topic: str) -> str:
+    """The full collection contract: schema, per-field notes, and the next command."""
+    import json
+
+    lines = [
+        f"\n:: Genesis Research: {topic}\n",
+        "No cached research found. The orchestrator needs raw data from four",
+        "streams. Collect them in a Claude/Codex session, save as JSON, then:\n",
+        f'    genesis research "{topic}" --json-data research_data.json\n',
+        "Streams (JSON keys):",
+    ]
+    for key, letter, purpose, fields in RESEARCH_STREAM_DOCS:
+        lines.append(f"  {letter}. {key:<14} - {purpose}")
+        lines.append(f"     {'':14}   fields: {fields}")
+    lines.append("")
+    lines.append("Exact shape expected in research_data.json (one filled example each):")
+    lines.append("")
+    lines.append(json.dumps(RESEARCH_SCHEMA, indent=2))
+    lines.append("")
+    lines.append("Field notes:")
+    for note in RESEARCH_FIELD_NOTES:
+        lines.append(f"  {note}")
+    lines.append("")
+    lines.append("Legacy keys `exa_results` and `video_exa_results` are still accepted")
+    lines.append("and map to `web_results` and `media_results`.")
+    lines.append("")
+    lines.append("Closing the video loop: after running /watch on a talk the summary")
+    lines.append("recommends, feed the analysis back in with")
+    lines.append(f'    genesis research "{topic}" --absorb watch-output.txt')
+    lines.append("which extracts pitfalls from it and appends them to PITFALLS.md.")
+    lines.append("")
+    lines.append("Add --json to any of the above to get the summary as JSON instead")
+    lines.append("of formatted text.")
+    lines.append("")
+    return "\n".join(lines)
+
+
+def _emit_summary(orchestrator, summary, json_output: bool) -> None:
+    """Print a ResearchSummary as JSON or as the formatted human summary."""
+    import json
+
+    if json_output:
+        print(json.dumps(summary.to_dict(), indent=2, default=str))
+    else:
+        print(orchestrator.format_summary(summary))
+
+
+def _sniff_source_url(text: str) -> str:
+    """First http(s) URL in the /watch output, used when --source-url is omitted."""
+    match = re.search(r"https?://[^\s\"'<>)\]]+", text)
+    return match.group(0) if match else ""
+
+
+def cmd_research(
+    topic: str,
+    json_data: str | None = None,
+    absorb: str | None = None,
+    source_url: str | None = None,
+    json_output: bool = False,
+    domain: str | None = None,
+) -> int:
     """Multi-source research via the Pro orchestrator.
 
-    1. Look up the vault cache first (returns immediately on a hit).
-    2. If ``json_data`` points at a JSON file with pre-collected streams,
+    1. ``--absorb FILE`` closes the video loop: extract pitfalls from a /watch
+       analysis and append them to PITFALLS.md.
+    2. Look up the vault cache (returns immediately on a hit).
+    3. If ``json_data`` points at a JSON file with pre-collected streams,
        merge/rank/summarise it through the orchestrator.
-    3. Otherwise, print the data-collection guide so the caller can gather
-       the four streams and re-run with --json-data.
+    4. Otherwise, print the data-collection guide - schema included - so the
+       caller can gather the four streams and re-run with --json-data.
     """
     import json
     from pathlib import Path
@@ -258,10 +401,16 @@ def cmd_research(topic: str, json_data: str | None = None) -> int:
 
     cwd = Path.cwd()
 
+    # --- absorb /watch output back into PITFALLS.md ---
+    if absorb:
+        return _cmd_research_absorb(
+            topic, absorb, source_url, json_output, cwd, pro_bridge
+        )
+
     # --- vault cache lookup ---
     cached = orchestrator.load_from_vault(topic, cwd)
     if cached is not None:
-        print(orchestrator.format_summary(cached))
+        _emit_summary(orchestrator, cached, json_output)
         return 0
 
     # --- process pre-collected data ---
@@ -277,27 +426,114 @@ def cmd_research(topic: str, json_data: str | None = None) -> int:
         except json.JSONDecodeError as exc:
             print(f"Invalid JSON in {json_data}: {exc}", file=sys.stderr)
             return 1
+        if not isinstance(raw, dict):
+            print(
+                f"{json_data} must contain a JSON object with the four stream keys "
+                f"({', '.join(k for k, *_ in RESEARCH_STREAM_DOCS)}), "
+                f"not a {type(raw).__name__}.",
+                file=sys.stderr,
+            )
+            return 1
+
+        streams = orchestrator.normalize_streams(raw)
+        unknown = sorted(set(streams) - {k for k, *_ in RESEARCH_STREAM_DOCS})
+        if unknown and not json_output:
+            # Unknown keys are ignored by the orchestrator. Saying so out loud
+            # is the difference between a typo and an afternoon of confusion.
+            print(
+                f"Note: ignoring unrecognised key(s): {', '.join(unknown)}. "
+                f'Run `genesis research "{topic}"` with no arguments to see the '
+                f"expected schema.",
+                file=sys.stderr,
+            )
+
         summary = orchestrator.build_summary_from_raw(
             vision=topic,
-            repos=raw.get("repos", []),
-            github_issues=raw.get("github_issues", []),
-            exa_results=raw.get("exa_results", []),
-            video_exa_results=raw.get("video_exa_results", []),
+            repos=streams.get("repos", []),
+            github_issues=streams.get("github_issues", []),
+            web_results=streams.get("web_results", []),
+            media_results=streams.get("media_results", []),
             project_root=cwd,
+            domain=(domain or "").replace("-", "_"),
         )
-        print(orchestrator.format_summary(summary))
+        _emit_summary(orchestrator, summary, json_output)
         return 0
 
     # --- no cache, no data: print the collection guide ---
-    print(f"\n:: Genesis Research: {topic}\n")
-    print("No cached research found. The orchestrator needs raw data from four")
-    print("streams. Collect them in a Claude/Codex session, save as JSON, then:\n")
-    print(f'    genesis research "{topic}" --json-data research_data.json\n')
-    print("Streams (JSON keys): repos, github_issues, exa_results, video_exa_results")
-    print("  A. repos              - GitHub repos matching the vision")
-    print("  B. exa_results        - web/ecosystem signals")
-    print("  C. github_issues      - issues mined from the top repos")
-    print("  D. video_exa_results  - conference talks / lessons learned\n")
+    if json_output:
+        print(json.dumps({
+            "topic": topic,
+            "status": "no_data",
+            "next_command": f'genesis research "{topic}" --json-data research_data.json',
+            "absorb_command": f'genesis research "{topic}" --absorb watch-output.txt',
+            "schema": RESEARCH_SCHEMA,
+            "streams": [
+                {"key": key, "stream": letter, "purpose": purpose,
+                 "fields": fields.split(", ")}
+                for key, letter, purpose, fields in RESEARCH_STREAM_DOCS
+            ],
+            "field_notes": list(RESEARCH_FIELD_NOTES),
+            "legacy_key_aliases": {"exa_results": "web_results",
+                                   "video_exa_results": "media_results"},
+        }, indent=2))
+        return 0
+
+    print(_research_guide(topic))
+    return 0
+
+
+def _cmd_research_absorb(topic, absorb, source_url, json_output, cwd, pro_bridge) -> int:
+    """`genesis research <topic> --absorb FILE` - the return leg of the video loop.
+
+    Stream D hands back /watch commands, and without this there was no way to
+    feed a watched talk's findings back in: the engine existed, but the CLI
+    never named the command that closes the circle.
+    """
+    import json
+    from pathlib import Path
+
+    try:
+        pipeline = pro_bridge.get_pro_module("video_to_pitfall")
+    except pro_bridge.ProUnavailable as exc:
+        print(f"genesis research --absorb: {exc}", file=sys.stderr)
+        return 2
+
+    watch_path = Path(absorb)
+    if not watch_path.exists():
+        print(f"File not found: {absorb}", file=sys.stderr)
+        return 1
+    watch_text = watch_path.read_text(encoding="utf-8-sig", errors="replace")
+
+    resolved_url = source_url or _sniff_source_url(watch_text)
+    if not resolved_url:
+        print(
+            f"Could not find a source URL in {absorb} and --source-url was not given. "
+            f"Every extracted pitfall must cite where it came from, so this stops "
+            f"rather than writing uncited entries.",
+            file=sys.stderr,
+        )
+        return 1
+
+    entries = pipeline.extract_from_watch_output(watch_text, resolved_url, topic)
+    pitfalls_path = cwd / "PITFALLS.md"
+    appended = pipeline.append_to_pitfalls_md(entries, pitfalls_path)
+
+    if json_output:
+        print(json.dumps({
+            "topic": topic,
+            "source_url": resolved_url,
+            "absorbed_from": str(watch_path),
+            "pitfalls_appended": appended,
+            "pitfalls_file": str(pitfalls_path),
+            "entries": [e.__dict__ for e in entries],
+        }, indent=2, default=str))
+        return 0
+
+    print(f"\n:: Absorbed /watch analysis of {resolved_url}\n")
+    print(pipeline.summarize_extraction(entries, resolved_url))
+    if appended:
+        print(f"\nAppended {appended} pitfall(s) to {pitfalls_path}")
+    print()
     return 0
 
 

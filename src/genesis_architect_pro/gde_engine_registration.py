@@ -210,6 +210,23 @@ _DESCRIPTORS: list[EngineDescriptor] = [
         modes=[GDEMode.RESEARCH],
     ),
 
+    # 19. Research Outline — items x fields grid, if one has been confirmed
+    EngineDescriptor(
+        id="research_outline",
+        name="Research Outline",
+        module=_ADAPTER_MODULE,
+        entry_point="gde_run_research_outline",
+        category=EngineCategory.ANALYSIS,
+        input_keys=["project_dir"],
+        output_keys=["topic", "items", "fields"],
+        requires=[],
+        handoffs=["field_intelligence"],
+        is_optional=True,
+        write_operations=[],
+        timeout_seconds=5,
+        modes=[GDEMode.RESEARCH],
+    ),
+
     # 10. Field Intelligence — Reddit Answers developer sentiment
     EngineDescriptor(
         id="field_intelligence",
@@ -219,7 +236,7 @@ _DESCRIPTORS: list[EngineDescriptor] = [
         category=EngineCategory.ANALYSIS,
         input_keys=["project_dir", "instruction"],
         output_keys=["findings", "verified_count", "queries"],
-        requires=["source_registry"],
+        requires=["source_registry", "research_outline"],
         handoffs=["evidence_pack"],
         failure_modes=[
             "Offline or with a dead API key it returns nothing, which is not "

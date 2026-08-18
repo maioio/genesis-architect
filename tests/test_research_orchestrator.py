@@ -15,6 +15,7 @@ from genesis_architect_pro.research_orchestrator import (
     format_summary,
     FLOOR_MIN_REPOS,
     FLOOR_MIN_DEEP,
+    FLOOR_MIN_COVERAGE,
     classify_domain,
     normalize_streams,
     save_to_vault,
@@ -610,3 +611,78 @@ class TestUncertainPersistence:
         loaded = load_from_vault("pre-r3 entry", tmp_path)
         assert loaded is not None
         assert loaded.uncertain == []
+
+
+# --- R5: check_floor() becomes coverage-based when an outline is used ---
+
+class TestCheckFloorCoverageBased:
+    def test_outline_at_or_above_threshold_passes(self):
+        outline = Outline(topic="t", items=["a"], fields=["license"])
+        s = build_summary_from_raw(
+            "test", [], [], outline=outline,
+            item_findings={"a": {"license": "MIT"}},
+        )
+        assert s.coverage is not None and s.coverage >= FLOOR_MIN_COVERAGE
+        ok, msg = check_floor(s)
+        assert ok is True
+        assert "coverage" in msg.lower()
+        assert "outline-driven" in msg
+
+    def test_outline_below_threshold_fails(self):
+        outline = Outline(topic="t", items=["a", "b"], fields=["license", "cve"])
+        s = build_summary_from_raw(
+            "test", [], [], outline=outline,
+            item_findings={"a": {"license": "MIT"}},  # 1 of 4 = 25%, below 70%
+        )
+        ok, msg = check_floor(s)
+        assert ok is False
+        assert "Floor not met" in msg
+        assert "grid" in msg
+
+    def test_outline_path_ignores_repo_and_source_counts_entirely(self):
+        """The whole point: an outline with high coverage passes even with
+        zero repos and zero sources - the grid is the floor now, not the
+        opportunistic counts."""
+        outline = Outline(topic="t", items=["a"], fields=["license"])
+        s = build_summary_from_raw(
+            "test", [], [], outline=outline,
+            item_findings={"a": {"license": "MIT"}},
+        )
+        assert s.repos == []
+        assert check_floor(s)[0] is True
+
+    def test_outline_path_is_domain_agnostic(self):
+        """Coverage doesn't care whether classify_domain would have said
+        code or non_code - the grid already states what "enough" means."""
+        outline = Outline(topic="t", items=["a"], fields=["license"])
+        s = build_summary_from_raw(
+            "a house style guide", [], [], outline=outline, domain="non_code",
+            item_findings={"a": {"license": "MIT"}},
+        )
+        assert check_floor(s)[0] is True
+
+    def test_no_outline_falls_back_to_existing_repo_count_logic(self):
+        """Zero behavior change for the existing (no-outline) path - this is
+        the regression guard for every pre-R5 check_floor test."""
+        s = build_summary_from_raw("test", _repos(FLOOR_MIN_REPOS, deep=5), [], [], [])
+        assert s.outline is None
+        ok, msg = check_floor(s)
+        assert ok is True
+        assert "coverage" not in msg.lower()
+
+    def test_coverage_floor_message_offers_the_override(self):
+        outline = Outline(topic="t", items=["a"], fields=["license"])
+        s = build_summary_from_raw("test", [], [], outline=outline)
+        msg = check_floor(s)[1]
+        assert "--override" in msg
+        assert "Architect Mode" in msg
+
+    def test_uncertain_marked_value_still_counts_toward_the_floor(self):
+        """check_floor reuses compute_coverage() as-is - confidence stays
+        R3's concern (the rendered report), not this gate's."""
+        outline = Outline(topic="t", items=["a"], fields=["license"])
+        s = build_summary_from_raw(
+            "test", [], [], outline=outline,
+            item_findings={"a": {"license": "[uncertain]"}},
+        )
+        assert check_floor(s)[0] is True

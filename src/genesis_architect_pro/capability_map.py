@@ -92,7 +92,7 @@ CAPABILITIES: tuple[Capability, ...] = (
     Capability("research_outline", "Research Outline",
                "States what to research before investigating: an items x fields "
                "grid, saved as outline.json/fields.json",
-               None),
+               "genesis decide \"research <topic>\""),
     Capability("field_intelligence", "Field Intelligence",
                "Practitioner signal from Reddit Answers and similar surfaces",
                "genesis decide \"research <topic>\""),

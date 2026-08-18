@@ -242,6 +242,13 @@ FLOOR_MIN_DEEP = 5
 FLOOR_MIN_SOURCES = 8
 FLOOR_MIN_AUTHORITATIVE = 3
 
+# An outline states the target before gathering, so once one is in use the
+# floor no longer needs to guess a domain-specific unit (repos vs sources) -
+# coverage against the declared grid replaces both. Stricter than the gate's
+# own 0.50 pause-and-ask threshold in gde_gate_engine.py: the floor decides
+# whether to show results at all, the gate decides whether to pause first.
+FLOOR_MIN_COVERAGE = 0.70
+
 # Signals that the vision is about software someone publishes as a repo.
 _CODE_DOMAIN_SIGNALS = (
     "api", "cli", "sdk", "library", "framework", "app", "application", "service",
@@ -312,13 +319,30 @@ def check_floor(summary: ResearchSummary) -> tuple[bool, str]:
     Returns (passed, message).
     Phase 5 prerequisite gate - must pass before showing architecture choice.
 
-    The gate never disappears; only its unit adapts to the domain. For a
-    software vision it counts repos, because that is where the evidence is.
-    For a vision with no repo corpus (extracting a house standard from a
-    studio archive, say) counting repos measures the wrong thing entirely and
-    would report failure for a problem that was never repo-shaped - so it
-    counts authoritative sources instead, at equivalent strictness.
+    The gate never disappears; only its unit adapts to what is actually
+    available to measure against. When an outline was used, coverage against
+    its declared grid IS the floor - domain-agnostic, since the grid already
+    states exactly what "enough" means for this research, without needing to
+    guess a unit from a code/non-code split. Without an outline, the gate
+    falls back to counting: repos for a software vision, because that is
+    where the evidence is; authoritative sources for a vision with no repo
+    corpus (extracting a house standard from a studio archive, say), where
+    counting repos would measure the wrong thing entirely and report failure
+    for a problem that was never repo-shaped, at equivalent strictness.
     """
+    coverage = compute_coverage(summary)
+    if coverage is not None:
+        if coverage >= FLOOR_MIN_COVERAGE:
+            return True, (
+                f"Floor met: {coverage:.0%} coverage on the outline grid "
+                f"({FLOOR_MIN_COVERAGE:.0%} required, outline-driven)"
+            )
+        return False, (
+            f"Floor not met: {coverage:.0%}/{FLOOR_MIN_COVERAGE:.0%} coverage "
+            f"on the outline grid. Options: A) Fill in more of the grid  "
+            f"B) Accept thin research (--override)  C) Architect Mode"
+        )
+
     domain = summary.domain or classify_domain(summary.vision)
 
     if domain == "non_code":

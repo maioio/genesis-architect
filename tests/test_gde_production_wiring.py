@@ -561,6 +561,38 @@ class TestNewModeWiring:
             assert isinstance(result, dict)
             assert "_confidence" in result
 
+    def test_research_outline_adapter_no_outline_yet(self):
+        from genesis_architect_pro.gde_engine_adapters import gde_run_research_outline
+        from genesis_architect_pro.gde_types import GDEMode, SessionContext
+
+        with tempfile.TemporaryDirectory() as tmp:
+            ctx = SessionContext(mode=GDEMode.RESEARCH)
+            ctx.project_dir = Path(tmp)
+            result = gde_run_research_outline(ctx)
+            assert isinstance(result, dict)
+            assert result["items"] == []
+            assert result["_confidence"] <= 0.5
+
+    def test_research_outline_adapter_reads_a_confirmed_outline(self):
+        from genesis_architect_pro.gde_engine_adapters import gde_run_research_outline
+        from genesis_architect_pro.gde_types import GDEMode, SessionContext
+        from genesis_architect_pro.research_outline import Outline, save_outline
+
+        with tempfile.TemporaryDirectory() as tmp:
+            project_dir = Path(tmp)
+            save_outline(
+                Outline(topic="library shortlist", items=["fastapi"], fields=["license"]),
+                project_dir,
+            )
+            ctx = SessionContext(mode=GDEMode.RESEARCH)
+            ctx.project_dir = project_dir
+
+            result = gde_run_research_outline(ctx)
+            assert result["topic"] == "library shortlist"
+            assert result["items"] == ["fastapi"]
+            assert result["_confidence"] == 1.0
+            assert result["_warnings"] == []
+
     def test_field_intelligence_adapter_handles_exception(self):
         from genesis_architect_pro.gde_engine_adapters import gde_run_field_intelligence
         from genesis_architect_pro.gde_types import GDEMode, SessionContext

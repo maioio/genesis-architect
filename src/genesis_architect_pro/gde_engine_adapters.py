@@ -405,6 +405,29 @@ def gde_run_source_registry(ctx: SessionContext) -> dict[str, Any]:
     }
 
 
+def gde_run_research_outline(ctx: SessionContext) -> dict[str, Any]:
+    """Surface the confirmed research outline for this project, if one
+    exists - the items x fields target grid downstream research engines can
+    consult before gathering opportunistically."""
+    from genesis_architect_pro.research_outline import load_outline
+
+    outline = load_outline(_project_dir(ctx))
+    if outline is None:
+        return {
+            "topic": "", "items": [], "fields": [],
+            "_confidence": 0.5,
+            "_warnings": ["no research outline confirmed yet — gathering stays opportunistic"],
+        }
+
+    return {
+        "topic": outline.topic,
+        "items": outline.items,
+        "fields": outline.fields,
+        "_confidence": 1.0,
+        "_warnings": [],
+    }
+
+
 def gde_run_field_intelligence(ctx: SessionContext) -> dict[str, Any]:
     """Run the Reddit Answers field intelligence workflow to surface developer sentiment."""
     from genesis_architect_pro.field_intelligence import run_field_workflow

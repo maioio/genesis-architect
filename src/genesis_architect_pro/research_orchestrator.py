@@ -27,6 +27,7 @@ from genesis_architect_pro.video_research import (
     parse_exa_results,
     format_media_signals,
 )
+from genesis_architect_pro.research_outline import Outline
 
 
 # ---------------------------------------------------------------------------
@@ -54,6 +55,11 @@ class ResearchSummary:
     duration_seconds: float = 0.0
     from_vault: bool = False
     domain: str = ""   # code | non_code | "" = classify from the vision
+    outline: Outline | None = None
+    item_findings: dict[str, dict[str, str]] = field(default_factory=dict)
+    # None = no outline was used, not "0% covered" - same discipline as
+    # RepoResult.stars: an absent metric must never render as a real zero.
+    coverage: float | None = None
 
     def quality_reason(self) -> str:
         deep = sum(1 for r in self.repos if r.deep_analyzed)
@@ -87,6 +93,9 @@ class ResearchSummary:
                 s.__dict__ if hasattr(s, "__dict__") else s for s in self.video_signals
             ],
             "ecosystem_notes": self.ecosystem_notes,
+            "outline": self.outline.__dict__ if self.outline else None,
+            "item_findings": self.item_findings,
+            "coverage": self.coverage,
         }
 
 
@@ -122,6 +131,10 @@ def load_from_vault(vision: str, project_root: Path) -> ResearchSummary | None:
         summary.from_vault = True
         pitfalls_raw = data.get("pitfall_candidates", [])
         summary.pitfall_candidates = [RankedPitfall(**p) for p in pitfalls_raw]
+        outline_raw = data.get("outline")
+        summary.outline = Outline(**outline_raw) if outline_raw else None
+        summary.item_findings = data.get("item_findings", {})
+        summary.coverage = data.get("coverage")
         return summary
     except Exception:
         return None
@@ -138,6 +151,9 @@ def save_to_vault(summary: ResearchSummary, project_root: Path) -> None:
         "research_quality": summary.research_quality,
         "floor_met": summary.floor_met,
         "domain": summary.domain,
+        "outline": summary.outline.__dict__ if summary.outline else None,
+        "item_findings": summary.item_findings,
+        "coverage": summary.coverage,
     }
     _vault.put(
         key=_vault_key(summary.vision),
@@ -161,6 +177,36 @@ def compute_quality(summary: ResearchSummary) -> str:
     if deep >= 5 or issues >= 2:
         return "PARTIAL"
     return "THIN"
+
+
+def compute_coverage(summary: ResearchSummary) -> float | None:
+    """Fields filled / fields defined, across the outline's items x fields grid.
+
+    None when there is nothing to measure against - no outline, or an
+    outline with no items or no fields - rather than 0.0, which would read
+    as "measured and found empty" instead of "not applicable here".
+
+    Coverage counts presence, not confidence: a field marked [uncertain] by
+    the caller still counts as filled, because completeness (did we look?)
+    and confidence (do we trust what we found?) are different questions -
+    the second is what R3's `uncertain` list is for, not this one.
+    Only items and fields the outline actually declares are counted, so a
+    stray entry in item_findings can't inflate coverage past what was asked.
+    """
+    outline = summary.outline
+    if outline is None or not outline.items or not outline.fields:
+        return None
+
+    total = len(outline.items) * len(outline.fields)
+    filled = 0
+    for item in outline.items:
+        values = summary.item_findings.get(item, {})
+        for f in outline.fields:
+            value = values.get(f)
+            if isinstance(value, str) and value.strip():
+                filled += 1
+
+    return filled / total
 
 
 # ---------------------------------------------------------------------------
@@ -435,6 +481,8 @@ def build_summary_from_raw(
     *,
     exa_results: list[dict] | None = None,        # legacy alias for web_results
     video_exa_results: list[dict] | None = None,  # legacy alias for media_results
+    outline: Outline | None = None,
+    item_findings: dict[str, dict[str, str]] | None = None,
 ) -> ResearchSummary:
     """
     Build a ResearchSummary from raw data collected by Genesis during Phase 2.
@@ -468,9 +516,12 @@ def build_summary_from_raw(
         video_signals=media_signals,
         duration_seconds=time.time() - start,
         domain=domain or classify_domain(vision),
+        outline=outline,
+        item_findings=item_findings or {},
     )
     summary.research_quality = compute_quality(summary)
     summary.floor_met = check_floor(summary)[0]
+    summary.coverage = compute_coverage(summary)
 
     if project_root:
         save_to_vault(summary, project_root)

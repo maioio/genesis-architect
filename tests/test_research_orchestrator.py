@@ -9,13 +9,17 @@ from genesis_architect_pro.research_orchestrator import (
     build_summary_from_raw,
     check_floor,
     compute_quality,
+    compute_coverage,
     merge_streams,
     format_summary,
     FLOOR_MIN_REPOS,
     FLOOR_MIN_DEEP,
     classify_domain,
     normalize_streams,
+    save_to_vault,
+    load_from_vault,
 )
+from genesis_architect_pro.research_outline import Outline
 
 
 # --- helpers ---
@@ -297,3 +301,167 @@ def test_summary_names_the_command_that_closes_the_video_loop():
     output = format_summary(s)
     assert "--absorb" in output
     assert "a task queue service" in output
+
+
+# --- R2: outline-driven coverage ---
+
+class TestComputeCoverage:
+    def test_no_outline_returns_none_not_zero(self):
+        """Not applicable must never render as 'measured and empty' -
+        same discipline as RepoResult.stars: int | None."""
+        s = ResearchSummary(vision="test")
+        assert compute_coverage(s) is None
+
+    def test_outline_with_no_items_returns_none(self):
+        s = ResearchSummary(vision="test", outline=Outline(topic="t", fields=["license"]))
+        assert compute_coverage(s) is None
+
+    def test_outline_with_no_fields_returns_none(self):
+        s = ResearchSummary(vision="test", outline=Outline(topic="t", items=["fastapi"]))
+        assert compute_coverage(s) is None
+
+    def test_fully_covered_grid_is_one(self):
+        outline = Outline(topic="t", items=["fastapi", "django"], fields=["license"])
+        s = ResearchSummary(
+            vision="test", outline=outline,
+            item_findings={"fastapi": {"license": "MIT"}, "django": {"license": "BSD"}},
+        )
+        assert compute_coverage(s) == 1.0
+
+    def test_empty_findings_is_zero_not_none(self):
+        """An outline WAS used, it just found nothing yet - that is a real
+        0.0, distinct from "no outline at all" (None)."""
+        outline = Outline(topic="t", items=["fastapi"], fields=["license"])
+        s = ResearchSummary(vision="test", outline=outline)
+        assert compute_coverage(s) == 0.0
+
+    def test_partial_grid_computes_the_fraction(self):
+        outline = Outline(topic="t", items=["a", "b"], fields=["license", "cve"])
+        s = ResearchSummary(
+            vision="test", outline=outline,
+            item_findings={"a": {"license": "MIT"}},  # 1 of 4 cells filled
+        )
+        assert compute_coverage(s) == 0.25
+
+    def test_blank_string_value_does_not_count_as_filled(self):
+        outline = Outline(topic="t", items=["a"], fields=["license"])
+        s = ResearchSummary(
+            vision="test", outline=outline,
+            item_findings={"a": {"license": "   "}},
+        )
+        assert compute_coverage(s) == 0.0
+
+    def test_uncertain_marker_still_counts_as_filled(self):
+        """Coverage measures completeness (did we look?), not confidence -
+        that split is what R3's uncertain list is for, not this metric."""
+        outline = Outline(topic="t", items=["a"], fields=["license"])
+        s = ResearchSummary(
+            vision="test", outline=outline,
+            item_findings={"a": {"license": "[uncertain]"}},
+        )
+        assert compute_coverage(s) == 1.0
+
+    def test_stray_item_not_in_outline_does_not_inflate_coverage(self):
+        outline = Outline(topic="t", items=["a"], fields=["license"])
+        s = ResearchSummary(
+            vision="test", outline=outline,
+            item_findings={
+                "a": {"license": "MIT"},
+                "not_in_outline": {"license": "GPL"},
+            },
+        )
+        assert compute_coverage(s) == 1.0
+
+    def test_stray_field_not_in_outline_does_not_inflate_coverage(self):
+        outline = Outline(topic="t", items=["a"], fields=["license"])
+        s = ResearchSummary(
+            vision="test", outline=outline,
+            item_findings={"a": {"license": "MIT", "not_a_declared_field": "x"}},
+        )
+        assert compute_coverage(s) == 1.0
+
+
+class TestBuildSummaryAcceptsOutline:
+    def test_outline_is_stored_on_the_summary(self):
+        outline = Outline(topic="library shortlist", items=["fastapi"], fields=["license"])
+        s = build_summary_from_raw("test", [], [], outline=outline)
+        assert s.outline is outline
+
+    def test_coverage_is_computed_at_build_time(self):
+        outline = Outline(topic="t", items=["fastapi"], fields=["license"])
+        s = build_summary_from_raw(
+            "test", [], [], outline=outline,
+            item_findings={"fastapi": {"license": "MIT"}},
+        )
+        assert s.coverage == 1.0
+
+    def test_no_outline_leaves_coverage_none(self):
+        s = build_summary_from_raw("test", _repos(3), [])
+        assert s.outline is None
+        assert s.coverage is None
+
+    def test_item_findings_default_to_empty_dict(self):
+        s = build_summary_from_raw("test", [], [])
+        assert s.item_findings == {}
+
+    def test_to_dict_carries_outline_and_coverage(self):
+        outline = Outline(topic="t", items=["a"], fields=["license"])
+        s = build_summary_from_raw(
+            "test", [], [], outline=outline,
+            item_findings={"a": {"license": "MIT"}},
+        )
+        payload = s.to_dict()
+        assert payload["coverage"] == 1.0
+        assert payload["outline"]["topic"] == "t"
+        assert payload["item_findings"] == {"a": {"license": "MIT"}}
+
+    def test_to_dict_outline_is_none_when_absent(self):
+        s = build_summary_from_raw("test", [], [])
+        payload = s.to_dict()
+        assert payload["outline"] is None
+
+
+class TestOutlineVaultRoundTrip:
+    def test_outline_and_findings_survive_vault_round_trip(self, tmp_path):
+        outline = Outline(
+            topic="observability vendors", items=["datadog"], fields=["pricing"],
+            created_at="2026-08-18T00:00:00+00:00",
+        )
+        original = build_summary_from_raw(
+            "vault outline test", [], [], outline=outline,
+            item_findings={"datadog": {"pricing": "usage-based"}},
+            project_root=tmp_path,
+        )
+        loaded = load_from_vault("vault outline test", tmp_path)
+
+        assert original.outline is not None  # the build call above set it
+        assert loaded is not None
+        assert loaded.outline is not None
+        assert loaded.outline.topic == outline.topic
+        assert loaded.outline.items == outline.items
+        assert loaded.outline.fields == outline.fields
+        assert loaded.item_findings == {"datadog": {"pricing": "usage-based"}}
+        assert loaded.coverage == 1.0
+
+    def test_no_outline_round_trips_as_none(self, tmp_path):
+        build_summary_from_raw("no outline here", _repos(2), [], project_root=tmp_path)
+        loaded = load_from_vault("no outline here", tmp_path)
+
+        assert loaded is not None
+        assert loaded.outline is None
+        assert loaded.coverage is None
+
+    def test_manually_saved_summary_round_trips_outline(self, tmp_path):
+        """save_to_vault used directly, not just via build_summary_from_raw."""
+        outline = Outline(topic="t", items=["a"], fields=["f"])
+        summary = ResearchSummary(
+            vision="direct save test", outline=outline,
+            item_findings={"a": {"f": "value"}}, coverage=1.0,
+        )
+        save_to_vault(summary, tmp_path)
+        loaded = load_from_vault("direct save test", tmp_path)
+
+        assert loaded is not None
+        assert loaded.outline is not None
+        assert loaded.outline.topic == "t"
+        assert loaded.coverage == 1.0

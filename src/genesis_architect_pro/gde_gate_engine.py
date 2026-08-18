@@ -21,6 +21,8 @@ Gate IDs and their trigger conditions:
   RESEARCH_STALE    — research results older than 24h signal → WARN
   COMMIT_CONFLICT   — write op conflicts with existing committed model → BLOCK_AND_ASK
   RED_TEAM_CRITICAL — red_team_critic found a critical-severity finding → BLOCK_AND_ASK
+  RESEARCH_COVERAGE_LOW — an outline-driven research pass reports coverage
+                     below threshold → BLOCK_AND_ASK
 """
 
 from __future__ import annotations
@@ -44,6 +46,11 @@ _CONFIDENCE_DEGRADED_THRESHOLD = 0.60
 # Drift score threshold (stored in engine output under 'drift_score' key)
 _DRIFT_CRITICAL_SCORE = 80.0
 
+# Research coverage threshold (stored in engine output under 'coverage' key,
+# 0.0-1.0). None means no outline was used and is never "low" - only an
+# actual measured fraction below this counts.
+_RESEARCH_COVERAGE_LOW_THRESHOLD = 0.50
+
 # ---------------------------------------------------------------------------
 # Gate policy table
 # ---------------------------------------------------------------------------
@@ -60,6 +67,7 @@ _GATE_POLICY: list[tuple[str, str, bool, GateAction, float]] = [
     ("POLICY_VIOLATION", "Policy violation detected",           True,  GateAction.BLOCK_AND_ASK, 0.15),
     ("COMMIT_CONFLICT",  "Write conflict with committed model", True,  GateAction.BLOCK_AND_ASK, 0.10),
     ("RED_TEAM_CRITICAL", "Red-team found a critical vulnerability", True, GateAction.BLOCK_AND_ASK, 0.15),
+    ("RESEARCH_COVERAGE_LOW", "Research coverage below threshold",   True,  GateAction.BLOCK_AND_ASK, 0.10),
     # Warnings — surface and continue
     ("WRITE_SCOPE",      "Write operations pending",            True,  GateAction.WARN,          0.05),
     ("REQUIRED_FAILED",  "Required engine(s) failed",           True,  GateAction.WARN,          0.05),
@@ -302,6 +310,31 @@ def _check_red_team_critical(ctx: SessionContext) -> tuple[bool, str, str]:
     return False, "", ""
 
 
+def _check_research_coverage_low(ctx: SessionContext) -> tuple[bool, str, str]:
+    """Fires when an outline-driven research pass reports coverage below
+    threshold. `coverage` is None whenever no outline was used at all - that
+    is "not applicable", never "low", so it is skipped rather than treated
+    as a failure. Scans every engine's output rather than one named engine
+    ID, since research coverage is a signal any research-producing engine
+    may report, not a property of one fixed engine.
+    """
+    for engine_id, result in ctx.engine_results.items():
+        coverage = result.output.get("coverage")
+        if coverage is None:
+            continue
+        if float(coverage) < _RESEARCH_COVERAGE_LOW_THRESHOLD:
+            outline = result.output.get("outline") or {}
+            topic = outline.get("topic", "")
+            return (
+                True,
+                f"Engine '{engine_id}' reports research coverage "
+                f"{float(coverage):.0%}, below the "
+                f"{_RESEARCH_COVERAGE_LOW_THRESHOLD:.0%} threshold",
+                f"outline={topic!r}" if topic else "",
+            )
+    return False, "", ""
+
+
 # ---------------------------------------------------------------------------
 # Gate check dispatch table
 # ---------------------------------------------------------------------------
@@ -320,4 +353,5 @@ _GATE_CHECKS: dict[str, object] = {
     "RESEARCH_STALE":   _check_research_stale,
     "COMMIT_CONFLICT":  _check_commit_conflict,
     "RED_TEAM_CRITICAL": _check_red_team_critical,
+    "RESEARCH_COVERAGE_LOW": _check_research_coverage_low,
 }

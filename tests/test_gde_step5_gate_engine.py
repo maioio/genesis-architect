@@ -7,6 +7,7 @@ from genesis_architect_pro.gde_gate_engine import (
     _CONFIDENCE_BLOCK_THRESHOLD,
     _CONFIDENCE_DEGRADED_THRESHOLD,
     _DRIFT_CRITICAL_SCORE,
+    _RESEARCH_COVERAGE_LOW_THRESHOLD,
     evaluate_gates,
 )
 from genesis_architect_pro.gde_types import (
@@ -365,6 +366,74 @@ class TestRedTeamCriticalGate:
         report = evaluate_gates(ctx, ["RED_TEAM_CRITICAL"])
         assert report.overall is not GateOutcome.HARD_BLOCK
         assert report.hard_blocks == []
+
+
+# ---------------------------------------------------------------------------
+# RESEARCH_COVERAGE_LOW — soft block, overridable
+# ---------------------------------------------------------------------------
+
+
+class TestResearchCoverageLowGate:
+    def test_no_research_result_passes(self):
+        ctx = _ctx()
+        report = evaluate_gates(ctx, ["RESEARCH_COVERAGE_LOW"])
+        assert report.overall is GateOutcome.PASS
+
+    def test_coverage_none_passes_not_applicable_never_low(self):
+        """None means no outline was used at all - the same discipline as
+        RepoResult.stars: an absent metric must never render as a failure."""
+        ctx = _ctx()
+        _add_engine_result(ctx, "research_orchestrator", {"coverage": None})
+        report = evaluate_gates(ctx, ["RESEARCH_COVERAGE_LOW"])
+        assert report.overall is GateOutcome.PASS
+
+    def test_coverage_at_threshold_passes(self):
+        ctx = _ctx()
+        _add_engine_result(
+            ctx, "research_orchestrator", {"coverage": _RESEARCH_COVERAGE_LOW_THRESHOLD}
+        )
+        report = evaluate_gates(ctx, ["RESEARCH_COVERAGE_LOW"])
+        assert report.overall is GateOutcome.PASS
+
+    def test_coverage_above_threshold_passes(self):
+        ctx = _ctx()
+        _add_engine_result(ctx, "research_orchestrator", {"coverage": 0.9})
+        report = evaluate_gates(ctx, ["RESEARCH_COVERAGE_LOW"])
+        assert report.overall is GateOutcome.PASS
+
+    def test_coverage_below_threshold_blocks(self):
+        ctx = _ctx()
+        _add_engine_result(
+            ctx, "research_orchestrator",
+            {"coverage": 0.2, "outline": {"topic": "library shortlist"}},
+        )
+        report = evaluate_gates(ctx, ["RESEARCH_COVERAGE_LOW"])
+        assert report.overall is GateOutcome.BLOCK
+        assert report.blocks[0].override_allowed is True
+        assert "20%" in report.blocks[0].reason
+        assert "library shortlist" in report.blocks[0].detail
+
+    def test_never_hard_block(self):
+        ctx = _ctx()
+        _add_engine_result(ctx, "research_orchestrator", {"coverage": 0.0})
+        report = evaluate_gates(ctx, ["RESEARCH_COVERAGE_LOW"])
+        assert report.overall is not GateOutcome.HARD_BLOCK
+        assert report.hard_blocks == []
+
+    def test_zero_coverage_with_no_outline_topic_still_blocks_with_blank_detail(self):
+        ctx = _ctx()
+        _add_engine_result(ctx, "research_orchestrator", {"coverage": 0.0})
+        report = evaluate_gates(ctx, ["RESEARCH_COVERAGE_LOW"])
+        assert report.overall is GateOutcome.BLOCK
+        assert report.blocks[0].detail == ""
+
+    def test_engine_missing_coverage_key_entirely_passes(self):
+        """An engine that never reports coverage at all (e.g. one unrelated
+        to research) must not be mistaken for "coverage is low"."""
+        ctx = _ctx()
+        _add_engine_result(ctx, "architecture_scorer", {"score": 72})
+        report = evaluate_gates(ctx, ["RESEARCH_COVERAGE_LOW"])
+        assert report.overall is GateOutcome.PASS
 
 
 # ---------------------------------------------------------------------------

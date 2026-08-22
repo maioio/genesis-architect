@@ -15,6 +15,7 @@ from pathlib import Path
 
 import pytest
 
+from genesis_architect_pro import ephemeral_purge
 from genesis_architect_pro.ephemeral_purge import (
     DEFAULT_PRUNE_DIRS,
     MANIFEST_NAME,
@@ -71,15 +72,34 @@ def _make_dir_link(link: Path, target: Path) -> None:
         link.symlink_to(target, target_is_directory=True)
 
 
-def _dead_pid() -> int:
-    """A PID that is almost certainly not running."""
-    # Spawn a trivial process, wait for it, and reuse its now-free PID.
-    proc = subprocess.Popen(
-        [os.sys.executable, "-c", "pass"],  # type: ignore[attr-defined]
-        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-    )
-    proc.wait()
-    return proc.pid
+#: Stands in for "a process that is not running".
+#:
+#: This used to be computed by spawning a process, waiting for it, and reusing
+#: its now-free PID. That is racy by construction: the OS is free to recycle a
+#: just-freed PID, and under a full suite run - with pytest and other tests
+#: churning subprocesses - it sometimes did, between the lock being written and
+#: purge() checking it. The test then saw a live owner and correctly refused to
+#: delete, so it failed in the full run and passed in isolation.
+#:
+#: Liveness is not what these tests are about. Whether _pid_alive() answers
+#: correctly is covered directly in TestPidAlive; what belongs here is the
+#: purge DECISION given a dead owner. So the answer is injected rather than
+#: raced for.
+_DEAD_PID = 4_000_000  # above the default pid_max on Linux and Windows alike
+
+
+def _force_dead(monkeypatch, pid: int = _DEAD_PID) -> None:
+    """Make _pid_alive() report exactly `pid` as dead, and nothing else.
+
+    Scoped to one PID rather than a blanket False so that a test with several
+    locks still exercises the real check for the others.
+    """
+    real = ephemeral_purge._pid_alive
+
+    def fake(candidate: int) -> bool:
+        return False if candidate == pid else real(candidate)
+
+    monkeypatch.setattr(ephemeral_purge, "_pid_alive", fake)
 
 
 def _make_lock(genesis_dir: Path, name: str, content: str, age_hours: float) -> Path:
@@ -294,13 +314,15 @@ class TestStaleLocks:
         assert (tmp_path / ".genesis" / "run.lock").is_file()
         assert any("still alive" in p.reason for p in report.protected)
 
-    def test_fresh_lock_is_protected_even_if_dead(self, tmp_path):
-        _make_lock(tmp_path / ".genesis", "run.lock", str(_dead_pid()), age_hours=0.01)
+    def test_fresh_lock_is_protected_even_if_dead(self, tmp_path, monkeypatch):
+        _force_dead(monkeypatch)
+        _make_lock(tmp_path / ".genesis", "run.lock", str(_DEAD_PID), age_hours=0.01)
         purge(tmp_path, apply=True)
         assert (tmp_path / ".genesis" / "run.lock").is_file()
 
-    def test_old_lock_with_dead_pid_is_removed(self, tmp_path):
-        path = _make_lock(tmp_path / ".genesis", "run.lock", str(_dead_pid()), age_hours=48)
+    def test_old_lock_with_dead_pid_is_removed(self, tmp_path, monkeypatch):
+        _force_dead(monkeypatch)
+        path = _make_lock(tmp_path / ".genesis", "run.lock", str(_DEAD_PID), age_hours=48)
         report = purge(tmp_path, apply=True)
         assert not path.exists()
         assert str(path) in report.purged
@@ -321,7 +343,7 @@ class TestStaleLocks:
         other = tmp_path / "somewhere"
         other.mkdir()
         path = other / "app.lock"
-        path.write_text(str(_dead_pid()), encoding="utf-8")
+        path.write_text(str(_DEAD_PID), encoding="utf-8")
         old = (datetime.now(timezone.utc) - timedelta(hours=99)).timestamp()
         os.utime(path, (old, old))
         purge(tmp_path, apply=True)

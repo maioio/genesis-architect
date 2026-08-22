@@ -22,15 +22,24 @@ def _project(tmp_path: Path, rules: dict | None = None) -> Path:
 
 
 class TestLoadRules:
-    def test_no_file_returns_empty(self, tmp_path):
-        rules, path = load_rules(tmp_path)
-        assert rules == {} and path == ""
+    def test_no_file_falls_back_to_the_default_ruleset(self, tmp_path):
+        """Previously this returned {}, so a project with no policy evaluated
+        nothing and rendered identically to one passing every check. The
+        default ruleset makes the difference visible; shadow mode keeps it
+        from blocking anyone who never opted in."""
+        from genesis_architect_pro.rules_engine import DEFAULT_RULES
+
+        rules, path, source = load_rules(tmp_path)
+        assert rules == DEFAULT_RULES
+        assert path == ""
+        assert source == "default"
 
     def test_loads_json(self, tmp_path):
         _project(tmp_path, {"min_architecture_score": 50})
-        rules, path = load_rules(tmp_path)
+        rules, path, source = load_rules(tmp_path)
         assert rules["min_architecture_score"] == 50
         assert path.endswith("rules.json")
+        assert source == "file"
 
 
 class TestEvaluate:

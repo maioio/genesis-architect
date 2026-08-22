@@ -799,19 +799,28 @@ def gde_run_rules_engine(ctx: SessionContext) -> dict[str, Any]:
             "rules_report": "",
         }
 
-    if not report.rules_file:
-        warnings.append("no .genesis/rules.json found — gate is open (no rules to enforce)")
+    if report.shadow_mode:
+        warnings.append(
+            "no .genesis/rules.json — default ruleset evaluated in SHADOW mode "
+            "(findings reported, nothing blocked)")
 
     failed = [r for r in report.results if not r.passed]
     if failed:
-        warnings.extend([f"FAIL [{r.rule}]: {r.message}" for r in failed])
+        prefix = "SHADOW" if report.shadow_mode else "FAIL"
+        warnings.extend([f"{prefix} [{r.rule}]: {r.message}" for r in failed])
 
     return {
         "rules_passed": report.passed,
         "rules_file": report.rules_file,
+        "ruleset_source": report.ruleset_source,
+        "shadow_mode": report.shadow_mode,
         "rule_count": len(report.results),
         "failed_rules": [r.rule for r in failed],
         "rules_report": format_report(report),
+        # RULES_FAIL reads these two keys. They were never emitted, so the
+        # only non-overridable gate in the policy table had never once fired.
+        "hard_failure": report.hard_failure,
+        "hard_failure_reason": report.hard_failure_reason,
         "_confidence": 1.0,
         "_warnings": warnings,
     }
@@ -970,3 +979,89 @@ def gde_run_red_team_critic(ctx: SessionContext) -> dict[str, Any]:
         "_confidence": 0.6 if critical else 1.0,
         "_warnings": warnings,
     }
+
+
+# ---------------------------------------------------------------------------
+# GATE / RECOVERY mode — supply_chain_audit adapter
+# ---------------------------------------------------------------------------
+
+
+def gde_run_supply_chain_audit(ctx: SessionContext) -> dict[str, Any]:
+    """Check that every external CI action names an immutable revision.
+
+    Emits `security_risk`, which is the key SECURITY_RISK already scans every
+    engine output for — so this wires into the existing gate without the gate
+    changing at all.
+
+    Escalation is governed by the policy mode. While the default ruleset is in
+    shadow mode the findings are reported in full but `security_risk` is
+    withheld, so a project learns what it owes before anything blocks. An
+    explicit `.genesis/rules.json` opts into enforcement.
+    """
+    from genesis_architect_pro.rules_engine import policy_mode
+    from genesis_architect_pro.supply_chain_audit import format_report, scan_workflows
+
+    project_dir = _project_dir(ctx)
+
+    try:
+        report = scan_workflows(project_dir)
+    except Exception as exc:  # noqa: BLE001
+        return {
+            "_confidence": 0.3,
+            "_warnings": [f"supply_chain_audit failed: {exc}"],
+            "ci_scanned": False,
+            "unpinned_actions": [],
+            "unpinned_count": 0,
+        }
+
+    mode, _source = policy_mode(project_dir)
+    data = report.to_dict()
+    warnings: list[str] = list(report.errors)
+
+    out: dict[str, Any] = {
+        "ci_scanned": data["scanned"],
+        "workflow_files": data["workflow_files"],
+        "pinned_count": data["pinned_count"],
+        "unpinned_count": data["unpinned_count"],
+        "unpinnable_count": data["unpinnable_count"],
+        "unpinned_actions": data["unpinned"],
+        "unpinnable_actions": data["unpinnable"],
+        "supply_chain_report": format_report(report),
+        "policy_mode": mode,
+        "_confidence": 1.0,
+    }
+
+    # No CI at all is not a pass. Say so rather than reporting zero findings,
+    # which would read as "checked and clean".
+    if not report.scanned:
+        warnings.append("no CI workflows found — supply-chain pinning unverified")
+        out["_warnings"] = warnings
+        return out
+
+    if report.unpinned:
+        detail = ", ".join(
+            f"{r.file}:{r.line} {r.raw}" for r in report.unpinned[:3]
+        )
+        if len(report.unpinned) > 3:
+            detail += f" (+{len(report.unpinned) - 3} more)"
+
+        if mode == "enforcing":
+            out["security_risk"] = True
+            out["security_risk_detail"] = (
+                f"{len(report.unpinned)} CI action(s) pinned to a mutable ref: {detail}"
+            )
+            out["_confidence"] = 0.6
+        else:
+            warnings.append(
+                f"[shadow] {len(report.unpinned)} unpinned CI action(s) — would "
+                f"raise SECURITY_RISK once policy is enforcing: {detail}"
+            )
+
+    if report.unpinnable:
+        warnings.append(
+            f"{len(report.unpinnable)} CI reference(s) cannot be verified from here "
+            f"(reported, not counted as failures)"
+        )
+
+    out["_warnings"] = warnings
+    return out

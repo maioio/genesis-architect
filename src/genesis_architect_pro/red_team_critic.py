@@ -150,12 +150,72 @@ def _check_unfounded_confidence(ctx: SessionContext) -> list[RedTeamFinding]:
     return []
 
 
+def _check_writes_unpinned_ci(ctx: SessionContext) -> list[RedTeamFinding]:
+    """A CI workflow this session is about to WRITE, pinned to a mutable ref.
+
+    Scoped deliberately at the plan, not the project. Whether the repository
+    already contains unpinned workflows is a project property and belongs to
+    supply_chain_audit; what this session is about to author is a property of
+    the plan, which is what red-team exists to attack.
+
+    That distinction is also why this is critical while the project-level
+    check is in shadow mode. Shadow mode exists so nobody is blocked over debt
+    they inherited. There is no inherited debt in a file Genesis is generating
+    right now, so the same finding carries a different weight: Genesis should
+    not be able to scaffold an unpinned workflow and then approve its own
+    output.
+    """
+    from genesis_architect_pro.supply_chain_audit import _USES, classify_ref
+
+    findings: list[RedTeamFinding] = []
+    for op in ctx.pending_write_operations:
+        target = (op.target_path or "").replace("\\", "/")
+        if ".github/workflows/" not in target:
+            continue
+        if not isinstance(op.payload, str):
+            # Payload is engine-specific and may be a structure rather than
+            # file text. Not inspectable is not the same as clean, so this is
+            # skipped silently rather than reported as passing.
+            continue
+
+        mutable = []
+        for lineno, line in enumerate(op.payload.splitlines(), start=1):
+            if line.lstrip().startswith("#"):
+                continue
+            match = _USES.match(line)
+            if not match:
+                continue
+            raw = match.group("ref").split("#", 1)[0].strip().strip('"').strip("'")
+            if not raw:
+                continue
+            _owner, _ref, kind = classify_ref(raw)
+            if kind in ("tag", "branch"):
+                mutable.append(f"line {lineno}: {raw} ({kind})")
+
+        if mutable:
+            findings.append(RedTeamFinding(
+                severity="critical",
+                category="unpinned_ci_write",
+                description=(
+                    f"Engine '{op.engine_id}' would write {op.target_path!r} with "
+                    f"{len(mutable)} action(s) on a mutable ref"
+                ),
+                evidence=f"target_path={op.target_path!r}, refs={mutable!r}",
+                inference="A tag or branch is a pointer its owner can move, so the "
+                          "code executed by this workflow can change with no diff in "
+                          "this repository. Genesis would be authoring the supply "
+                          "chain weakness it elsewhere refuses to accept.",
+            ))
+    return findings
+
+
 def critique_session(ctx: SessionContext) -> list[RedTeamFinding]:
     """Run every deterministic check against the session's current state."""
     findings: list[RedTeamFinding] = []
     findings.extend(_check_conflicting_writes(ctx))
     findings.extend(_check_irreversible_low_confidence(ctx))
     findings.extend(_check_unfounded_confidence(ctx))
+    findings.extend(_check_writes_unpinned_ci(ctx))
     return findings
 
 

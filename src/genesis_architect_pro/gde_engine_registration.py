@@ -401,6 +401,35 @@ _DESCRIPTORS: list[EngineDescriptor] = [
         modes=[GDEMode.RECOVERY, GDEMode.RESEARCH, GDEMode.REFACTOR, GDEMode.GATE,
                GDEMode.BUILD, GDEMode.DOCUMENT, GDEMode.COMMITTEE],
     ),
+
+    # 20. Supply Chain Audit — CI actions must name an immutable revision.
+    EngineDescriptor(
+        id="supply_chain_audit",
+        name="Supply Chain Audit",
+        module=_ADAPTER_MODULE,
+        entry_point="gde_run_supply_chain_audit",
+        category=EngineCategory.ANALYSIS,
+        input_keys=["project_dir"],
+        output_keys=["ci_scanned", "pinned_count", "unpinned_count",
+                     "unpinned_actions", "unpinnable_actions", "policy_mode"],
+        # Reads CI files straight off disk, so it depends on no other engine.
+        requires=[],
+        # An unpinned supply chain is a hardening problem, and hardening is
+        # what security_templates documents.
+        handoffs=["security_templates"],
+        failure_modes=[
+            "A project with no CI files yields no findings. That is not a pass, "
+            "and ci_scanned=False says so — but a caller counting only "
+            "unpinned_count will read the absence as compliance.",
+            "The scanner is line-oriented, not a YAML parser. A `uses:` value "
+            "produced by an anchor, an alias, or a multi-line scalar is not "
+            "seen, and is therefore silently unaudited rather than reported.",
+        ],
+        is_optional=True,
+        write_operations=[],
+        timeout_seconds=20,
+        modes=[GDEMode.GATE, GDEMode.RECOVERY],
+    ),
 ]
 
 # ---------------------------------------------------------------------------

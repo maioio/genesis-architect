@@ -414,13 +414,10 @@ def _register_all() -> None:
         if desc.id not in reg:
             reg.register(desc)
 
-    # Register the knowledge graph engine additively (kept in its own module
-    # so it doesn't pollute the core 8-engine set for legacy callers).
-    try:
-        from genesis_architect.pro.gde_knowledge_graph_adapter import register_knowledge_graph
-        register_knowledge_graph()
-    except Exception:
-        pass  # graceful degradation: knowledge graph is optional
+    # The knowledge graph engine is registered by engine_bootstrap, not here.
+    # It lives in a sibling module, and a descriptor provider importing its
+    # sibling is the second half of an import cycle. Ordering the two is the
+    # bootstrap's job.
 
 
 _register_all()

@@ -151,13 +151,20 @@ class TestRegistration:
         assert any("antipattern_detector" in e for e in errors)
 
     def test_explicit_registration_into_default_registry(self):
-        # KG is opt-in: it registers only when explicitly requested, and then
-        # the default registry still validates clean (its dependency is present).
+        # KG is opt-in, and once registered the default registry still
+        # validates clean because its dependency is present.
+        #
+        # register_knowledge_graph() no longer pulls the core descriptors in
+        # itself. It used to import gde_engine_registration when it noticed
+        # antipattern_detector was missing - a sibling reaching for a sibling,
+        # which was half an import cycle. Ordering now belongs to
+        # engine_bootstrap, so that is what the test drives.
+        from genesis_architect.pro.engine_bootstrap import ensure_registered
         from genesis_architect.pro.engine_registry import get_default_registry
         reg = get_default_registry()
         had_it = "knowledge_graph" in reg
         try:
-            register_knowledge_graph()  # idempotent; pulls in core deps
+            ensure_registered()
             assert "knowledge_graph" in reg
             assert reg.validate() == []
         finally:

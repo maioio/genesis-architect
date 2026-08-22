@@ -347,7 +347,8 @@ def _jsonable(value):
 
 
 def cmd_decide(args: argparse.Namespace) -> int:
-    import genesis_architect.pro.gde_engine_registration  # noqa: F401
+    from genesis_architect.pro.engine_bootstrap import ensure_registered
+    ensure_registered()
     from genesis_architect.pro import GenesisDecisionEngine, __version__
     from genesis_architect.pro.gde_types import ApprovalChoice, ApprovalDecision, GateOutcome
 

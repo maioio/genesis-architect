@@ -59,7 +59,11 @@ class GenesisDecisionEngine:
         registry: EngineRegistry | None = None,
         parallel: bool = True,
     ) -> None:
+        from genesis_architect.pro.engine_bootstrap import ensure_registered
+
         self.project_dir = Path(project_dir)
+        if registry is None:
+            ensure_registered()
         self.registry = registry if registry is not None else get_default_registry()
         self.parallel = parallel
 

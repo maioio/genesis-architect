@@ -104,7 +104,7 @@ def gde_run_knowledge_graph(ctx: SessionContext) -> dict[str, Any]:
       stay "pure graph analysis, sub-second, no network."
     """
     try:
-        from genesis_architect.pro import knowledge_graph as kg
+        import genesis_architect.pro.knowledge_graph as kg
     except ImportError as exc:
         return {"_confidence": 0.2, "_warnings": [f"knowledge_graph unavailable: {exc}"]}
 
@@ -197,11 +197,12 @@ def register_knowledge_graph() -> bool:
     # Ensure the core engines (incl. antipattern_detector) are registered first,
     # so our dependency exists and the registry stays valid regardless of import
     # order.
-    if "antipattern_detector" not in reg:
-        try:
-            import genesis_architect.pro.gde_engine_registration  # noqa: F401
-        except Exception:
-            return False
+    # Precondition, not something to force: KNOWLEDGE_GRAPH_DESCRIPTOR
+    # declares requires=["antipattern_detector"], and registering it while
+    # that is absent would leave the registry failing its own validation.
+    # engine_bootstrap registers the core descriptors first, so by the time
+    # this runs the dependency is there. Reaching for the registration module
+    # from here would re-create the cycle the bootstrap exists to remove.
     if "antipattern_detector" not in reg:
         return False
     reg.register(KNOWLEDGE_GRAPH_DESCRIPTOR)

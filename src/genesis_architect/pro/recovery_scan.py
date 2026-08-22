@@ -373,17 +373,12 @@ def scan(project_dir: Path) -> dict:
         "drift_score": drift_score,
     }
 
-    # Recovery report — additive, read-only, never raises
-    try:
-        from genesis_architect.pro.recovery_report import generate_report
-        scan_result["recovery_report"] = generate_report(scan_result).to_dict()
-    except Exception as exc:  # noqa: BLE001
-        scan_result["recovery_report"] = {
-            "executive_summary": f"report generation skipped: {exc}",
-            "project_risk_level": "none",
-            "warnings": [str(exc)],
-        }
-
+    # No "recovery_report" key here by design. Rendering belongs to
+    # recovery_report, which already depends on this module for its data;
+    # embedding the rendered form here meant the producer imported the
+    # renderer and the renderer imported the producer. Callers wanting both
+    # use recovery_report.scan_with_report(), which composes them in the
+    # direction the layering already runs.
     return scan_result
 
 

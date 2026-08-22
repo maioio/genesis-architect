@@ -866,6 +866,42 @@ def generate_report(scan_output: dict) -> RecoveryReport:
 # Disk-backed entry point
 # ---------------------------------------------------------------------------
 
+def scan_with_report(project_dir: "Path") -> dict:  # noqa: F821
+    """Scan output with the rendered report merged in under "recovery_report".
+
+    This composition used to live inside `recovery_scan.scan()`, which meant a
+    data producer imported its own renderer while the renderer imported the
+    producer for data - a two-module import cycle. Composing here instead
+    follows the dependency that already exists (report needs scan) rather than
+    adding one against it.
+
+    Never raises: a report that cannot be generated is reported as a report
+    saying so, exactly as the embedded version behaved.
+    """
+    from genesis_architect.pro.recovery_scan import scan
+
+    try:
+        scan_result = scan(project_dir)
+    except Exception as exc:  # noqa: BLE001
+        return {
+            "recovery_report": {
+                "executive_summary": f"scan failed: {exc}",
+                "project_risk_level": "none",
+                "warnings": [str(exc)],
+            }
+        }
+
+    try:
+        scan_result["recovery_report"] = generate_report(scan_result).to_dict()
+    except Exception as exc:  # noqa: BLE001
+        scan_result["recovery_report"] = {
+            "executive_summary": f"report generation skipped: {exc}",
+            "project_risk_level": "none",
+            "warnings": [str(exc)],
+        }
+    return scan_result
+
+
 def generate_report_for_project(project_dir: "Path") -> RecoveryReport:  # noqa: F821
     """
     Run recovery_scan.scan() on *project_dir* and return a RecoveryReport.

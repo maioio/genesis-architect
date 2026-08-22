@@ -24,12 +24,12 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           fetch-depth: 0   # full history for git_analyzer churn metrics
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: '3.11'
           cache: 'pip'
@@ -65,7 +65,7 @@ jobs:
 
       - name: Commit .genesis/ updates (GREEN zone)
         if: ${{ inputs.dry_run != true }}
-        uses: stefanzweifel/git-auto-commit-action@v5
+        uses: stefanzweifel/git-auto-commit-action@b863ae1933cb653a53c021fe36dbb774e1fb9403 # v5
         with:
           commit_message: "chore(genesis-sync): auto-apply GREEN zone updates [score=${{ steps.parse.outputs.score }}]"
           file_pattern: '.genesis/*.jsonl .genesis/*.json .genesis/*.md'
@@ -74,7 +74,7 @@ jobs:
 
       - name: Open PR for YELLOW zone findings
         if: ${{ steps.parse.outputs.yellow > 0 && inputs.dry_run != true }}
-        uses: peter-evans/create-pull-request@v6
+        uses: peter-evans/create-pull-request@c5a7806660adbe173f04e3e038b0ccdcd758773c # v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           branch: genesis-sync/pending-${{ github.run_number }}
@@ -95,7 +95,7 @@ jobs:
 
       - name: Open issue for RED zone block
         if: ${{ steps.parse.outputs.red > 0 }}
-        uses: actions/github-script@v7
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
         with:
           script: |
             const fs = require('fs');

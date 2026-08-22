@@ -71,7 +71,7 @@ else
   echo "core: PyPI ${CORE_VERSION:-(latest)}"
 fi
 
-cp "$HERE/Dockerfile" "$HERE/e2e.sh" "$HERE/r1_r6_e2e.py" "$CTX/"
+cp "$HERE/Dockerfile" "$HERE/e2e.sh" "$HERE/r1_r6_e2e.py" "$HERE/symlink_containment.py" "$CTX/"
 
 docker build \
   --build-arg "CORE_SOURCE=$CORE_SOURCE" \

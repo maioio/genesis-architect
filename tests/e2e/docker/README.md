@@ -51,6 +51,7 @@ core has a regression; the reverse means Pro depends on something unreleased.
 | 2. CLI smoke | `--help`, `doctor`, `doctor --json`, `engines`, `engines --json`, `purge` (dry-run), each capped at 120 s |
 | 3. headless launcher | `companion --ui` returns; installs nothing (package count identical before/after); downloads no models; still writes its UI |
 | 4. R1–R6 pipeline | 28 checks across outline → deep → report |
+| 5. symlink containment | a fetched skill pack cannot read outside its sandbox (audit finding D-2) |
 
 Phase 4 (`r1_r6_e2e.py`) is not a unit test. It drives the outline-driven
 research chain through one real project directory in the order a live GDE
@@ -60,6 +61,16 @@ than inside any one of them: outline round-trip, adapter surfacing,
 failing the floor and firing the gate as `BLOCK_AND_ASK`, absent coverage
 staying silent rather than reading as zero, a full grid clearing the floor,
 and unconfident values withheld from the rendered report.
+
+Phase 5 exists because of where it runs. `read_skills()` resolves every
+candidate path and skips any that lands outside the sandbox root, which is
+what stops a malicious pack from committing a symlink and having its own
+whitelist vouch for bytes fetched from elsewhere. Audit finding D-2 recorded
+that property as "argued, not observed": the test proving it is skipped on
+Windows, where creating the symlink fails with `WinError 1314` before the
+defence is ever reached. Linux has no such restriction, so running it here on
+every invocation is what keeps D-2 closed. A run that cannot plant the
+symlinks fails rather than passes — an untested property is not a held one.
 
 Skips are expected and honest: the optional extras genuinely are not
 installed here, so the tests that need them report skipped rather than

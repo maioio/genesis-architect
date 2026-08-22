@@ -42,6 +42,7 @@ RUN pip install --no-cache-dir -e "./pro[dev]"
 
 COPY e2e.sh /usr/local/bin/e2e
 COPY r1_r6_e2e.py /usr/local/bin/r1_r6_e2e.py
+COPY symlink_containment.py /usr/local/bin/symlink_containment.py
 RUN chmod +x /usr/local/bin/e2e
 
 # Engines that read git history need a usable git identity.

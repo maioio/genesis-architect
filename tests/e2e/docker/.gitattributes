@@ -1,6 +1,9 @@
-# These run inside a Linux container. core.autocrlf=true on Windows would
-# otherwise check them out with CRLF, and the container fails on the \r with
-# a "bad interpreter" that reads like a Docker problem rather than a checkout
-# one. Pin them, scoped to this directory.
-*.sh        text eol=lf
-Dockerfile  text eol=lf
+# Everything here runs inside a Linux container. core.autocrlf=true on Windows
+# would otherwise check these out with CRLF, and the container fails on the \r
+# with "env: 'bash\r': No such file or directory" — an error that reads like a
+# Docker problem rather than a line-ending one.
+#
+# Deliberately a blanket rule rather than a per-extension list: the shell
+# scripts fail loudly on CRLF, but Python tolerates it silently, so a .py file
+# can carry CRLF for a long time before anyone notices the inconsistency.
+* text eol=lf

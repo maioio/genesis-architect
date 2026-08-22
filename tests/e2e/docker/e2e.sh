@@ -18,7 +18,7 @@ printf 'tty      : stdin=%s stdout=%s\n' \
   "$(python -c 'import sys; print(sys.stdout.isatty())')"
 
 # ---------------------------------------------------------------------------
-phase "PHASE 1/4 — full pytest suite"
+phase "PHASE 1/5 — full pytest suite"
 # A 15-minute cap, not a guess: the suite runs in ~2 minutes. Anything near
 # this ceiling means something is blocking, which is the bug under test.
 timeout 900 python -m pytest -q -p no:cacheprovider --tb=short
@@ -29,7 +29,7 @@ case $? in
 esac
 
 # ---------------------------------------------------------------------------
-phase "PHASE 2/4 — CLI smoke tests"
+phase "PHASE 2/5 — CLI smoke tests"
 smoke() {
   local label="$1"; shift
   printf '\n--- %s ---\n' "$label"
@@ -58,7 +58,7 @@ mkdir -p /tmp/purge-probe && (cd /tmp/purge-probe && git init -q . 2>/dev/null |
 smoke "genesis purge (dry-run)" genesis purge --dir /tmp/purge-probe
 
 # ---------------------------------------------------------------------------
-phase "PHASE 3/4 — companion --ui must not provision headlessly"
+phase "PHASE 3/5 — companion --ui must not provision headlessly"
 # The regression: with no TTY, `--ui` used to pip-install the voice extras and
 # download ~1-2 GB of models before returning. In this image none of that is
 # present, so an unfixed build blocks here until the timeout.
@@ -95,12 +95,25 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-phase "PHASE 4/4 — R1-R6 pipeline E2E (outline -> deep -> report)"
+phase "PHASE 4/5 — R1-R6 pipeline E2E (outline -> deep -> report)"
 timeout 300 python /usr/local/bin/r1_r6_e2e.py
 case $? in
   0)   : ;;
   124) fail "R1-R6 E2E exceeded 300s" ;;
   *)   fail "R1-R6 E2E reported failing checks" ;;
+esac
+
+# ---------------------------------------------------------------------------
+phase "PHASE 5/5 — symlink containment (audit finding D-2)"
+# The property this proves cannot be exercised on Windows, where creating the
+# symlink fails outright. Running it here on every invocation is what keeps
+# D-2 observed rather than argued.
+timeout 120 python /usr/local/bin/symlink_containment.py
+case $? in
+  0)   : ;;
+  124) fail "symlink containment check exceeded 120s" ;;
+  2)   fail "symlink containment was never exercised — D-2 not closed by this run" ;;
+  *)   fail "symlink containment FAILED — a path escaped the sandbox" ;;
 esac
 
 # ---------------------------------------------------------------------------

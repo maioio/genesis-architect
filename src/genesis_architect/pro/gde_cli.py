@@ -995,17 +995,44 @@ def cmd_companion_listen(project_dir: Path) -> int:
 NO_AUTO_INSTALL_ENV = "GENESIS_NO_AUTO_INSTALL"
 
 
-def _auto_install_disabled() -> bool:
-    """True when auto-provisioning is opted out of, or we're under pytest.
+def _stdio_is_interactive() -> bool:
+    """True only when both stdin and stdout are real terminals.
 
-    The pytest check is a safety net, not the contract: a test that reaches
-    this path should still mock it. Without the net, a single unmocked call
+    Provisioning downloads ~1-2 GB and can sit in pip for up to 30 minutes.
+    That is reasonable in front of a human who just typed the command and can
+    watch it or Ctrl-C it. Behind a pipe, a service manager, a container, or
+    an IDE task runner there is nobody to do either, so the launcher simply
+    appears to hang.
+
+    Streams get replaced by objects that have no ``isatty`` (pytest capture)
+    or are already closed, and on Windows ``pythonw`` leaves them as ``None``.
+    Anything we cannot ask is treated as "not a terminal" — the safe answer,
+    since guessing wrong costs a 30-minute stall.
+    """
+    for stream in (sys.stdin, sys.stdout):
+        try:
+            if not stream.isatty():
+                return False
+        except (AttributeError, ValueError):
+            return False
+    return True
+
+
+def _auto_install_disabled() -> bool:
+    """True when auto-provisioning must not run.
+
+    Three independent reasons, in order of explicitness: the operator opted
+    out, we are under pytest, or there is no terminal attached. The pytest
+    check is a safety net, not the contract — a test that reaches this path
+    should still mock it. Without the net, a single unmocked call
     pip-installs into the developer's environment mid-suite.
     """
     import os
     if os.environ.get(NO_AUTO_INSTALL_ENV, "").strip():
         return True
-    return "PYTEST_CURRENT_TEST" in os.environ
+    if "PYTEST_CURRENT_TEST" in os.environ:
+        return True
+    return not _stdio_is_interactive()
 
 
 def _auto_setup_voice() -> None:
@@ -1016,7 +1043,8 @@ def _auto_setup_voice() -> None:
     and the first `genesis companion --ui` provisions everything else
     automatically. Shows progress; never raises.
 
-    Opt out by setting ``GENESIS_NO_AUTO_INSTALL=1``.
+    No-op unless a human is watching: see `_auto_install_disabled()`. Opt out
+    explicitly with ``GENESIS_NO_AUTO_INSTALL=1``.
     """
     if _auto_install_disabled():
         return

@@ -2,6 +2,10 @@
 
 **Date:** 2026-08-17 · **Version audited:** `genesis-architect-pro` 8.0.0 · **Branch:** `pro-v3-analysis`
 
+> **Partly superseded.** This is a dated snapshot. Several findings and
+> blueprint items have since closed — see [Status update](#status-update--2026-08-22).
+> The original text is preserved unchanged below.
+
 Every claim below was produced by executing code against the shipped
 registry, not by reading it. Commands and their raw output are reproduced so
 each line can be re-run. Where something is unverified, it says so.
@@ -25,6 +29,77 @@ A4, A5 and R1–R6 were scoped as backlog and were never built. Reporting item 6
 as PASS would be false.
 
 **Totals:** 2029 passed · 1 skipped · 0 failed · ruff clean across `src/` and `tests/`.
+
+---
+
+## Status update — 2026-08-22
+
+Everything below this section is the original 2026-08-17 report, unedited. A
+dated audit is a record of what was true when it ran, so it is annotated
+rather than rewritten. This section says what has moved since, because a
+finding that reads as open when it is closed erodes trust in the ones that
+are still open.
+
+Re-verified by execution on 2026-08-22, by the same method as the original:
+running the code, not reading it.
+
+### Findings
+
+| Finding | Then | Now | Closed by |
+|---|---|---|---|
+| D-1 · No commit pinning in the fetcher | open | **CLOSED** | `605688a` |
+| D-2 · Symlink containment unverified on Windows | open | **CLOSED** | Phase 5 of `tests/e2e/docker/` |
+| D-3 · `hygiene_notice()` walks the whole tree | open | **CLOSED** | `605688a` |
+| D-4 · `knowledge_graph` handoff coupling | open | unchanged | — |
+| D-5 · Advisor LOCAL tier is manifest-based | open | unchanged | — |
+| D-6 · `_pid_alive` fails safe | accepted tradeoff | unchanged | — |
+| D-7 · Red-team LLM path uses injected fakes | accepted as-is | unchanged | — |
+
+D-2 closed differently from how the finding proposed. The recommendation was
+to run the test on Linux CI or gate it on Developer Mode. What shipped is the
+clean-room container harness, which runs the containment check on Linux on
+**every** invocation. Observed there:
+
+```
+symlinks planted inside the sandbox:
+  escape-dir     -> ../outside
+  SKILL.md       -> ../outside/SKILL.md
+  escape-system  -> /etc
+
+read_skills() returned 1: ['legit-skill']
+RESULT: CONTAINMENT HELD
+```
+
+The Windows half of the finding is confirmed, not fixed: creating the symlink
+fails there with `WinError 1314` (no privilege held) before containment can
+be exercised at all. The property is now observed on a platform where it can
+be, rather than argued on one where it cannot.
+
+### Blueprint items
+
+| Item | Then | Now | Built by |
+|---|---|---|---|
+| A4 evidence/inference split | NOT BUILT | **BUILT** | `ada45f4` |
+| A5 `failure_modes` field | NOT BUILT | **BUILT** | `ada45f4` |
+| R1–R6 research protocol | NOT BUILT (0 of 6) | **BUILT (6 of 6)** | `41c07f2` `6bab276` `e678eae` `d8ce508` `09debad` `6c35a4b` |
+
+Verified live:
+
+```
+RedTeamFinding fields: ['severity','category','description','evidence','inference']
+engines declaring failure_modes: 6 of 19
+research_outline registered: True   (mode: research)
+field_intelligence.requires: ['source_registry', 'research_outline']
+RESEARCH gates: ['CONFIDENCE_LOW', 'RED_TEAM_CRITICAL', 'RESEARCH_COVERAGE_LOW']
+registry validate(): CLEAN
+```
+
+**Item 6 is therefore no longer `PARTIAL — 3 of 11`.** All eleven blueprint
+items are built; the row in the status summary above reflects 2026-08-17.
+
+**Totals as of 2026-08-22:** 2202 passed · 0 failed locally; 2197 passed ·
+5 skipped in the clean-room container, where the optional extras are
+genuinely absent.
 
 ---
 
@@ -160,9 +235,9 @@ R4 RESEARCH_COVERAGE_LOW gate:              ABSENT
 | A1 `handoffs` field | **PASS** |
 | A2 populate handoffs | **PASS** — 16/18 (2 terminal on purpose) |
 | A3 registry validation | **PASS** |
-| A4 evidence/inference split | **NOT BUILT** |
-| A5 `failure_modes` field | **NOT BUILT** |
-| R1–R6 research protocol | **NOT BUILT** (0 of 6) |
+| A4 evidence/inference split | **NOT BUILT** — *built since, `ada45f4`* |
+| A5 `failure_modes` field | **NOT BUILT** — *built since, `ada45f4`* |
+| R1–R6 research protocol | **NOT BUILT** (0 of 6) — *built since, 6 of 6* |
 
 **What is proven:** the shipped registry contains a genuine handoff cycle —
 `recovery_report → refactoring_planner → rules_engine → recovery_report`
@@ -179,6 +254,8 @@ patterns were read and reimplemented against Genesis's own types.
 ## Findings requiring hardening
 
 Ordered by risk. None block current use; all are real.
+D-1, D-2 and D-3 have since closed — see the
+[Status update](#status-update--2026-08-22).
 
 ### D-1 · No commit pinning in the fetcher — *medium*
 `git clone --depth 1` with no ref. Trust is per-repository, not per-revision,
@@ -186,12 +263,16 @@ so a force-push or compromise of a whitelisted repo is fetched silently.
 **Fix:** add `commit` or `tag` to `TrustedSource`, clone then `rev-parse HEAD`
 and refuse on mismatch. Small change; closes the gap the whitelist implies is
 already closed.
+**CLOSED** in `605688a` — exactly as proposed, minus the `tag` option: a tag
+is compared against a resolved SHA and so can only ever mismatch.
 
 ### D-2 · Symlink containment unverified on Windows — *medium*
 The test proving a symlink cannot escape the sandbox is skipped on the primary
 dev platform. The property is argued, not observed, exactly where it matters.
 **Fix:** run that test in CI on Linux, or gate it on Developer Mode and let it
 run when available.
+**CLOSED** — Phase 5 of `tests/e2e/docker/` exercises containment on Linux on
+every run. See the [Status update](#status-update--2026-08-22).
 
 ### D-3 · `hygiene_notice()` walks the whole tree, unbounded — *medium*
 Measured **0.85s on this repo**, after *every* CLI command. It `rglob`s the
@@ -202,6 +283,9 @@ visible tax on unrelated commands.
 `.claudeignore` with exactly these exclusions already exists at the user
 level — and `ephemeral_purge` does not read it. Wiring the two together fixes
 this correctly rather than hardcoding a second list.
+**CLOSED** in `605688a` — `load_ignore_patterns()` reads the project-level and
+user-level `.claudeignore` and unions them with `DEFAULT_PRUNE_DIRS`, rather
+than hardcoding a second list.
 
 ### D-4 · `knowledge_graph` handoff coupling is convention, not enforced — *low*
 `knowledge_graph` registers through a conditional `try/except`. A handoff

@@ -58,3 +58,89 @@ class TestFreeAntipatternBase:
         _make_py_project(tmp_path, {"a.py": "x=1\n"})
         report = detect_all(tmp_path, extra_detectors=[fake_detector])
         assert any(p.type == "feature-envy" for p in report.patterns)
+
+
+class TestHubFileDiscrimination:
+    """The hub-file rule counts production coupling, not test coverage — and
+    tells a vocabulary apart from a hub."""
+
+    @staticmethod
+    def _mod(importers, fan_out=3):
+        return {
+            "fan_in": len(importers),
+            "fan_out": fan_out,
+            "imported_by": importers,
+            "lines": 100,
+        }
+
+    def _detect(self, modules):
+        from genesis_architect.core.antipattern_detector import _detect_hub_files
+        return _detect_hub_files(modules)
+
+    def test_test_importers_do_not_count_as_coupling(self):
+        """Adding tests must never degrade an architecture score.
+
+        A test is a leaf: nothing depends on it, so a change cannot cascade
+        *through* it. 20 test importers and 4 production ones is not a hub.
+        """
+        modules = {"src/thing.py": self._mod(
+            [f"tests/test_{i}.py" for i in range(20)]
+            + [f"src/user{i}.py" for i in range(4)]
+        )}
+        assert self._detect(modules) == []
+
+    def test_production_importers_still_flag(self):
+        modules = {"src/thing.py": self._mod(
+            [f"src/user{i}.py" for i in range(25)]
+        )}
+        found = self._detect(modules)
+        assert len(found) == 1
+        assert found[0].severity == "CRITICAL"
+        assert found[0].metrics["fan_in"] == 25
+
+    def test_metrics_keep_the_raw_count_visible(self):
+        """Excluding tests from the verdict must not hide them from the report."""
+        modules = {"src/thing.py": self._mod(
+            [f"src/user{i}.py" for i in range(25)] + ["tests/test_a.py"]
+        )}
+        m = self._detect(modules)[0].metrics
+        assert m["fan_in"] == 25
+        assert m["fan_in_including_tests"] == 26
+        assert m["test_importers"] == 1
+
+    def test_vocabulary_is_low_not_critical(self):
+        """High fan-in, zero fan-out: a shared vocabulary cannot propagate a
+        change it never receives."""
+        modules = {"src/types.py": self._mod(
+            [f"src/user{i}.py" for i in range(25)], fan_out=0
+        )}
+        found = self._detect(modules)
+        assert len(found) == 1
+        assert found[0].severity == "LOW"
+        assert "vocabulary" in found[0].description
+
+    def test_vocabulary_fix_does_not_advise_splitting(self):
+        """Splitting a vocabulary yields two vocabularies and duplicate types."""
+        modules = {"src/types.py": self._mod(
+            [f"src/user{i}.py" for i in range(25)], fan_out=0
+        )}
+        assert "No action needed" in self._detect(modules)[0].suggested_fix
+
+    def test_a_module_that_imports_others_is_still_a_hub(self):
+        """The discriminator is fan_out, so one outgoing edge is enough."""
+        modules = {"src/thing.py": self._mod(
+            [f"src/user{i}.py" for i in range(25)], fan_out=1
+        )}
+        assert self._detect(modules)[0].severity == "CRITICAL"
+
+    def test_falls_back_to_fan_in_when_importers_unknown(self):
+        """An older graph without `imported_by` must still be evaluated."""
+        modules = {"src/thing.py": {"fan_in": 25, "fan_out": 3, "lines": 100}}
+        assert self._detect(modules)[0].severity == "CRITICAL"
+
+    def test_nested_and_suffixed_test_paths_are_recognised(self):
+        modules = {"src/thing.py": self._mod(
+            ["pkg/tests/test_a.py", "a/test/b.py", "src/thing_test.py",
+             "tests/test_c.py"] + [f"src/user{i}.py" for i in range(4)]
+        )}
+        assert self._detect(modules) == []

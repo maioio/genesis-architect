@@ -168,32 +168,98 @@ def _detect_god_classes(modules: dict) -> list[AntiPattern]:
     return patterns
 
 
+def _is_test_module(path: str) -> bool:
+    """True for a module whose purpose is exercising other modules."""
+    p = path.replace("\\", "/")
+    name = p.rsplit("/", 1)[-1]
+    return (
+        p.startswith(("tests/", "test/"))
+        or "/tests/" in p
+        or "/test/" in p
+        or name.startswith("test_")
+        or name.endswith("_test.py")
+    )
+
+
 def _detect_hub_files(modules: dict) -> list[AntiPattern]:
+    """Modules so widely imported that changing them cascades.
+
+    Two things this deliberately does not count as a hub.
+
+    **Tests.** A test importing a module is coverage, not coupling: tests are
+    leaves, nothing depends on them, and changing the module does not cascade
+    *through* them to anything else. Counting them meant adding tests degraded
+    a project's architecture score — an incentive worth removing.
+
+    **Vocabularies.** A module with high fan-in and *zero* fan-out of its own
+    is a shared type/constant vocabulary, not a hub. It cannot propagate a
+    change it never receives, and the usual advice — extract the stable
+    interface into its own module — is incoherent when the module already is
+    that interface. Splitting one yields two vocabularies and duplicated
+    definitions. Reported at LOW so it stays visible without reading as a
+    defect. This mirrors the fan-in/fan-out split the shotgun-surgery detector
+    already uses to tell a utility from a hub.
+    """
     patterns = []
     for mod, data in modules.items():
-        fi = data.get("fan_in", 0)
-        if fi > HUB_FILE_FAN_IN:
+        imported_by = data.get("imported_by") or []
+        if imported_by:
+            production_importers = [m for m in imported_by if not _is_test_module(m)]
+            fi = len(production_importers)
+        else:
+            production_importers = []
+            fi = data.get("fan_in", 0)
+
+        if fi <= HUB_FILE_FAN_IN:
+            continue
+
+        test_importers = len(imported_by) - fi
+        is_vocabulary = data.get("fan_out", 0) == 0
+
+        metrics = {
+            "fan_in": fi,
+            "threshold": HUB_FILE_FAN_IN,
+            "fan_in_including_tests": len(imported_by) or fi,
+            "test_importers": test_importers,
+            "fan_out": data.get("fan_out", 0),
+        }
+        conf, basis = _antipattern_confidence("hub-file", metrics)
+
+        if is_vocabulary:
+            severity = "LOW"
+            description = (
+                f"'{mod}' is imported by {fi} modules but imports none itself — "
+                f"a shared vocabulary rather than a hub. It cannot propagate a "
+                f"change it never receives."
+            )
+            suggested_fix = (
+                "No action needed. Splitting a vocabulary produces two "
+                "vocabularies and duplicated definitions. Revisit only if this "
+                "module starts importing others."
+            )
+        else:
             severity = "CRITICAL" if fi > 20 else "HIGH"
-            metrics = {"fan_in": fi, "threshold": HUB_FILE_FAN_IN}
-            conf, basis = _antipattern_confidence("hub-file", metrics)
-            patterns.append(AntiPattern(
-                id=f"hub-file-{mod.replace('/', '-').replace('.', '-')}",
-                type="hub-file",
-                severity=severity,
-                file=mod,
-                description=(
-                    f"'{mod}' is imported by {fi} modules — exceeds threshold of {HUB_FILE_FAN_IN}. "
-                    f"Changes to this file cascade to {fi} dependents."
-                ),
-                metrics=metrics,
-                affected_modules=data.get("imported_by", [])[:10],
-                suggested_fix=(
-                    f"Extract stable interfaces from '{mod}' into a separate module. "
-                    f"Dependents import the interface, not the implementation."
-                ),
-                confidence=conf,
-                basis=basis,
-            ))
+            description = (
+                f"'{mod}' is imported by {fi} modules — exceeds threshold of "
+                f"{HUB_FILE_FAN_IN}. Changes to this file cascade to {fi} dependents."
+            )
+            suggested_fix = (
+                f"Extract stable interfaces from '{mod}' into a separate module. "
+                f"Dependents import the interface, not the implementation."
+            )
+
+        patterns.append(AntiPattern(
+            id=f"hub-file-{mod.replace('/', '-').replace('.', '-')}",
+            type="hub-file",
+            severity=severity,
+            file=mod,
+            description=description,
+            metrics=metrics,
+            affected_modules=(production_importers or imported_by)[:10],
+            suggested_fix=suggested_fix,
+            confidence=conf,
+            basis=basis,
+        ))
     return patterns
 
 

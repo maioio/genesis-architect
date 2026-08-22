@@ -51,6 +51,8 @@ smoke "genesis doctor"          genesis doctor
 smoke "genesis doctor --json"   genesis doctor --json
 smoke "genesis engines"         genesis engines
 smoke "genesis engines --json"  genesis engines --json
+smoke "genesis gate"            genesis gate --dir /tmp
+smoke "genesis gate --json"     genesis gate --json --dir /tmp
 
 # purge must be inspected in dry-run: without --apply it reports what it
 # would remove and touches nothing, which is what belongs in a smoke test.

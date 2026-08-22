@@ -1515,6 +1515,49 @@ def cmd_fetch(args: argparse.Namespace) -> int:
     return 0 if result.ok else 1
 
 
+def cmd_gate(args: argparse.Namespace) -> int:
+    """Evaluate the architecture regression gate against the project.
+
+    The rules engine has always been reachable as an engine inside a session,
+    but its standalone entry point had no CLI door - it announced itself as
+    `genesis gate` while only being callable via `python -m`. This is that
+    door.
+
+    Exit codes match the engine's own contract: 0 when the policy passes, 1
+    when an explicitly-declared policy fails, 2 on error. Shadow findings exit
+    0 by design - a project that never opted into the default ruleset must not
+    have its CI broken by it.
+    """
+    from genesis_architect_pro.rules_engine import format_report, run_check
+
+    project_dir = Path(args.dir).expanduser().resolve()
+    if not project_dir.is_dir():
+        print(f"\n  Not a directory: {project_dir}\n", file=sys.stderr)
+        return 2
+
+    try:
+        report = run_check(project_dir)
+    except Exception as exc:  # noqa: BLE001
+        print(f"\n  genesis gate: error - {exc}\n", file=sys.stderr)
+        return 2
+
+    if getattr(args, "json_output", False):
+        import dataclasses
+        import json as _json
+        payload = dataclasses.asdict(report)
+        # Properties are not dataclass fields, so asdict() drops them - and
+        # they are the two values a CI consumer actually gates on.
+        payload["hard_failure"] = report.hard_failure
+        payload["hard_failure_reason"] = report.hard_failure_reason
+        print(_json.dumps(payload, default=str, indent=2))
+    else:
+        print()
+        print(format_report(report))
+        print()
+
+    return 1 if report.hard_failure else 0
+
+
 def cmd_purge(args: argparse.Namespace) -> int:
     """`genesis purge [--apply]` — Auto-Purge for expired ephemeral resources.
 
@@ -1815,6 +1858,13 @@ def _build_parser() -> argparse.ArgumentParser:
     purge_p.add_argument("--json", dest="json_output", action="store_true",
                          help="Output structured JSON (for piping / CI)")
 
+    gate_p = sub.add_parser(
+        "gate", help="Architecture regression gate: evaluate rules against the project")
+    gate_p.add_argument("--dir", default=".", metavar="PATH",
+                        help="Project directory (default: current directory)")
+    gate_p.add_argument("--json", dest="json_output", action="store_true",
+                        help="Output structured JSON (for piping / CI)")
+
     telemetry_p = sub.add_parser(
         "telemetry", help="Manage anonymous, opt-in product telemetry (default OFF)")
     telemetry_p.add_argument("--dir", default=".", metavar="PATH",
@@ -1858,8 +1908,8 @@ def main(argv: list[str] | None = None) -> int:
     # last wins the launcher — so Pro's entry point must delegate core
     # commands to the core app instead of forcing everything into `decide`.
     _pro_cmds = ("decide", "explain", "memory", "ui", "companion", "sync",
-                 "doctor", "recover", "harden", "telemetry", "purge", "advise", "fetch",
-                 "engines", "deps")
+                 "doctor", "recover", "harden", "telemetry", "purge", "gate", "advise",
+                 "fetch", "engines", "deps")
     _core_cmds = ("init", "config", "research", "publish", "upgrade", "resolve")
     if argv and argv[0] in _core_cmds:
         from genesis_architect.cli import app as _core_app
@@ -1904,6 +1954,7 @@ def main(argv: list[str] | None = None) -> int:
         "harden": cmd_harden,
         "telemetry": cmd_telemetry,
         "purge": cmd_purge,
+        "gate": cmd_gate,
         "advise": cmd_advise,
         "fetch": cmd_fetch,
         "engines": cmd_engines,
@@ -1929,8 +1980,17 @@ def _emit_hygiene_notice(args: argparse.Namespace) -> None:
 
     Skipped for `purge` itself (which just reported in full) and `doctor`
     (a readiness surface that shouldn't grow unrelated noise).
+
+    Also skipped whenever structured output was requested. This notice is
+    prose appended after the handler has already written its payload, so on
+    any `--json` command it lands after the closing brace and the result stops
+    being parseable. It only appears when there is debris to report, which is
+    why the corruption is intermittent rather than obvious: the same command
+    emits valid JSON on a clean tree and invalid JSON on a dirty one.
     """
     if getattr(args, "command", None) in ("purge", "doctor"):
+        return
+    if getattr(args, "json_output", False):
         return
     try:
         from genesis_architect_pro.ephemeral_purge import hygiene_notice

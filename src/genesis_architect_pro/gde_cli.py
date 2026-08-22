@@ -988,6 +988,53 @@ def cmd_companion_listen(project_dir: Path) -> int:
     return 0
 
 
+#: Set to any non-empty value to stop `genesis companion --ui` from installing
+#: packages or downloading models into the current environment. Intended for
+#: CI, reproducible/pinned installs, offline machines, and test runs - which
+#: must never mutate the environment they are running in.
+NO_AUTO_INSTALL_ENV = "GENESIS_NO_AUTO_INSTALL"
+
+
+def _stdio_is_interactive() -> bool:
+    """True only when both stdin and stdout are real terminals.
+
+    Provisioning downloads ~1-2 GB and can sit in pip for up to 30 minutes.
+    That is reasonable in front of a human who just typed the command and can
+    watch it or Ctrl-C it. Behind a pipe, a service manager, a container, or
+    an IDE task runner there is nobody to do either, so the launcher simply
+    appears to hang.
+
+    Streams get replaced by objects that have no ``isatty`` (pytest capture)
+    or are already closed, and on Windows ``pythonw`` leaves them as ``None``.
+    Anything we cannot ask is treated as "not a terminal" — the safe answer,
+    since guessing wrong costs a 30-minute stall.
+    """
+    for stream in (sys.stdin, sys.stdout):
+        try:
+            if not stream.isatty():
+                return False
+        except (AttributeError, ValueError):
+            return False
+    return True
+
+
+def _auto_install_disabled() -> bool:
+    """True when auto-provisioning must not run.
+
+    Three independent reasons, in order of explicitness: the operator opted
+    out, we are under pytest, or there is no terminal attached. The pytest
+    check is a safety net, not the contract — a test that reaches this path
+    should still mock it. Without the net, a single unmocked call
+    pip-installs into the developer's environment mid-suite.
+    """
+    import os
+    if os.environ.get(NO_AUTO_INSTALL_ENV, "").strip():
+        return True
+    if "PYTEST_CURRENT_TEST" in os.environ:
+        return True
+    return not _stdio_is_interactive()
+
+
 def _auto_setup_voice() -> None:
     """Make voice fully ready on first launch: install any missing Companion
     packages into this environment, then download the STT/TTS models.
@@ -995,7 +1042,13 @@ def _auto_setup_voice() -> None:
     This is the premium one-command experience — a customer installs
     `genesis-architect-pro` and the first `genesis companion --ui` provisions
     everything else automatically. Shows progress; never raises.
+
+    No-op unless a human is watching: see `_auto_install_disabled()`. Opt out
+    explicitly with ``GENESIS_NO_AUTO_INSTALL=1``.
     """
+    if _auto_install_disabled():
+        return
+
     # setup.py is import-safe with nothing extra installed — import it directly
     # (the voice package __init__ pulls modules that need the extras).
     from genesis_architect_pro.voice.setup import (

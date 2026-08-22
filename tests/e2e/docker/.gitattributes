@@ -1,0 +1,6 @@
+# These run inside a Linux container. core.autocrlf=true on Windows would
+# otherwise check them out with CRLF, and the container fails on the \r with
+# a "bad interpreter" that reads like a Docker problem rather than a checkout
+# one. Pin them, scoped to this directory.
+*.sh        text eol=lf
+Dockerfile  text eol=lf

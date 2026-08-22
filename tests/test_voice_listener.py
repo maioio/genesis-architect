@@ -1,4 +1,6 @@
 """Tests for voice.listener - live mic capture + wake word (honest degradation)."""
+import pytest
+
 from genesis_architect_pro.voice.listener import (
     WAKE_WORDS, ListenResult, MicStatus, WakeWordListener,
     mic_status, is_wake, listen_once, _strip_wake,
@@ -99,7 +101,7 @@ class TestVADBackend:
             assert backend.engine.sample_rate == 16000
 
     def test_silence_is_not_speech(self):
-        import numpy as np
+        np = pytest.importorskip("numpy")  # ships with the `voice` extra, not `dev`
         backend = _build_vad()
         silence = np.zeros(backend.frame_samples, dtype=np.float32)
         pcm = (silence * 32767).astype("<i2").tobytes()
@@ -130,7 +132,7 @@ class TestVADBackend:
         assert backend.kind in ("webrtc", "energy")
 
     def test_energy_backend_dispatch(self):
-        import numpy as np
+        np = pytest.importorskip("numpy")  # ships with the `voice` extra, not `dev`
         from genesis_architect_pro.voice.listener import VADBackend
         backend = VADBackend("energy", None, 480)
         loud = np.full(480, 0.5, dtype=np.float32)

@@ -180,21 +180,23 @@ class EngineRegistry:
             raise RegistryError(errors[0])
 
     def _detect_cycles(self) -> list[str]:
-        """Return error strings for any dependency cycles detected."""
-        # Build adjacency list: engine_id → set of its dependencies
-        graph: dict[str, set[str]] = {
-            d.id: set(r for r in d.requires if r in self._descriptors)
-            for d in self._descriptors.values()
-        }
+        """Return error strings for any dependency cycles detected.
 
-        # Kahn's algorithm: track in-degree and process zero-in-degree nodes
-        in_degree: dict[str, int] = defaultdict(int)
-        for deps in graph.values():
-            for dep in deps:
-                in_degree[dep] += 1  # dep is depended-upon, not the depender
+        Kahn's algorithm. Edges run dependency -> dependant, which is the
+        direction a topological sort consumes: an engine becomes runnable once
+        everything it `requires` has been emitted.
 
-        # Correct direction: for topological sort, edges go dep → dependant
-        # Rebuild: dependant has edges from its requires
+        Only `requires` edges are considered. `handoffs` are forward hints
+        about what tends to run next and are allowed to cycle - two engines
+        that hand off to each other describe an iterative loop, not a
+        contradiction. Conflating the two would make legal workflows
+        unrepresentable.
+
+        A requirement naming an unregistered engine is skipped here rather
+        than treated as an edge. It is a real error, but a different one, and
+        it is reported by the caller; letting it through would surface a
+        missing dependency as a phantom cycle.
+        """
         forward: dict[str, list[str]] = defaultdict(list)
         in_deg2: dict[str, int] = {d.id: 0 for d in self._descriptors.values()}
         for desc in self._descriptors.values():
@@ -214,7 +216,11 @@ class EngineRegistry:
                     queue.append(dependant)
 
         if visited < len(self._descriptors):
-            # Nodes not visited are part of a cycle
+            # Everything with residual in-degree is either in a cycle or
+            # downstream of one - a dependant of a blocked engine never
+            # reaches zero either. Reporting the whole blocked set is honest;
+            # naming one edge as "the cause" would not be, since a cycle has
+            # no privileged member.
             cycle_members = [e for e, d in in_deg2.items() if d > 0]
             return [
                 f"Dependency cycle detected among engines: {cycle_members}"

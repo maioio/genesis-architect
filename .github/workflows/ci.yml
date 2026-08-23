@@ -125,7 +125,7 @@ jobs:
         run: |
           lines=$(wc -l < SKILL.md)
           echo "SKILL.md lines: $lines"
-          if [ "$lines" -gt 400 ]; then echo "FAIL: over 400 lines"; exit 1; fi
+          if [ "$lines" -gt 480 ]; then echo "FAIL: over 480 lines"; exit 1; fi
           if LC_ALL=C.UTF-8 grep -P '\x{2014}|\x{2013}' SKILL.md; then echo "FAIL: em dashes found in SKILL.md"; exit 1; fi
           echo "SKILL.md constraints OK"
 

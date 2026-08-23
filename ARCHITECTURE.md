@@ -5,7 +5,7 @@ that graph, the thresholds, and the discriminators that decide whether a
 finding is a defect or a false alarm.
 
 This document is about mechanism. For what Genesis produces, see the
-[README](../README.md).
+[README](README.md).
 
 ---
 
@@ -298,7 +298,144 @@ costume of a refactor.
 
 ---
 
-## 7 · Reproducing any of this
+## 7 · Function-level mechanisms
+
+Sections 1 to 6 describe what the system guarantees. This section describes
+how four of those guarantees are implemented, and where each one stops. Every
+limit below is a real property of the code, not a caveat added for modesty.
+
+### Static and dynamic imports
+
+`core/import_graph.py` - `_extract_python_imports`, `_runtime_nodes`
+
+An edge exists when the syntax tree contains an `ast.Import` or
+`ast.ImportFrom` node that runs. Two words in that sentence carry weight.
+
+**Contains.** Nesting depth is irrelevant. `_runtime_nodes` recurses through
+every child node, so an import inside a function body, a `try:` block, or a
+class definition is an edge exactly like a top-of-file one. Deferring an
+import to break a cycle at *startup* does not hide it from the graph, which is
+the point: the coupling is still there.
+
+**Runs.** The one construct excluded is the body of `if TYPE_CHECKING:`, for
+the reasons in section 1. The `else:` branch and `if not TYPE_CHECKING:` are
+both walked.
+
+What is not an edge, and cannot be:
+
+```python
+importlib.import_module(name)      # invisible
+__import__("app." + suffix)        # invisible
+entry_point.load()                 # invisible
+```
+
+A module named only by a runtime string is not a dependency the tool can
+verify. Resolving it would mean executing the code or guessing at string
+values, and a graph built on guesses is worse than one with a documented
+floor. Genesis reports what it can prove.
+
+Two further behaviours worth knowing:
+
+- Files are read as `utf-8-sig`. With plain `utf-8` a byte-order mark, which
+  Windows editors add freely, reaches `ast.parse` as `U+FEFF` and the entire
+  file is discarded as a syntax error, silently.
+- A file that raises `OSError` or `SyntaxError` yields no imports. It remains
+  a node and other modules still point at it, so its fan-in is intact, but its
+  fan-out reads zero and it looks like a leaf. A repository that fails to
+  parse therefore looks *cleaner* than one that parses. Treat a parse failure
+  as a broken measurement, never as a good score.
+
+### Cycle detection, and what the reported set means
+
+`pro/engine_registry.py` - `_detect_cycles`
+
+Kahn's algorithm, with edges running dependency to dependant: the direction a
+topological sort consumes, since an engine becomes runnable once everything it
+`requires` has been emitted. Seed the queue with every zero-in-degree node,
+pop, decrement each dependant, enqueue on reaching zero. `O(V + E)`, and
+deterministic given a stable descriptor order.
+
+Three constraints shape it:
+
+1. **Only `requires` edges count.** `handoffs` are forward hints about what
+   tends to run next, and they are permitted to cycle. Two engines that hand
+   off to each other describe an iterative loop, which is a legal workflow.
+   Feeding them to the same acyclicity check would make that unrepresentable.
+2. **A requirement naming an unregistered engine is skipped**, not treated as
+   an edge. It is a genuine error, reported separately by the caller. Counting
+   it here would surface a missing dependency as a phantom cycle and send the
+   reader hunting for a loop that does not exist.
+3. **The reported set is the blocked set, not the cycle.** If `visited` falls
+   short, every node with residual in-degree is named. That includes engines
+   downstream of a cycle, which never reach zero either. The set is a superset
+   of the cycle, deliberately: a cycle has no privileged member to blame, and
+   over-reporting is recoverable where a confidently wrong single edge is not.
+
+### Lazy attribute resolution
+
+`pro/__init__.py` - `__getattr__`, `__dir__`
+
+The package exports over two hundred names from dozens of modules. Importing
+them eagerly makes `import genesis_architect.pro` pay for the entire surface
+no matter which single command the user ran. PEP 562 defers that cost.
+
+Resolution order for `genesis_architect.pro.X`:
+
+1. Ordinary attribute lookup on the module's `globals()`. Python calls
+   `__getattr__` **only on a miss**, so anything already imported or already
+   resolved never reaches the hook.
+2. `_LAZY_EXPORTS[X]` gives the defining module path. A miss raises
+   `AttributeError` with the standard message, so `hasattr` and
+   `getattr(..., default)` behave normally.
+3. `_LAZY_ALIASES[X]` is consulted, because five names are re-exported under a
+   name their defining module does not use. Looking up the exported name on
+   that module would raise for those five.
+4. The resolved object is written into `globals()`. Step 1 catches it forever
+   after, so the hook runs at most once per name.
+
+Three consequences that are easy to get wrong:
+
+- `from genesis_architect.pro import X` works unchanged: the import machinery
+  falls back to `getattr` on the module, which is the hook.
+- `dir()` and tab-completion would otherwise show only what happened to be
+  resolved already, so `__dir__` unions `globals()` with `_LAZY_EXPORTS`.
+- Step 4 is a cache, and `importlib.reload` does not clear it. A reloaded
+  submodule leaves the stale object bound in the parent. `_clear_lazy_cache()`
+  exists for exactly that case, and the tests use it.
+
+The `if TYPE_CHECKING:` block restates the same names as real imports. Type
+checkers, IDEs and CodeQL read it, the runtime never executes it, and by
+section 1 it is not a dependency edge, so declaring the API costs no fan-out.
+
+### Host matching
+
+`core/urls.py` - `host_of`, `host_matches`
+
+Genesis weights research by source, and that weight is a security boundary:
+whoever controls a URL in a search result controls part of the input. The
+substring test this replaced accepted both of these as `reddit.com`:
+
+```
+https://evil.example/reddit.com/thread     in the path, not the host
+https://reddit.com.attacker.example/x      a prefix of a different domain
+```
+
+`host_of` parses instead. A scheme-less input is prefixed with `//` so
+`urlparse` treats it as a host rather than a path; the hostname is lowercased;
+a leading `www.` is stripped; and `ValueError`, which `urlparse` raises on
+malformed IPv6 literals among other things, returns `""`. A `[a-z0-9.-]+`
+check rejects anything that is not a hostname at all, without which `urlparse`
+reports `not a url` as the host of `//not a url`.
+
+`host_matches` then accepts a host that either equals a domain or ends with
+`"." + domain`. The dot is what defeats the second attack: a plain
+`endswith("reddit.com")` also matches `notreddit.com`. Every failure path
+returns `False`, so malformed input degrades to "no match" rather than to a
+trusted one.
+
+---
+
+## 8 · Reproducing any of this
 
 ```bash
 # Structure of your own project

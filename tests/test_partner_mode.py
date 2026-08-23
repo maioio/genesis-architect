@@ -122,8 +122,9 @@ def test_skill_md_under_480_lines():
     # (Evidence Discipline, the question contract, the landmine sweep, the
     # Phase 5 checkpoint, the Assumptions Ledger) folded into SKILL.md.
     # Deliberate decision, not drift: see CHANGELOG.md [Unreleased] for the
-    # reasoning and V5_ROADMAP.md's "Constraint" section for why a budget
-    # exists at all (a forcing function for compression, not a technical wall).
+    # reasoning, and docs/archive/V5_ROADMAP.md's "Constraint" section for
+    # why a budget exists at all (a forcing function for compression, not a
+    # technical wall).
     lines = SKILL_MD.read_text(encoding="utf-8").splitlines()
     assert len(lines) <= 480, f"SKILL.md is {len(lines)} lines, limit is 480"
 

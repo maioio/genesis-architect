@@ -21,7 +21,9 @@ modules are too fragile to touch.
 [![PyPI](https://img.shields.io/pypi/v/genesis-architect?style=flat-square)](https://pypi.org/project/genesis-architect/)
 [![Python](https://img.shields.io/pypi/pyversions/genesis-architect?style=flat-square)](https://pypi.org/project/genesis-architect/)
 [![License: AGPL v3](https://img.shields.io/badge/license-AGPL--3.0-blue?style=flat-square)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-2337-brightgreen?style=flat-square)](tests/)
+[![Tests](https://img.shields.io/badge/tests-2845%20passing-brightgreen?style=flat-square)](tests/)
+[![Cycles](https://img.shields.io/badge/import%20cycles-0-brightgreen?style=flat-square)](ARCHITECTURE.md)
+[![Anti-patterns](https://img.shields.io/badge/critical%20anti--patterns-0-brightgreen?style=flat-square)](ARCHITECTURE.md)
 
 </div>
 
@@ -33,6 +35,38 @@ modules are too fragile to touch.
 > that was behind the paywall (decision engine, knowledge graph, threat modelling, C4
 > component diagrams, voice companion, video-to-pitfall) ships in this package under
 > AGPL-3.0. No key, no account, no telemetry by default.
+
+---
+
+## Genesis audited itself
+
+The obvious question about a tool that grades architecture is whether it would
+survive its own grading. In v9.0.0 it was pointed at its own source, and the
+answer was no. It found four import cycles, seven critical anti-patterns, a
+1,974-line CLI module importing 31 others, and twenty-one CI actions pinned to
+tags that their owners could move at any time.
+
+All of it is now zero.
+
+| | before | after |
+|---|---|---|
+| Import cycles | 4 | **0** |
+| Critical anti-patterns | 7 | **0** |
+| Unpinned CI actions | 21 | **0** |
+| Largest module fan-out | 31 | **9** |
+| Architecture score | 67 | **89** |
+
+> Three of the rules that produced those findings turned out to be wrong, and
+> fixing them was part of the release. The hub-file rule counted *test* files as
+> coupling, which meant adding tests degraded your score. It could not tell a
+> shared type vocabulary from a hub, or a standalone script from a god class.
+> Each now discriminates on evidence from the dependency graph.
+>
+> **Your scores may move on 9.0.0.** That is the correction landing, not a
+> regression.
+
+The full method, including how interface parity was proven byte-for-byte across
+a nine-module split, is in [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ---
 
@@ -154,6 +188,39 @@ Before writing a file, Genesis runs real research:
 
 The difference from a template: the scaffold reflects what actually broke for the
 people who built this before you.
+
+---
+
+## Under the hood
+
+Four mechanisms do most of the structural work. Each is small, and each exists
+because the obvious alternative was measurably wrong.
+
+**Dependency graphs from the AST, not from text.** Imports are read by walking
+the parsed tree, so a module named in a docstring or a comment is not an edge.
+Imports under `if TYPE_CHECKING:` are pruned too - they never execute, so they
+are not dependencies. The `else:` branch and `if not TYPE_CHECKING:` *are*
+walked, because that code does run.
+
+**Fan-out ceilings with margin.** A module importing more than 15 others is
+flagged; above 30 it is critical. Genesis holds its own modules to 11, and the
+widest is 9. A module sitting exactly on a threshold is a latent breach, not a
+pass.
+
+**Cycle detection on the hard edges only.** Engines declare `requires`
+(a backward edge, topologically sorted, must stay acyclic) separately from
+`handoffs` (a forward edge, advisory). Handoff loops are legal on purpose:
+`diagnose -> plan -> enforce -> re-diagnose` is a workflow, not a defect.
+
+**Lazy public API (PEP 562).** Importing `genesis_architect.pro` used to pull in
+all 43 of its modules. Names now resolve on first attribute access; the API is
+identical and fewer than ten submodules load. The eager imports are kept under
+`if TYPE_CHECKING:` so type checkers and static analysis still see the whole
+surface - which costs nothing at runtime and, since the scanner understands the
+guard, nothing in coupling either.
+
+> Every one of those claims is measured in CI, not asserted here. `genesis
+> recover .` will tell you the same numbers about your own project.
 
 ---
 

@@ -147,6 +147,7 @@ jobs:
         run: |
           found=$(LC_ALL=C.UTF-8 grep -rnP '\x{2014}|\x{2013}' \
             README.md SKILL.md CONTRIBUTING.md SECURITY.md CODE_OF_CONDUCT.md \
+            ARCHITECTURE.md WEBSITE_COPY.md \
             2>/dev/null || true)
           if [ -n "$found" ]; then
             echo "FAIL: em/en dashes found in reader-facing docs:"

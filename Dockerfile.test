@@ -32,7 +32,7 @@ COPY scripts/ ./scripts/
 # Repo fixtures the suite asserts against (docs contracts, example projects,
 # templates). These are part of the project under test, not package data - if
 # they are missing the tests fail with confusing FileNotFoundErrors.
-COPY SKILL.md ./
+COPY SKILL.md ARCHITECTURE_INVARIANTS.json ./
 COPY references/ ./references/
 COPY examples/ ./examples/
 COPY assets/ ./assets/

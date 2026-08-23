@@ -121,6 +121,12 @@ jobs:
             --roadmap-path SELF_ROADMAP.md
           python scripts/mitigation_enforcer.py SELF_PITFALLS.md --src-root .
 
+      - name: Architecture invariants are current
+        # ARCHITECTURE_INVARIANTS.json is generated from the live package and
+        # is what the README, ARCHITECTURE.md and the landing page answer to.
+        # A structural change that nobody regenerated fails here.
+        run: python scripts/architecture_invariants.py --check
+
       - name: Check SKILL.md constraints
         run: |
           lines=$(wc -l < SKILL.md)

@@ -152,6 +152,11 @@ class TestGates:
         plan = build_plan(_make_intent(GDEMode.BUILD), registry=reg)
         assert "SECURITY_RISK" in plan.required_gate_ids
 
+    def test_research_has_coverage_gate(self):
+        reg = EngineRegistry()
+        plan = build_plan(_make_intent(GDEMode.RESEARCH), registry=reg)
+        assert "RESEARCH_COVERAGE_LOW" in plan.required_gate_ids
+
     def test_no_duplicate_gates(self):
         reg = EngineRegistry()
         for mode in GDEMode:

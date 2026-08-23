@@ -117,9 +117,15 @@ def test_partner_rules_active_in_companion_mode():
 
 # --- SKILL.md constraints ---
 
-def test_skill_md_under_400_lines():
+def test_skill_md_under_480_lines():
+    # Raised from 400 -> 480 to accommodate the Dry-Run Interview method
+    # (Evidence Discipline, the question contract, the landmine sweep, the
+    # Phase 5 checkpoint, the Assumptions Ledger) folded into SKILL.md.
+    # Deliberate decision, not drift: see CHANGELOG.md [Unreleased] for the
+    # reasoning and V5_ROADMAP.md's "Constraint" section for why a budget
+    # exists at all (a forcing function for compression, not a technical wall).
     lines = SKILL_MD.read_text(encoding="utf-8").splitlines()
-    assert len(lines) <= 400, f"SKILL.md is {len(lines)} lines, limit is 400"
+    assert len(lines) <= 480, f"SKILL.md is {len(lines)} lines, limit is 480"
 
 
 def test_skill_md_no_em_dashes():

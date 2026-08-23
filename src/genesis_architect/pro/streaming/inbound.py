@@ -228,7 +228,8 @@ class InboundRouter:
     def _run_gde(self, instruction: str, session_id: str) -> None:
         """Run a full GDE session including approve/commit gate resume flow."""
         try:
-            import genesis_architect.pro.gde_engine_registration  # noqa: F401
+            from genesis_architect.pro.engine_bootstrap import ensure_registered
+            ensure_registered()
             from genesis_architect.pro import GenesisDecisionEngine
             from genesis_architect.pro.gde_types import (
                 ApprovalChoice,

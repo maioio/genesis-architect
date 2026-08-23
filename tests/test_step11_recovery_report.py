@@ -51,6 +51,7 @@ from genesis_architect.pro.recovery_report import (
     generate_report, generate_report_for_project,
     RecoveryReport,
 )
+from genesis_architect.pro.recovery_report import scan_with_report
 from genesis_architect.pro.recovery_scan import scan
 
 
@@ -663,26 +664,37 @@ class TestGenerateReportForProject:
 # ---------------------------------------------------------------------------
 
 class TestScanIntegration:
+    """The report is composed by recovery_report, not embedded by scan.
+
+    scan() used to attach its own rendered report, which made the data
+    producer import the renderer while the renderer imported the producer.
+    The composed shape is unchanged; what moved is who assembles it.
+    """
+
+    def test_scan_alone_does_not_render(self, tmp_path):
+        _make_python_project(tmp_path)
+        assert "recovery_report" not in scan(tmp_path)
+
     def test_recovery_report_key_present(self, tmp_path):
         _make_python_project(tmp_path)
-        result = scan(tmp_path)
+        result = scan_with_report(tmp_path)
         assert "recovery_report" in result
 
     def test_recovery_report_has_executive_summary(self, tmp_path):
         _make_python_project(tmp_path)
-        result = scan(tmp_path)
+        result = scan_with_report(tmp_path)
         assert "executive_summary" in result["recovery_report"]
 
     def test_recovery_report_has_project_risk_level(self, tmp_path):
         _make_python_project(tmp_path)
-        result = scan(tmp_path)
+        result = scan_with_report(tmp_path)
         rpt = result["recovery_report"]
         assert "project_risk_level" in rpt
         assert rpt["project_risk_level"] in ("none", "low", "medium", "high", "critical")
 
     def test_all_legacy_keys_still_present(self, tmp_path):
         _make_python_project(tmp_path)
-        result = scan(tmp_path)
+        result = scan_with_report(tmp_path)
         for k in ("fix_commit_hotspots", "external_url_count", "version_sources",
                   "doc_version", "version_drift", "dead_file_candidates",
                   "model_sync", "model_diff", "drift_flags",
@@ -691,7 +703,7 @@ class TestScanIntegration:
 
     def test_scan_result_json_serialisable(self, tmp_path):
         _make_python_project(tmp_path)
-        result = scan(tmp_path)
+        result = scan_with_report(tmp_path)
         dumped = json.dumps(result)
         parsed = json.loads(dumped)
         assert "recovery_report" in parsed
@@ -711,12 +723,12 @@ class TestScanIntegration:
 
     def test_recovery_report_warnings_is_list(self, tmp_path):
         _make_python_project(tmp_path)
-        result = scan(tmp_path)
+        result = scan_with_report(tmp_path)
         assert isinstance(result["recovery_report"].get("warnings", []), list)
 
     def test_recovery_report_recommendations_is_list(self, tmp_path):
         _make_python_project(tmp_path)
-        result = scan(tmp_path)
+        result = scan_with_report(tmp_path)
         assert isinstance(result["recovery_report"].get("recommendations", []), list)
 
 

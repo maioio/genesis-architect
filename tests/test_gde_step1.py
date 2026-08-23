@@ -56,6 +56,8 @@ def _make_descriptor(
     modes: list[GDEMode] | None = None,
     is_optional: bool = True,
     write_ops: list[str] | None = None,
+    handoffs: list[str] | None = None,
+    failure_modes: list[str] | None = None,
 ) -> EngineDescriptor:
     return EngineDescriptor(
         id=engine_id,
@@ -66,6 +68,8 @@ def _make_descriptor(
         input_keys=["import_graph"],
         output_keys=["result"],
         requires=requires or [],
+        handoffs=handoffs or [],
+        failure_modes=failure_modes or [],
         is_optional=is_optional,
         write_operations=write_ops or [],
         modes=modes or [GDEMode.RECOVERY],
@@ -485,6 +489,302 @@ class TestEngineRegistryValidation:
     def test_empty_registry_valid(self) -> None:
         reg = EngineRegistry()
         assert reg.validate() == []
+
+
+# ---------------------------------------------------------------------------
+# Handoffs — the forward edge
+# ---------------------------------------------------------------------------
+
+
+class TestEngineFailureModes:
+    """A5: `failure_modes` declares how an engine misleads when it goes wrong,
+    next to the engine rather than centrally, so the constraint sits with the
+    thing it constrains."""
+
+    def test_defaults_to_empty(self) -> None:
+        assert _make_descriptor("a").failure_modes == []
+
+    def test_free_text_content_passes(self) -> None:
+        reg = EngineRegistry()
+        reg.register(_make_descriptor(
+            "a", failure_modes=["silently returns an empty result on a "
+                                "language it does not parse"]))
+        assert reg.validate() == []
+
+    def test_empty_string_entry_is_rejected(self) -> None:
+        reg = EngineRegistry()
+        reg.register(_make_descriptor("a", failure_modes=[""]))
+        errors = reg.validate()
+        assert any("empty failure mode" in e for e in errors)
+
+    def test_whitespace_only_entry_is_rejected(self) -> None:
+        reg = EngineRegistry()
+        reg.register(_make_descriptor("a", failure_modes=["   "]))
+        assert any("empty failure mode" in e for e in reg.validate())
+
+    def test_not_checked_against_cycles_or_other_engines(self) -> None:
+        # Free text describing a failure mode is never a graph reference, so it
+        # must never be validated as if it were one.
+        reg = EngineRegistry()
+        reg.register(_make_descriptor(
+            "a", failure_modes=["behaves like engine 'b' when starved of input"]))
+        assert reg.validate() == []
+
+    def test_production_registry_has_no_empty_failure_modes(self) -> None:
+        import genesis_architect.pro.gde_engine_registration  # noqa: F401
+        from genesis_architect.pro.engine_registry import get_default_registry
+
+        errors = [e for e in get_default_registry().validate()
+                 if "empty failure mode" in e]
+        assert errors == []
+
+    def test_production_registry_declares_some_failure_modes(self) -> None:
+        """Guards against the field silently regressing to empty."""
+        import genesis_architect.pro.gde_engine_registration  # noqa: F401
+        from genesis_architect.pro.engine_registry import get_default_registry
+
+        reg = get_default_registry()
+        declared = [d for d in reg._descriptors.values() if d.failure_modes]
+        assert len(declared) >= 5
+
+
+class TestFailureModeSurfacing:
+    """A5's other half: failure_modes must be surfaced when they matter (a
+    non-success result) and silent otherwise, or they train the reader to
+    skip them."""
+
+    def test_shown_on_failure(self) -> None:
+        from genesis_architect.pro.gde_cli import _failure_modes_for
+        import genesis_architect.pro.gde_engine_registration  # noqa: F401
+
+        result = _make_engine_result("import_graph", status=EngineStatus.FAILED)
+        modes = _failure_modes_for("import_graph", result)
+        assert modes, "import_graph declares failure modes and just failed"
+
+    def test_shown_on_degraded(self) -> None:
+        from genesis_architect.pro.gde_cli import _failure_modes_for
+        import genesis_architect.pro.gde_engine_registration  # noqa: F401
+
+        result = _make_engine_result("import_graph", status=EngineStatus.DEGRADED)
+        assert _failure_modes_for("import_graph", result)
+
+    def test_hidden_on_success(self) -> None:
+        from genesis_architect.pro.gde_cli import _failure_modes_for
+        import genesis_architect.pro.gde_engine_registration  # noqa: F401
+
+        result = _make_engine_result("import_graph", status=EngineStatus.SUCCESS)
+        assert _failure_modes_for("import_graph", result) == []
+
+    def test_unknown_engine_id_is_safe(self) -> None:
+        from genesis_architect.pro.gde_cli import _failure_modes_for
+
+        result = _make_engine_result("not-a-real-engine", status=EngineStatus.FAILED)
+        assert _failure_modes_for("not-a-real-engine", result) == []
+
+
+class TestEngineHandoffs:
+    """`handoffs` is advisory: existence-checked, deliberately cycle-exempt."""
+
+    def test_defaults_to_empty(self) -> None:
+        assert _make_descriptor("a").handoffs == []
+
+    def test_valid_handoff_passes(self) -> None:
+        reg = EngineRegistry()
+        reg.register(_make_descriptor("a", handoffs=["b"]))
+        reg.register(_make_descriptor("b"))
+        assert reg.validate() == []
+
+    def test_dangling_handoff_reported(self) -> None:
+        reg = EngineRegistry()
+        reg.register(_make_descriptor("a", handoffs=["ghost"]))
+        errors = reg.validate()
+        assert any("ghost" in e and "hands off" in e for e in errors)
+
+    def test_self_handoff_reported(self) -> None:
+        reg = EngineRegistry()
+        reg.register(_make_descriptor("a", handoffs=["a"]))
+        errors = reg.validate()
+        assert any("itself" in e for e in errors)
+
+    def test_multiple_dangling_handoffs_all_reported(self) -> None:
+        reg = EngineRegistry()
+        reg.register(_make_descriptor("a", handoffs=["ghost1", "ghost2"]))
+        errors = reg.validate()
+        assert sum(1 for e in errors if "hands off" in e) == 2
+
+    def test_handoff_cycle_is_allowed(self) -> None:
+        """The load-bearing design test.
+
+        analyse → decide → re-analyse is a legitimate iterative workflow, so a
+        cycle in the FORWARD edge must not be an error — unlike the same shape
+        in `requires`, which is an ordering constraint and must stay acyclic.
+        """
+        reg = EngineRegistry()
+        reg.register(_make_descriptor("a", handoffs=["b"]))
+        reg.register(_make_descriptor("b", handoffs=["a"]))
+        assert reg.validate() == []
+
+    def test_requires_cycle_still_detected_alongside_handoffs(self) -> None:
+        reg = EngineRegistry()
+        reg.register(_make_descriptor("a", requires=["b"], handoffs=["b"]))
+        reg.register(_make_descriptor("b", requires=["a"]))
+        errors = reg.validate()
+        assert any("cycle" in e.lower() for e in errors)
+
+    def test_handoffs_do_not_affect_execution_order(self) -> None:
+        reg = EngineRegistry()
+        # b hands off to a, but requires nothing — ordering must ignore that.
+        reg.register(_make_descriptor("a"))
+        reg.register(_make_descriptor("b", handoffs=["a"]))
+        ordered = [d.id for d in reg.ordered_for_mode(GDEMode.RECOVERY)]
+        assert set(ordered) == {"a", "b"}
+
+    def test_handoffs_do_not_affect_parallel_groups(self) -> None:
+        reg = EngineRegistry()
+        reg.register(_make_descriptor("a", handoffs=["b"]))
+        reg.register(_make_descriptor("b", handoffs=["a"]))
+        groups = reg.parallel_groups_for_mode(GDEMode.RECOVERY)
+        # No `requires` between them, so they stay in one parallel phase.
+        assert len(groups) == 1
+        assert {d.id for d in groups[0]} == {"a", "b"}
+
+    def test_validate_strict_raises_on_dangling_handoff(self) -> None:
+        reg = EngineRegistry()
+        reg.register(_make_descriptor("a", handoffs=["ghost"]))
+        with pytest.raises(RegistryError):
+            reg.validate_strict()
+
+    def test_production_registry_handoffs_are_valid(self) -> None:
+        """Whatever the real registry declares must actually resolve."""
+        import genesis_architect.pro.gde_engine_registration  # noqa: F401
+        from genesis_architect.pro.engine_registry import get_default_registry
+
+        errors = [e for e in get_default_registry().validate() if "hands off" in e]
+        assert errors == []
+
+    def test_production_registry_actually_declares_handoffs(self) -> None:
+        """Guards against the forward edge silently regressing to empty."""
+        import genesis_architect.pro.gde_engine_registration  # noqa: F401
+        from genesis_architect.pro.engine_registry import get_default_registry
+
+        reg = get_default_registry()
+        populated = [d for d in reg._descriptors.values() if d.handoffs]
+        assert len(populated) >= 15, "most engines should declare a next step"
+
+    def test_production_handoff_graph_contains_a_tolerated_cycle(self) -> None:
+        """The design decision, asserted against production rather than a fixture.
+
+        recovery_report → refactoring_planner → rules_engine → recovery_report
+        is a real loop in the shipped registry: diagnose, plan, enforce,
+        re-diagnose. It must coexist with a CLEAN validate().
+        """
+        import genesis_architect.pro.gde_engine_registration  # noqa: F401
+        from genesis_architect.pro.engine_registry import get_default_registry
+
+        reg = get_default_registry()
+        edges = {i: list(d.handoffs) for i, d in reg._descriptors.items()}
+
+        def has_cycle() -> bool:
+            WHITE, GREY, BLACK = 0, 1, 2
+            color = dict.fromkeys(edges, WHITE)
+
+            def visit(node: str) -> bool:
+                color[node] = GREY
+                for nxt in edges.get(node, []):
+                    if color.get(nxt) == GREY:
+                        return True
+                    if color.get(nxt, BLACK) == WHITE and visit(nxt):
+                        return True
+                color[node] = BLACK
+                return False
+
+            return any(visit(n) for n in edges if color[n] == WHITE)
+
+        assert has_cycle(), "expected an iterative loop in the forward edge"
+        assert reg.validate() == [], "a handoff cycle must not make the registry invalid"
+
+    def test_red_team_critic_is_terminal(self) -> None:
+        """The final gate must not suggest continuing past itself."""
+        import genesis_architect.pro.gde_engine_registration  # noqa: F401
+        from genesis_architect.pro.engine_registry import get_default_registry
+
+        assert get_default_registry()._descriptors["red_team_critic"].handoffs == []
+
+
+class TestOptionalHandoffTargets:
+    """D-4: conditionally-registered engines must not read as dangling handoffs.
+
+    `knowledge_graph` only joins a registry if its dependency is present and
+    a caller opts in (see gde_knowledge_graph_adapter.register_knowledge_graph).
+    Before this fix, a handoff pointing at it would falsely fail validate()
+    in exactly the degraded state that conditional registration exists to
+    tolerate — the gap the audit called convention-only enforcement.
+    """
+
+    def test_handoff_to_undeclared_target_still_reported(self) -> None:
+        reg = EngineRegistry()
+        reg.register(_make_descriptor("a", handoffs=["ghost"]))
+        errors = reg.validate()
+        assert any("ghost" in e for e in errors)
+
+    def test_handoff_to_declared_optional_target_passes_even_if_unregistered(self) -> None:
+        reg = EngineRegistry()
+        reg.declare_optional("ghost")
+        reg.register(_make_descriptor("a", handoffs=["ghost"]))
+        assert reg.validate() == []
+
+    def test_declare_optional_is_idempotent(self) -> None:
+        reg = EngineRegistry()
+        reg.declare_optional("ghost")
+        reg.declare_optional("ghost")
+        reg.register(_make_descriptor("a", handoffs=["ghost"]))
+        assert reg.validate() == []
+
+    def test_self_handoff_still_reported_even_when_declared_optional(self) -> None:
+        reg = EngineRegistry()
+        reg.declare_optional("a")
+        reg.register(_make_descriptor("a", handoffs=["a"]))
+        errors = reg.validate()
+        assert any("itself" in e for e in errors)
+
+    def test_declaring_optional_target_that_later_registers_is_harmless(self) -> None:
+        """Declaring optional doesn't block real registration or double-count."""
+        reg = EngineRegistry()
+        reg.declare_optional("b")
+        reg.register(_make_descriptor("a", handoffs=["b"]))
+        reg.register(_make_descriptor("b"))
+        assert reg.validate() == []
+
+    def test_production_registry_declares_knowledge_graph_optional(self) -> None:
+        """The real fix site: importing the adapter must declare the exemption
+        against the default registry, independent of whether registration
+        itself succeeded in this process."""
+        from genesis_architect.pro.engine_registry import get_default_registry
+        from genesis_architect.pro.gde_knowledge_graph_adapter import (
+            register_knowledge_graph,
+        )
+
+        reg = get_default_registry()
+        register_knowledge_graph()
+        assert "knowledge_graph" in reg._optional_ids
+
+    def test_hypothetical_handoff_to_knowledge_graph_would_validate_clean(self) -> None:
+        """Simulates the exact scenario the audit flagged: some other engine
+        hands off to knowledge_graph. Must validate clean regardless of
+        whether knowledge_graph actually registered in this process."""
+        import genesis_architect.pro.gde_engine_registration  # noqa: F401
+        from genesis_architect.pro.engine_registry import get_default_registry
+
+        reg = get_default_registry()
+        original = reg._descriptors["red_team_critic"]
+        try:
+            reg._descriptors["red_team_critic"] = _make_descriptor(
+                "red_team_critic", handoffs=["knowledge_graph"]
+            )
+            errors = [e for e in reg.validate() if "knowledge_graph" in e]
+            assert errors == []
+        finally:
+            reg._descriptors["red_team_critic"] = original
 
 
 # ---------------------------------------------------------------------------

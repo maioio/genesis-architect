@@ -313,14 +313,34 @@ def research(
     json_data: str = typer.Option(
         None, "--json-data", help="Path to JSON file with pre-collected research data"
     ),
+    absorb: str = typer.Option(
+        None, "--absorb",
+        help="Path to a /watch analysis file; extracts pitfalls into PITFALLS.md",
+    ),
+    source_url: str = typer.Option(
+        None, "--source-url",
+        help="Source URL for --absorb (default: first URL found in the file)",
+    ),
+    domain: str = typer.Option(
+        None, "--domain",
+        help="Force the research floor unit: 'code' (repos) or 'non-code' (sources)",
+    ),
+    json_output: bool = typer.Option(
+        False, "--json", help="Emit the summary as JSON instead of formatted text"
+    ),
 ):
     """Research a topic. Use --video for Pro video-to-pitfall analysis.
 
     Multi-source research (Pro): checks the vault cache, then either prints a
     data-collection guide or — with --json-data FILE — merges, ranks, and
-    returns a structured summary of pre-collected results.
+    returns a structured summary of pre-collected results. --absorb feeds a
+    /watch analysis back in as PITFALLS.md entries.
     """
     from genesis_architect.core import pro_bridge
+
+    if domain and domain.replace("-", "_") not in ("code", "non_code"):
+        typer.echo(f"Unknown --domain '{domain}'. Use 'code' or 'non-code'.", err=True)
+        raise typer.Exit(1)
 
     if video:
         try:
@@ -329,14 +349,30 @@ def research(
             typer.echo(str(exc), err=True)
             raise typer.Exit(2)
         queries = engine.build_all_media_queries(topic)
+        if json_output:
+            import json as _json
+            typer.echo(_json.dumps({
+                "topic": topic,
+                "queries": queries,
+                "absorb_command": f'genesis research "{topic}" --absorb watch-output.txt',
+            }, indent=2))
+            return
         typer.echo("Pro video research queries built:")
         for platform, qs in queries.items():
             typer.echo(f"  {platform}: {len(qs)} queries")
-        typer.echo("Run /watch on a chosen video, then extract pitfalls with Pro.")
+        typer.echo("Run /watch on a chosen video, then feed the analysis back in:")
+        typer.echo(f'  genesis research "{topic}" --absorb watch-output.txt')
         return
 
     from genesis_architect.core import genesis_subcommands
-    raise typer.Exit(genesis_subcommands.cmd_research(topic, json_data=json_data))
+    raise typer.Exit(genesis_subcommands.cmd_research(
+        topic,
+        json_data=json_data,
+        absorb=absorb,
+        source_url=source_url,
+        json_output=json_output,
+        domain=domain,
+    ))
 
 
 @app.command()

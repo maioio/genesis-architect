@@ -301,7 +301,8 @@ def run_sync(
     verbose: bool = False,
 ) -> SyncReport:
     """Run one sync cycle. Returns SyncReport."""
-    import genesis_architect.pro.gde_engine_registration  # noqa: F401
+    from genesis_architect.pro.engine_bootstrap import ensure_registered
+    ensure_registered()
     from genesis_architect.pro import GenesisDecisionEngine
 
     run_id = datetime.now(timezone.utc).strftime("sync-%Y%m%d-%H%M%S")

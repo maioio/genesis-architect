@@ -16,7 +16,7 @@ program. If not, see <https://www.gnu.org/licenses/>.
 
 from pathlib import Path
 
-__version__ = "8.0.1"
+__version__ = "9.0.0"
 __license__ = "AGPL-3.0-or-later"
 
 

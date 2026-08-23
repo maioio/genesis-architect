@@ -104,7 +104,7 @@ def gde_run_knowledge_graph(ctx: SessionContext) -> dict[str, Any]:
       stay "pure graph analysis, sub-second, no network."
     """
     try:
-        from genesis_architect.pro import knowledge_graph as kg
+        import genesis_architect.pro.knowledge_graph as kg
     except ImportError as exc:
         return {"_confidence": 0.2, "_warnings": [f"knowledge_graph unavailable: {exc}"]}
 
@@ -191,23 +191,27 @@ def register_knowledge_graph() -> bool:
     Idempotent: skips if already registered. Safe to import-and-register after
     gde_engine_registration has run."""
     reg = get_default_registry()
+    reg.declare_optional("knowledge_graph")
     if "knowledge_graph" in reg:
         return False
     # Ensure the core engines (incl. antipattern_detector) are registered first,
     # so our dependency exists and the registry stays valid regardless of import
     # order.
-    if "antipattern_detector" not in reg:
-        try:
-            import genesis_architect.pro.gde_engine_registration  # noqa: F401
-        except Exception:
-            return False
+    # Precondition, not something to force: KNOWLEDGE_GRAPH_DESCRIPTOR
+    # declares requires=["antipattern_detector"], and registering it while
+    # that is absent would leave the registry failing its own validation.
+    # engine_bootstrap registers the core descriptors first, so by the time
+    # this runs the dependency is there. Reaching for the registration module
+    # from here would re-create the cycle the bootstrap exists to remove.
     if "antipattern_detector" not in reg:
         return False
     reg.register(KNOWLEDGE_GRAPH_DESCRIPTOR)
     return True
 
 
-# NOTE: intentionally NOT auto-registered on import. The knowledge graph is an
-# opt-in connective layer; callers that want it in a GDE run call
-# register_knowledge_graph() explicitly. This keeps the default registry's core
-# engine set stable for callers/tests that assert on it.
+# `_register_all()` in gde_engine_registration.py calls register_knowledge_graph()
+# additively at the end of core registration, wrapped so that a missing/broken
+# antipattern_detector degrades to "no knowledge graph" rather than a failed
+# import. That conditional path is exactly why it is declared optional above:
+# any descriptor that hands off to "knowledge_graph" must stay valid whether or
+# not this registration actually succeeded in a given process.

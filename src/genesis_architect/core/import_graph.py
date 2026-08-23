@@ -131,6 +131,46 @@ def _collect_files(project_path: Path, extensions: list[str]) -> list[Path]:
 # Returns: list of (source_module_rel, imported_module_raw) tuples
 # ---------------------------------------------------------------------------
 
+def _is_type_checking_guard(node: ast.If) -> bool:
+    """True for ``if TYPE_CHECKING:`` and ``if typing.TYPE_CHECKING:``.
+
+    Matched by name rather than by resolving the import, because the alias is
+    conventional and universal: the whole point of the constant is that it is
+    False at runtime and True to a type checker.
+    """
+    test = node.test
+    if isinstance(test, ast.Name):
+        return test.id == "TYPE_CHECKING"
+    if isinstance(test, ast.Attribute):
+        return test.attr == "TYPE_CHECKING"
+    return False
+
+
+def _runtime_nodes(tree: ast.AST):
+    """Every node except the bodies of ``if TYPE_CHECKING:`` blocks.
+
+    Imports under that guard never execute. Counting them as dependencies
+    overstates a module's coupling and, worse, makes the two things a
+    codebase can want mutually exclusive: declaring re-exports for static
+    analysis (so type checkers and CodeQL can see a PEP 562 lazy API) would
+    register as real fan-out and re-flag the module as a god class. They are
+    not runtime edges, so they are not counted.
+
+    The ``else:`` branch is a different matter and IS walked - that code runs
+    at runtime, which is the whole reason to write one. ``if not
+    TYPE_CHECKING:`` is left alone deliberately: its body runs, and treating
+    the bare name as the guard would get that exactly backwards.
+    """
+    for child in ast.iter_child_nodes(tree):
+        if isinstance(child, ast.If) and _is_type_checking_guard(child):
+            for alternative in child.orelse:
+                yield alternative
+                yield from _runtime_nodes(alternative)
+            continue
+        yield child
+        yield from _runtime_nodes(child)
+
+
 def _extract_python_imports(py_file: Path, project_path: Path) -> list[str]:
     """Return list of dotted module names imported by this file.
 
@@ -147,7 +187,7 @@ def _extract_python_imports(py_file: Path, project_path: Path) -> list[str]:
         return []
 
     imports: list[str] = []
-    for node in ast.walk(tree):
+    for node in _runtime_nodes(tree):
         if isinstance(node, ast.Import):
             for alias in node.names:
                 imports.append(alias.name)

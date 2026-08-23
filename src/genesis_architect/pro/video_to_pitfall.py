@@ -85,7 +85,18 @@ _PITFALL_SIGNALS = [
 _PITFALL_RE = re.compile("|".join(_PITFALL_SIGNALS), re.IGNORECASE)
 
 # Timestamp pattern from /watch output: [MM:SS] or [HH:MM:SS]
-_TIMESTAMP_RE = re.compile(r"\[(\d{1,2}:\d{2}(?::\d{2})?)\]")
+# The three forms a timestamp actually arrives in from a /watch session:
+#   [04:12]      transcript lines (transcribe.py emits bracketed MM:SS)
+#   t=04:12      frame listings (watch.py labels frames on the absolute timeline)
+#   at 04:12     prose, when the analysis cites a moment in a sentence
+# Each alternative is anchored by its delimiter so a bare "16:9" or "1:1" in the
+# text cannot be mistaken for a citation.
+_TIMESTAMP_RE = re.compile(
+    r"\[(\d{1,2}:\d{2}(?::\d{2})?)\]"
+    r"|\bt=(\d{1,2}:\d{2}(?::\d{2})?)\b"
+    r"|(?:\bat\s+|\()(\d{1,2}:\d{2}(?::\d{2})?)\b",
+    re.IGNORECASE,
+)
 
 # Architecture decision signals
 _ARCH_SIGNALS = re.compile(
@@ -130,7 +141,10 @@ def _classify_category(text: str) -> str:
 
 def _extract_timestamp(context: str) -> str:
     m = _TIMESTAMP_RE.search(context)
-    return m.group(1) if m else ""
+    if not m:
+        return ""
+    # Exactly one alternative captures per match; the others are None.
+    return next((g for g in m.groups() if g), "")
 
 
 def _infer_mitigation_path(title: str, category: str) -> str:
@@ -192,9 +206,14 @@ def extract_from_watch_output(
         if _conf_order.get(confidence, 0) < _conf_order.get(min_confidence, 1):
             continue
 
-        # Derive a short title from the first meaningful clause
-        title_match = re.match(r"([A-Z][^.!?\n]{10,60})", segment)
-        title = title_match.group(1).strip() if title_match else segment[:60]
+        # Derive a short title from the first meaningful clause. The leading
+        # timestamp is stripped first: it is already carried in
+        # `timestamp_cited`, and leaving it in blocks the [A-Z] anchor below,
+        # which silently degraded every title to a raw 60-char slice.
+        headline = re.sub(r"^\s*(?:\[\d{1,2}:\d{2}(?::\d{2})?\]|t=\d{1,2}:\d{2}(?::\d{2})?)\s*",
+                          "", segment)
+        title_match = re.match(r"([A-Z][^.!?\n]{10,60})", headline)
+        title = title_match.group(1).strip() if title_match else headline[:60]
         title = re.sub(r"\s+", " ", title)
 
         # Dedup by approximate title

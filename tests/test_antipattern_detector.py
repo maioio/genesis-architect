@@ -144,3 +144,73 @@ class TestHubFileDiscrimination:
              "tests/test_c.py"] + [f"src/user{i}.py" for i in range(4)]
         )}
         assert self._detect(modules) == []
+
+
+class TestStandaloneScriptDiscrimination:
+    """A file nothing imports, outside any package, is a script — not a hub."""
+
+    @staticmethod
+    def _mod(fan_out=42, fan_in=0, lines=700):
+        return {"fan_out": fan_out, "fan_in": fan_in, "lines": lines,
+                "imports": [f"src/pkg/m{i}.py" for i in range(fan_out)]}
+
+    def _detect(self, modules):
+        from genesis_architect.core.antipattern_detector import _detect_god_classes
+        return _detect_god_classes(modules)
+
+    def test_standalone_script_is_low_not_critical(self):
+        found = self._detect({
+            "docker/audit.py": self._mod(),
+            "src/pkg/__init__.py": {"fan_out": 1, "fan_in": 5, "lines": 10},
+        })
+        script = [p for p in found if p.file == "docker/audit.py"]
+        assert len(script) == 1
+        assert script[0].severity == "LOW"
+        assert "standalone script" in script[0].description
+
+    def test_script_fix_does_not_demand_a_split(self):
+        found = self._detect({"docker/audit.py": self._mod(),
+                              "src/pkg/__init__.py": {"fan_out": 1, "fan_in": 5}})
+        assert "No architectural action needed" in found[0].suggested_fix
+
+    def test_a_module_inside_a_package_is_still_a_god_class(self):
+        """Living in a package means it is library code, importers or not."""
+        found = self._detect({
+            "src/pkg/__init__.py": {"fan_out": 1, "fan_in": 5, "lines": 10},
+            "src/pkg/big.py": self._mod(fan_in=0),
+        })
+        big = [p for p in found if p.file == "src/pkg/big.py"]
+        assert big and big[0].severity == "CRITICAL"
+
+    def test_an_imported_script_is_still_a_god_class(self):
+        """Once something depends on it, its coupling is no longer terminal."""
+        found = self._detect({"docker/audit.py": self._mod(fan_in=1),
+                              "src/pkg/__init__.py": {"fan_out": 1, "fan_in": 5}})
+        assert found[0].severity == "CRITICAL"
+
+    def test_both_conditions_are_required(self):
+        """fan_in==0 alone must not excuse a module that lives in a package."""
+        from genesis_architect.core.antipattern_detector import (
+            _is_standalone_script,
+            _package_dirs,
+        )
+        modules = {"src/pkg/__init__.py": {}, "src/pkg/big.py": {}, "docker/audit.py": {}}
+        dirs = _package_dirs(modules)
+        assert _is_standalone_script("docker/audit.py", {"fan_in": 0}, dirs) is True
+        assert _is_standalone_script("src/pkg/big.py", {"fan_in": 0}, dirs) is False
+        assert _is_standalone_script("docker/audit.py", {"fan_in": 2}, dirs) is False
+
+    def test_metrics_expose_the_reasoning(self):
+        found = self._detect({"docker/audit.py": self._mod(),
+                              "src/pkg/__init__.py": {"fan_out": 1, "fan_in": 5}})
+        m = found[0].metrics
+        assert m["standalone_script"] is True
+        assert m["fan_in"] == 0
+        assert m["fan_out"] == 42
+
+    def test_package_dirs_is_layout_agnostic(self):
+        from genesis_architect.core.antipattern_detector import _package_dirs
+        assert _package_dirs({"pkg/__init__.py": {}}) == {"pkg"}
+        assert _package_dirs({"__init__.py": {}}) == {""}
+        assert _package_dirs({"a/b/c/__init__.py": {}}) == {"a/b/c"}
+        assert _package_dirs({"docker/audit.py": {}}) == set()

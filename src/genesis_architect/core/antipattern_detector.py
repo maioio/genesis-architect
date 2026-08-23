@@ -139,32 +139,98 @@ def _antipattern_confidence(detector_type: str, metrics: dict) -> tuple[float, s
 # Detectors
 # ---------------------------------------------------------------------------
 
+def _package_dirs(modules: dict) -> set[str]:
+    """Directories that are importable packages, i.e. they hold an __init__.py.
+
+    Derived from the graph rather than the filesystem, and from no hardcoded
+    layout, so it holds for src/, flat, and nested layouts alike.
+    """
+    dirs = set()
+    for path in modules:
+        p = path.replace("\\", "/")
+        if p.rsplit("/", 1)[-1] == "__init__.py":
+            dirs.add(p.rsplit("/", 1)[0] if "/" in p else "")
+    return dirs
+
+
+def _is_standalone_script(path: str, data: dict, package_dirs: set[str]) -> bool:
+    """True for a file nothing imports that is not part of any package.
+
+    Both halves matter. `fan_in == 0` says nothing depends on it, so its
+    coupling is terminal — it cannot cascade a change to anyone. Not living
+    in a package says it is not importable as library code in the first
+    place. Requiring both is what stops this from excusing a genuine god
+    module that merely has no importers yet.
+    """
+    if data.get("fan_in", 0) != 0:
+        return False
+    p = path.replace("\\", "/")
+    directory = p.rsplit("/", 1)[0] if "/" in p else ""
+    return directory not in package_dirs
+
+
 def _detect_god_classes(modules: dict) -> list[AntiPattern]:
+    """Modules that import so much they have taken on too many jobs.
+
+    A standalone script is exempted from the verdict, not from the report. An
+    audit runner, a build script or a one-off migration reaches across the
+    whole system by design, and nothing imports it, so its fan-out cannot
+    propagate a change to anything. Splitting one to satisfy a coupling rule
+    trades a real property (it exercises everything, in one readable place)
+    for a metric. Those are reported at LOW so the size stays visible as the
+    readability question it actually is.
+    """
     patterns = []
+    package_dirs = _package_dirs(modules)
     for mod, data in modules.items():
         fo = data.get("fan_out", 0)
-        if fo > GOD_CLASS_FAN_OUT:
+        if fo <= GOD_CLASS_FAN_OUT:
+            continue
+
+        is_script = _is_standalone_script(mod, data, package_dirs)
+        metrics = {
+            "fan_out": fo,
+            "threshold": GOD_CLASS_FAN_OUT,
+            "lines": data.get("lines", 0),
+            "fan_in": data.get("fan_in", 0),
+            "standalone_script": is_script,
+        }
+        conf, basis = _antipattern_confidence("god-class", metrics)
+
+        if is_script:
+            severity = "LOW"
+            description = (
+                f"'{mod}' imports {fo} modules but nothing imports it, and it is "
+                f"not part of any package — a standalone script. Its coupling is "
+                f"terminal: it cannot cascade a change to anything."
+            )
+            suggested_fix = (
+                "No architectural action needed. Split it only if its length is "
+                "hard to read, which is a different question from coupling."
+            )
+        else:
             severity = "CRITICAL" if fo > 30 else "HIGH"
-            metrics = {"fan_out": fo, "threshold": GOD_CLASS_FAN_OUT, "lines": data.get("lines", 0)}
-            conf, basis = _antipattern_confidence("god-class", metrics)
-            patterns.append(AntiPattern(
-                id=f"god-class-{mod.replace('/', '-').replace('.', '-')}",
-                type="god-class",
-                severity=severity,
-                file=mod,
-                description=(
-                    f"'{mod}' imports {fo} modules — exceeds threshold of {GOD_CLASS_FAN_OUT}. "
-                    f"This module does too much and should be split."
-                ),
-                metrics=metrics,
-                affected_modules=data.get("imports", [])[:10],
-                suggested_fix=(
-                    f"Split '{mod}' into smaller modules grouped by responsibility. "
-                    f"Each new module should import at most {GOD_CLASS_FAN_OUT // 2} others."
-                ),
-                confidence=conf,
-                basis=basis,
-            ))
+            description = (
+                f"'{mod}' imports {fo} modules — exceeds threshold of "
+                f"{GOD_CLASS_FAN_OUT}. This module does too much and should be split."
+            )
+            suggested_fix = (
+                f"Split '{mod}' into smaller modules grouped by responsibility. "
+                f"Each new module should import at most {GOD_CLASS_FAN_OUT // 2} others."
+            )
+
+        patterns.append(AntiPattern(
+            id=f"god-class-{mod.replace('/', '-').replace('.', '-')}",
+            type="god-class",
+            severity=severity,
+            file=mod,
+            description=description,
+            metrics=metrics,
+            affected_modules=data.get("imports", [])[:10],
+            suggested_fix=suggested_fix,
+            confidence=conf,
+            basis=basis,
+        ))
     return patterns
 
 

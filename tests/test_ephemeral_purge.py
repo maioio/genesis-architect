@@ -15,7 +15,6 @@ from pathlib import Path
 
 import pytest
 
-from genesis_architect.pro import ephemeral_purge
 from genesis_architect.pro.ephemeral_purge import (
     DEFAULT_PRUNE_DIRS,
     MANIFEST_NAME,
@@ -88,12 +87,12 @@ _DEAD_PID = 4_000_000  # above the default pid_max on Linux and Windows alike
 
 def _force_dead(monkeypatch, pid: int = _DEAD_PID) -> None:
     """Make _pid_alive() report exactly `pid` as dead, and nothing else."""
-    real = ephemeral_purge._pid_alive
+    real = _pid_alive
 
     def fake(candidate: int) -> bool:
         return False if candidate == pid else real(candidate)
 
-    monkeypatch.setattr(ephemeral_purge, "_pid_alive", fake)
+    monkeypatch.setattr("genesis_architect.pro.ephemeral_purge._pid_alive", fake)
 
 
 def _make_lock(genesis_dir: Path, name: str, content: str, age_hours: float) -> Path:

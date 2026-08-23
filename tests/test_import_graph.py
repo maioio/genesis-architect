@@ -261,3 +261,94 @@ class TestBuildGraph:
         for mod, data in graph["modules"].items():
             assert "fan_in" in data
             assert "fan_out" in data
+
+
+class TestTypeCheckingImportsAreNotRuntimeEdges:
+    """`if TYPE_CHECKING:` imports never execute, so they are not dependencies.
+
+    Counting them overstates coupling, and it makes two reasonable goals
+    mutually exclusive: a module that declares its re-exports for static
+    analysis - so type checkers and CodeQL can see a PEP 562 lazy API - would
+    register that declaration as real fan-out and be re-flagged as a god class.
+    """
+
+    @staticmethod
+    def _imports(tmp_path, source):
+        import textwrap
+
+        from genesis_architect.core.import_graph import _extract_python_imports
+
+        f = tmp_path / "m.py"
+        f.write_text(textwrap.dedent(source), encoding="utf-8")
+        return _extract_python_imports(f, tmp_path)
+
+    def test_type_checking_body_is_not_counted(self, tmp_path):
+        found = self._imports(tmp_path, """
+            from typing import TYPE_CHECKING
+
+            if TYPE_CHECKING:
+                from pkg.types_only import Thing
+        """)
+        assert not any("types_only" in m for m in found)
+
+    def test_attribute_form_is_recognised(self, tmp_path):
+        """`if typing.TYPE_CHECKING:` is the same guard, spelled differently."""
+        found = self._imports(tmp_path, """
+            import typing
+
+            if typing.TYPE_CHECKING:
+                from pkg.types_only import Thing
+        """)
+        assert not any("types_only" in m for m in found)
+
+    def test_runtime_imports_beside_the_guard_still_counted(self, tmp_path):
+        """Pruning the guard must not prune its neighbours."""
+        found = self._imports(tmp_path, """
+            from typing import TYPE_CHECKING
+
+            import os
+            from pkg.real import Thing
+
+            if TYPE_CHECKING:
+                from pkg.types_only import Other
+        """)
+        assert "os" in found
+        assert "pkg.real" in found
+        assert not any("types_only" in m for m in found)
+
+    def test_else_branch_is_counted(self, tmp_path):
+        """The else branch runs at runtime - that is why one gets written."""
+        found = self._imports(tmp_path, """
+            from typing import TYPE_CHECKING
+
+            if TYPE_CHECKING:
+                from pkg.types_only import Thing
+            else:
+                from pkg.at_runtime import Thing
+        """)
+        assert "pkg.at_runtime" in found
+        assert not any("types_only" in m for m in found)
+
+    def test_negated_guard_body_is_counted(self, tmp_path):
+        """`if not TYPE_CHECKING:` runs. Matching the bare name would invert it."""
+        found = self._imports(tmp_path, """
+            from typing import TYPE_CHECKING
+
+            if not TYPE_CHECKING:
+                from pkg.at_runtime import Thing
+        """)
+        assert "pkg.at_runtime" in found
+
+    def test_guard_nested_inside_a_function(self, tmp_path):
+        """The guard is usually module level, but nesting must behave the same."""
+        found = self._imports(tmp_path, """
+            from typing import TYPE_CHECKING
+
+            def f():
+                if TYPE_CHECKING:
+                    from pkg.types_only import Thing
+                from pkg.real import Other
+                return Other
+        """)
+        assert "pkg.real" in found
+        assert not any("types_only" in m for m in found)

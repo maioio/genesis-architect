@@ -11,6 +11,8 @@ is gated.
 
 __version__ = "9.0.0"
 
+from typing import TYPE_CHECKING
+
 # ---------------------------------------------------------------------------
 # Lazy public API (PEP 562)
 # ---------------------------------------------------------------------------
@@ -26,20 +28,312 @@ __version__ = "9.0.0"
 # `from genesis_architect.pro import GenesisDecisionEngine` returns the same
 # object, and now imports decision_engine and nothing else.
 #
-# Deliberately NOT guarded behind `if TYPE_CHECKING:` with the old eager
-# imports, which was tried first. A type-checking branch preserves static
-# resolution but the import graph still counts every line in it, so the facade
-# stays a 43-edge node and the change buys nothing structurally. A `.pyi` stub
-# was measured too and is counted the same way. Neither costs anything to skip
-# here: this distribution ships no `py.typed` marker, so under PEP 561 type
-# checkers already treat this package as untyped and resolve none of these
-# names today. Making it a typed distribution is a separate decision, and the
-# right place for it is a py.typed marker rather than an import block kept
-# alive to fool a dependency scanner.
+# The eager imports are preserved below under `if TYPE_CHECKING:`. They never
+# execute, so they cost nothing at runtime and add no dependency edge - but
+# mypy, pyright and CodeQL all read that branch, so the API stays visible to
+# static analysis. Without it a PEP 562 facade is invisible: type checkers
+# resolve none of these names, and CodeQL reports every entry in `__all__` as
+# exported-but-undefined.
+#
+# That block used to be a straight trade against the structural goal, because
+# this project's own import scanner counted it and the facade stayed a 43-edge
+# node. The scanner was wrong - an import that never runs is not a dependency -
+# and was fixed in this release, so both properties hold at once.
 #
 # Both tables are generated from the import block they replaced, so they are
 # exhaustive by construction rather than by maintenance - and a test asserts
 # every name in __all__ actually resolves.
+
+if TYPE_CHECKING:
+    from genesis_architect.pro.antipattern_detector import detect_all
+    from genesis_architect.pro.architecture_scorer import score_label, score_project
+    from genesis_architect.pro.c4_generator import generate_c4_doc
+    from genesis_architect.pro.companion_ui import (
+        DEFAULT_PORT as COMPANION_UI_PORT,
+    )
+    from genesis_architect.pro.companion_ui import (
+        render_companion_html,
+        write_companion_html,
+    )
+    from genesis_architect.pro.cross_session_memory import (
+        list_analyzed_videos,
+        restore_session,
+        save_phase2,
+        save_phase4,
+        save_phase6,
+        save_video_pitfalls,
+    )
+    from genesis_architect.pro.decay_regressor import (
+        DecayForecast,
+        DecayRegressor,
+        DecayRegressorConfig,
+        RegressionResult,
+        ScoreDataPoint,
+        ScorePrediction,
+        forecast_from_history,
+    )
+    from genesis_architect.pro.decision_engine import GenesisDecisionEngine, run_session
+    from genesis_architect.pro.dependency_index import (
+        AffectedScope,
+        DependencyIndex,
+        build_dependency_index,
+        compute_affected_scope,
+    )
+    from genesis_architect.pro.drift_detector import (
+        DriftFlags,
+        StaleCandidate,
+        VagrantCandidate,
+        compute_drift_flags,
+        detect_drift,
+    )
+    from genesis_architect.pro.drift_scorer import (
+        DriftScore,
+        DriftScorerConfig,
+        NodeDriftScore,
+        compute_drift_score,
+        score_drift,
+    )
+    from genesis_architect.pro.engine_registry import (
+        EngineRegistry,
+        RegistryError,
+        get_default_registry,
+        register,
+    )
+    from genesis_architect.pro.ephemeral_purge import (
+        ProtectedItem,
+        PurgeCandidate,
+        PurgeReport,
+        hygiene_notice,
+        mark_ephemeral,
+        purge,
+    )
+    from genesis_architect.pro.evidence_pack import (
+        EvidenceItem,
+        EvidencePack,
+        build_evidence_pack,
+        save_evidence_pack,
+    )
+    from genesis_architect.pro.field_intelligence import (
+        REDDIT_ANSWERS_TEMPLATES,
+        FieldFinding,
+        FieldReport,
+        build_reddit_answers_queries,
+        run_field_workflow,
+        verify_finding,
+    )
+    from genesis_architect.pro.first_run import (
+        CUSTOMER_FLOW,
+        Check,
+        Readiness,
+        check_readiness,
+        doctor_report,
+        ensure_optional_dep,
+        offline_capability_report,
+    )
+    from genesis_architect.pro.fragility_classifier import classify_all
+    from genesis_architect.pro.gde_companion import (
+        CompanionInstrumentation,
+        GateMissStats,
+        GateNotifier,
+        HealthPageServer,
+    )
+    from genesis_architect.pro.gde_gate_engine import evaluate_gates
+    from genesis_architect.pro.gde_knowledge_graph_adapter import (
+        KNOWLEDGE_GRAPH_DESCRIPTOR,
+        gde_run_knowledge_graph,
+        register_knowledge_graph,
+    )
+    from genesis_architect.pro.gde_planner import build_plan
+    from genesis_architect.pro.gde_runner import run_plan
+    from genesis_architect.pro.gde_session import (
+        append_decision_log,
+        delete_session,
+        load_session,
+        read_decision_log,
+        save_session,
+        session_file_exists,
+    )
+    from genesis_architect.pro.gde_types import (
+        ApprovalChoice,
+        ApprovalDecision,
+        ApprovalRequest,
+        CommitResult,
+        DecisionEntry,
+        EngineCategory,
+        EngineDescriptor,
+        EngineResult,
+        EngineStatus,
+        ExecutionPlan,
+        GateAction,
+        GateOutcome,
+        GateReport,
+        GateResult,
+        GDEMode,
+        Intent,
+        LifecycleStage,
+        SessionContext,
+        SessionReport,
+        WriteOperation,
+    )
+    from genesis_architect.pro.git_analyzer import (
+        WeeklySnapshot,
+        build_timeline,
+        per_module_churn,
+        render_sparkline,
+    )
+    from genesis_architect.pro.import_audit import (
+        AuditFinding,
+        ImportAuditReport,
+    )
+    from genesis_architect.pro.import_audit import (
+        audit as audit_imports,
+    )
+    from genesis_architect.pro.import_audit import (
+        format_report as format_audit_report,
+    )
+    from genesis_architect.pro.import_graph import build_graph, load_or_build
+    from genesis_architect.pro.intent_classifier import classify
+    from genesis_architect.pro.knowledge_graph import (
+        NODE_TYPES,
+        REL_TYPES,
+        Edge,
+        KnowledgeGraph,
+        Node,
+        build_from_project,
+        load_graph,
+        save_graph,
+    )
+    from genesis_architect.pro.learning_engine import (
+        KNOWN_PROFILES,
+        Outcome,
+        ProfileStat,
+        rank_profiles,
+        read_outcomes,
+        recommend_profile,
+        record_outcome,
+        summarize_lessons,
+        write_lessons,
+    )
+    from genesis_architect.pro.learning_engine import (
+        Recommendation as LearningRecommendation,
+    )
+    from genesis_architect.pro.mcp_advisor import (
+        CATALOG,
+        AdvisorReport,
+        ProjectSignals,
+        ToolRecommendation,
+        ToolSpec,
+        advise,
+        advise_global,
+        advise_local,
+        detect_signals,
+    )
+    from genesis_architect.pro.memory_engine import (
+        MEMORY_FILES,
+        DecisionJournalEntry,
+        init_memory,
+        memory_status,
+        read_memory,
+        record_adr,
+        record_decision,
+        record_lesson,
+        record_research,
+        record_risk,
+        set_project_memory,
+    )
+    from genesis_architect.pro.model_store import (
+        ArchModel,
+        LinkChange,
+        ModelDiff,
+        ModelGroup,
+        ModelLink,
+        ModelNode,
+        ModelResponsibility,
+        ModelStore,
+        NodeChange,
+        ResponsibilityChange,
+    )
+    from genesis_architect.pro.product_intelligence import (
+        CONSENT_PROMPT,
+        TelemetryConfig,
+        clear_events,
+        describe_payload,
+        is_enabled,
+        needs_consent_prompt,
+        read_events,
+        record_event,
+        revoke_consent,
+        set_consent,
+    )
+    from genesis_architect.pro.progress_report import (
+        PhaseReport,
+        ReportItem,
+        render_report,
+        write_report,
+    )
+    from genesis_architect.pro.recovery_report import (
+        ArchitectureHealth,
+        DriftSummary,
+        Recommendation,
+        RecoveryReport,
+        ReportMetadata,
+        generate_report,
+        generate_report_for_project,
+    )
+    from genesis_architect.pro.red_team_critic import (
+        RedTeamFinding,
+        critique_session,
+        critique_with_llm,
+        run_red_team,
+    )
+    from genesis_architect.pro.refactoring_planner import generate_plan
+    from genesis_architect.pro.rules_engine import (
+        CheckReport,
+        RuleResult,
+        evaluate,
+        gather_facts,
+        load_rules,
+        run_check,
+    )
+    from genesis_architect.pro.rules_engine import (
+        format_report as format_rules_report,
+    )
+    from genesis_architect.pro.security_templates import generate_security_docs
+    from genesis_architect.pro.skill_fetcher import (
+        REGISTRY,
+        FetchRefused,
+        FetchResult,
+        SkillDefinition,
+        TrustedSource,
+        discard,
+        fetch,
+        list_sources,
+        read_skills,
+        sandbox_for,
+        validate_source,
+    )
+    from genesis_architect.pro.source_anchor import (
+        AnchorEntry,
+        AnchorReport,
+        AnchorResult,
+        PersistResult,
+        anchor_from_store,
+        anchor_responsibilities,
+        persist_anchors,
+    )
+    from genesis_architect.pro.source_registry import (
+        Source,
+        SourceRegistry,
+        add_project_source,
+        load_registry,
+    )
+    from genesis_architect.pro.ui_workspace import (
+        WorkspaceState,
+        collect_state,
+        render_workspace,
+        write_workspace,
+    )
+
 
 _LAZY_EXPORTS: dict[str, str] = {
     # antipattern_detector

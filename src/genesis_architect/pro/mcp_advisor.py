@@ -27,12 +27,20 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
+
+from genesis_architect.core.urls import host_matches
 
 # ---------------------------------------------------------------------------
 # Catalog
 # ---------------------------------------------------------------------------
+
+
+#: `url = <value>` lines from a git config. Deliberately not a full INI
+#: parse - the only thing needed here is the remote URLs themselves.
+_GIT_REMOTE_URL = re.compile(r"^\s*url\s*=\s*(?P<url>\S+)", re.MULTILINE)
 
 
 @dataclass(frozen=True)
@@ -267,15 +275,24 @@ def detect_signals(project_dir: Path) -> ProjectSignals:
             break
 
     # --- GitHub remote ---
+    #
+    # Parse the remote URLs and compare hosts, rather than searching the file
+    # for the substring "github.com". A substring match answers True for a
+    # remote at evil-github.com.attacker.net, and for any stray mention in a
+    # comment or an unrelated key. CodeQL flags the pattern as
+    # py/incomplete-url-substring-sanitization; this repo fixed three of them
+    # the same way in fc43693, and core.urls exists for exactly this.
     git_config = root / ".git" / "config"
     if git_config.is_file():
         try:
             text = git_config.read_text(encoding="utf-8", errors="replace")
-            if "github.com" in text:
+        except OSError:
+            text = ""
+        for remote in _GIT_REMOTE_URL.finditer(text):
+            if host_matches(remote.group("url"), "github.com"):
                 signals.has_github_remote = True
                 signals.note("github_remote", git_config)
-        except OSError:
-            pass
+                break
 
     return signals
 

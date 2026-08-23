@@ -163,6 +163,35 @@ class TestDetectSignals:
         _git_remote(tmp_path, "https://gitlab.com/acme/thing.git")
         assert detect_signals(tmp_path).has_github_remote is False
 
+    def test_lookalike_host_not_flagged(self, tmp_path):
+        """A host that merely contains "github.com" is not github.com.
+
+        Detection used to search the config text for the substring, which
+        answered True here. CodeQL flagged it as
+        py/incomplete-url-substring-sanitization; the host is parsed and
+        compared properly now.
+        """
+        _git_remote(tmp_path, "https://evil-github.com.attacker.net/acme/x.git")
+        assert detect_signals(tmp_path).has_github_remote is False
+
+    def test_github_com_mentioned_but_not_a_remote(self, tmp_path):
+        """A mention elsewhere in the file is not a remote either."""
+        git = tmp_path / ".git"
+        git.mkdir(exist_ok=True)
+        config = "\n".join([
+            "# cloned from github.com once, now hosted elsewhere",
+            '[remote "origin"]',
+            "\turl = https://gitlab.com/acme/thing.git",
+            "",
+        ])
+        (git / "config").write_text(config, encoding="utf-8")
+        assert detect_signals(tmp_path).has_github_remote is False
+
+    def test_ssh_github_remote_detected(self, tmp_path):
+        """scp-style remotes are the common SSH form and must still count."""
+        _git_remote(tmp_path, "git@github.com:acme/thing.git")
+        assert detect_signals(tmp_path).has_github_remote is True
+
 
 # ---------------------------------------------------------------------------
 # Local advice — the evidence invariant

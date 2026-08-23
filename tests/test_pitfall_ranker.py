@@ -3,6 +3,7 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
+from genesis_architect.core.urls import host_of
 from genesis_architect.pro.pitfall_ranker import (
     RankedPitfall,
     deduplicate,
@@ -185,7 +186,7 @@ def test_official_host_outranks_marketing_page_without_engagement():
         "text": "We help brands scale their creative production with automation.",
     })
     ranked = rank([agency, forum])
-    assert ranked[0].url.startswith("https://community.adobe.com")
+    assert host_of(ranked[0].url) == "community.adobe.com"
     assert ranked[0].score > ranked[1].score
 
 

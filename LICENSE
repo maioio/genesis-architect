@@ -659,3 +659,32 @@ specific requirements.
 if any, to sign a "copyright disclaimer" for the program, if necessary.
 For more information on this, and how to apply and follow the GNU AGPL, see
 <https://www.gnu.org/licenses/>.
+
+---
+
+                    GENESIS ARCHITECT - COPYRIGHT NOTICE
+
+    Genesis Architect - research-first architecture engine and code-analysis
+    system.
+    Copyright (C) 2026  מאיו עשת (Maio Eshet)
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+                              DUAL LICENSING
+
+    This software is dual-licensed. The AGPL-3.0 terms above govern all
+    open-source use. A separate commercial license, free of the copyleft
+    obligations of the AGPL-3.0, is available for use in closed-source or
+    proprietary products. See the "License and Commercial Use" section of
+    README.md for how to enquire.

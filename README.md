@@ -329,10 +329,11 @@ Please read the [Code of Conduct](CODE_OF_CONDUCT.md) and
 
 [GNU AGPL-3.0-or-later](LICENSE). Copyright (C) 2026 Maio Eshet.
 
-You can use, modify and redistribute Genesis freely, including commercially. The one
-obligation: if you modify it and offer it to others over a network, you must publish
-your modified source under the same license. Running it on your own code, in your own
-company, changes nothing for you.
+You can use, modify and redistribute Genesis freely under the AGPL-3.0, including
+commercially. The one obligation: if you modify it and offer it to others over a
+network, you must publish your modified source under the same license. Running it on
+your own code, in your own company, changes nothing for you. If those copyleft terms
+do not work for your product, see the commercial option at the bottom of this file.
 
 Releases up to v5.4.1 were published under MIT and remain available under those terms.
 
@@ -344,3 +345,13 @@ If Genesis saved you from a bad architecture decision,
 [star it](https://github.com/maioio/genesis-architect/stargazers) so other people find it.
 
 </div>
+
+## 📝 License and Commercial Use
+
+This project is open-source and dual-licensed.
+
+1. **Open Source License:** The code is available under the **AGPLv3 License**. You are free to use, modify, and distribute this software for personal or open-source projects, provided that you release your modifications and any software that integrates it under the same AGPLv3 license.
+
+2. **Commercial License:** If you wish to use this software in a closed-source commercial product, or need a custom license without the copyleft restrictions of the AGPLv3, **a commercial license is required**.
+
+For commercial licensing inquiries, please contact: maio.eshet@gmail.com

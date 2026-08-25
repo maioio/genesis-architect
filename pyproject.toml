@@ -1,14 +1,14 @@
 [build-system]
-requires = ["setuptools>=68"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "genesis-architect"
 version = "9.0.0"
-description = "Research before you build. Genesis Architect mines real GitHub issues, forks and post-mortems to find the failures others hit building what you are building - then scaffolds a project with those mitigations already in place."
+description = "Research before you build. Genesis Architect mines real GitHub issues, forks and post-mortems to find the failures others hit building what you are building - then scaffolds a project with those mitigations already in place. Dual-licensed (AGPL-3.0 + Commercial)."
 readme = "README.md"
 requires-python = ">=3.11"
-license = { text = "AGPL-3.0-or-later" }
+license = "AGPL-3.0-or-later"
 authors = [{ name = "Maio Eshet" }]
 keywords = [
     "architecture", "scaffolding", "code-analysis", "static-analysis",
@@ -18,7 +18,6 @@ classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Environment :: Console",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.11",

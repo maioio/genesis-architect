@@ -154,4 +154,4 @@ This project is open-source and dual-licensed.
 
 2. **Commercial License:** If you wish to use this software in a closed-source commercial product, or need a custom license without the copyleft restrictions of the AGPLv3, **a commercial license is required**.
 
-For commercial licensing inquiries, please contact: [הכנס_אימייל_אמיתי_כאן]
+For commercial licensing inquiries, please contact: maio.eshet@gmail.com

@@ -143,4 +143,15 @@ plan   = generate_plan("/path/to/project")
 
 ## License
 
-AGPL-3.0. Fully open source — no license key, no gate. See LICENSE.
+AGPL-3.0 by default — no license key, no gate. See LICENSE, and the section below
+for commercial use.
+
+## 📝 License and Commercial Use
+
+This project is open-source and dual-licensed.
+
+1. **Open Source License:** The code is available under the **AGPLv3 License**. You are free to use, modify, and distribute this software for personal or open-source projects, provided that you release your modifications and any software that integrates it under the same AGPLv3 license.
+
+2. **Commercial License:** If you wish to use this software in a closed-source commercial product, or need a custom license without the copyleft restrictions of the AGPLv3, **a commercial license is required**.
+
+For commercial licensing inquiries, please contact: [YOUR_EMAIL@EXAMPLE.COM]

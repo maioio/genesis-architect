@@ -66,7 +66,7 @@ all = [
     "faster-whisper>=1.0", "sounddevice>=0.4", "numpy>=1.24",
     "webrtcvad-wheels>=2.0.10", "pipecat-ai>=1.7", "anthropic>=0.40",
     # kokoro >=0.8 pins Python <3.13 - 0.7.x is the newest that installs everywhere.
-    "kokoro>=0.7", "soundfile>=0.12", "sherpa-onnx>=1.10",
+    "kokoro>=0.7", "soundfile>=0.14.0", "sherpa-onnx>=1.10",
     # Native floating window (frameless, always-on-top) for the Companion panel.
     "pywebview>=5.0",
 ]

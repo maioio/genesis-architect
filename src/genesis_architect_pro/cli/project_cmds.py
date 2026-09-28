@@ -247,3 +247,52 @@ def cmd_purge(args: argparse.Namespace) -> int:
     if report.dry_run and report.candidates:
         return 1
     return 0
+
+
+def cmd_organize(args: argparse.Namespace) -> int:
+    """`genesis organize [--apply]` — route loose top-level files into place.
+
+    Dry run by default: it reports what it would move and what it left in
+    place, and moves nothing. `--apply` is the only path that moves anything.
+    """
+    from genesis_architect_pro.workspace_organizer import format_report, init_rules, organize
+
+    project_dir = Path(args.dir).expanduser().resolve()
+    if not project_dir.is_dir():
+        print(f"\n  Not a directory: {project_dir}\n", file=sys.stderr)
+        return 1
+
+    if getattr(args, "init_rules", False):
+        path, created = init_rules(project_dir)
+        if created:
+            print(f"\n  Wrote default rules to {path}\n")
+        else:
+            print(f"\n  Rules file already exists: {path}\n")
+        return 0
+
+    report = organize(project_dir, apply=bool(args.apply))
+
+    if getattr(args, "json_output", False):
+        import json as _json
+        print(_json.dumps({
+            "dry_run": report.dry_run,
+            "candidates": [
+                {"path": str(c.path), "target": str(c.target), "reason": c.reason}
+                for c in report.candidates
+            ],
+            "protected": [
+                {"path": str(p.path), "reason": p.reason}
+                for p in report.protected
+            ],
+            "moved": report.moved,
+            "errors": report.errors,
+        }, indent=2))
+    else:
+        print(format_report(report))
+
+    # Exit 1 on a dry run that found candidates, so CI can gate on it.
+    if report.errors:
+        return 1
+    if report.dry_run and report.candidates:
+        return 1
+    return 0

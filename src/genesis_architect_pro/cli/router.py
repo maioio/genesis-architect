@@ -30,11 +30,13 @@ from genesis_architect_pro.cli.analysis_cmds import (
     cmd_telemetry,
 )
 from genesis_architect_pro.cli.companion_cmds import cmd_companion
+from genesis_architect_pro.cli.mcp_cmds import cmd_mcp
 from genesis_architect_pro.cli.parser import _build_parser
 from genesis_architect_pro.cli.project_cmds import (
     cmd_doctor,
     cmd_engines,
     cmd_memory,
+    cmd_organize,
     cmd_purge,
     cmd_ui,
 )
@@ -66,8 +68,8 @@ def main(argv: list[str] | None = None) -> int:
     # last wins the launcher — so Pro's entry point must delegate core
     # commands to the core app instead of forcing everything into `decide`.
     _pro_cmds = ("decide", "explain", "memory", "ui", "companion", "sync",
-                 "doctor", "recover", "harden", "telemetry", "purge", "gate", "advise",
-                 "fetch", "engines", "deps")
+                 "doctor", "recover", "harden", "telemetry", "purge", "organize", "gate", "advise",
+                 "fetch", "engines", "deps", "mcp")
     _core_cmds = ("init", "config", "research", "publish", "upgrade", "resolve")
     if argv and argv[0] in _core_cmds:
         from genesis_architect.cli import app as _core_app
@@ -112,11 +114,13 @@ def main(argv: list[str] | None = None) -> int:
         "harden": cmd_harden,
         "telemetry": cmd_telemetry,
         "purge": cmd_purge,
+        "organize": cmd_organize,
         "gate": cmd_gate,
         "advise": cmd_advise,
         "fetch": cmd_fetch,
         "engines": cmd_engines,
         "deps": cmd_deps,
+        "mcp": cmd_mcp,
     }
     handler = _dispatch.get(args.command)
     if handler is None:
@@ -136,8 +140,9 @@ def _emit_hygiene_notice(args: argparse.Namespace) -> None:
     must never delete anything on its own, and never break the command that
     just succeeded, so every failure here is swallowed.
 
-    Skipped for `purge` itself (which just reported in full) and `doctor`
-    (a readiness surface that shouldn't grow unrelated noise).
+    Skipped for `purge` and `organize` themselves (each already reports in
+    full) and `doctor` (a readiness surface that shouldn't grow unrelated
+    noise).
 
     Also skipped whenever structured output was requested. This notice is
     prose appended after the handler has already written its payload, so on
@@ -146,7 +151,7 @@ def _emit_hygiene_notice(args: argparse.Namespace) -> None:
     why the corruption is intermittent rather than obvious: the same command
     emits valid JSON on a clean tree and invalid JSON on a dirty one.
     """
-    if getattr(args, "command", None) in ("purge", "doctor"):
+    if getattr(args, "command", None) in ("purge", "organize", "doctor"):
         return
     if getattr(args, "json_output", False):
         return

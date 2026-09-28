@@ -26,6 +26,12 @@ classifiers = [
 dependencies = [
     "genesis-architect>=5.4.0",
     "cryptography>=42",
+    # `genesis organize` reads a human-edited `.genesis/organize_rules.yaml`.
+    # workspace_organizer.load_rules() imports this lazily and fails safe to
+    # built-in defaults if it's missing, so a stale/uninstalled environment
+    # degrades rather than crashes — this is a base-dependency declaration
+    # so a fresh install has it without needing an optional extra.
+    "pyyaml>=6.0",
 ]
 
 [project.optional-dependencies]
@@ -46,6 +52,11 @@ voice = [
     "pipecat-ai>=1.7",
 ]
 committee = ["anthropic>=0.40"]
+# `genesis mcp serve` — the FastMCP stdio server that exposes Genesis's four
+# read-only analysis tools to MCP clients (Claude Code, Cursor, …). Optional:
+# `genesis mcp list`/`call` work without it, and `mcp_tools.mcp_available()`
+# gates `serve` so a missing SDK degrades to a clear install hint, not a crash.
+mcp = ["mcp>=1.2"]
 # Everything for the full desktop Companion experience.
 companion-full = [
     "plyer>=2.1", "rich>=13", "websockets>=12",
@@ -64,6 +75,8 @@ pro = [
     # kokoro >=0.8 pins Python <3.13 — 0.7.x is the newest that installs everywhere.
     "kokoro>=0.7", "soundfile>=0.12", "sherpa-onnx>=1.10",
     "pywebview>=5.0",
+    # The MCP server surface (`genesis mcp serve`).
+    "mcp>=1.2",
 ]
 
 [project.scripts]

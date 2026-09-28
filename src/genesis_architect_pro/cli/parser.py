@@ -220,6 +220,17 @@ def _build_parser() -> argparse.ArgumentParser:
     purge_p.add_argument("--json", dest="json_output", action="store_true",
                          help="Output structured JSON (for piping / CI)")
 
+    organize_p = sub.add_parser(
+        "organize", help="Organize: route loose top-level files into place (rule-driven, safe by default)")
+    organize_p.add_argument("--dir", default=".", metavar="PATH",
+                            help="Project directory (default: current directory)")
+    organize_p.add_argument("--apply", action="store_true",
+                            help="Actually move what was found (default: dry run only)")
+    organize_p.add_argument("--init-rules", action="store_true",
+                            help="Write a default .genesis/organize_rules.yaml if one doesn't exist, then exit")
+    organize_p.add_argument("--json", dest="json_output", action="store_true",
+                            help="Output structured JSON (for piping / CI)")
+
     gate_p = sub.add_parser(
         "gate", help="Architecture regression gate: evaluate rules against the project")
     gate_p.add_argument("--dir", default=".", metavar="PATH",
@@ -241,5 +252,29 @@ def _build_parser() -> argparse.ArgumentParser:
         _sub_p = telemetry_sub.add_parser(_name, help=_help)
         _sub_p.add_argument("--dir", default=".", metavar="PATH",
                             help="Project directory (default: current directory)")
+
+    mcp_p = sub.add_parser(
+        "mcp", help="Expose Genesis's read-only analysis tools over MCP (serve / list / call)")
+    mcp_p.add_argument("--dir", default=".", metavar="PATH",
+                       help="Project directory (default: current directory)")
+    mcp_p.add_argument("--json", dest="json_output", action="store_true",
+                       help="Output structured JSON (for piping / CI)")
+    mcp_sub = mcp_p.add_subparsers(dest="mcp_action")
+
+    mcp_serve = mcp_sub.add_parser(
+        "serve", help="Run the MCP stdio server (Claude Code / Cursor / any MCP client)")
+    mcp_serve.add_argument("--dir", default=".", metavar="PATH",
+                           help="Project directory (default: current directory)")
+
+    mcp_list = mcp_sub.add_parser(
+        "list", help="List the exposed tools (works without the mcp SDK)")
+    mcp_list.add_argument("--json", dest="json_output", action="store_true",
+                          help="Output structured JSON (for piping / CI)")
+
+    mcp_call = mcp_sub.add_parser(
+        "call", help="Invoke one tool locally and print its JSON (works without the mcp SDK)")
+    mcp_call.add_argument("tool", help="Tool name (see `genesis mcp list`)")
+    mcp_call.add_argument("--dir", default=".", metavar="PATH",
+                          help="Project directory (default: current directory)")
 
     return parser

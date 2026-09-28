@@ -18,6 +18,8 @@ as `ephemeral_purge.py` — this module mirrors its safety model on purpose:
   * **Project-scoped.** Every resolved path must sit under project_root.
     Symlinks are resolved before that check, so a link pointing outside is
     refused rather than followed.
+  * **Never overwrites.** A file is not moved onto an existing destination:
+    the collision is reported in the dry run and refused again at move time.
   * **Fail safe, not fail clean.** A malformed rules file, an unreadable
     entry, a target that would land outside the project — all resolve to
     "protected"/"error", never to "move".
@@ -164,6 +166,15 @@ def _within_root(path: Path, root: Path) -> bool:
     return resolved == root_resolved or root_resolved in resolved.parents
 
 
+def _occupied(path: Path) -> bool:
+    """True if anything, including a dangling symlink, already sits at `path`.
+
+    `shutil.move` overwrites an existing destination file when `os.rename`
+    fails, so the module has to refuse the collision itself.
+    """
+    return path.exists() or path.is_symlink()
+
+
 def rules_path_for(project_root: Path) -> Path:
     return Path(project_root) / ".genesis" / RULES_FILENAME
 
@@ -265,18 +276,28 @@ def scan(project_root: Path) -> tuple[list[OrganizeCandidate], list[OrganizeProt
         if name in safe_paths:
             protected.append(OrganizeProtected(entry, "listed in safe_paths"))
             continue
+        if not _within_root(entry, root):
+            # is_file() follows symlinks; report the refusal now so a dry run
+            # matches what --apply will actually do.
+            protected.append(OrganizeProtected(entry, "symlink resolves outside project root"))
+            continue
 
         matched = False
         for rule in rules:
             if fnmatch.fnmatch(name, rule["match"]):
                 target_dir = (root / rule["target"]).resolve()
+                destination = target_dir / name
                 if not _within_root(target_dir, root):
                     protected.append(
                         OrganizeProtected(entry, f"rule target escapes project root: {rule['target']}")
                     )
+                elif _occupied(destination):
+                    protected.append(
+                        OrganizeProtected(entry, f"destination already exists: {destination}")
+                    )
                 else:
                     candidates.append(
-                        OrganizeCandidate(entry, target_dir / name, f"matched rule '{rule['match']}'")
+                        OrganizeCandidate(entry, destination, f"matched rule '{rule['match']}'")
                     )
                 matched = True
                 break
@@ -316,6 +337,10 @@ def organize(project_root: Path, *, apply: bool = False) -> OrganizeReport:
         # Re-verify containment at move time, not just at scan time.
         if not _within_root(candidate.path, root) or not _within_root(candidate.target, root):
             report.errors.append(f"refused (outside root): {candidate.path}")
+            continue
+        # Re-check the collision too: something may have appeared since the scan.
+        if _occupied(candidate.target):
+            report.errors.append(f"refused (destination exists): {candidate.target}")
             continue
         try:
             candidate.target.parent.mkdir(parents=True, exist_ok=True)

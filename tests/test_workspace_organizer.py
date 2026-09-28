@@ -7,8 +7,15 @@ would fail loudly if the rule were removed.
 
 from __future__ import annotations
 
+import argparse
+import json
+
+import pytest
+
+from genesis_architect_pro import workspace_organizer
 from genesis_architect_pro.workspace_organizer import (
     DEFAULT_SAFE_PATHS,
+    OrganizeCandidate,
     OrganizeReport,
     format_report,
     init_rules,
@@ -127,6 +134,64 @@ class TestProjectScoped:
         assert not (tmp_path.parent / "escape").exists()
 
 
+class TestSymlinks:
+    def test_symlink_pointing_outside_root_is_protected_in_dry_run(self, tmp_path):
+        outside = tmp_path / "outside"
+        outside.mkdir()
+        (outside / "secret.log").write_text("x")
+        project = tmp_path / "project"
+        project.mkdir()
+        try:
+            (project / "debug.log").symlink_to(outside / "secret.log")
+        except (OSError, NotImplementedError):
+            pytest.skip("symlinks not permitted on this platform")
+
+        report = organize(project)
+        assert not report.candidates
+        assert any("outside project root" in p.reason for p in report.protected)
+
+
+# ---------------------------------------------------------------------------
+# Never overwrite an existing destination
+# ---------------------------------------------------------------------------
+
+
+class TestNeverOverwrites:
+    def _collide(self, tmp_path):
+        (tmp_path / "logs").mkdir()
+        (tmp_path / "logs" / "debug.log").write_text("OLD")
+        (tmp_path / "debug.log").write_text("NEW")
+
+    def test_collision_is_protected_in_dry_run(self, tmp_path):
+        self._collide(tmp_path)
+        report = organize(tmp_path)
+        assert not report.candidates
+        assert any("destination already exists" in p.reason for p in report.protected)
+
+    def test_apply_does_not_overwrite_existing_destination(self, tmp_path):
+        self._collide(tmp_path)
+        report = organize(tmp_path, apply=True)
+        assert report.moved == []
+        assert (tmp_path / "logs" / "debug.log").read_text() == "OLD"
+        assert (tmp_path / "debug.log").read_text() == "NEW"
+
+    def test_destination_appearing_after_scan_is_refused(self, tmp_path, monkeypatch):
+        # Simulates the race between scan and move: the scan saw no collision.
+        source = tmp_path / "debug.log"
+        source.write_text("NEW")
+        (tmp_path / "logs").mkdir()
+        dest = tmp_path / "logs" / "debug.log"
+        dest.write_text("OLD")
+        stale = OrganizeCandidate(source, dest, "matched rule '*.log'")
+        monkeypatch.setattr(workspace_organizer, "scan", lambda _root: ([stale], [], []))
+
+        report = organize(tmp_path, apply=True)
+        assert report.moved == []
+        assert any("destination exists" in e for e in report.errors)
+        assert dest.read_text() == "OLD"
+        assert source.read_text() == "NEW"
+
+
 # ---------------------------------------------------------------------------
 # No rule matched is not silence
 # ---------------------------------------------------------------------------
@@ -220,8 +285,9 @@ class TestInitRules:
 
 class TestReporting:
     def test_summary_dry_run_clean(self):
-        assert "clean" in OrganizeReport(dry_run=True).summary().lower() or \
-            "tidy" in OrganizeReport(dry_run=True).summary().lower()
+        assert OrganizeReport(dry_run=True).summary() == (
+            "Nothing to organize. Top level is already tidy."
+        )
 
     def test_format_report_includes_move_marker_on_dry_run(self, tmp_path):
         (tmp_path / "debug.log").write_text("x")
@@ -235,3 +301,69 @@ class TestReporting:
         report = organize(tmp_path, apply=True)
         text = format_report(report)
         assert "Moved" in text
+
+
+# ---------------------------------------------------------------------------
+# CLI handler: exit codes and output shape
+# ---------------------------------------------------------------------------
+
+
+def _args(directory, **overrides):
+    values = {"dir": str(directory), "apply": False, "init_rules": False, "json_output": False}
+    values.update(overrides)
+    return argparse.Namespace(**values)
+
+
+class TestCmdOrganize:
+    def test_dry_run_with_candidates_exits_1_and_moves_nothing(self, tmp_path):
+        from genesis_architect_pro.cli.project_cmds import cmd_organize
+
+        (tmp_path / "debug.log").write_text("x")
+        assert cmd_organize(_args(tmp_path)) == 1
+        assert (tmp_path / "debug.log").exists()
+
+    def test_apply_moves_and_exits_0(self, tmp_path):
+        from genesis_architect_pro.cli.project_cmds import cmd_organize
+
+        (tmp_path / "debug.log").write_text("x")
+        assert cmd_organize(_args(tmp_path, apply=True)) == 0
+        assert (tmp_path / "logs" / "debug.log").exists()
+
+    def test_clean_directory_exits_0(self, tmp_path):
+        from genesis_architect_pro.cli.project_cmds import cmd_organize
+
+        assert cmd_organize(_args(tmp_path)) == 0
+
+    def test_not_a_directory_exits_1(self, tmp_path):
+        from genesis_architect_pro.cli.project_cmds import cmd_organize
+
+        assert cmd_organize(_args(tmp_path / "missing")) == 1
+
+    def test_init_rules_writes_file_and_moves_nothing(self, tmp_path):
+        from genesis_architect_pro.cli.project_cmds import cmd_organize
+
+        (tmp_path / "debug.log").write_text("x")
+        assert cmd_organize(_args(tmp_path, init_rules=True)) == 0
+        assert rules_path_for(tmp_path).is_file()
+        assert (tmp_path / "debug.log").exists()
+
+    def test_json_output_is_valid_and_reports_dry_run(self, tmp_path, capsys):
+        from genesis_architect_pro.cli.project_cmds import cmd_organize
+
+        (tmp_path / "debug.log").write_text("x")
+        cmd_organize(_args(tmp_path, json_output=True))
+        payload = json.loads(capsys.readouterr().out)
+        assert payload["dry_run"] is True
+        assert len(payload["candidates"]) == 1
+        assert payload["moved"] == []
+
+    def test_apply_with_a_collision_leaves_both_files_and_still_exits_0(self, tmp_path):
+        from genesis_architect_pro.cli.project_cmds import cmd_organize
+
+        (tmp_path / "logs").mkdir()
+        (tmp_path / "logs" / "debug.log").write_text("OLD")
+        (tmp_path / "debug.log").write_text("NEW")
+        # The collision is "left in place", not an error: nothing was lost.
+        assert cmd_organize(_args(tmp_path, apply=True)) == 0
+        assert (tmp_path / "logs" / "debug.log").read_text() == "OLD"
+        assert (tmp_path / "debug.log").read_text() == "NEW"

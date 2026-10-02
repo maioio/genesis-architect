@@ -4,8 +4,8 @@ from pathlib import Path
 
 
 from genesis_architect_pro.rules_engine import (
-    load_rules, evaluate, run_check, format_report, main,
-    _risk_rank,
+    DEFAULT_RULES, KNOWN_RULE_KEYS, load_rules, evaluate, run_check, format_report, main,
+    unknown_rule_keys, _risk_rank,
 )
 
 
@@ -121,3 +121,77 @@ class TestFormat:
         _project(tmp_path, {"min_architecture_score": 999})
         out = format_report(run_check(tmp_path))
         assert "FAIL" in out and "RESULT:" in out
+
+
+class TestUnknownRuleKeys:
+    """evaluate() only looks for names it knows. An unknown key used to be
+    skipped without a trace, so a policy of nothing but typos passed."""
+
+    def test_unknown_key_fails_and_says_not_evaluated(self):
+        rep = evaluate({"max_widgets": 0}, {})
+        assert not rep.passed
+        (res,) = rep.results
+        assert res.rule == "max_widgets"
+        assert "unknown rule" in res.message and "not evaluated" in res.message
+
+    def test_keys_from_the_old_guide_examples_fail(self):
+        # docs/pro/guide/27 and 41 used to ship these; none was ever evaluated
+        for key, value in (("max_cycles", 0), ("max_god_classes", 2), ("fail_on_drift", True)):
+            rep = evaluate({key: value}, {"cycle_count": 5})
+            assert not rep.passed, key
+            assert rep.hard_failure_reason == key
+
+    def test_known_rules_still_evaluated_next_to_an_unknown_one(self):
+        rep = evaluate({"min_architecture_score": 50, "typo_rule": 1}, {"architecture_score": 80})
+        by_rule = {r.rule: r.passed for r in rep.results}
+        assert by_rule == {"min_architecture_score": True, "typo_rule": False}
+
+    def test_close_match_is_suggested(self):
+        rep = evaluate({"min_architecture_scor": 50}, {"architecture_score": 80})
+        assert "did you mean 'min_architecture_score'" in rep.results[0].message
+
+    def test_no_suggestion_when_nothing_is_close(self):
+        rep = evaluate({"zzzz": 1}, {})
+        assert "did you mean" not in rep.results[0].message
+
+    def test_annotation_keys_are_ignored(self):
+        rep = evaluate({"_comment": "ratchet up later", "$schema": "x",
+                        "min_architecture_score": 50}, {"architecture_score": 80})
+        assert rep.passed and [r.rule for r in rep.results] == ["min_architecture_score"]
+
+    def test_non_string_key_is_reported_not_crashed(self):
+        # rules.yml can produce non-string keys
+        assert unknown_rule_keys({5: 1, True: 2, "_x": 3}) == ["5", "True"]
+
+    def test_every_known_key_is_accepted(self):
+        assert unknown_rule_keys(dict.fromkeys(KNOWN_RULE_KEYS, 0)) == []
+
+    def test_default_rules_are_known(self):
+        assert unknown_rule_keys(DEFAULT_RULES) == []
+
+    def test_known_keys_cover_every_key_the_engine_reads(self):
+        import re
+        from genesis_architect_pro import rules_engine
+        source = Path(rules_engine.__file__).read_text(encoding="utf-8")
+        read = set(re.findall(
+            r'rules(?:\.get\(|\[)"([a-z_]+)"|"([a-z_]+)" in rules'
+            r'|_window_days\(rules, "([a-z_]+)"\)', source))
+        read = {name for groups in read for name in groups if name}
+        assert read, "pattern no longer matches the engine source"
+        assert read <= KNOWN_RULE_KEYS, read - KNOWN_RULE_KEYS
+
+    def test_every_known_key_is_documented(self):
+        from genesis_architect_pro import rules_engine
+        missing = [k for k in sorted(KNOWN_RULE_KEYS) if k not in rules_engine.__doc__]
+        assert not missing
+
+    def test_non_object_rules_fail(self):
+        rep = evaluate(["min_architecture_score"], {"architecture_score": 80})
+        assert not rep.passed
+        assert rep.results[0].rule == "rules_file" and "nothing was evaluated" in rep.results[0].message
+
+    def test_main_exits_1_for_a_policy_of_unknown_keys(self, tmp_path):
+        _project(tmp_path, {"max_cycles": 0})
+        assert main([str(tmp_path)]) == 1
+        (tmp_path / ".genesis" / "rules.json").write_text(json.dumps(["max_cycles"]))
+        assert main([str(tmp_path)]) == 1

@@ -57,6 +57,9 @@ CAPABILITIES: tuple[Capability, ...] = (
     Capability("architecture_scorer", "Architecture Scorer",
                "0-100 quality score across 4 dimensions, 6 adaptive profiles",
                "genesis recover [PATH]"),
+    Capability("score_timeline", "Score Timeline",
+               "ASCII sparkline and trend over the recorded score history (read-only)",
+               None),
     Capability("antipattern_detector", "Anti-Pattern Detector",
                "7 structural detectors: god-class, hub-file, circular deps, dead code",
                "genesis recover [PATH]"),
@@ -75,6 +78,9 @@ CAPABILITIES: tuple[Capability, ...] = (
     Capability("git_analyzer", "Git Analyzer",
                "Churn, hotspots, and authorship signals from git history",
                "genesis recover [PATH]"),
+    Capability("project_tree", "Project Tree",
+               "Annotated tree of manifest, infrastructure and environment files",
+               None),
 
     # --- research ---
     Capability("research_orchestrator", "Research Orchestrator",
@@ -158,6 +164,15 @@ CAPABILITIES: tuple[Capability, ...] = (
     Capability("rules_engine", "Rules Engine",
                "Hard and soft project rules, enforced at the gate",
                "genesis decide \"<instruction>\""),
+    Capability("prompt_budget", "Prompt Budget",
+               "Packs files by role into a model's token budget, never overflowing silently",
+               None),
+    Capability("prompt_export", "Prompt Export",
+               "Offline, budget-packed refactoring prompts for approved plan steps",
+               None),
+    Capability("hotspot_advisor", "Hotspot Advisor",
+               "One refactoring action per churn+coupling hotspot, with a sourced score delta",
+               None),
 
     # --- memory & session ---
     Capability("cross_session_memory", "Cross-Session Memory",

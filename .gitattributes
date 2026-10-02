@@ -1,0 +1,5 @@
+# GitHub language bar (Linguist): Genesis is a Python project.
+# The HTML pages, companion UI, Chrome extension, shell and Docker files
+# support it, so only Python counts. Syntax highlighting is unaffected.
+* -linguist-detectable
+*.py linguist-detectable

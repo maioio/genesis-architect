@@ -107,6 +107,8 @@ rules:
 # Data model
 # ---------------------------------------------------------------------------
 
+NO_RULE_REASON = "no rule matched — left in place"
+
 
 @dataclass
 class OrganizeCandidate:
@@ -136,6 +138,12 @@ class OrganizeReport:
     def summary(self) -> str:
         if self.dry_run:
             if not self.candidates:
+                unmatched = sum(1 for p in self.protected if p.reason == NO_RULE_REASON)
+                if unmatched:
+                    return (
+                        f"Nothing to move. {unmatched} file(s) matched no rule "
+                        "and were left in place."
+                    )
                 return "Nothing to organize. Top level is already tidy."
             return (
                 f"{len(self.candidates)} file(s) would move "
@@ -302,7 +310,7 @@ def scan(project_root: Path) -> tuple[list[OrganizeCandidate], list[OrganizeProt
                 matched = True
                 break
         if not matched:
-            protected.append(OrganizeProtected(entry, "no rule matched — left in place"))
+            protected.append(OrganizeProtected(entry, NO_RULE_REASON))
 
     return candidates, protected, load_errors
 

@@ -34,7 +34,9 @@ modules are too fragile to touch.
 > license-gated `genesis-architect-pro`. As of v8.0.0 there is no paid tier. Every engine
 > that was behind the paywall (decision engine, knowledge graph, threat modelling, C4
 > component diagrams, voice companion, video-to-pitfall) ships in this package under
-> AGPL-3.0. No key, no account, no telemetry by default.
+> AGPL-3.0. No key, no account, no telemetry by default. The former Pro repository's
+> source now lives in [`genesis-architect-pro/`](genesis-architect-pro/), and its commit
+> history is on this repository's `pro/*` branches.
 
 ---
 
@@ -279,6 +281,7 @@ genesis-architect/
 ├── tests/               97 files, 2852 tests
 ├── scripts/
 │   └── architecture_invariants.py regenerates ARCHITECTURE_INVARIANTS.json
+├── genesis-architect-pro/       the former Pro repository, with its own pyproject.toml
 ├── ARCHITECTURE.md              how the analysis works, mechanism by mechanism
 ├── ARCHITECTURE_INVARIANTS.json every structural number, generated from the code
 ├── SKILL.md                     the agent-facing instruction file

@@ -33,6 +33,13 @@ Supported rules (all optional; only those present are checked):
   max_risk_level                 str    project_risk_level <= this (none<low<medium<high<critical)
   require_recovery_report        bool   if True, a recovery report must be producible
 
+Temporal rules (compare this run's result against the last recorded
+observation in .genesis/score_history.jsonl, strictly before this run's own
+score was appended; render as INSUFFICIENT_HISTORY, never a silent pass or
+fail, when no prior observation exists):
+  max_score_decline              number (baseline.total - current.total) <= this
+  max_cycle_count_increase       int    (current.cycle_count - baseline.cycle_count) <= this
+
 History rules (read git log / .genesis/score_history.jsonl; only gathered
 when the rule is present, and skipped, never passed, when there is no data):
   bus_factor_min                 int|str  every file changed in the window has at
@@ -107,6 +114,7 @@ KNOWN_RULE_KEYS = frozenset({
     "allow_circular_dependencies", "max_unpinned_actions", "max_drift_score",
     "max_stale_candidates", "max_vagrant_candidates", "min_source_anchor_coverage",
     "max_risk_level", "require_recovery_report",
+    "max_score_decline", "max_cycle_count_increase",
     "bus_factor_min", "bus_factor_window_days", "bus_factor_ignore",
     "score_not_declining_over", "score_decline_tolerance",
     "max_change_coupling", "change_coupling_min_cochanges",
@@ -137,6 +145,16 @@ class RuleResult:
     expected: object
     actual: object
     message: str
+    #: "pass" | "fail" | "insufficient_history". Defaulted from `passed` when
+    #: unset, so every existing call site keeps working unchanged. A temporal
+    #: rule with no baseline sets this explicitly to "insufficient_history"
+    #: while keeping passed=True, so it never escalates to a hard failure but
+    #: still renders distinctly from an ordinary pass (see format_report()).
+    status: str = ""
+
+    def __post_init__(self) -> None:
+        if not self.status:
+            self.status = "pass" if self.passed else "fail"
 
 
 @dataclass
@@ -209,7 +227,11 @@ def load_rules(project_path: str | Path) -> tuple[dict, str, str]:
 # Gathering the facts to check (read-only, from existing engines)
 # ---------------------------------------------------------------------------
 
-def gather_facts(project_path: str | Path, rules: dict | None = None) -> dict:
+def gather_facts(
+    project_path: str | Path,
+    rules: dict | None = None,
+    prior_history: list[dict] | None = None,
+) -> dict:
     """Collect the metrics rules can check.
 
     Two tiers, kept visibly apart because they fail differently:
@@ -227,6 +249,15 @@ def gather_facts(project_path: str | Path, rules: dict | None = None) -> dict:
     history. Gathered only for the rules in *rules* that need them, since a
     git log is the slowest thing here. rules=None gathers none of it.
 
+    `prior_history` is the pre-this-run snapshot of score_history.jsonl used
+    by the temporal rules (max_score_decline, max_cycle_count_increase). The
+    GDE path supplies it explicitly — captured before its own score is
+    appended, so it never includes the current run's own observation.
+    Standalone `genesis gate` passes None, which falls back to a direct read:
+    correct by construction there, since nothing has been appended yet when
+    this runs. An explicit `[]` (e.g. the GDE path with no upstream scorer
+    output) is kept as-is and never triggers the disk fallback.
+
     Read-only: nothing here mutates project state (the git log is never
     cached to disk from here).
     """
@@ -241,6 +272,20 @@ def gather_facts(project_path: str | Path, rules: dict | None = None) -> dict:
         facts["cycle_count"] = score.get("cycle_count", 0)
     except Exception as exc:  # noqa: BLE001
         facts["_score_error"] = str(exc)
+
+    # Prior-history snapshot for temporal rules (max_score_decline,
+    # max_cycle_count_increase). The GDE path supplies this explicitly,
+    # captured before its own score is appended to score_history.jsonl; the
+    # standalone path falls through to a direct read, which is already
+    # correct because nothing has been appended yet when this runs.
+    if prior_history is not None:
+        facts["prior_history"] = prior_history
+    else:
+        try:
+            from genesis_architect_pro.architecture_scorer import load_score_history
+            facts["prior_history"] = load_score_history(root)
+        except Exception:  # noqa: BLE001
+            facts["prior_history"] = []
 
     try:
         from genesis_architect_pro.antipattern_detector import detect_all
@@ -559,6 +604,53 @@ def evaluate(rules: dict, facts: dict) -> CheckReport:
         check("require_recovery_report", act, True, act,
               "recovery report available" if act else "recovery report could not be produced")
 
+    if "max_score_decline" in rules:
+        exp = rules["max_score_decline"]
+        if isinstance(exp, bool) or not isinstance(exp, (int, float)) or exp < 0:
+            check("max_score_decline", False, exp, None,
+                  f"invalid rule value: max_score_decline must be a non-negative "
+                  f"number, got {exp!r}")
+        else:
+            prior = facts.get("prior_history") or []
+            if not prior:
+                report.add(RuleResult(
+                    "max_score_decline", True, exp, None,
+                    "insufficient history - no prior score recorded to compare "
+                    "against; rule not evaluated",
+                    status="insufficient_history",
+                ))
+            else:
+                baseline_total = prior[-1].get("total", 0)
+                current_total = facts.get("architecture_score", 0)
+                decline = baseline_total - current_total
+                check("max_score_decline", decline <= exp, exp, decline,
+                      f"score decline {decline:g} pts (baseline {baseline_total:g} "
+                      f"-> current {current_total:g}, max decline {exp:g})")
+
+    if "max_cycle_count_increase" in rules:
+        exp = rules["max_cycle_count_increase"]
+        if isinstance(exp, bool) or not isinstance(exp, (int, float)) or exp < 0:
+            check("max_cycle_count_increase", False, exp, None,
+                  f"invalid rule value: max_cycle_count_increase must be a "
+                  f"non-negative number, got {exp!r}")
+        else:
+            prior = facts.get("prior_history") or []
+            if not prior:
+                report.add(RuleResult(
+                    "max_cycle_count_increase", True, exp, None,
+                    "insufficient history - no prior cycle count recorded to "
+                    "compare against; rule not evaluated",
+                    status="insufficient_history",
+                ))
+            else:
+                baseline_cycles = prior[-1].get("cycle_count", 0)
+                current_cycles = facts.get("cycle_count", 0)
+                increase = current_cycles - baseline_cycles
+                check("max_cycle_count_increase", increase <= exp, exp, increase,
+                      f"cycle count increase {increase:g} (baseline "
+                      f"{baseline_cycles:g} -> current {current_cycles:g}, max "
+                      f"increase {exp:g})")
+
     _evaluate_history_rules(rules, facts, report, check)
 
     for key in unknown_rule_keys(rules):
@@ -655,10 +747,13 @@ def _evaluate_history_rules(rules: dict, facts: dict, report: CheckReport, check
                            + (" ..." if len(over) > 3 else ""))
 
 
-def run_check(project_path: str | Path) -> CheckReport:
+def run_check(
+    project_path: str | Path,
+    prior_history: list[dict] | None = None,
+) -> CheckReport:
     """Top-level: load rules, gather facts, evaluate. Read-only."""
     rules, path_used, source = load_rules(project_path)
-    facts = gather_facts(project_path, rules)
+    facts = gather_facts(project_path, rules, prior_history=prior_history)
     report = evaluate(rules, facts)
     report.rules_file = path_used
     report.ruleset_source = source
@@ -683,15 +778,25 @@ def format_report(report: CheckReport) -> str:
             lines.append("  Add .genesis/rules.json to enforce a policy of your own.")
 
     for r in report.results:
-        mark = "PASS" if r.passed else "FAIL"
+        if r.status == "insufficient_history":
+            mark = "INSUFFICIENT_HISTORY"
+        else:
+            mark = "PASS" if r.passed else "FAIL"
         lines.append(f"  [{mark}] {r.rule}: {r.message}")
     for note in report.notes:
         if "skipped" in note:
             lines.append(f"  [skip] {note}")
 
+    insufficient = [r for r in report.results if r.status == "insufficient_history"]
     lines.append("")
     if report.passed:
-        lines.append("RESULT: PASS - all gates satisfied")
+        if insufficient:
+            lines.append(
+                f"RESULT: PASS (enforceable rules) - {len(insufficient)} temporal "
+                f"rule(s) not evaluated: INSUFFICIENT_HISTORY"
+            )
+        else:
+            lines.append("RESULT: PASS - all gates satisfied")
     elif report.shadow_mode:
         failed = sum(1 for r in report.results if not r.passed)
         lines.append(f"RESULT: SHADOW - {failed} rule(s) would fail once enforcing "

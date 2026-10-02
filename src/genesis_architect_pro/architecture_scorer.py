@@ -165,8 +165,14 @@ def load_score_history(project_path: str | Path) -> list[dict]:
     history_path = root / ".genesis" / "score_history.jsonl"
     if not history_path.exists():
         return []
+    try:
+        text = history_path.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError):
+        # Whole-file unreadable (binary/truncated/permission) - treat as no
+        # history rather than crashing the caller.
+        return []
     records = []
-    for line in history_path.read_text(encoding="utf-8").splitlines():
+    for line in text.splitlines():
         line = line.strip()
         if line:
             try:

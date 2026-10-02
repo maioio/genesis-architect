@@ -87,7 +87,11 @@ def gde_run_import_graph(ctx: SessionContext) -> dict[str, Any]:
 
 
 def gde_run_architecture_scorer(ctx: SessionContext) -> dict[str, Any]:
-    from genesis_architect_pro.architecture_scorer import append_score_history, score_project
+    from genesis_architect_pro.architecture_scorer import (
+        append_score_history,
+        load_score_history,
+        score_project,
+    )
 
     project_dir = _project_dir(ctx)
 
@@ -95,6 +99,16 @@ def gde_run_architecture_scorer(ctx: SessionContext) -> dict[str, Any]:
         result = score_project(project_dir)
     except Exception as exc:
         return {"_confidence": 0.4, "_warnings": [f"architecture_scorer failed: {exc}"]}
+
+    # Captured BEFORE append_score_history() below, so it never includes this
+    # run's own just-written record. rules_engine's temporal checks (via
+    # gde_run_rules_engine) compare the current score against this snapshot,
+    # not against "history"'s last entry (which, after the append two lines
+    # down, would be the current run comparing against itself).
+    try:
+        prior_history = load_score_history(project_dir)
+    except Exception:
+        prior_history = []
 
     # score_project returns a dict: {"total": int, "modularity": float, ...}
     if isinstance(result, dict):
@@ -164,6 +178,7 @@ def gde_run_architecture_scorer(ctx: SessionContext) -> dict[str, Any]:
         "score_label": str(label),
         "dimensions": dimensions,
         "history": history,
+        "prior_history": prior_history,
         "decay_forecast": decay_forecast,
         "_confidence": 1.0,
         "_warnings": warnings,
@@ -842,8 +857,18 @@ def gde_run_rules_engine(ctx: SessionContext) -> dict[str, Any]:
     project_dir = _project_dir(ctx)
     warnings: list[str] = []
 
+    # Explicit list only, never None: None means "load from disk" to
+    # run_check(), which could reintroduce a current-vs-current comparison if
+    # engine ordering is ever changed. architecture_scorer is a declared
+    # dependency (rules_engine requires=["architecture_scorer", ...]), so its
+    # output is normally present; absent upstream output still degrades to an
+    # explicit [], which run_check()/evaluate() render as INSUFFICIENT_HISTORY
+    # rather than silently falling back to disk.
+    scorer_output = _output("architecture_scorer", ctx)
+    prior_history = scorer_output.get("prior_history") or []
+
     try:
-        report = run_check(project_dir)
+        report = run_check(project_dir, prior_history=prior_history)
     except Exception as exc:
         return {
             "_confidence": 0.3,
@@ -864,6 +889,12 @@ def gde_run_rules_engine(ctx: SessionContext) -> dict[str, Any]:
     if failed:
         prefix = "SHADOW" if report.shadow_mode else "FAIL"
         warnings.extend([f"{prefix} [{r.rule}]: {r.message}" for r in failed])
+
+    insufficient = [r for r in report.results if r.status == "insufficient_history"]
+    if insufficient:
+        warnings.extend([
+            f"INSUFFICIENT_HISTORY [{r.rule}]: {r.message}" for r in insufficient
+        ])
 
     return {
         "rules_passed": report.passed,

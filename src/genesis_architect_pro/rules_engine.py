@@ -50,11 +50,14 @@ when the rule is present, and skipped, never passed, when there is no data):
     change_coupling_ignore       [glob]   paths exempt (default: test files)
 
 A rule whose value cannot be parsed fails rather than being skipped: a typo in
-a policy must not read as compliance.
+a policy must not read as compliance. The same holds for a key the engine does
+not know (KNOWN_RULE_KEYS): it fails as "unknown rule - not evaluated", with the
+closest known name as a hint. Keys starting with "_" or "$" are annotations.
 """
 
 from __future__ import annotations
 
+import difflib
 import fnmatch
 import json
 import re
@@ -92,6 +95,23 @@ DEFAULT_RULES: dict = {
 #: While True, DEFAULT_RULES never produce a hard failure. An explicit rules
 #: file is always enforcing regardless — opting in is opting in.
 SHADOW_BY_DEFAULT = True
+
+#: Every key evaluate() or gather_facts() reads: the gates and their options.
+#: Any other key in a rules file is reported as a failure. evaluate() only
+#: looks for the names it knows, so a misspelled or unsupported rule would
+#: otherwise be skipped without a trace and the gate would pass a policy it
+#: never checked. Keys starting with "_" or "$" are annotations ("_comment",
+#: "$schema") and are ignored.
+KNOWN_RULE_KEYS = frozenset({
+    "min_architecture_score", "max_critical_anti_patterns", "max_high_anti_patterns",
+    "allow_circular_dependencies", "max_unpinned_actions", "max_drift_score",
+    "max_stale_candidates", "max_vagrant_candidates", "min_source_anchor_coverage",
+    "max_risk_level", "require_recovery_report",
+    "bus_factor_min", "bus_factor_window_days", "bus_factor_ignore",
+    "score_not_declining_over", "score_decline_tolerance",
+    "max_change_coupling", "change_coupling_min_cochanges",
+    "change_coupling_window_days", "change_coupling_ignore",
+})
 
 
 def policy_mode(project_path: str | Path) -> tuple[str, str]:
@@ -457,6 +477,11 @@ def evaluate(rules: dict, facts: dict) -> CheckReport:
     def check(name, ok, expected, actual, msg):
         report.add(RuleResult(name, bool(ok), expected, actual, msg))
 
+    if not isinstance(rules, dict):
+        check("rules_file", False, "object", type(rules).__name__,
+              "rules must be an object mapping rule names to values - nothing was evaluated")
+        return report
+
     if "min_architecture_score" in rules:
         exp = rules["min_architecture_score"]
         act = facts.get("architecture_score")
@@ -535,7 +560,21 @@ def evaluate(rules: dict, facts: dict) -> CheckReport:
               "recovery report available" if act else "recovery report could not be produced")
 
     _evaluate_history_rules(rules, facts, report, check)
+
+    for key in unknown_rule_keys(rules):
+        close = difflib.get_close_matches(key, sorted(KNOWN_RULE_KEYS), n=1)
+        check(key, False, None, None,
+              "unknown rule - not evaluated; an unsupported or misspelled rule "
+              "must not read as compliance"
+              + (f" (did you mean '{close[0]}'?)" if close else ""))
     return report
+
+
+def unknown_rule_keys(rules: dict) -> list[str]:
+    """Keys of a rules dict that the engine does not evaluate, sorted."""
+    return sorted(str(k) for k in rules
+                  if k not in KNOWN_RULE_KEYS
+                  and not (isinstance(k, str) and k.startswith(("_", "$"))))
 
 
 def _evaluate_history_rules(rules: dict, facts: dict, report: CheckReport, check) -> None:

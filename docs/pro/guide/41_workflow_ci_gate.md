@@ -9,11 +9,15 @@ Stop architecture regressions at the PR boundary with [`genesis gate`](27_rules_
 ```json
 {
   "min_architecture_score": 70,
-  "max_cycles": 0,
+  "allow_circular_dependencies": false,
   "max_critical_anti_patterns": 0,
-  "fail_on_drift": true
+  "max_drift_score": 30
 }
 ```
+
+A key the gate does not know fails the run as `unknown rule - not evaluated`,
+so a typo cannot pass silently. The supported rules are listed in
+[the rules engine guide](27_rules_engine.md).
 
 Start lenient, then ratchet thresholds up as the codebase improves — the score
 history in `.genesis/` shows the trend.
@@ -23,16 +27,23 @@ history in `.genesis/` shows the trend.
 ```yaml
 name: architecture-gate
 on: [pull_request]
+permissions:
+  contents: read
 jobs:
   gate:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@<full-commit-sha>        # v4
+      - uses: actions/setup-python@<full-commit-sha>    # v5
         with: { python-version: "3.12" }
       - run: pip install genesis-architect-pro
-      - run: python -m genesis_architect_pro.rules_engine .
+      - run: genesis gate --dir .
 ```
+
+The job only reads the repository, so `contents: read` is all it needs. Replace
+each `<full-commit-sha>` with the 40-character commit of the release you want:
+a tag can be moved, a SHA cannot. The gate's own `max_unpinned_actions` rule
+checks this.
 
 Exit `1` fails the job and blocks the merge; `0` passes; `2` means a config
 error. (Docker is **not** required — the gate is a pip package; Docker is an

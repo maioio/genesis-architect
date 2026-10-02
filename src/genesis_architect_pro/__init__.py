@@ -156,8 +156,10 @@ _LAZY_EXPORTS: dict[str, str] = {
     "SessionReport": "genesis_architect_pro.gde_types",
     "WriteOperation": "genesis_architect_pro.gde_types",
     # git_analyzer
+    "CoupledPair": "genesis_architect_pro.git_analyzer",
     "WeeklySnapshot": "genesis_architect_pro.git_analyzer",
     "build_timeline": "genesis_architect_pro.git_analyzer",
+    "change_coupling": "genesis_architect_pro.git_analyzer",
     "per_module_churn": "genesis_architect_pro.git_analyzer",
     "render_sparkline": "genesis_architect_pro.git_analyzer",
     # import_audit
@@ -405,8 +407,8 @@ __all__ = [
     "RuleResult", "CheckReport",
     "load_rules", "gather_facts", "evaluate", "run_check", "format_rules_report",
     # Git Churn Analyzer
-    "WeeklySnapshot",
-    "per_module_churn", "build_timeline", "render_sparkline",
+    "WeeklySnapshot", "CoupledPair",
+    "per_module_churn", "build_timeline", "render_sparkline", "change_coupling",
     # Import Audit
     "AuditFinding", "ImportAuditReport",
     "audit_imports", "format_audit_report",

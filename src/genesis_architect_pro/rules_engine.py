@@ -32,15 +32,48 @@ Supported rules (all optional; only those present are checked):
   min_source_anchor_coverage     number anchor coverage fraction (0..1) >= this
   max_risk_level                 str    project_risk_level <= this (none<low<medium<high<critical)
   require_recovery_report        bool   if True, a recovery report must be producible
+
+History rules (read git log / .genesis/score_history.jsonl; only gathered
+when the rule is present, and skipped, never passed, when there is no data):
+  bus_factor_min                 int|str  every file changed in the window has at
+                                          least this many authors ("2_per_module" or 2)
+    bus_factor_window_days       int      window for the above (default 90)
+    bus_factor_ignore            [glob]   paths exempt from the above
+  score_not_declining_over       int|str  score now >= score at the window start
+                                          ("4_weeks", "28_days", or an int in weeks)
+    score_decline_tolerance      number   points the score may drop (default 0)
+  max_change_coupling            number   no file pair co-changes with a confidence
+                                          above this (0..1)
+    change_coupling_min_cochanges int     pairs seen together fewer times are noise
+                                          (default 3)
+    change_coupling_window_days  int      window for the above (default 90)
+    change_coupling_ignore       [glob]   paths exempt (default: test files)
+
+A rule whose value cannot be parsed fails rather than being skipped: a typo in
+a policy must not read as compliance.
 """
 
 from __future__ import annotations
 
+import fnmatch
 import json
+import re
 from dataclasses import dataclass, field
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 _RISK_ORDER = ["none", "low", "medium", "high", "critical"]
+
+#: Rules whose facts come from git history rather than from the analysis
+#: engines. gather_facts only pays for a git log when one of them is present.
+HISTORY_WINDOW_DAYS = 90
+COUPLING_MIN_COCHANGES = 3
+#: Tests change with the code they test; that coupling is intended.
+DEFAULT_COUPLING_IGNORE = (
+    "test_*", "*_test.*", "*.test.*", "*.spec.*", "tests/*", "*/tests/*",
+)
+_BUS_FACTOR_RE = re.compile(r"^\s*(\d+)\s*(?:_?per_module)?\s*$", re.IGNORECASE)
+_WINDOW_RE = re.compile(r"^\s*(\d+)\s*_?\s*(weeks?|days?)\s*$", re.IGNORECASE)
 
 #: Evaluated when a project ships no rules file of its own. Deliberately a
 #: baseline rather than an aspiration: every entry here is something whose
@@ -156,7 +189,7 @@ def load_rules(project_path: str | Path) -> tuple[dict, str, str]:
 # Gathering the facts to check (read-only, from existing engines)
 # ---------------------------------------------------------------------------
 
-def gather_facts(project_path: str | Path) -> dict:
+def gather_facts(project_path: str | Path, rules: dict | None = None) -> dict:
     """Collect the metrics rules can check.
 
     Two tiers, kept visibly apart because they fail differently:
@@ -170,7 +203,12 @@ def gather_facts(project_path: str | Path) -> dict:
     whole class of policy has nowhere to live, which is exactly why supply
     chain checks had no home before.
 
-    Read-only: nothing here mutates project state.
+    **History-derived** — git authorship, change coupling and the score
+    history. Gathered only for the rules in *rules* that need them, since a
+    git log is the slowest thing here. rules=None gathers none of it.
+
+    Read-only: nothing here mutates project state (the git log is never
+    cached to disk from here).
     """
     root = Path(project_path).resolve()
     facts: dict = {}
@@ -221,7 +259,184 @@ def gather_facts(project_path: str | Path) -> dict:
     except Exception as exc:  # noqa: BLE001
         facts["_supply_chain_error"] = str(exc)
 
+    facts.update(_gather_history_facts(root, rules or {}))
     return facts
+
+
+def _window_days(rules: dict, key: str) -> int:
+    value = rules.get(key, HISTORY_WINDOW_DAYS)
+    if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
+        return HISTORY_WINDOW_DAYS
+    return value
+
+
+def _min_cochanges(rules: dict) -> int:
+    value = rules.get("change_coupling_min_cochanges", COUPLING_MIN_COCHANGES)
+    if isinstance(value, bool) or not isinstance(value, int) or value < 2:
+        return COUPLING_MIN_COCHANGES
+    return value
+
+
+def _patterns(value, default=()) -> tuple[str, ...]:
+    """A glob list from a rules value; a bare string is one pattern."""
+    if value is None:
+        return tuple(default)
+    if isinstance(value, str):
+        return (value,)
+    return tuple(str(p) for p in value)
+
+
+def _gather_history_facts(root: Path, rules: dict) -> dict:
+    """History-derived tier. A fact left as None means "no data", never 0."""
+    facts: dict = {}
+
+    if "score_not_declining_over" in rules:
+        facts["as_of"] = datetime.now(UTC).isoformat()
+        try:
+            from genesis_architect_pro.architecture_scorer import load_score_history
+            facts["score_history"] = load_score_history(root)
+        except Exception as exc:  # noqa: BLE001
+            facts["_score_history_error"] = str(exc)
+
+    if "bus_factor_min" in rules:
+        facts["bus_factor_by_file"] = None
+        try:
+            from genesis_architect_pro.git_analyzer import per_module_churn
+            churn = per_module_churn(root, days=_window_days(rules, "bus_factor_window_days"))
+            # Files deleted since are part of the log but no longer anyone's
+            # knowledge risk.
+            by_file = {path: stats.get("bus_factor", 0) for path, stats in churn.items()
+                       if (root / path).is_file()}
+            if by_file:
+                facts["bus_factor_by_file"] = by_file
+        except Exception as exc:  # noqa: BLE001
+            facts["_bus_factor_error"] = str(exc)
+
+    if "max_change_coupling" in rules:
+        facts["change_coupling"] = None
+        try:
+            from genesis_architect_pro.git_analyzer import (
+                _git_log, _is_git_repo, change_coupling,
+            )
+            if _is_git_repo(root):
+                commits = _git_log(root, _window_days(rules, "change_coupling_window_days"))
+                if commits:
+                    pairs = change_coupling(commits, top_n=100_000,
+                                            min_cochanges=_min_cochanges(rules))
+                    facts["change_coupling"] = [p.to_dict() for p in pairs]
+        except Exception as exc:  # noqa: BLE001
+            facts["_change_coupling_error"] = str(exc)
+
+    return facts
+
+
+# ---------------------------------------------------------------------------
+# History rule helpers
+# ---------------------------------------------------------------------------
+
+def parse_bus_factor(value) -> int:
+    """2, "2" or "2_per_module" -> 2. Raises ValueError on anything else."""
+    if isinstance(value, bool):
+        raise ValueError(f"expected an author count, got {value!r}")
+    if isinstance(value, int):
+        n = value
+    else:
+        m = _BUS_FACTOR_RE.match(str(value))
+        if not m:
+            raise ValueError(f"expected an author count like 2 or '2_per_module', got {value!r}")
+        n = int(m.group(1))
+    if n < 1:
+        raise ValueError(f"author count must be at least 1, got {n}")
+    return n
+
+
+def parse_window_days(value) -> int:
+    """"4_weeks" -> 28, "10_days" -> 10, 4 (weeks) -> 28. Raises ValueError."""
+    if isinstance(value, bool):
+        raise ValueError(f"expected a window like '4_weeks', got {value!r}")
+    if isinstance(value, int):
+        days = value * 7
+    else:
+        m = _WINDOW_RE.match(str(value))
+        if not m:
+            raise ValueError(f"expected a window like '4_weeks' or '28_days', got {value!r}")
+        n, unit = int(m.group(1)), m.group(2).lower()
+        days = n * 7 if unit.startswith("week") else n
+    if days < 1:
+        raise ValueError(f"window must be at least one day, got {value!r}")
+    return days
+
+
+def _parse_ts(value) -> datetime | None:
+    try:
+        ts = datetime.fromisoformat(str(value))
+    except (TypeError, ValueError):
+        return None
+    return ts if ts.tzinfo else ts.replace(tzinfo=UTC)
+
+
+def _matches_any(path: str, patterns) -> bool:
+    path = path.replace("\\", "/")
+    name = path.rsplit("/", 1)[-1]
+    return any(fnmatch.fnmatchcase(path, p) or fnmatch.fnmatchcase(name, p)
+               for p in patterns)
+
+
+def score_trend(history: list[dict], window_days: int, as_of: datetime | None = None,
+                current: float | None = None) -> dict | str:
+    """
+    Compare the score at the start of the window with the latest one.
+
+    baseline: the newest record at or before the window start. When history
+        does not reach back that far, the oldest record inside the window
+        stands in and the result says how many days are covered.
+    latest:   *current* (a live score) when given, else the newest record.
+
+    Returns {baseline, latest, delta, baseline_ts, covered_days} or, when
+    there is nothing to compare, a string saying why.
+    """
+    points = sorted(
+        ((ts, float(r["total"])) for r in history
+         if isinstance(r, dict) and isinstance(r.get("total"), (int, float))
+         and not isinstance(r.get("total"), bool)
+         and (ts := _parse_ts(r.get("timestamp"))) is not None),
+        key=lambda p: p[0],
+    )
+    if as_of is None:
+        if not points:
+            return "no score history recorded"
+        as_of = points[-1][0]
+    points = [p for p in points if p[0] <= as_of]
+    if not points:
+        return "no score history recorded"
+
+    start = as_of - timedelta(days=window_days)
+    before = [p for p in points if p[0] <= start]
+    inside = [p for p in points if p[0] > start]
+    if before:
+        baseline = before[-1]
+    elif inside:
+        baseline = inside[0]
+    else:
+        return "no score history recorded"
+
+    if current is not None:
+        latest_total = float(current)
+    else:
+        later = [p for p in inside if p[0] > baseline[0]]
+        if not later:
+            return (f"no score recorded after {baseline[0].date().isoformat()} "
+                    f"in the last {window_days} days")
+        latest_total = later[-1][1]
+
+    covered = min(window_days, (as_of - baseline[0]).days)
+    return {
+        "baseline": baseline[1],
+        "latest": latest_total,
+        "delta": round(latest_total - baseline[1], 2),
+        "baseline_ts": baseline[0].isoformat(),
+        "covered_days": covered,
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -319,13 +534,92 @@ def evaluate(rules: dict, facts: dict) -> CheckReport:
         check("require_recovery_report", act, True, act,
               "recovery report available" if act else "recovery report could not be produced")
 
+    _evaluate_history_rules(rules, facts, report, check)
     return report
+
+
+def _evaluate_history_rules(rules: dict, facts: dict, report: CheckReport, check) -> None:
+    if "bus_factor_min" in rules:
+        raw = rules["bus_factor_min"]
+        try:
+            exp = parse_bus_factor(raw)
+        except ValueError as exc:
+            check("bus_factor_min", False, raw, None, f"invalid rule value: {exc}")
+        else:
+            by_file = facts.get("bus_factor_by_file")
+            ignore = _patterns(rules.get("bus_factor_ignore"))
+            if by_file:
+                by_file = {p: n for p, n in by_file.items() if not _matches_any(p, ignore)}
+            if not by_file:
+                report.notes.append(
+                    "bus_factor_min: skipped — no git history with authors to check")
+            else:
+                low = sorted((n, p) for p, n in by_file.items() if n < exp)
+                worst = ", ".join(f"{p} ({n})" for n, p in low[:5])
+                check("bus_factor_min", not low, exp, len(low),
+                      f"all {len(by_file)} changed files have >= {exp} author(s)" if not low
+                      else f"{len(low)} of {len(by_file)} changed files have fewer than "
+                           f"{exp} author(s): {worst}" + (" ..." if len(low) > 5 else ""))
+
+    if "score_not_declining_over" in rules:
+        raw = rules["score_not_declining_over"]
+        tolerance = rules.get("score_decline_tolerance", 0)
+        try:
+            window = parse_window_days(raw)
+            if isinstance(tolerance, bool) or not isinstance(tolerance, (int, float)) \
+                    or tolerance < 0:
+                raise ValueError(f"score_decline_tolerance must be a number >= 0, "
+                                 f"got {tolerance!r}")
+        except ValueError as exc:
+            check("score_not_declining_over", False, raw, None, f"invalid rule value: {exc}")
+        else:
+            trend = score_trend(facts.get("score_history") or [], window,
+                                as_of=_parse_ts(facts.get("as_of")) if facts.get("as_of") else None,
+                                current=facts.get("architecture_score"))
+            if isinstance(trend, str):
+                report.notes.append(f"score_not_declining_over: skipped — {trend}")
+            else:
+                ok = trend["delta"] >= -tolerance
+                span = (f" (history covers only {trend['covered_days']} of {window} days)"
+                        if trend["covered_days"] < window else "")
+                check("score_not_declining_over", ok, raw, trend["delta"],
+                      f"score {trend['latest']:g} vs {trend['baseline']:g} on "
+                      f"{trend['baseline_ts'][:10]} ({trend['delta']:+g} over {window} days"
+                      + (f", tolerance {tolerance:g}" if tolerance else "") + ")" + span)
+
+    if "max_change_coupling" in rules:
+        exp = rules["max_change_coupling"]
+        if isinstance(exp, bool) or not isinstance(exp, (int, float)) or not 0 <= exp <= 1:
+            check("max_change_coupling", False, exp, None,
+                  f"invalid rule value: expected a confidence between 0 and 1, got {exp!r}")
+        else:
+            pairs = facts.get("change_coupling")
+            if pairs is None:
+                report.notes.append(
+                    "max_change_coupling: skipped — no git history to check")
+            else:
+                ignore = _patterns(rules.get("change_coupling_ignore"),
+                                   DEFAULT_COUPLING_IGNORE)
+                min_co = _min_cochanges(rules)
+                kept = [p for p in pairs
+                        if p.get("cochanges", 0) >= min_co
+                        and not _matches_any(p["file_a"], ignore)
+                        and not _matches_any(p["file_b"], ignore)]
+                act = max((p["confidence"] for p in kept), default=0.0)
+                over = [p for p in kept if p["confidence"] > exp]
+                top = ", ".join(f"{p['file_a']} <-> {p['file_b']} ({p['confidence']:.2f})"
+                                for p in over[:3])
+                check("max_change_coupling", not over, exp, act,
+                      f"max co-change confidence {act:.2f} across {len(kept)} pair(s) "
+                      f"(max {exp})" if not over
+                      else f"{len(over)} file pair(s) co-change above {exp}: {top}"
+                           + (" ..." if len(over) > 3 else ""))
 
 
 def run_check(project_path: str | Path) -> CheckReport:
     """Top-level: load rules, gather facts, evaluate. Read-only."""
     rules, path_used, source = load_rules(project_path)
-    facts = gather_facts(project_path)
+    facts = gather_facts(project_path, rules)
     report = evaluate(rules, facts)
     report.rules_file = path_used
     report.ruleset_source = source

@@ -11,6 +11,12 @@ Five refactoring rules:
   4. dead-code-removal     - delete orphan modules
   5. layer-violation-fix   - move misplaced modules to correct layer
 
+The cycle breaker picks the edge to cut from graph metrics: the cycle member
+with the lowest instability (fan_out / (fan_in + fan_out)) should not depend
+on its cycle neighbour, so that import is inverted through an interface
+extracted into the cycle's shared directory. Without graph metrics it falls
+back to a generic shared-types suggestion.
+
 Each step includes:
   - tier (1=critical, 2=important)
   - operations: list of {type, path, description}
@@ -25,9 +31,11 @@ Usage:
 
 import argparse
 import json
+import posixpath
+import re
 import sys
 from dataclasses import dataclass, field, asdict
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 from genesis_architect_pro.antipattern_detector import detect_all, AntiPattern
 
@@ -61,6 +69,23 @@ class RefactorStep:
     def to_dict(self) -> dict:
         d = asdict(self)
         return d
+
+
+@dataclass
+class CycleCut:
+    """
+    The import to invert to break one cycle.
+
+    source stops importing target and depends on interface_name instead;
+    target satisfies the interface.
+    """
+    source: str
+    target: str
+    interface_name: str
+    interface_path: str
+    instability: float   # source's fan_out / (fan_in + fan_out)
+    fan_in: int
+    fan_out: int
 
 
 @dataclass
@@ -199,12 +224,48 @@ def _rule_god_class_splitter(patterns: list[AntiPattern], step_id_start: int) ->
     return steps
 
 
-def _rule_cycle_breaker(patterns: list[AntiPattern], step_id_start: int) -> list[RefactorStep]:
+def _rule_cycle_breaker(patterns: list[AntiPattern], step_id_start: int,
+                        modules: dict | None = None) -> list[RefactorStep]:
+    """
+    One step per import cycle (at most 5).
+
+    With graph metrics for every cycle member (*modules*, the import graph's
+    "modules" mapping) the step inverts one chosen import through an
+    extracted interface; see choose_cycle_cut. Otherwise it falls back to a
+    generic shared-types suggestion and says so in confidence_basis.
+    """
     steps = []
     cycles = [p for p in patterns if p.type == "circular-dep"]
     for i, p in enumerate(cycles[:5]):
         cycle = p.metrics.get("cycle", [])
         conf, basis = _step_confidence("CRITICAL", p)
+        cut = choose_cycle_cut(cycle, modules or {})
+        if cut is not None:
+            steps.append(RefactorStep(
+                id=step_id_start + i,
+                tier=1,
+                rule="cycle-breaker",
+                priority="CRITICAL",
+                title=(
+                    f"Break import cycle ({len(p.affected_modules)} modules): "
+                    f"cut {cut.source} -> {cut.target}"
+                ),
+                why=(
+                    f"{p.description} Cut {cut.source} -> {cut.target}: {cut.source} is the "
+                    f"most stable member of the cycle (instability {cut.instability:.2f}, "
+                    f"fan_in {cut.fan_in}, fan_out {cut.fan_out}), so it should depend on an "
+                    f"abstraction instead of on {cut.target}."
+                ),
+                operations=_interface_extraction_ops(cut),
+                complexity="MEDIUM",
+                score_impact=8,
+                confidence=conf,
+                confidence_basis=(
+                    f"{basis}; cut chosen by lowest instability from import-graph metrics"
+                ),
+            ))
+            continue
+        basis += "; no import-graph metrics for the cycle members, generic shared-module suggestion"
         step = RefactorStep(
             id=step_id_start + i,
             tier=1,
@@ -311,6 +372,164 @@ def _rule_layer_violation_fix(patterns: list[AntiPattern], step_id_start: int) -
 
 
 # ---------------------------------------------------------------------------
+# Cycle cut selection
+# ---------------------------------------------------------------------------
+
+_NON_WORD = re.compile(r"[^0-9A-Za-z]+")
+# Stems that name a package rather than a module; the directory name is used instead.
+_PACKAGE_STEMS = {"__init__", "index", "mod"}
+
+
+def _cycle_nodes(cycle: list[str]) -> list[str]:
+    """Cycle members in import order, without the repeated closing member."""
+    nodes = [str(n) for n in cycle]
+    if len(nodes) > 1 and nodes[0] == nodes[-1]:
+        nodes = nodes[:-1]
+    return nodes
+
+
+def _module_entry(modules: dict, node: str) -> dict | None:
+    entry = modules.get(node)
+    if entry is None:
+        entry = modules.get(node.replace("\\", "/"))
+    return entry if isinstance(entry, dict) else None
+
+
+def _fan(entry: dict, key: str) -> int | None:
+    value = entry.get(key)
+    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+        return None
+    return value
+
+
+def _module_stem(module_path: str) -> str:
+    p = PurePosixPath(module_path.replace("\\", "/"))
+    if p.stem in _PACKAGE_STEMS and p.parent.name:
+        return p.parent.name
+    return p.stem
+
+
+def _interface_name(module_path: str) -> str:
+    """I + the PascalCase module stem: src/auth_service.py -> IAuthService."""
+    words = [w for w in _NON_WORD.split(_module_stem(module_path)) if w]
+    pascal = "".join(w[0].upper() + w[1:] for w in words)
+    return f"I{pascal or 'Module'}"
+
+
+def _interface_path(nodes: list[str], target: str) -> str:
+    """<deepest directory shared by the cycle members>/<target stem>_interface<ext>."""
+    dirs = [posixpath.dirname(n.replace("\\", "/")) for n in nodes]
+    try:
+        shared = posixpath.commonpath(dirs)
+    except ValueError:  # absolute and relative paths mixed
+        shared = posixpath.dirname(target.replace("\\", "/"))
+    name = f"{_module_stem(target)}_interface{PurePosixPath(target).suffix}"
+    return f"{shared}/{name}" if shared else name
+
+
+def choose_cycle_cut(cycle: list[str], modules: dict) -> CycleCut | None:
+    """
+    Pick the import to invert to break *cycle*.
+
+    *cycle* is in import order: each member imports the next, and the last
+    imports the first (a closing repeat of the first member is allowed).
+    *modules* is the import graph's "modules" mapping, read for fan_in,
+    fan_out and imports.
+
+    The source is the member with the lowest instability
+    I = fan_out / (fan_in + fan_out): the most depended-upon, least dependent
+    member, which by the Stable Dependencies Principle should not depend on
+    a less stable neighbour. Ties go to lower fan_out, then higher fan_in,
+    then path. The cut is the source's import of its successor.
+
+    Returns None when fewer than two distinct members remain or any member
+    lacks usable fan_in/fan_out, so the caller falls back instead of guessing.
+    """
+    nodes = _cycle_nodes(cycle)
+    if len(nodes) < 2 or len(set(nodes)) != len(nodes):
+        return None
+    ranked = []
+    for idx, node in enumerate(nodes):
+        entry = _module_entry(modules, node)
+        if entry is None:
+            return None
+        fan_in, fan_out = _fan(entry, "fan_in"), _fan(entry, "fan_out")
+        if fan_in is None or fan_out is None:
+            return None
+        total = fan_in + fan_out
+        instability = fan_out / total if total else 0.0
+        ranked.append((instability, fan_out, -fan_in, node, idx))
+    instability, fan_out, neg_fan_in, source, idx = min(ranked)
+
+    target = nodes[(idx + 1) % len(nodes)]
+    imports = (_module_entry(modules, source) or {}).get("imports")
+    if isinstance(imports, list) and target not in imports and nodes[idx - 1] in imports:
+        target = nodes[idx - 1]  # cycle was listed against import order
+
+    return CycleCut(
+        source=source,
+        target=target,
+        interface_name=_interface_name(target),
+        interface_path=_interface_path(nodes, target),
+        instability=round(instability, 2),
+        fan_in=-neg_fan_in,
+        fan_out=fan_out,
+    )
+
+
+def _contract_kind(path: str) -> tuple[str, bool]:
+    """(what the interface is, whether implementations satisfy it structurally)."""
+    ext = PurePosixPath(path).suffix.lower()
+    if ext in (".py", ".pyi"):
+        return "typing.Protocol", True
+    if ext in (".ts", ".tsx", ".mts", ".cts"):
+        return "TypeScript interface", True
+    if ext in (".js", ".jsx", ".mjs", ".cjs"):
+        return "JSDoc @typedef contract", True
+    return "abstract interface", False
+
+
+def _interface_extraction_ops(cut: CycleCut) -> list[RefactorOperation]:
+    kind, structural = _contract_kind(cut.target)
+    if structural:
+        satisfy = (
+            f"Keep {cut.target} satisfying {cut.interface_name}. Typing is structural, so "
+            "it needs no import; declare the interface explicitly only to have the type "
+            "checker enforce it."
+        )
+    else:
+        satisfy = f"Make {cut.target} implement {cut.interface_name} from {cut.interface_path}."
+    return [
+        RefactorOperation(
+            type="CREATE",
+            path=cut.interface_path,
+            description=(
+                f"Define {cut.interface_name} as a {kind} declaring only the members of "
+                f"{cut.target} that {cut.source} uses. It must not import any cycle member."
+            ),
+        ),
+        RefactorOperation(
+            type="MODIFY",
+            path=cut.source,
+            description=(
+                f"Replace the import of {cut.target} with {cut.interface_name} and receive "
+                "the implementation as a constructor or function parameter. This removes "
+                f"the {cut.source} -> {cut.target} edge."
+            ),
+        ),
+        RefactorOperation(type="MODIFY", path=cut.target, description=satisfy),
+        RefactorOperation(
+            type="MODIFY",
+            path="[composition root]",
+            description=(
+                f"Pass the {cut.target} implementation into {cut.source} where the two are "
+                "wired together (the entry point or factory that creates it)."
+            ),
+        ),
+    ]
+
+
+# ---------------------------------------------------------------------------
 # Path helpers
 # ---------------------------------------------------------------------------
 
@@ -336,6 +555,23 @@ def _suggest_shared_types_path(cycle: list[str]) -> str:
 # Main API
 # ---------------------------------------------------------------------------
 
+def _graph_modules(root: Path, language: str | None) -> dict:
+    """
+    The import graph's per-module metrics, or {} when the graph cannot be read.
+
+    detect_all has just built (and cached) the same graph, so this is normally
+    a cache read. On failure the cycle breaker falls back to its generic
+    suggestion and records that in the step's confidence_basis.
+    """
+    try:
+        from genesis_architect_pro.import_graph import load_or_build
+        graph = load_or_build(root, language=language)
+    except Exception:  # noqa: BLE001 - the plan degrades, it does not fail
+        return {}
+    modules = graph.get("modules") if isinstance(graph, dict) else None
+    return modules if isinstance(modules, dict) else {}
+
+
 def generate_plan(project_path: str | Path, language: str | None = None,
                   rebuild_graph: bool = False) -> RefactoringPlan:
     """Generate a complete refactoring plan for a project."""
@@ -358,7 +594,7 @@ def generate_plan(project_path: str | Path, language: str | None = None,
     all_steps.extend(god_steps)
     step_id += len(god_steps)
 
-    cycle_steps = _rule_cycle_breaker(patterns, step_id)
+    cycle_steps = _rule_cycle_breaker(patterns, step_id, _graph_modules(root, language))
     all_steps.extend(cycle_steps)
     step_id += len(cycle_steps)
 

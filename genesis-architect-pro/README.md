@@ -1,56 +1,86 @@
-# Genesis Architect Pro — v8.0.0
+# Genesis Architect Pro v8.0.0
 
 The intelligence layer for [Genesis Architect](https://github.com/maioio/genesis-architect).
 
-The free core researches GitHub and scaffolds a working MVP. Pro adds deep codebase analysis,
-a cross-source Knowledge Graph, and the Genesis Decision Engine — a 7-mode, 13-engine pipeline
-that routes any plain-English instruction to the right analysis without an LLM guess.
+> [!NOTE]
+> **There is no paid tier any more.** Since genesis-architect v8.0.0 the Pro engines also ship,
+> free, inside the main package as `genesis_architect.pro`, under AGPL-3.0. For most people
+> `pip install genesis-architect` is all they need. This directory holds the standalone Pro
+> distribution, where Pro development continues, so it can run slightly ahead of the copy in
+> the main package (today: one extra engine, Supply Chain Audit, and one extra gate,
+> `RESEARCH_EVIDENCE_UNKNOWN`). It is not published to PyPI; see [Install](#install).
+
+Genesis Architect researches GitHub and scaffolds a working MVP. The Pro layer adds deep
+codebase analysis, a cross-source Knowledge Graph, and the Genesis Decision Engine: a 7-mode,
+19-engine pipeline that routes any plain-English instruction to the right analysis without an
+LLM guess.
 
 ## Codebase Intelligence Engines
 
 | Engine | What it does |
 |--------|--------------|
 | **Import Graph** | Multi-language dependency graph (Python, JS/TS, Go, Rust) with cycle detection |
-| **Architecture Scorer** | 0–100 quality score across 4 dimensions, 6 adaptive profiles, trend history |
+| **Architecture Scorer** | 0-100 quality score across 4 dimensions, 6 adaptive profiles, trend history |
 | **Anti-Pattern Detector** | 7 structural detectors: god-class, hub-file, circular deps, dead code, and more |
-| **Fragility Classifier** | STABLE / FRAGILE / VOLATILE per module — driven by git churn + test coverage |
+| **Fragility Classifier** | STABLE / FRAGILE / VOLATILE per module, driven by git churn + test coverage |
 | **Refactoring Planner** | Tier-1/2 refactor steps with projected score impact |
-| **C4 Generator** | C4 Level 1–3 architecture diagrams (Mermaid, GitHub-native) |
+| **C4 Generator** | C4 Level 1-3 architecture diagrams (Mermaid, GitHub-native) |
 | **Security Templates** | STRIDE threat model + OWASP Top 10 checklist, archetype-aware |
 | **Knowledge Graph** | Links code, CVEs, risks, and decisions into one queryable graph |
 
 ## Genesis Decision Engine (GDE)
 
-Routes any plain-English instruction across 7 modes and 13 engines, with a static gate policy:
+Routes any plain-English instruction across 7 modes and 19 engines, with a static gate policy:
 
-| Mode | Engines | What happens |
-|------|---------|--------------|
-| `recovery` | 5 | Import graph → score → anti-patterns → fragility → recovery report |
-| `research` | 3 | Source registry → field intelligence (Reddit Answers) → evidence pack |
-| `refactor` | 5 | Import graph → score → anti-patterns → refactoring plan |
-| `gate` | 5 | Import graph → score → anti-patterns → fragility → security gate |
-| `build` | 1 | Delegates to genesis-architect free core scaffolder |
-| `document` | 3 | Import graph → C4 diagrams + security templates |
-| `committee` | 5 | Full analysis pass → multi-perspective synthesis + divergence report |
+| Mode | Engines | What runs |
+|------|---------|-----------|
+| `recovery` | 8 | Import graph, architecture score, anti-patterns, fragility, git churn, supply chain audit, recovery report |
+| `research` | 5 | Source registry, research outline, field intelligence (Reddit Answers), evidence pack |
+| `refactor` | 7 | Import graph, architecture score, anti-patterns, fragility, git churn, refactoring plan |
+| `gate` | 10 | Import graph, architecture score, anti-patterns, fragility, git churn, import audit, supply chain audit, rules engine, security templates |
+| `build` | 2 | Build scaffold (delegates to the genesis-architect scaffolder) |
+| `document` | 4 | Import graph, C4 architecture diagrams, security templates |
+| `committee` | 6 | Import graph, architecture score, anti-patterns, fragility, multi-perspective committee analysis |
+
+Every mode also runs the Red-Team Self-Critique engine, which is included in the counts above.
+Each mode has at most one required engine: the import graph, or the scaffolder in `build` mode
+(`research` has none). The rest are optional, so a failing optional engine degrades the report
+instead of aborting it.
 
 ### Gate policy
 
-Two gates can never be bypassed:
-- `PLAN_WRITE` — hard block on any write targeting `planned.json`
-- `RULES_FAIL` — hard block on rules engine hard failure
+15 gates. Two can never be bypassed:
+- `PLAN_WRITE`: hard block on any write targeting `planned.json`
+- `RULES_FAIL`: hard block on a rules engine hard failure
 
-All other gates (CONFIDENCE_LOW, DRIFT_CRITICAL, SECURITY_RISK, WRITE_SCOPE, DEGRADED_MODE) are soft blocks, overridable with `--yes`.
+The other 13 are overridable with `--yes`:
+- **Stop and ask (7):** `CONFIDENCE_LOW`, `DRIFT_CRITICAL`, `SECURITY_RISK`, `POLICY_VIOLATION`,
+  `COMMIT_CONFLICT`, `RED_TEAM_CRITICAL`, `RESEARCH_COVERAGE_LOW`
+- **Warn only (6):** `WRITE_SCOPE`, `REQUIRED_FAILED`, `DEGRADED_MODE`, `NO_ENGINES`,
+  `RESEARCH_STALE`, `RESEARCH_EVIDENCE_UNKNOWN`
+
+Which gates a session evaluates depends on its mode.
 
 ## Install
 
 ```bash
-pip install genesis-architect-pro
+# The engines, free, from PyPI (most people need only this)
+pip install genesis-architect
+
+# This standalone Pro distribution (8.0.0), straight from this repository
+pip install "git+https://github.com/maioio/genesis-architect.git#subdirectory=genesis-architect-pro"
+
+# With optional extras, e.g. the full Pro feature set
+pip install "genesis-architect-pro[pro] @ git+https://github.com/maioio/genesis-architect.git#subdirectory=genesis-architect-pro"
 ```
+
+The standalone distribution pulls in `genesis-architect` as a dependency. Available extras:
+`tui`, `companion`, `streaming`, `voice`, `committee`, `mcp`, `companion-full`, `pro`, `dev`.
 
 ## CLI
 
 ```bash
-# Which command runs which engine — the authoritative list
+# Which command runs which engine: the authoritative list
 genesis engines
 
 # Full 7-stage pipeline: classify → plan → execute → gate → report → approve → commit
@@ -81,7 +111,7 @@ Every command above takes `--json` for machine-readable output. On `decide`,
 answer the approval prompt, so those runs are analysis-only.
 
 `genesis engines` is generated from the capability map, and a test fails if any
-module in the package is neither mapped to a command nor declared internal — so
+module in the package is neither mapped to a command nor declared internal, so
 the list above cannot quietly drift from what actually ships. The tables in this
 README are a summary; `genesis engines` is the source of truth.
 
@@ -102,7 +132,7 @@ genesis research "<topic>" --json-data data.json --domain non-code
 ```
 
 The research floor is a gate, not a suggestion: it reports thin research rather
-than presenting it as sufficient. What adapts is the unit it counts — repos for
+than presenting it as sufficient. What adapts is the unit it counts: repos for
 a software vision, authoritative sources for a vision with no repo corpus.
 
 ## Python API
@@ -141,17 +171,15 @@ frags  = classify_all("/path/to/project")
 plan   = generate_plan("/path/to/project")
 ```
 
-## License
+## License and commercial use
 
-AGPL-3.0 by default — no license key, no gate. See LICENSE, and the section below
-for commercial use.
+Dual-licensed. There is no license key and no feature gate.
 
-## 📝 License and Commercial Use
+1. **Open source (AGPL-3.0):** You are free to use, modify and distribute this software for
+   personal or open-source projects, provided that you release your modifications, and any
+   software that integrates it, under the same AGPL-3.0 license. See [LICENSE](LICENSE).
 
-This project is open-source and dual-licensed.
+2. **Commercial license:** To use this software in a closed-source commercial product, or under
+   terms without the AGPL-3.0 copyleft requirements, a commercial license is required.
 
-1. **Open Source License:** The code is available under the **AGPLv3 License**. You are free to use, modify, and distribute this software for personal or open-source projects, provided that you release your modifications and any software that integrates it under the same AGPLv3 license.
-
-2. **Commercial License:** If you wish to use this software in a closed-source commercial product, or need a custom license without the copyleft restrictions of the AGPLv3, **a commercial license is required**.
-
-For commercial licensing inquiries, please contact: maio.eshet@gmail.com
+For commercial licensing inquiries, contact: maio.eshet@gmail.com

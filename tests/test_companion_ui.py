@@ -1,5 +1,5 @@
 """Tests for companion_ui - the self-contained Floating Assistant web app."""
-from genesis_architect_pro.companion_ui import (
+from genesis_architect.pro.companion_ui import (
     DEFAULT_PORT, render_companion_html, write_companion_html,
 )
 

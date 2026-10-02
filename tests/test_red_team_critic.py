@@ -5,14 +5,14 @@ from __future__ import annotations
 
 import pytest
 
-from genesis_architect_pro.gde_types import (
+from genesis_architect.pro.gde_types import (
     EngineResult,
     EngineStatus,
     GDEMode,
     SessionContext,
     WriteOperation,
 )
-from genesis_architect_pro.red_team_critic import (
+from genesis_architect.pro.red_team_critic import (
     RedTeamFinding,
     _build_attack_prompt,
     _parse_llm_findings,

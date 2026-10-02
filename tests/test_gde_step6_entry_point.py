@@ -8,9 +8,9 @@ from pathlib import Path
 
 import pytest
 
-from genesis_architect_pro.decision_engine import GenesisDecisionEngine, run_session
-from genesis_architect_pro.engine_registry import EngineRegistry
-from genesis_architect_pro.gde_types import (
+from genesis_architect.pro.decision_engine import GenesisDecisionEngine, run_session
+from genesis_architect.pro.engine_registry import EngineRegistry
+from genesis_architect.pro.gde_types import (
     EngineCategory,
     EngineDescriptor,
     GDEMode,
@@ -221,19 +221,19 @@ class TestRunSession:
 
 class TestInitExports:
     def test_gde_in_init(self):
-        import genesis_architect_pro as pkg
+        import genesis_architect.pro as pkg
         assert hasattr(pkg, "GenesisDecisionEngine")
 
     def test_run_session_in_init(self):
-        import genesis_architect_pro as pkg
+        import genesis_architect.pro as pkg
         assert hasattr(pkg, "run_session")
 
     def test_classify_in_init(self):
-        import genesis_architect_pro as pkg
+        import genesis_architect.pro as pkg
         assert hasattr(pkg, "classify")
 
     def test_gde_types_in_init(self):
-        import genesis_architect_pro as pkg
+        import genesis_architect.pro as pkg
         for name in [
             "GDEMode", "LifecycleStage", "EngineCategory", "EngineStatus",
             "GateAction", "GateOutcome", "ApprovalChoice",
@@ -245,26 +245,26 @@ class TestInitExports:
             assert hasattr(pkg, name), f"Missing from __init__: {name}"
 
     def test_registry_in_init(self):
-        import genesis_architect_pro as pkg
+        import genesis_architect.pro as pkg
         assert hasattr(pkg, "EngineRegistry")
         assert hasattr(pkg, "RegistryError")
         assert hasattr(pkg, "get_default_registry")
         assert hasattr(pkg, "register")
 
     def test_session_fns_in_init(self):
-        import genesis_architect_pro as pkg
+        import genesis_architect.pro as pkg
         for name in ["save_session", "load_session", "delete_session",
                      "append_decision_log", "read_decision_log", "session_file_exists"]:
             assert hasattr(pkg, name), f"Missing from __init__: {name}"
 
     def test_planner_runner_gates_in_init(self):
-        import genesis_architect_pro as pkg
+        import genesis_architect.pro as pkg
         assert hasattr(pkg, "build_plan")
         assert hasattr(pkg, "run_plan")
         assert hasattr(pkg, "evaluate_gates")
 
     def test_existing_exports_still_present(self):
-        import genesis_architect_pro as pkg
+        import genesis_architect.pro as pkg
         for name in [
             "build_graph", "load_or_build",
             "score_project", "score_label",
@@ -273,6 +273,6 @@ class TestInitExports:
             assert hasattr(pkg, name), f"Regression: {name} missing from __init__"
 
     def test_gde_class_is_instantiable(self):
-        from genesis_architect_pro import GenesisDecisionEngine
+        from genesis_architect.pro import GenesisDecisionEngine
         gde = GenesisDecisionEngine()
         assert gde is not None

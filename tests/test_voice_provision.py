@@ -4,7 +4,7 @@ from __future__ import annotations
 import sys
 from unittest.mock import patch
 
-from genesis_architect_pro.voice.setup import (
+from genesis_architect.pro.voice.setup import (
     COMPANION_PACKAGES,
     ProvisionResult,
     ensure_companion_packages,
@@ -14,12 +14,12 @@ from genesis_architect_pro.voice.setup import (
 
 class TestMissingCompanionPackages:
     def test_nothing_missing_when_all_importable(self):
-        with patch("genesis_architect_pro.voice.setup._pkg_available",
+        with patch("genesis_architect.pro.voice.setup._pkg_available",
                    return_value=True):
             assert missing_companion_packages() == []
 
     def test_all_missing_when_none_importable(self):
-        with patch("genesis_architect_pro.voice.setup._pkg_available",
+        with patch("genesis_architect.pro.voice.setup._pkg_available",
                    return_value=False):
             missing = missing_companion_packages()
         assert sorted(missing) == sorted(COMPANION_PACKAGES.values())
@@ -32,7 +32,7 @@ class TestMissingCompanionPackages:
 
 class TestEnsureCompanionPackages:
     def test_noop_when_everything_present(self):
-        with patch("genesis_architect_pro.voice.setup._pkg_available",
+        with patch("genesis_architect.pro.voice.setup._pkg_available",
                    return_value=True):
             result = ensure_companion_packages()
         assert result.ok
@@ -40,10 +40,15 @@ class TestEnsureCompanionPackages:
         assert len(result.already_present) == len(COMPANION_PACKAGES)
 
     def test_installs_missing_via_pip(self):
-        calls = {}
+        # `subprocess.run` is patched globally, so this records EVERY
+        # subprocess in the process for the duration, not just ours. Anything
+        # running on a background thread (a leaked ContextPrefetcher loop, for
+        # instance) lands here too. Keep every call and search, rather than
+        # trusting the last one to be the pip invocation.
+        calls = []
 
         def fake_run(cmd, **kw):
-            calls["cmd"] = cmd
+            calls.append(cmd)
 
             class P:
                 returncode = 0
@@ -55,15 +60,17 @@ class TestEnsureCompanionPackages:
 
         def fake_avail(mod):
             # After "pip install" runs, report everything importable.
-            return mod in avail or "cmd" in calls
+            return mod in avail or bool(calls)
 
-        with patch("genesis_architect_pro.voice.setup._pkg_available",
+        with patch("genesis_architect.pro.voice.setup._pkg_available",
                    side_effect=fake_avail), \
              patch("subprocess.run", side_effect=fake_run):
             result = ensure_companion_packages()
 
         assert result.ok
-        assert "pip" in calls["cmd"]
+        pip_calls = [c for c in calls if "pip" in c]
+        assert pip_calls, f"no pip invocation among {calls!r}"
+        assert "install" in pip_calls[0]
         if sys.version_info < (3, 13):
             # kokoro is only offered on Python <3.13 — its spacy dependency
             # has no wheels on newer versions and pip falls back to a
@@ -86,7 +93,7 @@ class TestEnsureCompanionPackages:
                 stderr = ""
             return P()
 
-        with patch("genesis_architect_pro.voice.setup._pkg_available",
+        with patch("genesis_architect.pro.voice.setup._pkg_available",
                    side_effect=lambda m: "cmd" in captured or m == "rich"), \
              patch("subprocess.run", side_effect=fake_run):
             ensure_companion_packages()
@@ -102,7 +109,7 @@ class TestEnsureCompanionPackages:
                 stderr = "ERROR: No matching distribution found"
             return P()
 
-        with patch("genesis_architect_pro.voice.setup._pkg_available",
+        with patch("genesis_architect.pro.voice.setup._pkg_available",
                    return_value=False), \
              patch("subprocess.run", side_effect=fake_run):
             result = ensure_companion_packages()
@@ -111,7 +118,7 @@ class TestEnsureCompanionPackages:
         assert "No matching distribution" in result.failed[0]
 
     def test_exception_reported_not_raised(self):
-        with patch("genesis_architect_pro.voice.setup._pkg_available",
+        with patch("genesis_architect.pro.voice.setup._pkg_available",
                    return_value=False), \
              patch("subprocess.run", side_effect=OSError("pip missing")):
             result = ensure_companion_packages()
@@ -133,7 +140,7 @@ class TestEnsureCompanionPackages:
         def fake_avail(mod):
             return installed["flag"]
 
-        with patch("genesis_architect_pro.voice.setup._pkg_available",
+        with patch("genesis_architect.pro.voice.setup._pkg_available",
                    side_effect=lambda m: installed["flag"]), \
              patch("subprocess.run",
                    side_effect=lambda *a, **k: (installed.update(flag=True), fake_run(a))[1]):

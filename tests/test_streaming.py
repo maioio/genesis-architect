@@ -13,7 +13,7 @@ from unittest.mock import patch
 
 import pytest
 
-from genesis_architect_pro.streaming.events import (
+from genesis_architect.pro.streaming.events import (
     MessageType,
     StreamEmitter,
     StreamMessage,
@@ -25,7 +25,7 @@ from genesis_architect_pro.streaming.events import (
     session_confidence,
     session_done,
 )
-from genesis_architect_pro.streaming.runner_patch import (
+from genesis_architect.pro.streaming.runner_patch import (
     install,
     is_installed,
     uninstall,
@@ -58,7 +58,7 @@ def _fake_report(score=61, cycles=1, critical=1, volatile=2, pending=0):
 
 
 def test_compose_reply_english_contains_real_findings():
-    from genesis_architect_pro.streaming.inbound import _compose_reply
+    from genesis_architect.pro.streaming.inbound import _compose_reply
     text = _compose_reply(_fake_report(), "audit this codebase")
     assert "61 out of 100" in text
     assert "1 circular dependency" in text
@@ -67,25 +67,25 @@ def test_compose_reply_english_contains_real_findings():
 
 
 def test_compose_reply_hebrew_when_instruction_is_hebrew():
-    from genesis_architect_pro.streaming.inbound import _compose_reply
+    from genesis_architect.pro.streaming.inbound import _compose_reply
     text = _compose_reply(_fake_report(score=95), "תבדוק את הפרויקט")
     assert "95 מתוך 100" in text
     assert "תלויות מעגליות" in text
 
 
 def test_compose_reply_mentions_pending_approval():
-    from genesis_architect_pro.streaming.inbound import _compose_reply
+    from genesis_architect.pro.streaming.inbound import _compose_reply
     text = _compose_reply(_fake_report(pending=3), "audit")
     assert "3 writes awaiting your approval" in text
 
 
 def test_compose_reply_never_raises_on_garbage_report():
-    from genesis_architect_pro.streaming.inbound import _compose_reply
+    from genesis_architect.pro.streaming.inbound import _compose_reply
     assert _compose_reply(object(), "audit")  # non-empty fallback
 
 
 def test_session_reply_and_start_constructors():
-    from genesis_architect_pro.streaming.events import session_reply, session_start
+    from genesis_architect.pro.streaming.events import session_reply, session_start
     r = session_reply("hello", session_id="s1")
     assert r.type.value == "session.reply" and r.payload == {"text": "hello"}
     s = session_start("s1", instruction="audit")
@@ -100,7 +100,7 @@ def test_session_reply_and_start_constructors():
 # ---------------------------------------------------------------------------
 
 def test_auth_ok_is_a_full_envelope():
-    from genesis_architect_pro.streaming.server import _control_envelope
+    from genesis_architect.pro.streaming.server import _control_envelope
     env = json.loads(_control_envelope("auth.ok"))
     assert env["type"] == "auth.ok"
     assert isinstance(env.get("id"), str) and env["id"]
@@ -110,7 +110,7 @@ def test_auth_ok_is_a_full_envelope():
 
 def test_valid_token_gets_auth_ok():
     pytest.importorskip("websockets")
-    from genesis_architect_pro.streaming.server import CompanionServer
+    from genesis_architect.pro.streaming.server import CompanionServer
 
     async def _run():
         srv = CompanionServer(port=47298)
@@ -135,7 +135,7 @@ def test_idle_connection_stays_open():
     attribute. Newer websockets renamed it; touching it raised AttributeError
     ~1s after connect and dropped the socket — the green/yellow flapping."""
     pytest.importorskip("websockets")
-    from genesis_architect_pro.streaming.server import CompanionServer
+    from genesis_architect.pro.streaming.server import CompanionServer
 
     async def _run():
         srv = CompanionServer(port=47294)
@@ -166,7 +166,7 @@ def test_idle_connection_stays_open():
 
 def test_bad_token_gets_auth_fail_then_close():
     pytest.importorskip("websockets")
-    from genesis_architect_pro.streaming.server import CompanionServer
+    from genesis_architect.pro.streaming.server import CompanionServer
 
     async def _run():
         srv = CompanionServer(port=47297)
@@ -374,9 +374,9 @@ def test_build_summary_unknown_engine():
 def test_integration_hooks_capture_engine_events():
     """Install hooks, run a minimal GDE session, verify events are emitted."""
     from pathlib import Path
-    from genesis_architect_pro.streaming.events import StreamEmitter
-    from genesis_architect_pro.streaming import runner_patch
-    import genesis_architect_pro.gde_runner as runner_module
+    from genesis_architect.pro.streaming.events import StreamEmitter
+    from genesis_architect.pro.streaming import runner_patch
+    import genesis_architect.pro.gde_runner as runner_module
 
     emitter = StreamEmitter()
     captured: list[StreamMessage] = []
@@ -387,15 +387,15 @@ def test_integration_hooks_capture_engine_events():
 
         # Patch the default emitter temporarily
         original = runner_patch.default_emitter
-        import genesis_architect_pro.streaming.runner_patch as rp_mod
-        import genesis_architect_pro.streaming.events as ev_mod
+        import genesis_architect.pro.streaming.runner_patch as rp_mod
+        import genesis_architect.pro.streaming.events as ev_mod
         rp_mod.default_emitter = emitter
         ev_mod.default_emitter = emitter
 
         install()
 
         # Build minimal SessionContext and fake engine descriptor
-        from genesis_architect_pro.gde_types import (
+        from genesis_architect.pro.gde_types import (
             SessionContext, GDEMode, EngineDescriptor, EngineCategory
         )
         ctx = SessionContext(session_id="test_sess", mode=GDEMode.RECOVERY, project_dir=Path("."))
@@ -403,7 +403,7 @@ def test_integration_hooks_capture_engine_events():
         desc = EngineDescriptor(
             id="fake_engine",
             name="Fake Engine",
-            module="genesis_architect_pro.streaming.events",  # any importable module
+            module="genesis_architect.pro.streaming.events",  # any importable module
             entry_point="default_emitter",  # will fail — we mock _invoke
             category=EngineCategory.ANALYSIS,
             input_keys=[],
@@ -435,8 +435,8 @@ def test_integration_hooks_capture_engine_events():
 def test_integration_hooks_capture_failure_event():
     """Engine that raises → ENGINE_FAILED event emitted."""
     from pathlib import Path
-    from genesis_architect_pro.streaming.events import StreamEmitter
-    import genesis_architect_pro.gde_runner as runner_module
+    from genesis_architect.pro.streaming.events import StreamEmitter
+    import genesis_architect.pro.gde_runner as runner_module
 
     emitter = StreamEmitter()
     captured: list[StreamMessage] = []
@@ -445,22 +445,22 @@ def test_integration_hooks_capture_failure_event():
         loop = asyncio.get_running_loop()
         emitter.attach(loop)
 
-        import genesis_architect_pro.streaming.runner_patch as rp_mod
-        import genesis_architect_pro.streaming.events as ev_mod
+        import genesis_architect.pro.streaming.runner_patch as rp_mod
+        import genesis_architect.pro.streaming.events as ev_mod
         original = rp_mod.default_emitter
         rp_mod.default_emitter = emitter
         ev_mod.default_emitter = emitter
 
         install()
 
-        from genesis_architect_pro.gde_types import (
+        from genesis_architect.pro.gde_types import (
             SessionContext, GDEMode, EngineDescriptor, EngineCategory
         )
         ctx = SessionContext(session_id="fail_sess", mode=GDEMode.RECOVERY, project_dir=Path("."))
         desc = EngineDescriptor(
             id="failing_engine",
             name="Failing Engine",
-            module="genesis_architect_pro.streaming.events",
+            module="genesis_architect.pro.streaming.events",
             entry_point="default_emitter",
             category=EngineCategory.ANALYSIS,
             input_keys=[],

@@ -1,5 +1,5 @@
 """Tests for field_intelligence - Reddit Answers workflow + verification rule."""
-from genesis_architect_pro.field_intelligence import (
+from genesis_architect.pro.field_intelligence import (
     REDDIT_ANSWERS_TEMPLATES, FieldFinding, FieldReport,
     build_reddit_answers_queries, verify_finding, run_field_workflow,
 )

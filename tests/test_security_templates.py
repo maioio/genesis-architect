@@ -6,7 +6,7 @@ endpoints." to "Enforce TLS 1." because it split the mitigation text on the
 first "." found anywhere, not the first real sentence boundary.
 """
 
-from genesis_architect_pro.security_templates import (
+from genesis_architect.pro.security_templates import (
     STRIDE_TEMPLATES,
     _first_sentence,
     _generate_stride_doc,

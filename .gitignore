@@ -1,49 +1,68 @@
-# Python
-__pycache__/
-*.pyc
-.env
-.env.*
-
-# Build artifacts
-*.egg-info/
-src/*.egg-info/
-dist/
-build/
-
-# Local license / state
-.genesis/
-pro_license
-
-# OS / editor
+# OS
 .DS_Store
+Thumbs.db
+
+# Editor
 .vscode/
 .idea/
 *.swp
 
-# Local dev artifacts (not part of repo)
-.claude/
-.playwright-mcp/
-_private/
-validation/
-config.yml
-skills-lock.json
-genesis_architect_logos/
-docs/security/
+# Logs
+*.log
 
-# Genesis scaffold outputs that landed here
+# Python
+scripts/__pycache__/
+*.pyc
+.env
+.env.*
+!.env.example
+
+# Binaries (use Docker / system installs, never commit)
+*.exe
+*.dll
+*.so
+*.dylib
+
+# scaffold output directories and local experiments - never commit
+tmp/
 a_cli_podcast_downlo/
+*_downlo/
+*_project/
 
-# Binary / personal files
-*.png
-*.jpg
-*.jpeg
-*.gif
-*.pdf
-*.zip
-*.docx
+# genesis state files (vault cache, phase state) - not committed in live projects
+.genesis/
+# but commit evidence outputs in examples/ to demonstrate the toolchain
+!examples/**/.genesis/
+!examples/**/.genesis/evidence.json
 
-# Engine-generated artifacts. Written by a Genesis run, never hand-edited,
-# and regenerated on the next run - so a committed copy is stale the moment
-# the engine executes again.
-FRAGILITY_MAP.md
-logs/
+# Playwright MCP session artifacts (screenshots, logs, snapshots)
+.playwright-mcp/
+
+# Claude Code internals
+.claude/commands/
+.claude/scheduled_tasks.lock
+.claude/worktrees/
+
+# PSR.ai recording config
+config.yml
+
+# Internal strategy / private working docs - never publish
+_private/
+
+# Python build artifacts
+src/*.egg-info/
+*.egg-info/
+validation/fastapi-api/genesis/tasks.db
+
+# Build artifacts - built in CI, never committed
+build/
+dist/
+*.whl
+*.tar.gz
+
+# Local Claude settings - not for public repo
+.claude/settings.json
+.claude/settings.local.json
+
+# pytest-cov data file - regenerated locally, never committed
+.coverage

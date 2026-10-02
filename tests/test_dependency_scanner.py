@@ -5,7 +5,7 @@ cves() calls out to OSV.dev — mocked here for a deterministic, network-free
 suite; the Docker QA pass covers the real network path.
 """
 
-from genesis_architect_pro.dependency_scanner import (
+from genesis_architect.pro.dependency_scanner import (
     find_python_dependencies,
     scan_dependency_cves,
     scan_do_not_touch_risks,
@@ -52,7 +52,7 @@ class TestScanDependencyCVEs:
     def test_no_dependencies_no_network_call(self, tmp_path, monkeypatch):
         calls = []
         monkeypatch.setattr(
-            "genesis_architect_pro.package_registry.query_osv",
+            "genesis_architect.pro.package_registry.query_osv",
             lambda *a, **k: calls.append(a) or None,
         )
         _write(tmp_path / "pyproject.toml", "[project]\nname = \"t\"\n")
@@ -67,7 +67,7 @@ class TestScanDependencyCVEs:
             vuln_ids = ["CVE-2020-14343"]
 
         monkeypatch.setattr(
-            "genesis_architect_pro.package_registry.query_osv",
+            "genesis_architect.pro.package_registry.query_osv",
             lambda pkg, eco, version="": FakeSignal(),
         )
         cves = scan_dependency_cves(tmp_path)
@@ -83,7 +83,7 @@ class TestScanDependencyCVEs:
         def boom(*a, **k):
             raise ConnectionError("OSV unreachable")
 
-        monkeypatch.setattr("genesis_architect_pro.package_registry.query_osv", boom)
+        monkeypatch.setattr("genesis_architect.pro.package_registry.query_osv", boom)
         assert scan_dependency_cves(tmp_path) == []
 
     def test_bounded_to_max_packages(self, tmp_path, monkeypatch):
@@ -100,7 +100,7 @@ class TestScanDependencyCVEs:
             calls.append(pkg)
             return EmptySignal()
 
-        monkeypatch.setattr("genesis_architect_pro.package_registry.query_osv", fake_osv)
+        monkeypatch.setattr("genesis_architect.pro.package_registry.query_osv", fake_osv)
         scan_dependency_cves(tmp_path, max_packages=2)
         assert len(calls) == 2
 
@@ -118,7 +118,7 @@ class TestScanDoNotTouchRisks:
             classifications = [FakeClassification()]
 
         monkeypatch.setattr(
-            "genesis_architect_pro.fragility_classifier.classify_all",
+            "genesis_architect.pro.fragility_classifier.classify_all",
             lambda *a, **k: FakeReport(),
         )
         risks = scan_do_not_touch_risks(tmp_path)
@@ -130,5 +130,5 @@ class TestScanDoNotTouchRisks:
         def boom(*a, **k):
             raise RuntimeError("boom")
 
-        monkeypatch.setattr("genesis_architect_pro.fragility_classifier.classify_all", boom)
+        monkeypatch.setattr("genesis_architect.pro.fragility_classifier.classify_all", boom)
         assert scan_do_not_touch_risks(tmp_path) == []

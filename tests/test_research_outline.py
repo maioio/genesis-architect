@@ -12,7 +12,7 @@ import ast
 import json
 from pathlib import Path
 
-from genesis_architect_pro.research_outline import (
+from genesis_architect.pro.research_outline import (
     FIELDS_FILENAME,
     OUTLINE_FILENAME,
     Outline,
@@ -242,11 +242,11 @@ class TestLoadFailSafe:
 # ---------------------------------------------------------------------------
 
 class TestNoInternalDependencies:
-    def test_module_imports_nothing_from_genesis_architect_pro(self):
+    def test_module_imports_nothing_from_the_engine_layer(self):
         """R1's entire value as an L0 module rests on this: it cannot be
         part of a requires/handoffs cycle if it never imports a sibling
         engine module in the first place."""
-        import genesis_architect_pro.research_outline as mod
+        import genesis_architect.pro.research_outline as mod
 
         source = Path(mod.__file__).read_text(encoding="utf-8")
         tree = ast.parse(source)
@@ -254,11 +254,11 @@ class TestNoInternalDependencies:
         offending: list[str] = []
         for node in ast.walk(tree):
             if isinstance(node, ast.ImportFrom) and node.module:
-                if node.module.startswith("genesis_architect_pro"):
+                if node.module.startswith("genesis_architect.pro"):
                     offending.append(node.module)
             elif isinstance(node, ast.Import):
                 for alias in node.names:
-                    if alias.name.startswith("genesis_architect_pro"):
+                    if alias.name.startswith("genesis_architect.pro"):
                         offending.append(alias.name)
 
         assert offending == []

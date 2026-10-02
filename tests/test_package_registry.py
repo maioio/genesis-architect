@@ -4,7 +4,7 @@ from __future__ import annotations
 from unittest.mock import patch
 
 
-from genesis_architect_pro.package_registry import (
+from genesis_architect.pro.package_registry import (
     PackageSignal,
     _days_since,
     _signal_line,
@@ -128,7 +128,7 @@ _PYPI_FIXTURE = {
 
 class TestQueryPypi:
     def test_returns_package_signal(self):
-        with patch("genesis_architect_pro.package_registry._fetch_json",
+        with patch("genesis_architect.pro.package_registry._fetch_json",
                    return_value=_PYPI_FIXTURE):
             sig = query_pypi("requests")
         assert isinstance(sig, PackageSignal)
@@ -137,19 +137,19 @@ class TestQueryPypi:
         assert sig.latest_version == "2.28.0"
 
     def test_status_is_string(self):
-        with patch("genesis_architect_pro.package_registry._fetch_json",
+        with patch("genesis_architect.pro.package_registry._fetch_json",
                    return_value=_PYPI_FIXTURE):
             sig = query_pypi("requests")
         assert sig.status in ("active", "slow", "stale", "unknown")
 
     def test_signal_line_is_nonempty(self):
-        with patch("genesis_architect_pro.package_registry._fetch_json",
+        with patch("genesis_architect.pro.package_registry._fetch_json",
                    return_value=_PYPI_FIXTURE):
             sig = query_pypi("requests")
         assert len(sig.signal_line) > 0
 
     def test_registry_unavailable_returns_unknown(self):
-        with patch("genesis_architect_pro.package_registry._fetch_json",
+        with patch("genesis_architect.pro.package_registry._fetch_json",
                    return_value=None):
             sig = query_pypi("requests")
         assert sig.status == "unknown"
@@ -157,7 +157,7 @@ class TestQueryPypi:
 
     def test_no_releases_gives_minus_one_days(self):
         data = {"info": {"version": "1.0.0"}, "releases": {"1.0.0": []}}
-        with patch("genesis_architect_pro.package_registry._fetch_json",
+        with patch("genesis_architect.pro.package_registry._fetch_json",
                    return_value=data):
             sig = query_pypi("mypkg")
         assert sig.last_release_days == -1
@@ -179,7 +179,7 @@ class TestQueryNpm:
             if "downloads" in url:
                 return _NPM_DL_FIXTURE
             return _NPM_META_FIXTURE
-        with patch("genesis_architect_pro.package_registry._fetch_json",
+        with patch("genesis_architect.pro.package_registry._fetch_json",
                    side_effect=fake_fetch):
             sig = query_npm("react")
         assert isinstance(sig, PackageSignal)
@@ -189,13 +189,13 @@ class TestQueryNpm:
     def test_downloads_populated(self):
         def fake_fetch(url, **kw):
             return _NPM_DL_FIXTURE if "downloads" in url else _NPM_META_FIXTURE
-        with patch("genesis_architect_pro.package_registry._fetch_json",
+        with patch("genesis_architect.pro.package_registry._fetch_json",
                    side_effect=fake_fetch):
             sig = query_npm("react")
         assert sig.monthly_downloads == 3_000_000
 
     def test_registry_unavailable(self):
-        with patch("genesis_architect_pro.package_registry._fetch_json",
+        with patch("genesis_architect.pro.package_registry._fetch_json",
                    return_value=None):
             sig = query_npm("react")
         assert sig.status == "unknown"
@@ -215,7 +215,7 @@ _CRATES_FIXTURE = {
 
 class TestQueryCrates:
     def test_returns_package_signal(self):
-        with patch("genesis_architect_pro.package_registry._fetch_json",
+        with patch("genesis_architect.pro.package_registry._fetch_json",
                    return_value=_CRATES_FIXTURE):
             sig = query_crates("serde")
         assert isinstance(sig, PackageSignal)
@@ -223,7 +223,7 @@ class TestQueryCrates:
         assert sig.latest_version == "1.0.188"
 
     def test_registry_unavailable(self):
-        with patch("genesis_architect_pro.package_registry._fetch_json",
+        with patch("genesis_architect.pro.package_registry._fetch_json",
                    return_value=None):
             sig = query_crates("serde")
         assert sig.status == "unknown"
@@ -235,37 +235,37 @@ class TestQueryCrates:
 
 class TestQueryPackage:
     def test_dispatches_to_pypi(self):
-        with patch("genesis_architect_pro.package_registry.query_pypi") as mock:
+        with patch("genesis_architect.pro.package_registry.query_pypi") as mock:
             mock.return_value = PackageSignal("p", "pypi", "1", 10, -1, "active", "line")
             query_package("requests", "pypi")
         mock.assert_called_once_with("requests")
 
     def test_dispatches_to_npm(self):
-        with patch("genesis_architect_pro.package_registry.query_npm") as mock:
+        with patch("genesis_architect.pro.package_registry.query_npm") as mock:
             mock.return_value = PackageSignal("p", "npm", "1", 10, -1, "active", "line")
             query_package("react", "npm")
         mock.assert_called_once_with("react")
 
     def test_dispatches_to_crates(self):
-        with patch("genesis_architect_pro.package_registry.query_crates") as mock:
+        with patch("genesis_architect.pro.package_registry.query_crates") as mock:
             mock.return_value = PackageSignal("p", "crates", "1", 10, -1, "active", "line")
             query_package("serde", "crates")
         mock.assert_called_once_with("serde")
 
     def test_crates_io_alias(self):
-        with patch("genesis_architect_pro.package_registry.query_crates") as mock:
+        with patch("genesis_architect.pro.package_registry.query_crates") as mock:
             mock.return_value = PackageSignal("p", "crates", "1", 10, -1, "active", "line")
             query_package("serde", "crates.io")
         mock.assert_called_once()
 
     def test_dispatches_to_maven(self):
-        with patch("genesis_architect_pro.package_registry.query_maven") as mock:
+        with patch("genesis_architect.pro.package_registry.query_maven") as mock:
             mock.return_value = PackageSignal("p", "maven", "1", 10, -1, "active", "line")
             query_package("com.google.guava:guava", "maven")
         mock.assert_called_once_with("com.google.guava:guava")
 
     def test_dispatches_to_nuget(self):
-        with patch("genesis_architect_pro.package_registry.query_nuget") as mock:
+        with patch("genesis_architect.pro.package_registry.query_nuget") as mock:
             mock.return_value = PackageSignal("p", "nuget", "1", 10, -1, "active", "line")
             query_package("Newtonsoft.Json", "nuget")
         mock.assert_called_once_with("Newtonsoft.Json")
@@ -284,7 +284,7 @@ class TestQueryMaven:
     def test_parses_search_response(self):
         payload = {"response": {"docs": [{"latestVersion": "33.0.0",
                                           "timestamp": 1700000000000}]}}
-        with patch("genesis_architect_pro.package_registry._fetch_json",
+        with patch("genesis_architect.pro.package_registry._fetch_json",
                    return_value=payload):
             sig = query_maven("com.google.guava:guava")
         assert sig.ecosystem == "maven"
@@ -297,7 +297,7 @@ class TestQueryMaven:
         assert "groupId:artifactId" in sig.signal_line
 
     def test_registry_unavailable(self):
-        with patch("genesis_architect_pro.package_registry._fetch_json",
+        with patch("genesis_architect.pro.package_registry._fetch_json",
                    return_value=None):
             sig = query_maven("com.google.guava:guava")
         assert sig.status == "unknown"
@@ -307,7 +307,7 @@ class TestQueryNuget:
     def test_parses_search_and_registration(self):
         search = {"data": [{"version": "13.0.3", "totalDownloads": 5_000_000_000}]}
         reg = {"items": [{"items": [{"catalogEntry": {"published": "2024-01-01T00:00:00Z"}}]}]}
-        with patch("genesis_architect_pro.package_registry._fetch_json",
+        with patch("genesis_architect.pro.package_registry._fetch_json",
                    side_effect=[search, reg]):
             sig = query_nuget("Newtonsoft.Json")
         assert sig.ecosystem == "nuget"
@@ -319,13 +319,13 @@ class TestQueryNuget:
         search = {"data": [{"version": "4.0.0", "totalDownloads": 10}]}
         index = {"items": [{"@id": "https://api.nuget.org/page/2"}]}
         page = {"items": [{"catalogEntry": {"published": "2024-01-01T00:00:00Z"}}]}
-        with patch("genesis_architect_pro.package_registry._fetch_json",
+        with patch("genesis_architect.pro.package_registry._fetch_json",
                    side_effect=[search, index, page]):
             sig = query_nuget("Serilog")
         assert sig.last_release_days > 0
 
     def test_registry_unavailable(self):
-        with patch("genesis_architect_pro.package_registry._fetch_json",
+        with patch("genesis_architect.pro.package_registry._fetch_json",
                    return_value=None):
             sig = query_nuget("Newtonsoft.Json")
         assert sig.status == "unknown"
@@ -393,7 +393,7 @@ class TestScorePackages:
         stale = self._make_sig("stale_pkg", "stale")
         active = self._make_sig("active_pkg", "active")
         slow = self._make_sig("slow_pkg", "slow")
-        with patch("genesis_architect_pro.package_registry.query_package",
+        with patch("genesis_architect.pro.package_registry.query_package",
                    side_effect=[stale, active, slow]):
             results = score_packages([("stale_pkg", "pypi"),
                                       ("active_pkg", "pypi"),
@@ -403,7 +403,7 @@ class TestScorePackages:
 
     def test_returns_all_signals(self):
         sig = self._make_sig("pkg", "active")
-        with patch("genesis_architect_pro.package_registry.query_package",
+        with patch("genesis_architect.pro.package_registry.query_package",
                    return_value=sig):
             results = score_packages([("pkg", "pypi"), ("pkg2", "npm")])
         assert len(results) == 2

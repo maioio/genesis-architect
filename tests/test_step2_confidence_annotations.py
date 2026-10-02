@@ -103,7 +103,7 @@ def _cycle_graph(root: Path) -> dict:
 class TestAntiPatternConfidence:
     def test_all_patterns_have_confidence_field(self, tmp_path):
         _make_python_project(tmp_path)
-        from genesis_architect_pro.antipattern_detector import detect_all
+        from genesis_architect.pro.antipattern_detector import detect_all
         report = detect_all(tmp_path)
         for p in report.patterns:
             assert hasattr(p, "confidence"), f"Missing confidence on {p.type}"
@@ -113,7 +113,7 @@ class TestAntiPatternConfidence:
 
     def test_all_patterns_have_basis_field(self, tmp_path):
         _make_python_project(tmp_path)
-        from genesis_architect_pro.antipattern_detector import detect_all
+        from genesis_architect.pro.antipattern_detector import detect_all
         report = detect_all(tmp_path)
         for p in report.patterns:
             assert hasattr(p, "basis"), f"Missing basis on {p.type}"
@@ -121,7 +121,7 @@ class TestAntiPatternConfidence:
 
     def test_god_class_confidence_is_float_in_range(self, tmp_path):
         _inject_graph(tmp_path, _god_class_graph(tmp_path, fan_out=20))
-        from genesis_architect_pro.antipattern_detector import detect_all
+        from genesis_architect.pro.antipattern_detector import detect_all
         report = detect_all(tmp_path)
         gods = [p for p in report.patterns if p.type == "god-class"]
         assert gods, "Expected a god-class to be detected"
@@ -129,7 +129,7 @@ class TestAntiPatternConfidence:
 
     def test_god_class_basis_mentions_fan_out(self, tmp_path):
         _inject_graph(tmp_path, _god_class_graph(tmp_path, fan_out=20))
-        from genesis_architect_pro.antipattern_detector import detect_all
+        from genesis_architect.pro.antipattern_detector import detect_all
         report = detect_all(tmp_path)
         gods = [p for p in report.patterns if p.type == "god-class"]
         assert gods
@@ -138,7 +138,7 @@ class TestAntiPatternConfidence:
     def test_god_class_extreme_fan_out_has_higher_confidence(self, tmp_path):
         """fan_out=40 should produce higher confidence than fan_out=16."""
         _inject_graph(tmp_path, _god_class_graph(tmp_path, fan_out=40))
-        from genesis_architect_pro.antipattern_detector import detect_all
+        from genesis_architect.pro.antipattern_detector import detect_all
         high_report = detect_all(tmp_path)
         high_conf = [p.confidence for p in high_report.patterns if p.type == "god-class"][0]
 
@@ -154,7 +154,7 @@ class TestAntiPatternConfidence:
 
     def test_circular_dep_2node_confidence_is_1(self, tmp_path):
         _inject_graph(tmp_path, _cycle_graph(tmp_path))
-        from genesis_architect_pro.antipattern_detector import detect_all
+        from genesis_architect.pro.antipattern_detector import detect_all
         report = detect_all(tmp_path)
         cycles = [p for p in report.patterns if p.type == "circular-dep"]
         assert cycles
@@ -162,7 +162,7 @@ class TestAntiPatternConfidence:
 
     def test_circular_dep_basis_mentions_cycle_length(self, tmp_path):
         _inject_graph(tmp_path, _cycle_graph(tmp_path))
-        from genesis_architect_pro.antipattern_detector import detect_all
+        from genesis_architect.pro.antipattern_detector import detect_all
         report = detect_all(tmp_path)
         cycles = [p for p in report.patterns if p.type == "circular-dep"]
         assert cycles
@@ -189,7 +189,7 @@ class TestAntiPatternConfidence:
             "module_count": 3, "built_at": "2026-01-01T00:00:00+00:00",
         }
         _inject_graph(tmp_path, graph)
-        from genesis_architect_pro.antipattern_detector import detect_all
+        from genesis_architect.pro.antipattern_detector import detect_all
         report = detect_all(tmp_path)
         cycle_confs = [p.confidence for p in report.patterns if p.type == "circular-dep"]
         dead_confs = [p.confidence for p in report.patterns if p.type == "dead-code"]
@@ -201,7 +201,7 @@ class TestAntiPatternConfidence:
     def test_existing_fields_unchanged(self, tmp_path):
         """Existing AntiPattern fields must still be present after adding confidence."""
         _inject_graph(tmp_path, _god_class_graph(tmp_path, fan_out=20))
-        from genesis_architect_pro.antipattern_detector import detect_all
+        from genesis_architect.pro.antipattern_detector import detect_all
         report = detect_all(tmp_path)
         for p in report.patterns:
             for field in ("id", "type", "severity", "file", "description",
@@ -211,7 +211,7 @@ class TestAntiPatternConfidence:
     def test_to_dict_includes_confidence(self, tmp_path):
         """AntiPattern serialised via to_dict / asdict must include confidence."""
         _inject_graph(tmp_path, _god_class_graph(tmp_path, fan_out=20))
-        from genesis_architect_pro.antipattern_detector import detect_all
+        from genesis_architect.pro.antipattern_detector import detect_all
         report = detect_all(tmp_path)
         d = report.to_dict()
         assert "patterns" in d
@@ -223,7 +223,7 @@ class TestAntiPatternConfidence:
     def test_json_output_includes_confidence(self, tmp_path):
         """json.dumps(report.to_dict()) must round-trip confidence cleanly."""
         _inject_graph(tmp_path, _god_class_graph(tmp_path, fan_out=20))
-        from genesis_architect_pro.antipattern_detector import detect_all
+        from genesis_architect.pro.antipattern_detector import detect_all
         report = detect_all(tmp_path)
         raw = json.dumps(report.to_dict())
         parsed = json.loads(raw)
@@ -234,7 +234,7 @@ class TestAntiPatternConfidence:
 
     def test_confidence_default_is_1_for_new_antipattern(self):
         """Default constructor must produce confidence=1.0 (backward-compat default)."""
-        from genesis_architect_pro.antipattern_detector import AntiPattern
+        from genesis_architect.pro.antipattern_detector import AntiPattern
         ap = AntiPattern(id="x", type="god-class", severity="HIGH", file="a.py",
                          description="test")
         assert ap.confidence == 1.0
@@ -243,7 +243,7 @@ class TestAntiPatternConfidence:
     def test_basis_is_nonempty_for_detected_patterns(self, tmp_path):
         """Detected patterns must have a non-empty basis string."""
         _inject_graph(tmp_path, _god_class_graph(tmp_path, fan_out=20))
-        from genesis_architect_pro.antipattern_detector import detect_all
+        from genesis_architect.pro.antipattern_detector import detect_all
         report = detect_all(tmp_path)
         for p in report.patterns:
             if p.type in ("god-class", "hub-file", "circular-dep", "dead-code"):
@@ -257,19 +257,19 @@ class TestAntiPatternConfidence:
 class TestScoreConfidence:
     def test_score_result_has_confidence_key(self, tmp_path):
         _make_python_project(tmp_path)
-        from genesis_architect_pro.architecture_scorer import score_project
+        from genesis_architect.pro.architecture_scorer import score_project
         result = score_project(tmp_path)
         assert "confidence" in result
 
     def test_score_result_has_confidence_basis_key(self, tmp_path):
         _make_python_project(tmp_path)
-        from genesis_architect_pro.architecture_scorer import score_project
+        from genesis_architect.pro.architecture_scorer import score_project
         result = score_project(tmp_path)
         assert "confidence_basis" in result
 
     def test_score_confidence_is_float_in_range(self, tmp_path):
         _make_python_project(tmp_path)
-        from genesis_architect_pro.architecture_scorer import score_project
+        from genesis_architect.pro.architecture_scorer import score_project
         result = score_project(tmp_path)
         c = result["confidence"]
         assert isinstance(c, float)
@@ -277,21 +277,21 @@ class TestScoreConfidence:
 
     def test_score_confidence_basis_is_string(self, tmp_path):
         _make_python_project(tmp_path)
-        from genesis_architect_pro.architecture_scorer import score_project
+        from genesis_architect.pro.architecture_scorer import score_project
         result = score_project(tmp_path)
         assert isinstance(result["confidence_basis"], str)
         assert len(result["confidence_basis"]) > 0
 
     def test_score_confidence_basis_mentions_modules(self, tmp_path):
         _make_python_project(tmp_path)
-        from genesis_architect_pro.architecture_scorer import score_project
+        from genesis_architect.pro.architecture_scorer import score_project
         result = score_project(tmp_path)
         assert "module" in result["confidence_basis"].lower()
 
     def test_existing_score_keys_still_present(self, tmp_path):
         """No existing key must be removed or renamed by Step 2."""
         _make_python_project(tmp_path)
-        from genesis_architect_pro.architecture_scorer import score_project
+        from genesis_architect.pro.architecture_scorer import score_project
         result = score_project(tmp_path)
         for key in ("total", "modularity", "coupling", "cohesion", "layering",
                     "profile", "weights", "cycle_penalty", "issues",
@@ -301,26 +301,26 @@ class TestScoreConfidence:
 
     def test_more_modules_higher_confidence(self, tmp_path):
         """A project with 50+ modules should have higher confidence than a 3-module one."""
-        from genesis_architect_pro.architecture_scorer import _score_confidence
+        from genesis_architect.pro.architecture_scorer import _score_confidence
         small_conf, _ = _score_confidence(module_count=3, cycle_count=0, history_entries=0)
         large_conf, _ = _score_confidence(module_count=50, cycle_count=0, history_entries=0)
         assert large_conf >= small_conf
 
     def test_history_raises_confidence(self, tmp_path):
-        from genesis_architect_pro.architecture_scorer import _score_confidence
+        from genesis_architect.pro.architecture_scorer import _score_confidence
         no_hist, _ = _score_confidence(module_count=10, cycle_count=0, history_entries=0)
         with_hist, _ = _score_confidence(module_count=10, cycle_count=0, history_entries=3)
         assert with_hist > no_hist
 
     def test_many_cycles_lowers_confidence(self, tmp_path):
-        from genesis_architect_pro.architecture_scorer import _score_confidence
+        from genesis_architect.pro.architecture_scorer import _score_confidence
         no_cycles, _ = _score_confidence(module_count=20, cycle_count=0, history_entries=0)
         many_cycles, _ = _score_confidence(module_count=20, cycle_count=10, history_entries=0)
         assert many_cycles <= no_cycles
 
     def test_json_output_includes_confidence(self, tmp_path):
         _make_python_project(tmp_path)
-        from genesis_architect_pro.architecture_scorer import score_project
+        from genesis_architect.pro.architecture_scorer import score_project
         result = score_project(tmp_path)
         raw = json.dumps(result)
         parsed = json.loads(raw)
@@ -330,7 +330,7 @@ class TestScoreConfidence:
 
     def test_all_profiles_produce_confidence(self, tmp_path):
         _make_python_project(tmp_path)
-        from genesis_architect_pro.architecture_scorer import score_project, PROFILES
+        from genesis_architect.pro.architecture_scorer import score_project, PROFILES
         for profile in PROFILES:
             result = score_project(tmp_path, profile=profile)
             assert "confidence" in result, f"confidence missing for profile={profile}"
@@ -343,14 +343,14 @@ class TestScoreConfidence:
 
 class TestRefactorStepConfidence:
     def test_refactor_step_has_confidence_field(self):
-        from genesis_architect_pro.refactoring_planner import RefactorStep
+        from genesis_architect.pro.refactoring_planner import RefactorStep
         step = RefactorStep(id=1, tier=1, rule="hub-splitter",
                             priority="HIGH", title="test", why="because")
         assert hasattr(step, "confidence")
         assert 0.0 <= step.confidence <= 1.0
 
     def test_refactor_step_has_confidence_basis_field(self):
-        from genesis_architect_pro.refactoring_planner import RefactorStep
+        from genesis_architect.pro.refactoring_planner import RefactorStep
         step = RefactorStep(id=1, tier=1, rule="hub-splitter",
                             priority="HIGH", title="test", why="because")
         assert hasattr(step, "confidence_basis")
@@ -358,7 +358,7 @@ class TestRefactorStepConfidence:
 
     def test_existing_step_fields_still_present(self, tmp_path):
         _make_python_project(tmp_path)
-        from genesis_architect_pro.refactoring_planner import generate_plan
+        from genesis_architect.pro.refactoring_planner import generate_plan
         plan = generate_plan(tmp_path)
         for step in plan.steps:
             for field in ("id", "tier", "rule", "priority", "title", "why",
@@ -376,7 +376,7 @@ class TestRefactorStepConfidence:
         (src / "god.py").write_text("\n".join(imports) + "\n")
         (tmp_path / "pyproject.toml").write_text("[tool.poetry]\nname='x'\n")
 
-        from genesis_architect_pro.refactoring_planner import generate_plan
+        from genesis_architect.pro.refactoring_planner import generate_plan
         plan = generate_plan(tmp_path)
         for step in plan.steps:
             assert 0.0 <= step.confidence <= 1.0, (
@@ -385,7 +385,7 @@ class TestRefactorStepConfidence:
 
     def test_critical_step_confidence_above_medium(self, tmp_path):
         """CRITICAL priority steps should have higher confidence than MEDIUM ones."""
-        from genesis_architect_pro.refactoring_planner import _step_confidence
+        from genesis_architect.pro.refactoring_planner import _step_confidence
         crit_conf, _ = _step_confidence("CRITICAL")
         med_conf, _ = _step_confidence("MEDIUM")
         assert crit_conf > med_conf
@@ -399,7 +399,7 @@ class TestRefactorStepConfidence:
         (src / "god.py").write_text("\n".join(imports) + "\n")
         (tmp_path / "pyproject.toml").write_text("[tool.poetry]\nname='x'\n")
 
-        from genesis_architect_pro.refactoring_planner import generate_plan
+        from genesis_architect.pro.refactoring_planner import generate_plan
         plan = generate_plan(tmp_path)
         for step in plan.steps:
             assert step.confidence_basis, (
@@ -415,7 +415,7 @@ class TestRefactorStepConfidence:
         (src / "god.py").write_text("\n".join(imports) + "\n")
         (tmp_path / "pyproject.toml").write_text("[tool.poetry]\nname='x'\n")
 
-        from genesis_architect_pro.refactoring_planner import generate_plan
+        from genesis_architect.pro.refactoring_planner import generate_plan
         plan = generate_plan(tmp_path)
         d = plan.to_dict()
         for step_d in d["steps"]:
@@ -431,7 +431,7 @@ class TestRefactorStepConfidence:
         (src / "god.py").write_text("\n".join(imports) + "\n")
         (tmp_path / "pyproject.toml").write_text("[tool.poetry]\nname='x'\n")
 
-        from genesis_architect_pro.refactoring_planner import generate_plan
+        from genesis_architect.pro.refactoring_planner import generate_plan
         plan = generate_plan(tmp_path)
         raw = json.dumps(plan.to_dict())
         parsed = json.loads(raw)
@@ -441,7 +441,7 @@ class TestRefactorStepConfidence:
 
     def test_default_step_confidence_is_0_8(self):
         """Default constructor confidence must be 0.8 (the spec default)."""
-        from genesis_architect_pro.refactoring_planner import RefactorStep
+        from genesis_architect.pro.refactoring_planner import RefactorStep
         step = RefactorStep(id=1, tier=1, rule="x", priority="HIGH",
                             title="t", why="w")
         assert step.confidence == 0.8
@@ -449,8 +449,8 @@ class TestRefactorStepConfidence:
 
     def test_step_inherits_antipattern_confidence(self, tmp_path):
         """Steps derived from high-confidence anti-patterns should reflect that."""
-        from genesis_architect_pro.antipattern_detector import AntiPattern
-        from genesis_architect_pro.refactoring_planner import _step_confidence
+        from genesis_architect.pro.antipattern_detector import AntiPattern
+        from genesis_architect.pro.refactoring_planner import _step_confidence
         ap = AntiPattern(id="x", type="god-class", severity="CRITICAL",
                          file="a.py", description="test",
                          confidence=0.99, basis="fan_out=40")
@@ -466,7 +466,7 @@ class TestRefactorStepConfidence:
 class TestBackwardCompatibility:
     def test_antipattern_report_to_dict_still_works(self, tmp_path):
         _make_python_project(tmp_path)
-        from genesis_architect_pro.antipattern_detector import detect_all
+        from genesis_architect.pro.antipattern_detector import detect_all
         report = detect_all(tmp_path)
         d = report.to_dict()
         # Legacy consumers only read these keys — they must still be present
@@ -480,7 +480,7 @@ class TestBackwardCompatibility:
 
     def test_score_project_old_keys_intact(self, tmp_path):
         _make_python_project(tmp_path)
-        from genesis_architect_pro.architecture_scorer import score_project
+        from genesis_architect.pro.architecture_scorer import score_project
         result = score_project(tmp_path)
         # A consumer that reads only these keys must still work
         _ = result["total"] + result["modularity"] + result["coupling"]
@@ -489,7 +489,7 @@ class TestBackwardCompatibility:
 
     def test_refactoring_plan_to_dict_old_keys_intact(self, tmp_path):
         _make_python_project(tmp_path)
-        from genesis_architect_pro.refactoring_planner import generate_plan
+        from genesis_architect.pro.refactoring_planner import generate_plan
         plan = generate_plan(tmp_path)
         d = plan.to_dict()
         assert "steps" in d
@@ -507,7 +507,7 @@ class TestBackwardCompatibility:
             "\n".join(f"from src.mod_{i} import X_{i}" for i in range(18)) + "\n"
         )
         (tmp_path / "pyproject.toml").write_text("[tool.poetry]\nname='x'\n")
-        from genesis_architect_pro.refactoring_planner import generate_plan
+        from genesis_architect.pro.refactoring_planner import generate_plan
         plan = generate_plan(tmp_path)
         d = plan.to_dict()
         for step_d in d["steps"]:

@@ -5,7 +5,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 import json
 
-from genesis_architect_pro.capability_map import (
+from genesis_architect.pro.capability_map import (
     CAPABILITIES,
     INTERNAL,
     format_map,

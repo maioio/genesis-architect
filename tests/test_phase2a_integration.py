@@ -98,7 +98,7 @@ class TestArchitectureScorerIntegration:
 
     def test_keys_present_in_scan_output(self, tmp_path):
         """scan() always emits architecture_score and architecture_profile."""
-        from genesis_architect_pro.recovery_scan import scan
+        from genesis_architect.pro.recovery_scan import scan
         proj = _make_empty_project(tmp_path)
         result = scan(proj)
         assert "architecture_score" in result, "architecture_score missing from scan()"
@@ -106,7 +106,7 @@ class TestArchitectureScorerIntegration:
 
     def test_architecture_score_is_numeric_or_none(self, tmp_path):
         """architecture_score must be numeric (int or float, 0-100) or None on failure."""
-        from genesis_architect_pro.recovery_scan import scan
+        from genesis_architect.pro.recovery_scan import scan
         proj = _make_empty_project(tmp_path)
         result = scan(proj)
         score = result["architecture_score"]
@@ -118,7 +118,7 @@ class TestArchitectureScorerIntegration:
 
     def test_architecture_profile_is_string(self, tmp_path):
         """architecture_profile must be a non-empty string."""
-        from genesis_architect_pro.recovery_scan import scan
+        from genesis_architect.pro.recovery_scan import scan
         proj = _make_empty_project(tmp_path)
         result = scan(proj)
         profile = result["architecture_profile"]
@@ -126,9 +126,9 @@ class TestArchitectureScorerIntegration:
 
     def test_scan_never_crashes_if_scorer_raises(self, tmp_path):
         """scan() must not crash even if architecture_scorer.score_project raises."""
-        from genesis_architect_pro.recovery_scan import scan
+        from genesis_architect.pro.recovery_scan import scan
         proj = _make_empty_project(tmp_path)
-        with patch("genesis_architect_pro.architecture_scorer.score_project",
+        with patch("genesis_architect.pro.architecture_scorer.score_project",
                    side_effect=RuntimeError("boom")):
             result = scan(proj)
         assert "architecture_score" in result
@@ -136,7 +136,7 @@ class TestArchitectureScorerIntegration:
 
     def test_architecture_score_reflected_in_report(self):
         """generate_report picks up architecture_score and classifies it."""
-        from genesis_architect_pro.recovery_report import generate_report
+        from genesis_architect.pro.recovery_report import generate_report
         scan = _make_scan_with_drift(arch_score=80.0)
         report = generate_report(scan)
         assert report.architecture_health.score == 80.0
@@ -144,21 +144,21 @@ class TestArchitectureScorerIntegration:
 
     def test_architecture_score_poor_label(self):
         """Score below 50 → 'poor'."""
-        from genesis_architect_pro.recovery_report import generate_report
+        from genesis_architect.pro.recovery_report import generate_report
         scan = _make_scan_with_drift(arch_score=40.0)
         report = generate_report(scan)
         assert report.architecture_health.label == "poor"
 
     def test_architecture_score_fair_label(self):
         """Score 50–74 → 'fair'."""
-        from genesis_architect_pro.recovery_report import generate_report
+        from genesis_architect.pro.recovery_report import generate_report
         scan = _make_scan_with_drift(arch_score=62.0)
         report = generate_report(scan)
         assert report.architecture_health.label == "fair"
 
     def test_architecture_score_none_label(self):
         """None score → label='unavailable'."""
-        from genesis_architect_pro.recovery_report import generate_report
+        from genesis_architect.pro.recovery_report import generate_report
         scan = _make_scan_with_drift(arch_score=None)
         report = generate_report(scan)
         assert report.architecture_health.label == "unavailable"
@@ -174,21 +174,21 @@ class TestAntipatternIntegration:
 
     def test_anti_patterns_key_present(self, tmp_path):
         """scan() always emits anti_patterns list."""
-        from genesis_architect_pro.recovery_scan import scan
+        from genesis_architect.pro.recovery_scan import scan
         proj = _make_empty_project(tmp_path)
         result = scan(proj)
         assert "anti_patterns" in result
 
     def test_anti_patterns_is_list(self, tmp_path):
         """anti_patterns must be a list."""
-        from genesis_architect_pro.recovery_scan import scan
+        from genesis_architect.pro.recovery_scan import scan
         proj = _make_empty_project(tmp_path)
         result = scan(proj)
         assert isinstance(result["anti_patterns"], list)
 
     def test_each_anti_pattern_has_required_keys(self, tmp_path):
         """Each anti-pattern dict must have kind, file, confidence, severity, basis."""
-        from genesis_architect_pro.recovery_scan import scan
+        from genesis_architect.pro.recovery_scan import scan
         proj = _make_empty_project(tmp_path)
         result = scan(proj)
         for ap in result["anti_patterns"]:
@@ -200,16 +200,16 @@ class TestAntipatternIntegration:
 
     def test_scan_never_crashes_if_detector_raises(self, tmp_path):
         """scan() must not crash even if antipattern_detector.detect_all raises."""
-        from genesis_architect_pro.recovery_scan import scan
+        from genesis_architect.pro.recovery_scan import scan
         proj = _make_empty_project(tmp_path)
-        with patch("genesis_architect_pro.antipattern_detector.detect_all",
+        with patch("genesis_architect.pro.antipattern_detector.detect_all",
                    side_effect=RuntimeError("detector down")):
             result = scan(proj)
         assert result["anti_patterns"] == []
 
     def test_anti_patterns_produce_recommendations(self):
         """Anti-patterns in scan output produce priority-3 recommendations."""
-        from genesis_architect_pro.recovery_report import generate_report
+        from genesis_architect.pro.recovery_report import generate_report
         patterns = [
             {"kind": "god-class", "file": "services/god.py",
              "confidence": 0.80, "severity": "high", "basis": "fan_out=42"},
@@ -225,7 +225,7 @@ class TestAntipatternIntegration:
 
     def test_anti_pattern_confidence_propagated(self):
         """Confidence from anti_pattern dict must appear in the recommendation."""
-        from genesis_architect_pro.recovery_report import generate_report
+        from genesis_architect.pro.recovery_report import generate_report
         patterns = [{"kind": "hub-file", "file": "core.py",
                      "confidence": 0.62, "severity": "medium", "basis": "fan_in=20"}]
         scan = _make_scan_with_drift(anti_patterns=patterns)
@@ -235,7 +235,7 @@ class TestAntipatternIntegration:
 
     def test_anti_pattern_count_in_arch_health(self):
         """architecture_health.anti_pattern_count must reflect the list length."""
-        from genesis_architect_pro.recovery_report import generate_report
+        from genesis_architect.pro.recovery_report import generate_report
         patterns = [
             {"kind": "dead-code", "file": "old.py",
              "confidence": 0.55, "severity": "low", "basis": "unused"},
@@ -254,14 +254,14 @@ class TestAnchorPersistenceIntegration:
 
     def test_anchor_persist_result_present(self, tmp_path):
         """scan() always emits anchor_persist_result."""
-        from genesis_architect_pro.recovery_scan import scan
+        from genesis_architect.pro.recovery_scan import scan
         proj = _make_empty_project(tmp_path)
         result = scan(proj)
         assert "anchor_persist_result" in result
 
     def test_anchor_persist_result_has_required_keys(self, tmp_path):
         """anchor_persist_result must have added, skipped, saved, warnings."""
-        from genesis_architect_pro.recovery_scan import scan
+        from genesis_architect.pro.recovery_scan import scan
         proj = _make_empty_project(tmp_path)
         result = scan(proj)
         apr = result["anchor_persist_result"]
@@ -271,16 +271,16 @@ class TestAnchorPersistenceIntegration:
 
     def test_anchor_persist_result_warnings_is_list(self, tmp_path):
         """anchor_persist_result.warnings must be a list."""
-        from genesis_architect_pro.recovery_scan import scan
+        from genesis_architect.pro.recovery_scan import scan
         proj = _make_empty_project(tmp_path)
         result = scan(proj)
         assert isinstance(result["anchor_persist_result"]["warnings"], list)
 
     def test_scan_never_crashes_if_persist_raises(self, tmp_path):
         """scan() must not crash even if persist_anchors raises."""
-        from genesis_architect_pro.recovery_scan import scan
+        from genesis_architect.pro.recovery_scan import scan
         proj = _make_empty_project(tmp_path)
-        with patch("genesis_architect_pro.source_anchor.persist_anchors",
+        with patch("genesis_architect.pro.source_anchor.persist_anchors",
                    side_effect=RuntimeError("persist failed")):
             result = scan(proj)
         apr = result["anchor_persist_result"]
@@ -297,7 +297,7 @@ class TestMissingPlanRecommendation:
 
     def test_missing_plan_emits_recommendation(self):
         """Scan with no-planned-model basis → recommendation with category 'no-planned-model'."""
-        from genesis_architect_pro.recovery_report import generate_report
+        from genesis_architect.pro.recovery_report import generate_report
         scan = _make_scan_with_drift(planned_missing=True)
         report = generate_report(scan)
         categories = [r.category for r in report.recommendations]
@@ -307,7 +307,7 @@ class TestMissingPlanRecommendation:
 
     def test_missing_plan_rec_is_quick_win(self):
         """No-planned-model recommendation must be a quick win (easy to act on)."""
-        from genesis_architect_pro.recovery_report import generate_report
+        from genesis_architect.pro.recovery_report import generate_report
         scan = _make_scan_with_drift(planned_missing=True)
         report = generate_report(scan)
         recs = [r for r in report.recommendations if r.category == "no-planned-model"]
@@ -315,7 +315,7 @@ class TestMissingPlanRecommendation:
 
     def test_missing_plan_rec_not_risk_zone(self):
         """No-planned-model recommendation must NOT be a risk zone."""
-        from genesis_architect_pro.recovery_report import generate_report
+        from genesis_architect.pro.recovery_report import generate_report
         scan = _make_scan_with_drift(planned_missing=True)
         report = generate_report(scan)
         recs = [r for r in report.recommendations if r.category == "no-planned-model"]
@@ -323,7 +323,7 @@ class TestMissingPlanRecommendation:
 
     def test_missing_plan_rec_has_high_confidence(self):
         """No-planned-model is a structural fact → confidence should be ≥ 0.80."""
-        from genesis_architect_pro.recovery_report import generate_report
+        from genesis_architect.pro.recovery_report import generate_report
         scan = _make_scan_with_drift(planned_missing=True)
         report = generate_report(scan)
         recs = [r for r in report.recommendations if r.category == "no-planned-model"]
@@ -331,7 +331,7 @@ class TestMissingPlanRecommendation:
 
     def test_planned_present_no_such_rec(self):
         """When planned model exists and drift is normal, no no-planned-model rec."""
-        from genesis_architect_pro.recovery_report import generate_report
+        from genesis_architect.pro.recovery_report import generate_report
         scan = _make_scan_with_drift(vagrant=True, planned_missing=False)
         report = generate_report(scan)
         categories = [r.category for r in report.recommendations]
@@ -339,14 +339,14 @@ class TestMissingPlanRecommendation:
 
     def test_empty_project_no_such_rec(self):
         """Completely empty project (no nodes) should not produce no-planned-model."""
-        from genesis_architect_pro.recovery_report import generate_report
+        from genesis_architect.pro.recovery_report import generate_report
         report = generate_report({})
         categories = [r.category for r in report.recommendations]
         assert "no-planned-model" not in categories
 
     def test_missing_plan_rec_suggested_action_has_command(self):
         """Suggested action must mention genesis plan init."""
-        from genesis_architect_pro.recovery_report import generate_report
+        from genesis_architect.pro.recovery_report import generate_report
         scan = _make_scan_with_drift(planned_missing=True)
         report = generate_report(scan)
         recs = [r for r in report.recommendations if r.category == "no-planned-model"]
@@ -362,7 +362,7 @@ class TestDecayForecastIntegration:
 
     def test_compute_drift_score_accepts_forecast_none(self, tmp_path):
         """compute_drift_score(project_dir, forecast=None) must not raise."""
-        from genesis_architect_pro.drift_scorer import compute_drift_score
+        from genesis_architect.pro.drift_scorer import compute_drift_score
         proj = _make_empty_project(tmp_path)
         result = compute_drift_score(proj, forecast=None)
         assert result is not None
@@ -370,7 +370,7 @@ class TestDecayForecastIntegration:
 
     def test_compute_drift_score_accepts_forecast_object(self, tmp_path):
         """compute_drift_score accepts a DecayForecast mock without raising."""
-        from genesis_architect_pro.drift_scorer import compute_drift_score
+        from genesis_architect.pro.drift_scorer import compute_drift_score
 
         # Use a MagicMock to simulate a DecayForecast without constructing the real object
         # (avoids coupling the test to the internal field list of DecayForecast)
@@ -385,7 +385,7 @@ class TestDecayForecastIntegration:
 
     def test_declining_forecast_increases_temporal_penalty(self, tmp_path):
         """A strongly declining forecast should produce a higher score than no forecast."""
-        from genesis_architect_pro.drift_scorer import compute_drift_score
+        from genesis_architect.pro.drift_scorer import compute_drift_score
 
         # Strongly declining forecast mock
         mock_forecast = MagicMock()
@@ -405,7 +405,7 @@ class TestDecayForecastIntegration:
 
     def test_scan_computes_decay_forecast_from_history(self, tmp_path):
         """scan() threads DecayForecast when ≥3 score history records exist."""
-        from genesis_architect_pro.recovery_scan import scan
+        from genesis_architect.pro.recovery_scan import scan
         proj = _make_empty_project(tmp_path)
 
         # Write 4 score history records (required minimum is 3)
@@ -438,7 +438,7 @@ class TestDecayForecastIntegration:
 
     def test_scan_no_crash_without_history(self, tmp_path):
         """scan() must not crash when score_history.jsonl is absent."""
-        from genesis_architect_pro.recovery_scan import scan
+        from genesis_architect.pro.recovery_scan import scan
         proj = _make_empty_project(tmp_path)
         result = scan(proj)
         assert "drift_score" in result
@@ -453,7 +453,7 @@ class TestEndToEndIntegration:
 
     def test_scan_output_is_json_serialisable(self, tmp_path):
         """scan() output must be fully JSON-serialisable (no custom objects)."""
-        from genesis_architect_pro.recovery_scan import scan
+        from genesis_architect.pro.recovery_scan import scan
         proj = _make_empty_project(tmp_path)
         result = scan(proj)
         # Should not raise
@@ -462,7 +462,7 @@ class TestEndToEndIntegration:
 
     def test_generate_report_handles_all_new_keys(self):
         """generate_report() processes all five wires without raising."""
-        from genesis_architect_pro.recovery_report import generate_report
+        from genesis_architect.pro.recovery_report import generate_report
         scan = _make_scan_with_drift(
             vagrant=True,
             stale=True,
@@ -478,7 +478,7 @@ class TestEndToEndIntegration:
 
     def test_full_report_to_dict_has_expected_keys(self):
         """RecoveryReport.to_dict() must include all top-level keys."""
-        from genesis_architect_pro.recovery_report import generate_report
+        from genesis_architect.pro.recovery_report import generate_report
         scan = _make_scan_with_drift(vagrant=True, arch_score=65.0)
         report = generate_report(scan)
         d = report.to_dict()
@@ -490,7 +490,7 @@ class TestEndToEndIntegration:
 
     def test_html_report_renders_without_crash(self):
         """to_html() must succeed end-to-end with all five wires providing data."""
-        from genesis_architect_pro.recovery_report import generate_report
+        from genesis_architect.pro.recovery_report import generate_report
         scan = _make_scan_with_drift(
             vagrant=True, stale=True, arch_score=50.0,
             anti_patterns=[
@@ -505,7 +505,7 @@ class TestEndToEndIntegration:
 
     def test_scan_and_generate_report_for_project(self, tmp_path):
         """generate_report_for_project() end-to-end must never raise."""
-        from genesis_architect_pro.recovery_report import generate_report_for_project
+        from genesis_architect.pro.recovery_report import generate_report_for_project
         proj = _make_empty_project(tmp_path)
         report = generate_report_for_project(proj)
         assert report is not None

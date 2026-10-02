@@ -15,8 +15,7 @@ from pathlib import Path
 
 import pytest
 
-from genesis_architect_pro import ephemeral_purge
-from genesis_architect_pro.ephemeral_purge import (
+from genesis_architect.pro.ephemeral_purge import (
     DEFAULT_PRUNE_DIRS,
     MANIFEST_NAME,
     PROTECTED_BRANCHES,
@@ -74,32 +73,26 @@ def _make_dir_link(link: Path, target: Path) -> None:
 
 #: Stands in for "a process that is not running".
 #:
-#: This used to be computed by spawning a process, waiting for it, and reusing
-#: its now-free PID. That is racy by construction: the OS is free to recycle a
-#: just-freed PID, and under a full suite run - with pytest and other tests
-#: churning subprocesses - it sometimes did, between the lock being written and
-#: purge() checking it. The test then saw a live owner and correctly refused to
-#: delete, so it failed in the full run and passed in isolation.
+#: This used to spawn a process, wait for it, and reuse its now-free PID. That
+#: is racy by construction: the OS may recycle a just-freed PID, and under a
+#: full suite run - with pytest and other tests churning subprocesses - it
+#: sometimes did, between the lock being written and purge() reading it. The
+#: test then saw a live owner, purge correctly refused to delete, and the test
+#: failed in the full run while passing in isolation.
 #:
-#: Liveness is not what these tests are about. Whether _pid_alive() answers
-#: correctly is covered directly in TestPidAlive; what belongs here is the
-#: purge DECISION given a dead owner. So the answer is injected rather than
-#: raced for.
+#: Liveness is covered directly in the _pid_alive tests. What belongs here is
+#: the purge DECISION given a dead owner, so the answer is injected.
 _DEAD_PID = 4_000_000  # above the default pid_max on Linux and Windows alike
 
 
 def _force_dead(monkeypatch, pid: int = _DEAD_PID) -> None:
-    """Make _pid_alive() report exactly `pid` as dead, and nothing else.
-
-    Scoped to one PID rather than a blanket False so that a test with several
-    locks still exercises the real check for the others.
-    """
-    real = ephemeral_purge._pid_alive
+    """Make _pid_alive() report exactly `pid` as dead, and nothing else."""
+    real = _pid_alive
 
     def fake(candidate: int) -> bool:
         return False if candidate == pid else real(candidate)
 
-    monkeypatch.setattr(ephemeral_purge, "_pid_alive", fake)
+    monkeypatch.setattr("genesis_architect.pro.ephemeral_purge._pid_alive", fake)
 
 
 def _make_lock(genesis_dir: Path, name: str, content: str, age_hours: float) -> Path:
@@ -616,28 +609,28 @@ class TestReporting:
 
 class TestCLI:
     def test_purge_command_dry_run_exits_1_when_dirty(self, tmp_path):
-        from genesis_architect_pro.gde_cli import main
+        from genesis_architect.pro.gde_cli import main
         _write_manifest(tmp_path / "temp_old", age_hours=99, ttl_hours=1)
         assert main(["purge", "--dir", str(tmp_path)]) == 1
 
     def test_purge_command_exits_0_when_clean(self, tmp_path):
-        from genesis_architect_pro.gde_cli import main
+        from genesis_architect.pro.gde_cli import main
         assert main(["purge", "--dir", str(tmp_path)]) == 0
 
     def test_purge_command_dry_run_leaves_disk_untouched(self, tmp_path):
-        from genesis_architect_pro.gde_cli import main
+        from genesis_architect.pro.gde_cli import main
         target = _write_manifest(tmp_path / "temp_old", age_hours=99, ttl_hours=1)
         main(["purge", "--dir", str(tmp_path)])
         assert target.is_dir()
 
     def test_purge_command_apply_removes(self, tmp_path):
-        from genesis_architect_pro.gde_cli import main
+        from genesis_architect.pro.gde_cli import main
         target = _write_manifest(tmp_path / "temp_old", age_hours=99, ttl_hours=1)
         assert main(["purge", "--dir", str(tmp_path), "--apply"]) == 0
         assert not target.exists()
 
     def test_purge_command_json_output(self, tmp_path, capsys):
-        from genesis_architect_pro.gde_cli import main
+        from genesis_architect.pro.gde_cli import main
         _write_manifest(tmp_path / "temp_old", age_hours=99, ttl_hours=1)
         main(["purge", "--dir", str(tmp_path), "--json"])
         payload = json.loads(capsys.readouterr().out)
@@ -645,10 +638,10 @@ class TestCLI:
         assert len(payload["candidates"]) == 1
 
     def test_purge_command_bad_dir_exits_1(self, tmp_path):
-        from genesis_architect_pro.gde_cli import main
+        from genesis_architect.pro.gde_cli import main
         assert main(["purge", "--dir", str(tmp_path / "nope")]) == 1
 
     def test_in_package_namespace(self):
-        import genesis_architect_pro as pkg
+        import genesis_architect.pro as pkg
         for name in ("purge", "hygiene_notice", "mark_ephemeral", "PurgeReport"):
             assert hasattr(pkg, name)

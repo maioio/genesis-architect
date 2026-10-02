@@ -13,8 +13,8 @@ import stat
 
 import pytest
 
-from genesis_architect_pro.ephemeral_purge import MANIFEST_NAME, purge, read_manifest
-from genesis_architect_pro.skill_fetcher import (
+from genesis_architect.pro.ephemeral_purge import MANIFEST_NAME, purge, read_manifest
+from genesis_architect.pro.skill_fetcher import (
     DEFAULT_TTL_HOURS,
     MAX_TTL_HOURS,
     REGISTRY,
@@ -54,7 +54,7 @@ def _matching_head(monkeypatch):
         return source.commit if source else ""
 
     monkeypatch.setattr(
-        "genesis_architect_pro.skill_fetcher._default_head_resolver", resolver)
+        "genesis_architect.pro.skill_fetcher._default_head_resolver", resolver)
 
 
 # ---------------------------------------------------------------------------
@@ -515,33 +515,33 @@ class TestReporting:
 
 class TestCLI:
     def test_bare_fetch_lists_sources(self, capsys):
-        from genesis_architect_pro.gde_cli import main
+        from genesis_architect.pro.gde_cli import main
         assert main(["fetch"]) == 0
         assert "software-architecture-skills" in capsys.readouterr().out
 
     def test_list_flag(self, capsys):
-        from genesis_architect_pro.gde_cli import main
+        from genesis_architect.pro.gde_cli import main
         assert main(["fetch", "--list"]) == 0
         assert "Trusted skill sources" in capsys.readouterr().out
 
     def test_untrusted_source_exits_2(self, tmp_path, capsys):
-        from genesis_architect_pro.gde_cli import main
+        from genesis_architect.pro.gde_cli import main
         rc = main(["fetch", "definitely-not-real", "--dir", str(tmp_path)])
         assert rc == 2
         assert "trusted registry" in capsys.readouterr().err
 
     def test_bad_dir_exits_1(self, tmp_path):
-        from genesis_architect_pro.gde_cli import main
+        from genesis_architect.pro.gde_cli import main
         assert main(["fetch", "deep-research-skills", "--dir", str(tmp_path / "nope")]) == 1
 
     def test_discard_via_cli(self, tmp_path):
-        from genesis_architect_pro.gde_cli import main
+        from genesis_architect.pro.gde_cli import main
         fetch("deep-research-skills", tmp_path, cloner=_fake_pack())
         rc = main(["fetch", "deep-research-skills", "--dir", str(tmp_path), "--discard"])
         assert rc == 0
         assert not (tmp_path / ".genesis" / "sandbox" / "deep-research-skills").exists()
 
     def test_in_package_namespace(self):
-        import genesis_architect_pro as pkg
+        import genesis_architect.pro as pkg
         for name in ("fetch", "discard", "list_sources", "validate_source", "FetchRefused"):
             assert hasattr(pkg, name)

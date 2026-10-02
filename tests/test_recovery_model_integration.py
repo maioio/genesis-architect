@@ -23,8 +23,8 @@ import warnings
 from pathlib import Path
 
 
-from genesis_architect_pro.recovery_scan import scan, sync_model_from_graph
-from genesis_architect_pro.model_store import (
+from genesis_architect.pro.recovery_scan import scan, sync_model_from_graph
+from genesis_architect.pro.model_store import (
     ModelStore, ArchModel, ModelNode,
 )
 

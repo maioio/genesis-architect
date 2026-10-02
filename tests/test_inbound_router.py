@@ -14,12 +14,12 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from genesis_architect_pro.streaming.events import (
+from genesis_architect.pro.streaming.events import (
     MessageType,
     StreamEmitter,
     StreamMessage,
 )
-from genesis_architect_pro.streaming.inbound import InboundRouter, _PendingGate
+from genesis_architect.pro.streaming.inbound import InboundRouter, _PendingGate
 
 
 # ---------------------------------------------------------------------------
@@ -80,8 +80,8 @@ class TestUserIntent:
         mock_gde = MagicMock()
         mock_gde.run.return_value = mock_report
 
-        with patch("genesis_architect_pro.gde_engine_registration", create=True), \
-             patch("genesis_architect_pro.GenesisDecisionEngine", return_value=mock_gde):
+        with patch("genesis_architect.pro.gde_engine_registration", create=True), \
+             patch("genesis_architect.pro.GenesisDecisionEngine", return_value=mock_gde):
             msg = _make_msg(MessageType.USER_INTENT, {"instruction": "refactor imports"})
             router.handle(msg)
             found = emitter.wait_for(MessageType.SESSION_DONE, timeout=3.0)
@@ -106,8 +106,8 @@ class TestUserIntent:
         mock_gde = MagicMock()
         mock_gde.run.side_effect = RuntimeError("engine exploded")
 
-        with patch("genesis_architect_pro.gde_engine_registration", create=True), \
-             patch("genesis_architect_pro.GenesisDecisionEngine", return_value=mock_gde):
+        with patch("genesis_architect.pro.gde_engine_registration", create=True), \
+             patch("genesis_architect.pro.GenesisDecisionEngine", return_value=mock_gde):
             msg = _make_msg(MessageType.USER_INTENT, {"instruction": "do something"})
             router.handle(msg)
             # Wait for background thread to finish
@@ -243,8 +243,8 @@ class TestVoice:
         mock_gde = MagicMock()
         mock_gde.run.return_value = mock_report
 
-        with patch("genesis_architect_pro.gde_engine_registration", create=True), \
-             patch("genesis_architect_pro.GenesisDecisionEngine", return_value=mock_gde):
+        with patch("genesis_architect.pro.gde_engine_registration", create=True), \
+             patch("genesis_architect.pro.GenesisDecisionEngine", return_value=mock_gde):
             msg = _make_msg(MessageType.USER_VOICE_END, {"audio_b64": audio})
             router.handle(msg)
             found = emitter.wait_for(MessageType.SESSION_DONE, timeout=3.0)

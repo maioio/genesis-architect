@@ -6,7 +6,7 @@ import logging
 from unittest.mock import MagicMock, patch
 
 
-from genesis_architect_pro.voice.pipeline import (
+from genesis_architect.pro.voice.pipeline import (
     CRITICAL_NOTIFICATIONS,
     STTPipeline,
     TTSPipeline,
@@ -230,7 +230,7 @@ class TestTTSPipelineOffline:
         mock_sherpa = MagicMock()
         with patch.dict("sys.modules", {"sherpa_onnx": mock_sherpa}):
             with patch(
-                "genesis_architect_pro.voice.pipeline._MODELS_DIR",
+                "genesis_architect.pro.voice.pipeline._MODELS_DIR",
                 tmp_path,  # model won't exist here
             ):
                 with caplog.at_level(logging.WARNING, logger="genesis.voice"):

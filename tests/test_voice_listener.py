@@ -1,7 +1,7 @@
 """Tests for voice.listener - live mic capture + wake word (honest degradation)."""
 import pytest
 
-from genesis_architect_pro.voice.listener import (
+from genesis_architect.pro.voice.listener import (
     WAKE_WORDS, ListenResult, MicStatus, WakeWordListener,
     mic_status, is_wake, listen_once, _strip_wake,
     _build_vad, _frame_is_speech, _frame_is_speech_energy,
@@ -60,13 +60,13 @@ class TestDegradation:
         assert "sounddevice" in st.detail
 
     def test_listen_once_degrades_without_mic(self, monkeypatch):
-        monkeypatch.setattr("genesis_architect_pro.voice.listener.mic_status",
+        monkeypatch.setattr("genesis_architect.pro.voice.listener.mic_status",
                             lambda: MicStatus(False, "no mic"))
         r = listen_once(3.0)
         assert r.ok is False and "no mic" in r.reason
 
     def test_wake_listener_not_started_without_mic(self, monkeypatch):
-        monkeypatch.setattr("genesis_architect_pro.voice.listener.mic_status",
+        monkeypatch.setattr("genesis_architect.pro.voice.listener.mic_status",
                             lambda: MicStatus(False, "no mic"))
         got = []
         wl = WakeWordListener(on_instruction=got.append)
@@ -101,7 +101,7 @@ class TestVADBackend:
             assert backend.engine.sample_rate == 16000
 
     def test_silence_is_not_speech(self):
-        np = pytest.importorskip("numpy")  # ships with the `voice` extra, not `dev`
+        np = pytest.importorskip("numpy")  # ships with the [voice] extra only
         backend = _build_vad()
         silence = np.zeros(backend.frame_samples, dtype=np.float32)
         pcm = (silence * 32767).astype("<i2").tobytes()
@@ -114,7 +114,7 @@ class TestVADBackend:
             def voice_confidence(self, _pcm):
                 raise RuntimeError("boom")
 
-        from genesis_architect_pro.voice.listener import VADBackend
+        from genesis_architect.pro.voice.listener import VADBackend
         backend = VADBackend("silero", _Boom(), 512)
         assert _frame_is_speech(backend, b"\x00" * 1024, None) is False
 
@@ -132,8 +132,8 @@ class TestVADBackend:
         assert backend.kind in ("webrtc", "energy")
 
     def test_energy_backend_dispatch(self):
-        np = pytest.importorskip("numpy")  # ships with the `voice` extra, not `dev`
-        from genesis_architect_pro.voice.listener import VADBackend
+        np = pytest.importorskip("numpy")  # ships with the [voice] extra only
+        from genesis_architect.pro.voice.listener import VADBackend
         backend = VADBackend("energy", None, 480)
         loud = np.full(480, 0.5, dtype=np.float32)
         quiet = np.zeros(480, dtype=np.float32)

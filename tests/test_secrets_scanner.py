@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from genesis_architect_pro.secrets_scanner import _generate_secrets_doc, scan_secrets
+from genesis_architect.pro.secrets_scanner import _generate_secrets_doc, scan_secrets
 
 
 def test_detects_aws_key_and_redacts(tmp_path):

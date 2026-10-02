@@ -20,12 +20,12 @@ from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 
-from genesis_architect_pro.streaming.events import (
+from genesis_architect.pro.streaming.events import (
     MessageType,
     StreamEmitter,
     StreamMessage,
 )
-from genesis_architect_pro.streaming.inbound import InboundRouter, _PendingGate
+from genesis_architect.pro.streaming.inbound import InboundRouter, _PendingGate
 
 
 # ---------------------------------------------------------------------------
@@ -76,7 +76,7 @@ def _mock_report(session_id=None, gate_overall="PASS", blocks=False):
     if "src" not in sys.path:
         import os
         sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
-    from genesis_architect_pro.gde_types import GateOutcome
+    from genesis_architect.pro.gde_types import GateOutcome
 
     _outcome_map = {
         "PASS": GateOutcome.PASS,
@@ -114,8 +114,8 @@ class TestGateResumeHardBlock:
         mock_gde = MagicMock()
         mock_gde.run.return_value = report
 
-        with patch("genesis_architect_pro.gde_engine_registration", create=True), \
-             patch("genesis_architect_pro.GenesisDecisionEngine", return_value=mock_gde):
+        with patch("genesis_architect.pro.gde_engine_registration", create=True), \
+             patch("genesis_architect.pro.GenesisDecisionEngine", return_value=mock_gde):
             msg = _make_msg(MessageType.USER_INTENT, {"instruction": "refactor db layer"})
             router.handle(msg)
             found = emitter.wait_for(MessageType.SESSION_DONE, timeout=3.0)
@@ -165,8 +165,8 @@ class TestGateResumeBlock:
         router, emitter, mock_gde, session_id = self._setup_block_run(tmp_path, "approve")
         gate_key = f"{session_id[:8]}-gate"
 
-        with patch("genesis_architect_pro.gde_engine_registration", create=True), \
-             patch("genesis_architect_pro.GenesisDecisionEngine", return_value=mock_gde):
+        with patch("genesis_architect.pro.gde_engine_registration", create=True), \
+             patch("genesis_architect.pro.GenesisDecisionEngine", return_value=mock_gde):
             self._send_approval(router, gate_key, "approve", delay=0.4)
             msg = _make_msg(MessageType.USER_INTENT, {"instruction": "fix security holes"})
             router.handle(msg)
@@ -179,8 +179,8 @@ class TestGateResumeBlock:
         router, emitter, mock_gde, session_id = self._setup_block_run(tmp_path, "approve")
         gate_key = f"{session_id[:8]}-gate"
 
-        with patch("genesis_architect_pro.gde_engine_registration", create=True), \
-             patch("genesis_architect_pro.GenesisDecisionEngine", return_value=mock_gde):
+        with patch("genesis_architect.pro.gde_engine_registration", create=True), \
+             patch("genesis_architect.pro.GenesisDecisionEngine", return_value=mock_gde):
             self._send_approval(router, gate_key, "approve", delay=0.4)
             msg = _make_msg(MessageType.USER_INTENT, {"instruction": "fix security holes"})
             router.handle(msg)
@@ -193,8 +193,8 @@ class TestGateResumeBlock:
         router, emitter, mock_gde, session_id = self._setup_block_run(tmp_path, "approve")
         gate_key = f"{session_id[:8]}-gate"
 
-        with patch("genesis_architect_pro.gde_engine_registration", create=True), \
-             patch("genesis_architect_pro.GenesisDecisionEngine", return_value=mock_gde):
+        with patch("genesis_architect.pro.gde_engine_registration", create=True), \
+             patch("genesis_architect.pro.GenesisDecisionEngine", return_value=mock_gde):
             self._send_approval(router, gate_key, "approve", delay=0.4)
             msg = _make_msg(MessageType.USER_INTENT, {"instruction": "fix security holes"})
             router.handle(msg)
@@ -211,8 +211,8 @@ class TestGateResumeBlock:
         router, emitter, mock_gde, session_id = self._setup_block_run(tmp_path, "reject")
         gate_key = f"{session_id[:8]}-gate"
 
-        with patch("genesis_architect_pro.gde_engine_registration", create=True), \
-             patch("genesis_architect_pro.GenesisDecisionEngine", return_value=mock_gde):
+        with patch("genesis_architect.pro.gde_engine_registration", create=True), \
+             patch("genesis_architect.pro.GenesisDecisionEngine", return_value=mock_gde):
             self._send_approval(router, gate_key, "reject", delay=0.4)
             msg = _make_msg(MessageType.USER_INTENT, {"instruction": "apply risky refactor"})
             router.handle(msg)
@@ -224,8 +224,8 @@ class TestGateResumeBlock:
         router, emitter, mock_gde, session_id = self._setup_block_run(tmp_path, "defer")
         gate_key = f"{session_id[:8]}-gate"
 
-        with patch("genesis_architect_pro.gde_engine_registration", create=True), \
-             patch("genesis_architect_pro.GenesisDecisionEngine", return_value=mock_gde):
+        with patch("genesis_architect.pro.gde_engine_registration", create=True), \
+             patch("genesis_architect.pro.GenesisDecisionEngine", return_value=mock_gde):
             self._send_approval(router, gate_key, "defer", delay=0.4)
             msg = _make_msg(MessageType.USER_INTENT, {"instruction": "risky change"})
             router.handle(msg)
@@ -237,8 +237,8 @@ class TestGateResumeBlock:
         router, emitter, mock_gde, session_id = self._setup_block_run(tmp_path, "approve")
         gate_key = f"{session_id[:8]}-gate"
 
-        with patch("genesis_architect_pro.gde_engine_registration", create=True), \
-             patch("genesis_architect_pro.GenesisDecisionEngine", return_value=mock_gde):
+        with patch("genesis_architect.pro.gde_engine_registration", create=True), \
+             patch("genesis_architect.pro.GenesisDecisionEngine", return_value=mock_gde):
             self._send_approval(router, gate_key, "approve", delay=0.4)
             msg = _make_msg(MessageType.USER_INTENT, {"instruction": "go"})
             router.handle(msg)
@@ -250,8 +250,8 @@ class TestGateResumeBlock:
         router, emitter, mock_gde, session_id = self._setup_block_run(tmp_path, "approve")
         gate_key = f"{session_id[:8]}-gate"
 
-        with patch("genesis_architect_pro.gde_engine_registration", create=True), \
-             patch("genesis_architect_pro.GenesisDecisionEngine", return_value=mock_gde):
+        with patch("genesis_architect.pro.gde_engine_registration", create=True), \
+             patch("genesis_architect.pro.GenesisDecisionEngine", return_value=mock_gde):
             self._send_approval(router, gate_key, "approve", delay=0.4)
             msg = _make_msg(MessageType.USER_INTENT, {"instruction": "go"})
             router.handle(msg)
@@ -319,9 +319,9 @@ class TestIDEBridgeWiring:
         mock_gde = MagicMock()
         mock_gde.run.return_value = report
 
-        with patch("genesis_architect_pro.gde_engine_registration", create=True), \
-             patch("genesis_architect_pro.GenesisDecisionEngine", return_value=mock_gde), \
-             patch("genesis_architect_pro.ide_bridge.build_index_from_engine_results", return_value={}):
+        with patch("genesis_architect.pro.gde_engine_registration", create=True), \
+             patch("genesis_architect.pro.GenesisDecisionEngine", return_value=mock_gde), \
+             patch("genesis_architect.pro.ide_bridge.build_index_from_engine_results", return_value={}):
             msg = _make_msg(MessageType.USER_INTENT, {"instruction": "analyse imports"})
             router.handle(msg)
             emitter.wait_for(MessageType.SESSION_DONE, timeout=3.0)
@@ -335,8 +335,8 @@ class TestIDEBridgeWiring:
         mock_gde = MagicMock()
         mock_gde.run.return_value = report
 
-        with patch("genesis_architect_pro.gde_engine_registration", create=True), \
-             patch("genesis_architect_pro.GenesisDecisionEngine", return_value=mock_gde):
+        with patch("genesis_architect.pro.gde_engine_registration", create=True), \
+             patch("genesis_architect.pro.GenesisDecisionEngine", return_value=mock_gde):
             msg = _make_msg(MessageType.USER_INTENT, {"instruction": "check"})
             router.handle(msg)
             emitter.wait_for(MessageType.SESSION_DONE, timeout=3.0)
@@ -354,9 +354,9 @@ class TestIDEBridgeWiring:
         mock_gde = MagicMock()
         mock_gde.run.return_value = report
 
-        with patch("genesis_architect_pro.gde_engine_registration", create=True), \
-             patch("genesis_architect_pro.GenesisDecisionEngine", return_value=mock_gde), \
-             patch("genesis_architect_pro.ide_bridge.build_index_from_engine_results", return_value={}):
+        with patch("genesis_architect.pro.gde_engine_registration", create=True), \
+             patch("genesis_architect.pro.GenesisDecisionEngine", return_value=mock_gde), \
+             patch("genesis_architect.pro.ide_bridge.build_index_from_engine_results", return_value={}):
             msg = _make_msg(MessageType.USER_INTENT, {"instruction": "go"})
             router.handle(msg)
             found = emitter.wait_for(MessageType.SESSION_DONE, timeout=3.0)
@@ -462,7 +462,7 @@ class TestIpcBridgeModule:
     def test_ipc_bridge_imports_cleanly(self):
         """ipc_bridge.ts is TypeScript — we just verify the Python side doesn't import it."""
         # This test just confirms the Python package structure is intact
-        from genesis_architect_pro.streaming import inbound  # noqa: F401
+        from genesis_architect.pro.streaming import inbound  # noqa: F401
         assert hasattr(inbound, "InboundRouter")
 
     def test_inbound_router_has_set_ide_bridge(self, tmp_path):

@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from genesis_architect_pro.gde_companion import (
+from genesis_architect.pro.gde_companion import (
     CompanionInstrumentation,
     GateMissStats,
     GateNotifier,
@@ -301,7 +301,7 @@ class TestHealthPageServer:
 
 class TestGateResultTimestamps:
     def test_gate_result_has_timestamp_fields(self):
-        from genesis_architect_pro.gde_types import GateAction, GateResult
+        from genesis_architect.pro.gde_types import GateAction, GateResult
         gr = GateResult(
             gate_id="WRITE_SCOPE",
             action=GateAction.WARN,
@@ -313,8 +313,8 @@ class TestGateResultTimestamps:
         assert gr.responded_at == ""
 
     def test_evaluate_gates_sets_presented_at(self):
-        from genesis_architect_pro.gde_gate_engine import evaluate_gates
-        from genesis_architect_pro.gde_types import (
+        from genesis_architect.pro.gde_gate_engine import evaluate_gates
+        from genesis_architect.pro.gde_types import (
             SessionContext,
         )
         ctx = SessionContext(overall_confidence=0.3)  # triggers CONFIDENCE_LOW
@@ -327,7 +327,7 @@ class TestGateResultTimestamps:
         datetime.datetime.fromisoformat(gate.presented_at)
 
     def test_session_context_has_companion_timestamps(self):
-        from genesis_architect_pro.gde_types import SessionContext
+        from genesis_architect.pro.gde_types import SessionContext
         ctx = SessionContext()
         assert hasattr(ctx, "session_started_at")
         assert hasattr(ctx, "last_user_interaction_at")

@@ -24,11 +24,11 @@ import warnings
 from pathlib import Path
 
 
-from genesis_architect_pro.model_store import (
+from genesis_architect.pro.model_store import (
     ModelStore, ArchModel, ModelNode, ModelLink, ModelResponsibility,
     ModelDiff, NodeChange, ResponsibilityChange, _compute_diff,
 )
-from genesis_architect_pro.recovery_scan import scan
+from genesis_architect.pro.recovery_scan import scan
 
 
 # ---------------------------------------------------------------------------
@@ -549,17 +549,17 @@ class TestScanModelDiffIntegration:
 
 class TestPackageExports:
     def test_model_diff_exported(self):
-        from genesis_architect_pro import ModelDiff
+        from genesis_architect.pro import ModelDiff
         assert ModelDiff is not None
 
     def test_node_change_exported(self):
-        from genesis_architect_pro import NodeChange
+        from genesis_architect.pro import NodeChange
         assert NodeChange is not None
 
     def test_responsibility_change_exported(self):
-        from genesis_architect_pro import ResponsibilityChange
+        from genesis_architect.pro import ResponsibilityChange
         assert ResponsibilityChange is not None
 
     def test_link_change_exported(self):
-        from genesis_architect_pro import LinkChange
+        from genesis_architect.pro import LinkChange
         assert LinkChange is not None

@@ -1,5 +1,5 @@
 """Tests for memory_engine - per-project Markdown memory + Decision Journal."""
-from genesis_architect_pro.memory_engine import (
+from genesis_architect.pro.memory_engine import (
     MEMORY_FILES, DecisionJournalEntry,
     init_memory, record_decision, record_research, record_risk, record_adr,
     record_lesson, set_project_memory, read_memory, memory_status,

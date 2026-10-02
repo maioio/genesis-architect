@@ -1,5 +1,5 @@
 """Tests for progress_report - downloadable HTML phase reports."""
-from genesis_architect_pro.progress_report import (
+from genesis_architect.pro.progress_report import (
     PhaseReport, ReportItem, render_report, write_report,
 )
 

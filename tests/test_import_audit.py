@@ -2,10 +2,10 @@
 from pathlib import Path
 
 
-from genesis_architect_pro.import_audit import (
+from genesis_architect.pro.import_audit import (
     audit, format_report, ImportAuditReport, _last_seg, _edge_matches,
 )
-from genesis_architect_pro.model_store import ArchModel, ModelNode, ModelLink
+from genesis_architect.pro.model_store import ArchModel, ModelNode, ModelLink
 
 
 def _proj(tmp_path: Path, files: dict[str, str]) -> Path:

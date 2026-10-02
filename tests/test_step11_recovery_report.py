@@ -47,12 +47,12 @@ from pathlib import Path
 
 import pytest
 
-from genesis_architect_pro.recovery_report import (
+from genesis_architect.pro.recovery_report import (
     generate_report, generate_report_for_project,
     RecoveryReport,
 )
-from genesis_architect_pro.recovery_report import scan_with_report
-from genesis_architect_pro.recovery_scan import scan
+from genesis_architect.pro.recovery_report import scan_with_report
+from genesis_architect.pro.recovery_scan import scan
 
 
 # ---------------------------------------------------------------------------
@@ -738,21 +738,21 @@ class TestScanIntegration:
 
 class TestPackageExports:
     def test_recovery_report_class_exported(self):
-        from genesis_architect_pro import RecoveryReport
+        from genesis_architect.pro import RecoveryReport
         assert RecoveryReport is not None
 
     def test_generate_report_exported(self):
-        from genesis_architect_pro import generate_report
+        from genesis_architect.pro import generate_report
         assert callable(generate_report)
 
     def test_generate_report_for_project_exported(self):
-        from genesis_architect_pro import generate_report_for_project
+        from genesis_architect.pro import generate_report_for_project
         assert callable(generate_report_for_project)
 
     def test_recommendation_exported(self):
-        from genesis_architect_pro import Recommendation
+        from genesis_architect.pro import Recommendation
         assert Recommendation is not None
 
     def test_drift_summary_exported(self):
-        from genesis_architect_pro import DriftSummary
+        from genesis_architect.pro import DriftSummary
         assert DriftSummary is not None

@@ -20,7 +20,7 @@ import random
 
 import pytest
 
-from genesis_architect_pro.decay_regressor import (
+from genesis_architect.pro.decay_regressor import (
     ScoreDataPoint,
     DecayRegressorConfig,
     DecayRegressor,

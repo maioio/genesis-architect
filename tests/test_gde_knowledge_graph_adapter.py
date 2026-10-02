@@ -8,12 +8,12 @@ from pathlib import Path
 
 import pytest
 
-from genesis_architect_pro.gde_knowledge_graph_adapter import (
-    KNOWLEDGE_GRAPH_DESCRIPTOR, gde_run_knowledge_graph,
+from genesis_architect.pro.gde_knowledge_graph_adapter import (
+    KNOWLEDGE_GRAPH_DESCRIPTOR, gde_run_knowledge_graph, register_knowledge_graph,
 )
-from genesis_architect_pro.knowledge_graph import load_graph as kg_load
-from genesis_architect_pro.engine_registry import EngineRegistry
-from genesis_architect_pro.gde_types import (
+from genesis_architect.pro.knowledge_graph import load_graph as kg_load
+from genesis_architect.pro.engine_registry import EngineRegistry
+from genesis_architect.pro.gde_types import (
     GDEMode, SessionContext, EngineResult, EngineStatus, LifecycleStage,
 )
 
@@ -70,13 +70,13 @@ class TestTestCoverageWiring:
             output={"fragility_map": [
                 {"module": "src/demo/core.py", "has_test": True, "status": "STABLE"},
             ]})
-        gde_run_knowledge_graph(ctx)
+        out = gde_run_knowledge_graph(ctx)
         assert (project / ".genesis" / "knowledge" / "graph.json").exists()
         graph = kg_load(project)
         assert graph.query(["test", "covers", "module"])
 
     def test_no_fragility_result_adds_no_test_nodes(self, project):
-        gde_run_knowledge_graph(_ctx(project))
+        out = gde_run_knowledge_graph(_ctx(project))
         graph = kg_load(project)
         assert graph.query(["test", "covers", "module"]) == []
 
@@ -89,7 +89,7 @@ class TestSecurityRiskWiring:
     def test_recovery_mode_never_calls_cve_scan(self, project, monkeypatch):
         calls = []
         monkeypatch.setattr(
-            "genesis_architect_pro.dependency_scanner.scan_dependency_cves",
+            "genesis_architect.pro.dependency_scanner.scan_dependency_cves",
             lambda *a, **k: calls.append(a) or [],
         )
         ctx = _ctx(project)  # RECOVERY mode
@@ -99,7 +99,7 @@ class TestSecurityRiskWiring:
     def test_gate_mode_calls_cve_scan(self, project, monkeypatch):
         calls = []
         monkeypatch.setattr(
-            "genesis_architect_pro.dependency_scanner.scan_dependency_cves",
+            "genesis_architect.pro.dependency_scanner.scan_dependency_cves",
             lambda *a, **k: calls.append(a) or [],
         )
         ctx = SessionContext(session_id="t", mode=GDEMode.GATE,
@@ -111,7 +111,7 @@ class TestSecurityRiskWiring:
         def boom(*a, **k):
             raise ConnectionError("OSV unreachable")
         monkeypatch.setattr(
-            "genesis_architect_pro.dependency_scanner.scan_dependency_cves", boom)
+            "genesis_architect.pro.dependency_scanner.scan_dependency_cves", boom)
         ctx = SessionContext(session_id="t", mode=GDEMode.GATE,
                              stage=LifecycleStage.EXECUTE, project_dir=project)
         out = gde_run_knowledge_graph(ctx)  # must not raise
@@ -119,12 +119,12 @@ class TestSecurityRiskWiring:
 
     def test_do_not_touch_hits_surfaced_as_warnings(self, project, monkeypatch):
         monkeypatch.setattr(
-            "genesis_architect_pro.dependency_scanner.scan_dependency_cves",
+            "genesis_architect.pro.dependency_scanner.scan_dependency_cves",
             lambda *a, **k: [{"id": "CVE-1", "package": "pyyaml",
                               "modules": ["src/demo/core.py"], "confidence": 0.9}],
         )
         monkeypatch.setattr(
-            "genesis_architect_pro.dependency_scanner.scan_do_not_touch_risks",
+            "genesis_architect.pro.dependency_scanner.scan_do_not_touch_risks",
             lambda *a, **k: [{"id": "do-not-touch:src/demo/core.py",
                               "label": "VOLATILE", "module": "src/demo/core.py",
                               "confidence": 0.8}],
@@ -156,12 +156,11 @@ class TestRegistration:
         #
         # register_knowledge_graph() no longer pulls the core descriptors in
         # itself. It used to import gde_engine_registration when it noticed
-        # antipattern_detector was missing — a sibling reaching for a sibling,
-        # which was half an import cycle and the coupling audit finding D-4
-        # described as "convention, not enforced". Ordering now belongs to
+        # antipattern_detector was missing - a sibling reaching for a sibling,
+        # which was half an import cycle. Ordering now belongs to
         # engine_bootstrap, so that is what the test drives.
-        from genesis_architect_pro.engine_bootstrap import ensure_registered
-        from genesis_architect_pro.engine_registry import get_default_registry
+        from genesis_architect.pro.engine_bootstrap import ensure_registered
+        from genesis_architect.pro.engine_registry import get_default_registry
         reg = get_default_registry()
         had_it = "knowledge_graph" in reg
         try:

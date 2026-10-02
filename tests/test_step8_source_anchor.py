@@ -67,15 +67,15 @@ import warnings
 from pathlib import Path
 
 
-from genesis_architect_pro.model_store import (
+from genesis_architect.pro.model_store import (
     ArchModel, ModelNode, ModelResponsibility, ModelStore,
 )
-from genesis_architect_pro.source_anchor import (
+from genesis_architect.pro.source_anchor import (
     AnchorResult, AnchorReport,
     anchor_responsibilities, anchor_from_store,
     _tokenise, _extract_symbols, _end_line_of_block,
 )
-from genesis_architect_pro.recovery_scan import scan
+from genesis_architect.pro.recovery_scan import scan
 
 
 # ---------------------------------------------------------------------------
@@ -650,21 +650,21 @@ class TestScanSourceAnchorIntegration:
 
 class TestPackageExports:
     def test_anchor_entry_exported(self):
-        from genesis_architect_pro import AnchorEntry
+        from genesis_architect.pro import AnchorEntry
         assert AnchorEntry is not None
 
     def test_anchor_result_exported(self):
-        from genesis_architect_pro import AnchorResult
+        from genesis_architect.pro import AnchorResult
         assert AnchorResult is not None
 
     def test_anchor_report_exported(self):
-        from genesis_architect_pro import AnchorReport
+        from genesis_architect.pro import AnchorReport
         assert AnchorReport is not None
 
     def test_anchor_responsibilities_exported(self):
-        from genesis_architect_pro import anchor_responsibilities
+        from genesis_architect.pro import anchor_responsibilities
         assert callable(anchor_responsibilities)
 
     def test_anchor_from_store_exported(self):
-        from genesis_architect_pro import anchor_from_store
+        from genesis_architect.pro import anchor_from_store
         assert callable(anchor_from_store)

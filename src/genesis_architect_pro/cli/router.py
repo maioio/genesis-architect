@@ -26,6 +26,7 @@ from genesis_architect_pro.cli.analysis_cmds import (
     cmd_deps,
     cmd_fetch,
     cmd_gate,
+    cmd_ingest,
     cmd_sync,
     cmd_telemetry,
 )
@@ -69,7 +70,7 @@ def main(argv: list[str] | None = None) -> int:
     # commands to the core app instead of forcing everything into `decide`.
     _pro_cmds = ("decide", "explain", "memory", "ui", "companion", "sync",
                  "doctor", "recover", "harden", "telemetry", "purge", "organize", "gate", "advise",
-                 "fetch", "engines", "deps", "mcp")
+                 "fetch", "engines", "deps", "mcp", "ingest")
     _core_cmds = ("init", "config", "research", "publish", "upgrade", "resolve")
     if argv and argv[0] in _core_cmds:
         from genesis_architect.cli import app as _core_app
@@ -121,6 +122,7 @@ def main(argv: list[str] | None = None) -> int:
         "engines": cmd_engines,
         "deps": cmd_deps,
         "mcp": cmd_mcp,
+        "ingest": cmd_ingest,
     }
     handler = _dispatch.get(args.command)
     if handler is None:

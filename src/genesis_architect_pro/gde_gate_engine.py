@@ -1,6 +1,6 @@
 """Genesis Decision Engine — gate engine.
 
-Evaluates the 13 named approval gates against a SessionContext and
+Evaluates the 15 named approval gates against a SessionContext and
 produces a GateReport. Gate policy is a static table here — not scattered
 in orchestration logic.
 
@@ -23,6 +23,8 @@ Gate IDs and their trigger conditions:
   RED_TEAM_CRITICAL — red_team_critic found a critical-severity finding → BLOCK_AND_ASK
   RESEARCH_COVERAGE_LOW — an outline-driven research pass reports coverage
                      below threshold → BLOCK_AND_ASK
+  RESEARCH_EVIDENCE_UNKNOWN — a research session produced no findings and no
+                     measured coverage, so its evidence cannot be evaluated → WARN
 """
 
 from __future__ import annotations
@@ -74,6 +76,7 @@ _GATE_POLICY: list[tuple[str, str, bool, GateAction, float]] = [
     ("DEGRADED_MODE",    "Session running in degraded mode",    True,  GateAction.WARN,          0.05),
     ("NO_ENGINES",       "No engines ran for this mode",        True,  GateAction.WARN,          0.00),
     ("RESEARCH_STALE",   "Research results may be stale",       True,  GateAction.WARN,          0.00),
+    ("RESEARCH_EVIDENCE_UNKNOWN", "Research evidence could not be evaluated", True, GateAction.WARN, 0.10),
 ]
 
 # Build lookup dict for O(1) access
@@ -335,6 +338,36 @@ def _check_research_coverage_low(ctx: SessionContext) -> tuple[bool, str, str]:
     return False, "", ""
 
 
+def _check_research_evidence_unknown(ctx: SessionContext) -> tuple[bool, str, str]:
+    """Fires when a research session has nothing to evaluate: the
+    field_intelligence engine produced no findings and no engine measured
+    outline coverage.
+
+    This is an UNKNOWN, not a PASS. A control with no evidence to look at has
+    not found the research sound; it has found nothing. Coverage and
+    verification gates stay silent on an empty session by design (`coverage`
+    None means "not applicable"), so without this gate an empty research pass
+    looks identical to a clean one. GateAction has no UNKNOWN member, so it
+    surfaces as a WARN: visible, overridable, and never a quiet pass.
+
+    A measured coverage of any value - including 0.0 - means there is something
+    to evaluate, and RESEARCH_COVERAGE_LOW speaks for it instead.
+    """
+    for result in ctx.engine_results.values():
+        if result.output.get("coverage") is not None:
+            return False, "", ""
+    field_result = ctx.engine_results.get("field_intelligence")
+    if field_result is not None and field_result.output.get("findings"):
+        return False, "", ""
+    return (
+        True,
+        "Research evidence is UNKNOWN: no findings were ingested and no outline "
+        "coverage was measured, so nothing about this research could be evaluated",
+        "Genesis does not fetch - gather findings with your research tools, "
+        "then run `genesis ingest FILE`",
+    )
+
+
 # ---------------------------------------------------------------------------
 # Gate check dispatch table
 # ---------------------------------------------------------------------------
@@ -354,4 +387,5 @@ _GATE_CHECKS: dict[str, object] = {
     "COMMIT_CONFLICT":  _check_commit_conflict,
     "RED_TEAM_CRITICAL": _check_red_team_critical,
     "RESEARCH_COVERAGE_LOW": _check_research_coverage_low,
+    "RESEARCH_EVIDENCE_UNKNOWN": _check_research_evidence_unknown,
 }

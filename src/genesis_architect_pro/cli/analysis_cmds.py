@@ -1,4 +1,4 @@
-"""Analysis and advisory commands — gate, deps, advise, fetch, sync, telemetry.
+"""Analysis and advisory commands — gate, deps, advise, fetch, ingest, sync, telemetry.
 
 Split out of gde_cli.py verbatim. Each of these reaches outside the project
 for something: a policy verdict, a CVE lookup, a tool recommendation, a
@@ -269,3 +269,32 @@ def cmd_telemetry(args: argparse.Namespace) -> int:
         print(describe_payload(project_dir))
     print()
     return 0
+
+
+def cmd_ingest(args: argparse.Namespace) -> int:
+    """`genesis ingest FILE` — hand research findings back to the engines.
+
+    Genesis plans research but never fetches it; whatever the calling agent
+    found with its own search tools comes back through here. The file is
+    validated, merged into `.genesis/research/findings.json`, and read by the
+    field_intelligence engine on the next RESEARCH session. Local files only —
+    nothing is fetched or transmitted.
+    """
+    from genesis_architect_pro.research_ingest import format_ingest_result, ingest_file
+
+    project_dir = Path(args.dir).expanduser().resolve()
+    if not project_dir.is_dir():
+        print(f"\n  Not a directory: {project_dir}\n", file=sys.stderr)
+        return 1
+
+    result = ingest_file(
+        Path(args.file).expanduser(), project_dir,
+        replace=bool(getattr(args, "replace", False)),
+        dry_run=bool(getattr(args, "dry_run", False)),
+    )
+    if getattr(args, "json_output", False):
+        import json as _json
+        print(_json.dumps(result.to_dict(), indent=2))
+    else:
+        print(f"\n{format_ingest_result(result)}\n")
+    return 0 if result.ok else 1

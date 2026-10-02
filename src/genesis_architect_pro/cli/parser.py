@@ -207,6 +207,20 @@ def _build_parser() -> argparse.ArgumentParser:
     fetch_p.add_argument("--json", dest="json_output", action="store_true",
                          help="Output structured JSON (for piping / CI)")
 
+    ingest_p = sub.add_parser(
+        "ingest", help="Feed research findings gathered elsewhere into the research engines")
+    ingest_p.add_argument("file", metavar="FILE",
+                          help='JSON file: {"findings": [{"claim", "source_id", "url", '
+                               '"confirmed_by"}], "item_findings": {...}} (format: research_ingest.py)')
+    ingest_p.add_argument("--dir", default=".", metavar="PATH",
+                          help="Project directory (default: current directory)")
+    ingest_p.add_argument("--replace", action="store_true",
+                          help="Start the ingest store over instead of merging into it")
+    ingest_p.add_argument("--dry-run", action="store_true",
+                          help="Validate and report only — write nothing")
+    ingest_p.add_argument("--json", dest="json_output", action="store_true",
+                          help="Output structured JSON (for piping / CI)")
+
     purge_p = sub.add_parser(
         "purge", help="Auto-Purge: find (and optionally remove) expired ephemeral resources")
     purge_p.add_argument("--dir", default=".", metavar="PATH",

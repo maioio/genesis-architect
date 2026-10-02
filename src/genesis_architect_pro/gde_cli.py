@@ -55,6 +55,8 @@ _LAZY_EXPORTS: dict[str, str] = {
     "cmd_explain": "genesis_architect_pro.cli.session_cmds",
     "cmd_harden": "genesis_architect_pro.cli.session_cmds",
     "cmd_recover": "genesis_architect_pro.cli.session_cmds",
+    # cli.mcp_cmds
+    "cmd_mcp": "genesis_architect_pro.cli.mcp_cmds",
     # cli.companion_cmds
     "cmd_companion": "genesis_architect_pro.cli.companion_cmds",
     "cmd_companion_listen": "genesis_architect_pro.cli.companion_cmds",

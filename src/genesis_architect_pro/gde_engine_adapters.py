@@ -440,21 +440,63 @@ def gde_run_field_intelligence(ctx: SessionContext) -> dict[str, Any]:
         report = run_field_workflow(tool=tool_name)
     except Exception as exc:
         return {"_confidence": 0.4, "_warnings": [f"field_intelligence failed: {exc}"],
-                "findings": [], "verified_count": 0}
+                "findings": [], "verified_count": 0, "coverage": None}
 
-    findings = report.findings if hasattr(report, "findings") else []
-    verified = [f for f in findings if getattr(f, "verified", False)]
     warnings: list[str] = []
-    if not findings:
-        warnings.append("no field findings returned — check network access")
+    findings = list(report.findings) if hasattr(report, "findings") else []
 
-    return {
+    # Genesis plans the research and never fetches it. Findings arrive from
+    # whatever the caller searched with, through `genesis ingest FILE`.
+    from genesis_architect_pro.research_ingest import load_ingested
+    ingested = load_ingested(project_dir)
+    if ingested.error:
+        warnings.append(f"ingested research unreadable, treated as no evidence: {ingested.error}")
+    findings.extend(ingested.findings)
+
+    coverage, outline_topic = _measure_coverage(project_dir, ingested, warnings)
+
+    verified = [f for f in findings if getattr(f, "verified", False)]
+    if not findings:
+        warnings.append(
+            "no research findings — Genesis does not fetch; gather them with your "
+            "research tools, then run `genesis ingest FILE`"
+        )
+
+    output: dict[str, Any] = {
         "findings": findings,
         "verified_count": len(verified),
         "queries": getattr(report, "queries", []),
+        "coverage": coverage,
         "_confidence": 0.8 if verified else (0.5 if findings else 0.3),
         "_warnings": warnings,
     }
+    if outline_topic:
+        output["outline"] = {"topic": outline_topic}
+    return output
+
+
+def _measure_coverage(project_dir: Path, ingested: Any,
+                      warnings: list[str]) -> tuple[float | None, str]:
+    """Outline coverage from the ingested grid, or (None, "") when no outline
+    was declared. None means "not applicable" — the coverage gate's contract —
+    so any failure to measure degrades to None with a warning, never to 0.0.
+    """
+    from genesis_architect_pro.research_outline import load_outline
+
+    outline = load_outline(project_dir)
+    if outline is None:
+        return None, ""
+    try:
+        from genesis_architect_pro import research_orchestrator as ro
+
+        summary = ro.ResearchSummary(
+            vision=outline.topic, outline=outline,
+            item_findings=ingested.item_findings, uncertain=ingested.uncertain,
+        )
+        return ro.compute_coverage(summary), outline.topic
+    except Exception as exc:  # noqa: BLE001 — a coverage read must not fail the engine
+        warnings.append(f"outline coverage not measured: {exc}")
+        return None, outline.topic
 
 
 def gde_run_evidence_pack(ctx: SessionContext) -> dict[str, Any]:
@@ -472,16 +514,30 @@ def gde_run_evidence_pack(ctx: SessionContext) -> dict[str, Any]:
 
     try:
         items: list[dict] = []
-        for f in findings[:20]:  # cap at 20 items
+        contradictions: list[str] = []
+        for f in findings[:20]:  # cap at 20 findings
+            claim = getattr(f, "claim", str(f))
+            verified_by = list(getattr(f, "verified_by", []) or [])
+            contradicted_by = list(getattr(f, "contradicted_by", []) or [])
+            # A finding counts as evidence only once an engineering-truth source
+            # confirmed it; the confirming sources are then recorded as items in
+            # their own right, so the pack's confidence is graded on their tier
+            # and not on the tier of whoever made the claim.
             items.append({
                 "source_id": getattr(f, "source_id", "field"),
-                "claim": getattr(f, "claim", str(f)),
+                "claim": claim,
                 "url": getattr(f, "url", ""),
-                "status": "verified" if getattr(f, "verified", False) else "unverified",
+                "status": "ok" if getattr(f, "verified", False) else "unverified",
             })
+            for sid in verified_by:
+                items.append({"source_id": sid, "claim": f"confirms: {claim}", "status": "ok"})
+            if contradicted_by:
+                contradictions.append(f"{claim} (contradicted by {', '.join(contradicted_by)})")
 
         pack = build_evidence_pack(question, items,
-                                   recommendation="See findings above for risks and pitfalls.")
+                                   recommendation="See findings above for risks and pitfalls.",
+                                   contradictions=contradictions,
+                                   project_root=project_dir)
     except Exception as exc:
         return {"_confidence": 0.4, "_warnings": [f"evidence_pack failed: {exc}"],
                 "pack_path": "", "item_count": 0}

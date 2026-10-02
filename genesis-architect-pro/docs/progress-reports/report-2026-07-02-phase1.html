@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Genesis PRO — דוח התקדמות | פאזה 1</title>
+<style>
+  :root {
+    --bg: #0d0f14;
+    --surface: #161920;
+    --surface2: #1e222d;
+    --border: #2a2f3d;
+    --accent: #6c63ff;
+    --accent2: #00d4aa;
+    --warn: #f59e0b;
+    --danger: #ef4444;
+    --success: #22c55e;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --code: #a78bfa;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-size: 15px;
+    line-height: 1.7;
+    min-height: 100vh;
+  }
+
+  .header {
+    background: linear-gradient(135deg, #1a1040 0%, #0d1f3c 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 40px 60px 32px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .header::before {
+    content: '';
+    position: absolute;
+    top: -40px; left: -40px;
+    width: 300px; height: 300px;
+    background: radial-gradient(circle, rgba(108,99,255,0.15) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .header-tag {
+    display: inline-block;
+    background: rgba(108,99,255,0.2);
+    border: 1px solid rgba(108,99,255,0.4);
+    color: var(--accent);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    border-radius: 4px;
+    margin-bottom: 16px;
+  }
+
+  .header h1 {
+    font-size: 32px;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 8px;
+  }
+
+  .header .subtitle {
+    color: var(--muted);
+    font-size: 14px;
+  }
+
+  .header .date {
+    position: absolute;
+    top: 40px; left: 60px;
+    color: var(--muted);
+    font-size: 13px;
+  }
+
+  .container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 48px 60px;
+  }
+
+  /* Stats row */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 48px;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px 24px;
+    text-align: center;
+  }
+
+  .stat-card .num {
+    font-size: 36px;
+    font-weight: 700;
+    color: var(--accent);
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+
+  .stat-card .num.green { color: var(--success); }
+  .stat-card .num.amber { color: var(--warn); }
+
+  .stat-card .label {
+    font-size: 12px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  /* Sections */
+  .section {
+    margin-bottom: 40px;
+  }
+
+  .section-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 16px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* Task list */
+  .task-list { list-style: none; }
+
+  .task {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 14px 18px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 8px;
+    transition: border-color 0.2s;
+  }
+
+  .task:hover { border-color: var(--accent); }
+
+  .task-icon {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .task-icon.done { background: rgba(34,197,94,0.15); color: var(--success); }
+  .task-icon.wip  { background: rgba(108,99,255,0.15); color: var(--accent); }
+  .task-icon.todo { background: rgba(100,116,139,0.15); color: var(--muted); }
+  .task-icon.blocked { background: rgba(239,68,68,0.15); color: var(--danger); }
+
+  .task-body { flex: 1; }
+  .task-name { font-weight: 600; color: var(--text); font-size: 14px; }
+  .task-desc { color: var(--muted); font-size: 13px; margin-top: 3px; }
+  .task-file { font-family: monospace; font-size: 12px; color: var(--code); margin-top: 4px; }
+
+  .task-badge {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 4px;
+    flex-shrink: 0;
+    align-self: center;
+  }
+
+  .badge-done { background: rgba(34,197,94,0.15); color: var(--success); }
+  .badge-wip  { background: rgba(108,99,255,0.15); color: var(--accent); }
+  .badge-next { background: rgba(245,158,11,0.15); color: var(--warn); }
+  .badge-later { background: rgba(100,116,139,0.1); color: var(--muted); }
+
+  /* Phase timeline */
+  .phase-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 40px;
+  }
+
+  .phase-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 20px;
+  }
+
+  .phase-card.active {
+    border-color: var(--accent);
+    background: rgba(108,99,255,0.05);
+  }
+
+  .phase-num {
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 6px;
+  }
+
+  .phase-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+
+  .phase-card.active .phase-name { color: var(--accent); }
+
+  .phase-status {
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .phase-bar {
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    margin-top: 12px;
+    overflow: hidden;
+  }
+
+  .phase-bar-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 2px;
+    transition: width 0.6s ease;
+  }
+
+  /* Architecture note */
+  .arch-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-right: 3px solid var(--accent);
+    border-radius: 8px;
+    padding: 20px 24px;
+    margin-bottom: 12px;
+  }
+
+  .arch-box h4 {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+
+  .arch-box p {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  code {
+    font-family: 'Cascadia Code', 'Fira Code', monospace;
+    font-size: 12px;
+    background: rgba(108,99,255,0.12);
+    color: var(--code);
+    padding: 1px 6px;
+    border-radius: 3px;
+  }
+
+  /* Risk table */
+  .risk-table { width: 100%; border-collapse: collapse; }
+  .risk-table th {
+    text-align: right;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 8px 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  .risk-table td {
+    padding: 12px 14px;
+    border-bottom: 1px solid rgba(42,47,61,0.5);
+    font-size: 13px;
+    color: var(--text);
+  }
+  .risk-table tr:last-child td { border-bottom: none; }
+
+  .risk-high { color: var(--danger); font-weight: 700; }
+  .risk-med  { color: var(--warn); font-weight: 600; }
+  .risk-low  { color: var(--success); }
+
+  /* Footer */
+  .footer {
+    border-top: 1px solid var(--border);
+    padding: 24px 60px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: var(--muted);
+    font-size: 12px;
+  }
+
+  .footer-logo {
+    font-weight: 700;
+    color: var(--accent);
+    font-size: 14px;
+  }
+
+  /* Next steps CTA */
+  .next-cta {
+    background: linear-gradient(135deg, rgba(108,99,255,0.1) 0%, rgba(0,212,170,0.05) 100%);
+    border: 1px solid rgba(108,99,255,0.3);
+    border-radius: 12px;
+    padding: 28px 32px;
+    margin-top: 40px;
+  }
+
+  .next-cta h3 {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--accent2);
+    margin-bottom: 12px;
+  }
+
+  .next-cta ul {
+    list-style: none;
+    padding: 0;
+  }
+
+  .next-cta li {
+    padding: 6px 0;
+    font-size: 14px;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .next-cta li::before {
+    content: '→';
+    color: var(--accent2);
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="date">2 יולי 2026</div>
+  <div class="header-tag">דוח התקדמות</div>
+  <h1>Genesis PRO Companion App</h1>
+  <p class="subtitle">פאזה 1 — תשתית Python | בנייה מהקל אל הכבד</p>
+</div>
+
+<div class="container">
+
+  <!-- Stats -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="num green">1,569</div>
+      <div class="label">טסטים עוברים</div>
+    </div>
+    <div class="stat-card">
+      <div class="num">18</div>
+      <div class="label">מנועי GDE</div>
+    </div>
+    <div class="stat-card">
+      <div class="num amber">4</div>
+      <div class="label">מודולים חדשים פאזה זו</div>
+    </div>
+    <div class="stat-card">
+      <div class="num">0</div>
+      <div class="label">רגרסיות</div>
+    </div>
+  </div>
+
+  <!-- Phase timeline -->
+  <div class="section">
+    <div class="section-title">מפת פאזות</div>
+    <div class="phase-grid">
+      <div class="phase-card active">
+        <div class="phase-num">פאזה 1</div>
+        <div class="phase-name">תשתית Python</div>
+        <div class="phase-status">🔄 בביצוע עכשיו</div>
+        <div class="phase-bar"><div class="phase-bar-fill" style="width:40%"></div></div>
+      </div>
+      <div class="phase-card">
+        <div class="phase-num">פאזה 2</div>
+        <div class="phase-name">Tauri Shell + React</div>
+        <div class="phase-status">ממתין לפאזה 1</div>
+        <div class="phase-bar"><div class="phase-bar-fill" style="width:0%"></div></div>
+      </div>
+      <div class="phase-card">
+        <div class="phase-num">פאזה 3</div>
+        <div class="phase-name">חיבור אינטליגנציה</div>
+        <div class="phase-status">ממתין לפאזה 2</div>
+        <div class="phase-bar"><div class="phase-bar-fill" style="width:0%"></div></div>
+      </div>
+      <div class="phase-card">
+        <div class="phase-num">פאזה 4</div>
+        <div class="phase-name">הפצה ופרסום</div>
+        <div class="phase-status">ממתין לפאזה 3</div>
+        <div class="phase-bar"><div class="phase-bar-fill" style="width:0%"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Current tasks -->
+  <div class="section">
+    <div class="section-title">פאזה 1 — משימות</div>
+    <ul class="task-list">
+
+      <li class="task">
+        <div class="task-icon wip">⟳</div>
+        <div class="task-body">
+          <div class="task-name">companion --serve subcommand</div>
+          <div class="task-desc">תת-פקודה CLI חדשה שמפעילה WebSocket + IDE Bridge + runner_patch ומדפיסה <code>READY token=...</code> ל-Tauri</div>
+          <div class="task-file">src/genesis_architect_pro/gde_cli.py</div>
+        </div>
+        <span class="task-badge badge-wip">בביצוע</span>
+      </li>
+
+      <li class="task">
+        <div class="task-icon wip">⟳</div>
+        <div class="task-body">
+          <div class="task-name">Gate Notifier Patch</div>
+          <div class="task-desc">חיבור <code>GateNotifier</code> לזרם האירועים — התראות OS כשgate נחסם</div>
+          <div class="task-file">src/genesis_architect_pro/gate_notifier_patch.py (חדש)</div>
+        </div>
+        <span class="task-badge badge-wip">בביצוע</span>
+      </li>
+
+      <li class="task">
+        <div class="task-icon wip">⟳</div>
+        <div class="task-body">
+          <div class="task-name">InboundRouter</div>
+          <div class="task-desc">ניתוב מרכזי להודעות נכנסות מ-Tauri: user.intent → GDE, user.approval → gate, user.voice_* → STT pipeline</div>
+          <div class="task-file">src/genesis_architect_pro/streaming/inbound.py (חדש)</div>
+        </div>
+        <span class="task-badge badge-wip">בביצוע</span>
+      </li>
+
+      <li class="task">
+        <div class="task-icon todo">○</div>
+        <div class="task-body">
+          <div class="task-name">Tauri v2 Scaffold</div>
+          <div class="task-desc">מבנה תיקיות, <code>Cargo.toml</code>, <code>tauri.conf.json</code>, שתי חלונות (Bubble + Panel)</div>
+          <div class="task-file">companion/app/src-tauri/ (חדש)</div>
+        </div>
+        <span class="task-badge badge-next">הבא</span>
+      </li>
+
+      <li class="task">
+        <div class="task-icon todo">○</div>
+        <div class="task-body">
+          <div class="task-name">sidecar.rs — Python spawn</div>
+          <div class="task-desc">Rust מפעיל <code>genesis companion --serve</code>, קורא token מ-stdout, הורג בסיום</div>
+          <div class="task-file">companion/app/src-tauri/src/sidecar.rs (חדש)</div>
+        </div>
+        <span class="task-badge badge-next">הבא</span>
+      </li>
+
+      <li class="task">
+        <div class="task-icon todo">○</div>
+        <div class="task-body">
+          <div class="task-name">WebSocket client TypeScript</div>
+          <div class="task-desc">State machine, auth, reconnect עם backoff, Zod validation, כותב ל-Zustand store</div>
+          <div class="task-file">companion/app/src/ws/client.ts (חדש)</div>
+        </div>
+        <span class="task-badge badge-next">הבא</span>
+      </li>
+
+      <li class="task">
+        <div class="task-icon todo">○</div>
+        <div class="task-body">
+          <div class="task-name">VS Code Extension — Build Pipeline</div>
+          <div class="task-desc">TypeScript → JavaScript, .vsix packaging, פרסום ל-Marketplace</div>
+          <div class="task-file">companion/vscode-extension/ (קיים, חסר build)</div>
+        </div>
+        <span class="task-badge badge-later">מאוחר יותר</span>
+      </li>
+
+    </ul>
+  </div>
+
+  <!-- Architecture decisions -->
+  <div class="section">
+    <div class="section-title">החלטות ארכיטקטורה מאושרות</div>
+
+    <div class="arch-box">
+      <h4>Tauri v2 — לא Electron, לא browser-only</h4>
+      <p>אפליקציה native ~6MB, cross-platform (Windows/Mac/Linux), Rust shell + React WebView. Python sidecar אינו מבונדל — Tauri מפעיל את מה שהלקוח כבר התקין דרך <code>pip install</code>.</p>
+    </div>
+
+    <div class="arch-box">
+      <h4>Token flow: stdout → Rust → TypeScript</h4>
+      <p>Python מדפיס <code>READY token=&lt;64-hex&gt;</code> ל-stdout. Rust קורא, שומר ב-managed state. Frontend מקבל דרך Tauri command <code>get_ws_credentials()</code>. Token לא נוגע לדיסק ולא מוטמע ב-bundle.</p>
+    </div>
+
+    <div class="arch-box">
+      <h4>WebSocket ownership — Panel בלבד</h4>
+      <p>Panel window מחזיק את ה-WebSocket connection. Bubble מקבל events דרך Tauri IPC (emit/listen). מונע double-auth על server שמקבל client אחד בלבד.</p>
+    </div>
+
+    <div class="arch-box">
+      <h4>State management — Zustand + derived selectors</h4>
+      <p><code>activityLevel</code> הוא derived selector, לא field: BLOCKED אם gate פתוח, ATTENTION אם diff מוכן, THINKING אם מנוע רץ, IDLE אחרת. Bubble רושם רק ל-selector הזה — לא מתרנדר על כל event.</p>
+    </div>
+  </div>
+
+  <!-- Risk table -->
+  <div class="section">
+    <div class="section-title">סיכונים מזוהים</div>
+    <table class="risk-table">
+      <tr>
+        <th>סיכון</th>
+        <th>חומרה</th>
+        <th>מיטיגציה</th>
+      </tr>
+      <tr>
+        <td>inbound protocol gaps — <code>user.command</code>/<code>user.cancel</code> לא קיימים בsidecar</td>
+        <td><span class="risk-high">גבוה</span></td>
+        <td>מסכמים את החוזה לפני פאזה 3. רק 4 types מאומתים.</td>
+      </tr>
+      <tr>
+        <td>Cross-window WS ownership — double-auth</td>
+        <td><span class="risk-high">גבוה</span></td>
+        <td>Panel בלבד מחזיק socket. Bubble מקבל events דרך IPC בלבד.</td>
+      </tr>
+      <tr>
+        <td>Orphan Python process ב-Windows על force-quit</td>
+        <td><span class="risk-med">בינוני</span></td>
+        <td>SIGTERM + taskkill ב-sidecar.rs. חובה לבדוק עם force-quit, לא רק סגירה נקייה.</td>
+      </tr>
+      <tr>
+        <td>Token length — 64 hex chars, לא 32</td>
+        <td><span class="risk-low">נמוך</span></td>
+        <td>לא לhardcode. parse מה-READY line.</td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- Next steps -->
+  <div class="next-cta">
+    <h3>הבא בתור — אחרי פאזה 1</h3>
+    <ul>
+      <li>Tauri v2 scaffold + sidecar.rs spawn Python</li>
+      <li>WebSocket client TypeScript עם auth + reconnect</li>
+      <li>Debug Console — מאמת שהצינור end-to-end עובד</li>
+      <li>Bubble component — עיגול מונפש עם activityLevel</li>
+      <li>Panel component — engine progress + confidence + gate status</li>
+      <li>Approval Modal — diff preview + כפתורי Approve/Reject/Defer</li>
+    </ul>
+  </div>
+
+</div>
+
+<div class="footer">
+  <div class="footer-logo">Genesis PRO</div>
+  <div>דוח אוטומטי | פאזה 1 | 2 יולי 2026</div>
+  <div>1,569 טסטים עוברים • 18 מנועים • 0 רגרסיות</div>
+</div>
+
+</body>
+</html>

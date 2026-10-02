@@ -23,6 +23,9 @@ paths = [
   '''^tests/test_secrets_scanner\.py$''',
   # The scanner's own regexes, which contain credential-shaped patterns.
   '''^src/genesis_architect/pro/secrets_scanner\.py$''',
+  # The same two files in the imported Genesis Architect Pro tree.
+  '''^genesis-architect-pro/tests/test_secrets_scanner\.py$''',
+  '''^genesis-architect-pro/src/genesis_architect_pro/secrets_scanner\.py$''',
 ]
 
 regexes = [

@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Genesis Architect — Research First. Build Once.</title>
+<meta name="description" content="The only AI tool that analyzes your existing codebase before touching a file. Architecture score, anti-pattern map, refactoring plan, C4 diagrams, and a decision engine that never guesses.">
+<meta property="og:title" content="Genesis Architect — Research First. Build Once.">
+<meta property="og:description" content="Scans 15 real GitHub repos and mines their Issues. Pro adds architecture analysis, Knowledge Graph, and a 7-mode decision engine.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink:#080a0e; --paper:#0d1017; --lift:#141922; --raise:#1a2030;
+  --rim:#232d42; --line:#2b3650; --muted:#3d4f6e; --dim:#5e7291;
+  --soft:#8da3c0; --body:#c2d0e6; --head:#e4ecf8;
+  --acc:#5b8ef0; --acc2:#3ecf8e;
+  --acc-glow:rgba(91,142,240,0.15); --acc-rim:rgba(91,142,240,0.35);
+  --amber:#f59e0b;
+  --mono:'JetBrains Mono',monospace; --sans:'Inter',system-ui,sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:var(--sans);background:var(--paper);color:var(--body);line-height:1.65;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+a{color:var(--acc);text-decoration:none}
+a:hover{color:#80aaff}
+
+/* noise overlay */
+body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9000;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+  opacity:.025;mix-blend-mode:screen}
+
+/* NAV */
+nav{position:sticky;top:0;z-index:500;display:flex;align-items:center;justify-content:space-between;padding:0 clamp(16px,4vw,72px);height:56px;background:rgba(13,16,23,.92);backdrop-filter:blur(24px) saturate(160%);border-bottom:1px solid var(--rim)}
+.nav-logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:15px;letter-spacing:-.4px;color:var(--head)}
+.nav-gem{width:26px;height:26px;border-radius:7px;background:linear-gradient(135deg,var(--acc) 0%,#9b7bf7 100%);display:grid;place-items:center;font-family:var(--mono);font-size:12px;font-weight:700;color:#fff;flex-shrink:0}
+.nav-links{display:flex;gap:24px;list-style:none}
+.nav-links a{font-size:13.5px;font-weight:500;color:var(--dim);transition:color .15s}
+.nav-links a:hover{color:var(--head)}
+.nav-right{display:flex;align-items:center;gap:10px}
+.btn-nav-pro{font-size:13px;font-weight:600;padding:7px 16px;border-radius:8px;border:1px solid var(--acc-rim);color:var(--acc);background:var(--acc-glow);transition:all .15s;white-space:nowrap}
+.btn-nav-pro:hover{background:rgba(91,142,240,.25);color:#80aaff;border-color:var(--acc)}
+.btn-nav-gh{font-size:13px;font-weight:600;padding:7px 16px;border-radius:8px;background:var(--acc);color:#fff;transition:filter .15s,transform .15s;white-space:nowrap}
+.btn-nav-gh:hover{filter:brightness(1.1);transform:translateY(-1px);color:#fff}
+
+/* HERO */
+.hero{position:relative;overflow:hidden;padding:clamp(80px,12vw,140px) clamp(16px,4vw,72px) clamp(64px,8vw,100px);text-align:center}
+.hero-grid{position:absolute;inset:0;background-image:linear-gradient(var(--rim) 1px,transparent 1px),linear-gradient(90deg,var(--rim) 1px,transparent 1px);background-size:56px 56px;mask-image:radial-gradient(ellipse 72% 72% at 50% 40%,black 20%,transparent 100%);opacity:.14}
+.hero-bloom{position:absolute;top:-120px;left:50%;transform:translateX(-50%);width:900px;height:560px;pointer-events:none;background:radial-gradient(ellipse,rgba(91,142,240,.1) 0%,transparent 65%)}
+.eyebrow{display:inline-flex;align-items:center;gap:7px;padding:5px 14px 5px 10px;background:var(--lift);border:1px solid var(--rim);border-radius:100px;margin-bottom:26px;font-size:11.5px;font-weight:600;letter-spacing:.7px;text-transform:uppercase;color:var(--soft);position:relative}
+.eyebrow-pulse{width:6px;height:6px;border-radius:50%;background:var(--acc2);box-shadow:0 0 7px var(--acc2);animation:pulse 2.2s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.3}}
+.hero h1{font-size:clamp(38px,6.5vw,76px);font-weight:900;line-height:1.04;letter-spacing:-2.5px;color:var(--head);max-width:900px;margin:0 auto 20px;position:relative}
+.hero h1 .g{background:linear-gradient(135deg,var(--acc) 10%,#a78bfa 60%,var(--acc2) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero-sub{font-size:clamp(16px,2vw,20px);color:var(--dim);max-width:560px;margin:0 auto 44px;line-height:1.7;position:relative}
+.hero-actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-bottom:48px;position:relative}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:13px 28px;border-radius:10px;font-size:15px;font-weight:600;transition:all .15s;cursor:pointer;border:none}
+.btn-primary{background:var(--acc);color:#fff}
+.btn-primary:hover{filter:brightness(1.1);transform:translateY(-2px);color:#fff;box-shadow:0 8px 32px rgba(91,142,240,.35)}
+.btn-outline{background:var(--lift);border:1px solid var(--rim);color:var(--body)}
+.btn-outline:hover{border-color:var(--acc-rim);color:var(--head);background:var(--raise)}
+.install-pill{display:inline-flex;align-items:center;gap:14px;background:var(--ink);border:1px solid var(--line);border-radius:10px;padding:12px 20px;font-family:var(--mono);font-size:13.5px;position:relative;max-width:100%}
+.install-pill::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--acc);border-radius:3px 0 0 3px}
+.ip-prompt{color:var(--muted);padding-left:4px}
+.ip-cmd{color:var(--acc2)}
+.ip-copy{background:var(--raise);border:1px solid var(--line);color:var(--dim);padding:4px 12px;border-radius:6px;font-size:11px;font-family:var(--sans);cursor:pointer;transition:all .15s;white-space:nowrap}
+.ip-copy:hover{border-color:var(--acc);color:var(--acc)}
+
+/* TERMINAL */
+.term-wrap{max-width:860px;margin:0 auto}
+.term{background:#07090d;border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:0 0 0 1px var(--rim),0 40px 100px rgba(0,0,0,.65),0 0 120px rgba(91,142,240,.04)}
+.term-chrome{display:flex;align-items:center;gap:8px;padding:13px 18px;background:var(--lift);border-bottom:1px solid var(--line)}
+.td{width:12px;height:12px;border-radius:50%}
+.term-title{font-family:var(--mono);font-size:11.5px;color:var(--muted);margin-left:8px}
+.term-body{padding:22px 26px;font-family:var(--mono);font-size:12.5px;line-height:1.95;min-height:310px}
+.tp{color:var(--muted)}.tc{color:var(--head)}.ts{color:var(--amber)}
+.ph{color:var(--acc);font-weight:700}.tok{color:var(--acc2)}
+.twn{color:var(--amber)}.tlb{color:var(--dim)}.thi{color:#a5c4ff}.tcm{color:var(--muted)}
+.tblink{display:inline-block;width:7px;height:13px;background:var(--acc);vertical-align:text-bottom;animation:blink 1.1s step-end infinite}
+@keyframes blink{50%{opacity:0}}
+
+/* SECTIONS */
+.sec{padding:clamp(60px,8vw,100px) clamp(16px,4vw,72px)}
+.sec-inner{max-width:1080px;margin:0 auto}
+.stag{font-size:11px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--acc);margin-bottom:10px}
+.sh{font-size:clamp(26px,4vw,44px);font-weight:800;letter-spacing:-1.2px;color:var(--head);line-height:1.12;margin-bottom:12px}
+.sp{font-size:16px;color:var(--dim);max-width:520px;line-height:1.75;margin-bottom:50px}
+.sec-alt{background:var(--lift);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+
+/* STATS */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.stat{background:var(--lift);padding:26px 16px;text-align:center}
+.stat-n{display:block;font-family:var(--mono);font-size:32px;font-weight:700;letter-spacing:-1.5px;color:var(--head)}
+.stat-n em{font-style:normal;color:var(--acc)}
+.stat-l{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;margin-top:5px}
+
+/* PIPELINE */
+.pipeline{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.pipe{background:var(--paper);padding:28px 22px;transition:background .18s}
+.pipe:hover{background:var(--lift)}
+.pipe-num{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
+.pipe-icon{font-size:22px;margin-bottom:10px;display:block}
+.pipe h3{font-size:14px;font-weight:700;color:var(--head);margin-bottom:6px}
+.pipe p{font-size:12.5px;color:var(--dim);line-height:1.6}
+
+/* FEATURES */
+.feats{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.feat{background:var(--paper);padding:30px 26px;transition:background .18s;position:relative;overflow:hidden}
+.feat::after{content:'';position:absolute;top:0;left:24px;right:24px;height:1.5px;background:var(--acc);transform:scaleX(0);transform-origin:left;transition:transform .25s ease}
+.feat:hover{background:var(--lift)}
+.feat:hover::after{transform:scaleX(1)}
+.feat-icon{font-size:24px;margin-bottom:14px;display:block}
+.feat h3{font-size:15px;font-weight:700;color:var(--head);margin-bottom:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.feat p{font-size:13px;color:var(--dim);line-height:1.65}
+.badge{font-size:9px;font-weight:700;letter-spacing:.5px;padding:2px 7px;border-radius:100px;background:rgba(91,142,240,.12);border:1px solid rgba(91,142,240,.3);color:#a5c4ff}
+.badge-pro{background:rgba(155,123,247,.14);border-color:rgba(155,123,247,.35);color:#c4a8ff}
+
+/* COMPARE */
+.table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:16px}
+table{width:100%;border-collapse:collapse;font-size:13.5px;min-width:600px}
+thead th{padding:13px 18px;background:var(--lift);text-align:left;font-weight:600;font-size:11.5px;color:var(--dim);border-bottom:1px solid var(--line)}
+thead th.col-g{color:var(--acc);background:rgba(91,142,240,.06)}
+tbody td{padding:12px 18px;border-bottom:1px solid var(--rim);color:var(--body)}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover td{background:var(--lift)}
+.row-hi td{background:rgba(91,142,240,.03)}
+.row-hi td:nth-child(2){border-left:2px solid var(--acc)}
+.ck{color:var(--acc2);font-weight:600}.cx{color:var(--muted)}.cp{color:var(--amber)}
+
+/* INSTALL */
+.install-panel{background:var(--ink);border:1px solid var(--line);border-radius:16px;padding:36px clamp(20px,4vw,44px);position:relative;overflow:hidden}
+.install-panel::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent 10%,var(--acc) 50%,transparent 90%)}
+.ilabel{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--muted);margin-bottom:10px;margin-top:26px}
+.ilabel:first-child{margin-top:0}
+.code-block{background:var(--paper);border:1px solid var(--rim);border-radius:10px;padding:18px 22px;font-family:var(--mono);font-size:13px;line-height:2;overflow-x:auto}
+.c-c{color:var(--muted)}.c-k{color:var(--acc2)}.c-s{color:var(--amber)}
+
+/* PRO BANNER */
+.pro-banner{background:linear-gradient(135deg,#0f1829 0%,#0d1520 100%);border:1px solid rgba(91,142,240,.25);border-radius:20px;padding:clamp(40px,5vw,64px) clamp(24px,4vw,64px);text-align:center;position:relative;overflow:hidden}
+.pro-banner::before{content:'';position:absolute;top:-80px;left:50%;transform:translateX(-50%);width:600px;height:300px;background:radial-gradient(ellipse,rgba(91,142,240,.12) 0%,transparent 70%);pointer-events:none}
+.pro-banner h2{font-size:clamp(24px,4vw,38px);font-weight:800;letter-spacing:-1px;color:var(--head);margin-bottom:12px;position:relative}
+.pro-banner p{font-size:16px;color:var(--dim);max-width:540px;margin:0 auto 32px;position:relative}
+.pro-banner-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;position:relative}
+.btn-pro{background:linear-gradient(135deg,var(--acc) 0%,#9b7bf7 100%);color:#fff;padding:14px 32px;border-radius:10px;font-size:15px;font-weight:700;transition:all .15s;display:inline-block}
+.btn-pro:hover{filter:brightness(1.1);transform:translateY(-2px);color:#fff;box-shadow:0 10px 36px rgba(91,142,240,.4)}
+
+/* FOOTER */
+footer{text-align:center;padding:44px clamp(16px,4vw,72px);border-top:1px solid var(--rim);color:var(--muted);font-size:13px}
+footer a{color:var(--dim);transition:color .15s}
+footer a:hover{color:var(--acc)}
+.footer-links{display:flex;gap:22px;justify-content:center;flex-wrap:wrap;margin-top:10px}
+
+/* REVEAL */
+.reveal{opacity:0;transform:translateY(18px);transition:opacity .5s ease,transform .5s ease}
+.reveal.in{opacity:1;transform:none}
+
+@media(max-width:640px){
+  .nav-links{display:none}
+  .hero h1{letter-spacing:-1.2px}
+  .install-pill{flex-direction:column;align-items:flex-start;gap:8px}
+  .btn-nav-pro{display:none}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo"><div class="nav-gem">G</div>Genesis Architect</div>
+  <ul class="nav-links">
+    <a href="#pipeline">How it works</a>
+    <a href="#features">Free</a>
+    <a href="#pro-engines">Pro</a>
+    <a href="#gde">Decision Engine</a>
+    <a href="#compare">vs. Others</a>
+    <a href="#install">Install</a>
+  </ul>
+  <div class="nav-right">
+    <a class="btn-nav-pro" href="pro.html">Pro →</a>
+    <a class="btn-nav-gh" href="https://github.com/maioio/genesis-architect">Star on GitHub</a>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-bloom"></div>
+  <div class="eyebrow"><span class="eyebrow-pulse"></span>Open Source Core &nbsp;·&nbsp; v5.4.1 &nbsp;·&nbsp; MIT License</div>
+  <h1>The AI partner that reads<br><span class="g">your codebase first</span><br>before touching a file.</h1>
+  <p class="hero-sub">Free: scans 15 production repos and mines closed issues from the top 5 before scaffolding. Pro: scores your architecture, maps every file STABLE / FRAGILE / VOLATILE, and routes any instruction through 14 engines — no LLM guess.</p>
+  <div class="hero-actions">
+    <a class="btn btn-primary" href="#install">Get started free →</a>
+    <a class="btn btn-outline" href="https://github.com/maioio/genesis-architect">View on GitHub</a>
+  </div>
+  <div class="install-pill">
+    <span class="ip-prompt">$</span>
+    <span class="ip-cmd">pip install genesis-architect</span>
+    <button class="ip-copy" onclick="navigator.clipboard.writeText('pip install genesis-architect');this.textContent='Copied!';setTimeout(()=>this.textContent='Copy',1800)">Copy</button>
+  </div>
+</section>
+
+<div class="sec" style="padding-top:0"><div class="sec-inner">
+  <div class="term-wrap reveal">
+    <div class="term">
+      <div class="term-chrome">
+        <div class="td" style="background:#ff5f57"></div>
+        <div class="td" style="background:#febc2e"></div>
+        <div class="td" style="background:#28c840"></div>
+        <span class="term-title">genesis decide "diagnose the project and identify drift"</span>
+      </div>
+      <div class="term-body" id="term-body">
+<div><span class="tp">$ </span><span class="tc">genesis decide</span> <span class="ts">"diagnose the project and identify drift"</span></div>
+<div>&nbsp;</div>
+<div><span class="ph">[ INTAKE ]</span> <span class="tlb">Classified:</span> <span class="tok">RECOVERY</span> <span class="tcm">— confidence 0.56</span></div>
+<div><span class="ph">[ PLAN   ]</span> <span class="tlb">4 phases, 5 engines, 2 parallel groups</span></div>
+<div>&nbsp;</div>
+<div><span class="ph">[ EXECUTE ]</span></div>
+<div>&nbsp;&nbsp;<span class="tok">✓</span> <span class="thi">import_graph</span> <span class="tcm">— 284 nodes, 3 circular deps detected</span></div>
+<div>&nbsp;&nbsp;<span class="tok">✓</span> <span class="thi">architecture_scorer</span> <span class="tcm">— 64/100 (Needs Attention)</span></div>
+<div>&nbsp;&nbsp;<span class="tok">✓</span> <span class="thi">antipattern_detector</span> <span class="tcm">— 2 CRITICAL, 4 HIGH patterns</span></div>
+<div>&nbsp;&nbsp;<span class="tok">✓</span> <span class="thi">fragility_classifier</span> <span class="tcm">— 7 VOLATILE, 12 FRAGILE, 31 STABLE</span></div>
+<div>&nbsp;&nbsp;<span class="tok">✓</span> <span class="thi">recovery_report</span> <span class="tcm">— risk: MEDIUM</span></div>
+<div>&nbsp;</div>
+<div><span class="ph">[ GATE   ]</span> <span class="twn">WARN</span> <span class="tcm">— 2 soft blocks, overridable</span></div>
+<div>&nbsp;&nbsp;<span class="twn">!</span> <span class="tlb">CONFIDENCE_LOW</span> <span class="tcm">— session confidence 0.64 (threshold 0.70)</span></div>
+<div>&nbsp;</div>
+<div><span class="ph">[ REPORT ]</span> <span class="tlb">Confidence: 0.64 &nbsp; Risk: MEDIUM &nbsp; Gate: WARN</span></div>
+<div>&nbsp;</div>
+<div><span class="tok">✓ Ready</span> <span class="tlb">— PROJECT_RECOVERY_REPORT.md written.</span> <span class="tblink"></span></div>
+      </div>
+    </div>
+  </div>
+</div></div>
+
+<div class="sec" style="padding-top:0"><div class="sec-inner">
+  <div class="stats reveal">
+    <div class="stat"><span class="stat-n">2<em>,</em>252</span><div class="stat-l">Tests passing</div></div>
+    <div class="stat"><span class="stat-n">14</span><div class="stat-l">Pro engines</div></div>
+    <div class="stat"><span class="stat-n">7</span><div class="stat-l">GDE modes</div></div>
+    <div class="stat"><span class="stat-n">12</span><div class="stat-l">Gate policies</div></div>
+    <div class="stat"><span class="stat-n">15</span><div class="stat-l">Repos scanned</div></div>
+    <div class="stat"><span class="stat-n">500</span><div class="stat-l">Vault entries</div></div>
+  </div>
+</div></div>
+
+<section class="sec" id="pipeline"><div class="sec-inner">
+  <div class="stag">How it works</div>
+  <h2 class="sh">Research first. Then build.</h2>
+  <p class="sp">Every other scaffolder starts from a template. Genesis starts from production data.</p>
+  <div class="pipeline reveal">
+    <div class="pipe"><div class="pipe-num">Phase 01</div><span class="pipe-icon">🔍</span><h3>Scan real repos</h3><p>Finds 15 GitHub repos building exactly what you described. Ranks by stars and active fork activity.</p></div>
+    <div class="pipe"><div class="pipe-num">Phase 02</div><span class="pipe-icon">⚠️</span><h3>Mine closed issues</h3><p>Reads up to 20 closed bug issues per repo from the top 5 ranked repos. Extracts recurring errors, security patches, architecture regrets.</p></div>
+    <div class="pipe"><div class="pipe-num">Phase 03</div><span class="pipe-icon">🧬</span><h3>Synthesize ecosystem</h3><p>Builds the "wise average" — what successful projects converge on — not a copy of one repo.</p></div>
+    <div class="pipe"><div class="pipe-num">Phase 04</div><span class="pipe-icon">🏗️</span><h3>Generate + validate</h3><p>Creates scaffold with tests and CI/CD. Runs smoke test. Never declares success without exit code 0.</p></div>
+  </div>
+</div></section>
+
+<section class="sec sec-alt" id="features"><div class="sec-inner">
+  <div class="stag">Free core</div>
+  <h2 class="sh">Not a template.<br>A research pipeline.</h2>
+  <p class="sp">Built for developers who've been burned by boilerplate that doesn't survive contact with production.</p>
+  <div class="feats reveal">
+    <div class="feat"><span class="feat-icon">🔬</span><h3>Real Issue Mining</h3><p>Reads closed bug issues from production repos. Finds the feedparser hang, the Redis connection leak, the Celery task that silently drops — before you write the code.</p></div>
+    <div class="feat"><span class="feat-icon">🍴</span><h3>Smart Fork Analysis</h3><p>Finds the top 3 active forks ranked by merged PRs in the last 6 months — not stars. Extracts bug fixes and incorporates them into your pitfall list.</p></div>
+    <div class="feat"><span class="feat-icon">🗄️</span><h3>Knowledge Vault</h3><p>Caches solutions locally with 6-month TTL and LRU eviction at 500 entries. Runs fast on repeat projects. Falls back to Stack Overflow on cache miss.</p></div>
+    <div class="feat"><span class="feat-icon">💬</span><h3>Natural Language Choices</h3><p>Say "I want the simple one" instead of typing A. Genesis maps natural language to architecture choices — no memorizing option letters.</p></div>
+    <div class="feat"><span class="feat-icon">🤖</span><h3>Companion Mode</h3><p>Run <code style="color:#a5c4ff;font-family:var(--mono)">genesis companion</code> after scaffolding. Stays active, answers questions, detects when you've moved on.</p></div>
+    <div class="feat"><span class="feat-icon">🔌</span><h3>Works with any LLM</h3><p>Claude, GPT-4, Gemini, Ollama — all supported via LiteLLM. Set your key once with <code style="color:#a5c4ff;font-family:var(--mono)">genesis config set LLM_API_KEY</code>.</p></div>
+  </div>
+</div></section>
+
+<section class="sec" id="pro-engines"><div class="sec-inner">
+  <div class="stag">Pro — codebase intelligence</div>
+  <h2 class="sh">Point it at any repo.<br>Get a full health report.</h2>
+  <p class="sp">14 engines running pure graph analysis — no LLM required. Architecture score, fragility map, refactoring plan, C4 diagrams, and a Knowledge Graph that links code to CVEs.</p>
+  <div class="feats reveal">
+    <div class="feat"><span class="feat-icon">📊</span><h3>Architecture Scorer <span class="badge">PRO</span></h3><p>0–100 score across Modularity, Coupling, Cohesion, Layering. 6 adaptive profiles. Trend history in <code style="color:#a5c4ff;font-family:var(--mono)">.genesis/score_history.jsonl</code>.</p></div>
+    <div class="feat"><span class="feat-icon">🕸️</span><h3>Anti-Pattern Detector <span class="badge">PRO</span></h3><p>7 structural anti-patterns: God Class, Hub File, Circular Deps, Dead Code (free core) plus Feature Envy, Leaky Abstraction, Shotgun Surgery (Pro). Pure graph — no LLM.</p></div>
+    <div class="feat"><span class="feat-icon">🔥</span><h3>Fragility Classifier <span class="badge">PRO</span></h3><p>VOLATILE / FRAGILE / STABLE per module. Combines anti-patterns + git churn + test coverage. Outputs <code style="color:#a5c4ff;font-family:var(--mono)">FRAGILITY_MAP.md</code> with GO / HOLD / REWRITE.</p></div>
+    <div class="feat"><span class="feat-icon">📋</span><h3>Refactoring Planner <span class="badge">PRO</span></h3><p>Tier-1 critical first, tier-2 improvements after. Each step includes operations, complexity estimate, and projected score impact.</p></div>
+    <div class="feat"><span class="feat-icon">🗺️</span><h3>C4 Diagrams <span class="badge">PRO</span></h3><p>Levels 1–2 (System Context, Containers) in free core; Level 3 (Components) in Pro. Mermaid output — renders natively on GitHub. Auto-detects databases, auth, queues, payments.</p></div>
+    <div class="feat"><span class="feat-icon">🔗</span><h3>Knowledge Graph <span class="badge">PRO</span></h3><p>Links code, CVEs, risks, and decisions into one queryable graph. Answers: <em>"which do-not-touch zone has an open CVE?"</em> No other tool does this.</p></div>
+  </div>
+</div></section>
+
+<section class="sec sec-alt" id="gde"><div class="sec-inner">
+  <div class="stag">Genesis Decision Engine</div>
+  <h2 class="sh">One command. Seven modes.<br>Twelve safety gates.</h2>
+  <p class="sp">The GDE routes any plain-English instruction to the right engines — deterministically, without an LLM guess. Two gates can never be bypassed.</p>
+  <div class="pipeline reveal">
+    <div class="pipe"><div class="pipe-num">Stage 01</div><span class="pipe-icon">📥</span><h3>INTAKE</h3><p>Classify intent from free text. Signal-based, sub-millisecond. No LLM call.</p></div>
+    <div class="pipe"><div class="pipe-num">Stage 02</div><span class="pipe-icon">🗺️</span><h3>PLAN</h3><p>Topological sort across engines. Parallel grouping for concurrent execution.</p></div>
+    <div class="pipe"><div class="pipe-num">Stage 03</div><span class="pipe-icon">⚙️</span><h3>EXECUTE</h3><p>Engines run phase by phase. Optional engines degrade gracefully on failure.</p></div>
+    <div class="pipe" style="background:rgba(91,142,240,.04);border-left:2px solid var(--acc)"><div class="pipe-num">Stage 04</div><span class="pipe-icon">🚦</span><h3>GATE</h3><p>12 named gates. 2 hard blocks that can never be overridden by any flag.</p></div>
+    <div class="pipe"><div class="pipe-num">Stage 05</div><span class="pipe-icon">📋</span><h3>REPORT</h3><p>Confidence score, risk level, decision log. Session persists — resume anytime.</p></div>
+    <div class="pipe" style="background:rgba(91,142,240,.04);border-left:2px solid var(--acc)"><div class="pipe-num">Stage 06</div><span class="pipe-icon">✅</span><h3>APPROVE</h3><p>Inspect all pending write operations before any file is touched.</p></div>
+    <div class="pipe"><div class="pipe-num">Stage 07</div><span class="pipe-icon">💾</span><h3>COMMIT</h3><p>Atomic tmp → rename writes. Parent directories auto-created.</p></div>
+  </div>
+</div></section>
+
+<section class="sec" id="compare"><div class="sec-inner">
+  <div class="stag">Market position</div>
+  <h2 class="sh">Genesis GDE vs. 11 Competitors</h2>
+  <p class="sp">Verified against Cursor, Cline, Aider, GitHub Copilot Workspace, Sweep, Cody, Continue, Devin, SWE-agent, OpenHands, AutoCodeRover.</p>
+  <div class="table-wrap reveal">
+    <table>
+      <thead><tr><th>Decision Engine Capability</th><th class="col-g">Genesis GDE</th><th>All 11 others</th></tr></thead>
+      <tbody>
+        <tr class="row-hi"><td>Intent classification — free text → execution mode, no LLM</td><td><span class="ck">✓</span> signal-based, sub-ms</td><td><span class="cx">—</span> LLM or slash commands</td></tr>
+        <tr class="row-hi"><td>Engine routing by classified intent</td><td><span class="ck">✓</span> topological sort, parallel</td><td><span class="cx">—</span></td></tr>
+        <tr class="row-hi"><td>Static approval gate policy table</td><td><span class="ck">✓</span> 12 named gates, 2 non-overridable</td><td><span class="cx">—</span> binary yes/no at best</td></tr>
+        <tr class="row-hi"><td>Session confidence score</td><td><span class="ck">✓</span> per-engine penalty model</td><td><span class="cx">—</span></td></tr>
+        <tr class="row-hi"><td>Persistent decision log</td><td><span class="ck">✓</span> append-only JSONL</td><td><span class="cx">—</span></td></tr>
+        <tr><td>Codebase architecture analysis</td><td><span class="ck">✓</span> 14 engines, pure graph</td><td><span class="cp">~ limited / context-window only</span></td></tr>
+        <tr><td>Cross-source Knowledge Graph</td><td><span class="ck">✓</span> code + CVEs + risks + decisions</td><td><span class="cx">—</span></td></tr>
+        <tr><td>Privacy — telemetry default</td><td><span class="ck">✓</span> off by default, opt-in only</td><td><span class="cp">~ varies</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</div></section>
+
+<section class="sec sec-alt" id="install"><div class="sec-inner">
+  <div class="stag">Get started</div>
+  <h2 class="sh">Up and running<br>in 2 minutes.</h2>
+  <p class="sp">Two ways in. Pick what fits your workflow.</p>
+  <div class="install-panel reveal">
+    <div class="ilabel">Free — pip</div>
+    <div class="code-block"><span class="c-k">pip install genesis-architect</span>
+<span class="c-k">genesis config set</span> LLM_API_KEY <span class="c-s">your-api-key</span>
+<span class="c-k">genesis init</span> <span class="c-s">"a FastAPI task queue with Celery and Redis"</span></div>
+    <div class="ilabel">Pro — pip</div>
+    <div class="code-block"><span class="c-k">pip install</span> <span class="c-s">genesis-architect-pro</span>
+<span class="c-c"># Analyze any existing codebase</span>
+<span class="c-k">genesis decide</span> <span class="c-s">"diagnose the project and identify drift"</span>
+<span class="c-k">genesis decide</span> <span class="c-s">"generate C4 architecture diagrams"</span> <span class="c-c">--no-commit</span></div>
+    <div class="ilabel">As a Claude Code skill</div>
+    <div class="code-block"><span class="c-k">git clone</span> https://github.com/maioio/genesis-architect ~/.claude/skills/genesis-architect
+<span class="c-c"># Then describe what you want to build</span>
+<span class="c-k">genesis init</span> <span class="c-s">a Python CLI for analyzing log files</span></div>
+  </div>
+  <div style="text-align:center;margin-top:40px">
+    <a class="btn btn-primary" href="https://github.com/maioio/genesis-architect">View full docs on GitHub →</a>
+  </div>
+</div></section>
+
+<section class="sec"><div class="sec-inner">
+  <div class="pro-banner reveal">
+    <h2>Need to analyze an <em style="font-style:normal;background:linear-gradient(135deg,var(--acc),#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">existing codebase</em>?</h2>
+    <p>Genesis PRO scores your architecture 0–100, maps every file as VOLATILE / FRAGILE / STABLE, generates a prioritized refactoring plan, C4 diagrams, and a security checklist — all in under 30 seconds. No LLM required for the analysis.</p>
+    <div class="pro-banner-btns">
+      <a class="btn-pro" href="pro.html">Explore Genesis PRO →</a>
+      <a class="btn btn-outline" href="https://github.com/maioio/genesis-architect">Free version →</a>
+    </div>
+  </div>
+</div></section>
+
+<footer>
+  <p>Genesis Architect &nbsp;·&nbsp; by <a href="https://github.com/maioio">Maio Eshet</a> &nbsp;·&nbsp; Free core MIT &nbsp;·&nbsp; v5.4.1</p>
+  <div class="footer-links">
+    <a href="https://github.com/maioio/genesis-architect/blob/main/CHANGELOG.md">Changelog</a>
+    <a href="https://github.com/maioio/genesis-architect/issues">Issues</a>
+    <a href="https://github.com/maioio/genesis-architect/blob/main/CONTRIBUTING.md">Contributing</a>
+    <a href="pro.html">Genesis PRO</a>
+  </div>
+</footer>
+
+<script>
+const io = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+}, { threshold: 0.08, rootMargin: '0px 0px -30px 0px' });
+document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+document.querySelectorAll('.pipeline,.feats,.stats').forEach(g => {
+  [...g.children].forEach((c,i) => c.style.transitionDelay = `${i*55}ms`);
+});
+</script>
+</body>
+</html>

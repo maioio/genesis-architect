@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.11"
+
+      - name: Install the free core (dependency) from GitHub
+        run: pip install -q "git+https://github.com/maioio/genesis-architect.git@main"
+
+      - name: Install Pro and dev tools
+        run: pip install -q -e ".[dev]"
+
+      - name: Run tests
+        env:
+          GENESIS_CORE_ROOT: ${{ github.workspace }}/.core
+        run: |
+          git clone --depth 1 https://github.com/maioio/genesis-architect.git "$GENESIS_CORE_ROOT"
+          python -m pytest tests/ -q

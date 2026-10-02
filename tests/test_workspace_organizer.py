@@ -289,6 +289,17 @@ class TestReporting:
             "Nothing to organize. Top level is already tidy."
         )
 
+    def test_summary_dry_run_counts_unmatched_files(self, tmp_path):
+        (tmp_path / "notes.xyz").write_text("x")
+        (tmp_path / "sketch.xyz").write_text("x")
+        summary = organize(tmp_path).summary()
+        assert "already tidy" not in summary
+        assert summary == "Nothing to move. 2 file(s) matched no rule and were left in place."
+
+    def test_summary_dry_run_safe_paths_alone_are_tidy(self, tmp_path):
+        (tmp_path / "README.md").write_text("x")
+        assert organize(tmp_path).summary() == "Nothing to organize. Top level is already tidy."
+
     def test_format_report_includes_move_marker_on_dry_run(self, tmp_path):
         (tmp_path / "debug.log").write_text("x")
         report = organize(tmp_path)

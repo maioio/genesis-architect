@@ -131,13 +131,13 @@ The capability ledger in §3 is scoped to architecture-analysis engines (matchin
 | A4 evidence/inference split, A5 `failure_modes` field | BUILT (`ada45f4`) |
 | R1–R6 research protocol (outline, coverage, uncertainty, floor check) | BUILT (6 of 6) — **independently corroborated this session**: `research_orchestrator.py`'s `compute_coverage()`/`check_floor()`/`is_uncertain()` (§3 VERIFIED BUILT) are exactly the R1/R3/R4 machinery this blueprint item describes, and `RESEARCH_COVERAGE_LOW` is live in `gde_gate_engine.py`'s policy table (§3b) |
 
-Test-count lineage for context: 2029 passed (2026-08-17) → 2202 passed (2026-08-22) → **2322 passed** (this session, live) — monotonic growth, no regressions reported at any checkpoint.
+Test-count lineage for context: 2029 passed (2026-08-17) → 2202 passed (2026-08-22) → 2322 passed (Stage 1 reconciliation session) → **2881 passed, 2 skipped** (2026-10-02, verified on a clean detached worktree at `4ed23cd`, after Stage 2's temporal-rules work landed — see §4 item 1) — monotonic growth, no regressions reported at any checkpoint.
 
 ---
 
 ## 4. Dependency ordering on remaining gaps
 
-1. **Architecture Regression Test DSL** (PARTIAL → extend `rules_engine.py`) — no dependency on anything else; `rules_engine.py`'s fact-gathering already pulls from `architecture_scorer`, `antipattern_detector`, `recovery_report`, `supply_chain_audit`, `git_analyzer` (bus factor, timeline) — all of which already exist. The only new work is temporal-assertion evaluation logic plus history storage to compare against (score_history.jsonl already exists per split_TEMP.md's claim — worth confirming on read, but plausible since `architecture_scorer.py` already does score-label/trend computation).
+1. **Architecture Regression Test DSL — DONE (2026-10-02)**: shipped as two bounded v1 temporal rules, `max_score_decline` and `max_cycle_count_increase`, per `ARCHITECTURE_REGRESSION_TEMPORAL_DESIGN.md` (verified: commits `764d730`, `4ed23cd`; 30 new tests, 62/62 in `test_rules_engine.py`, full suite 2881 passed on a clean worktree). Critical-anti-pattern-count and bus-factor temporal rules remain explicitly deferred (design doc §10, ledger row A3) — not dropped, just not in v1.
 2. **Partial Re-analysis Scoping** (PARTIAL → wire `dependency_index.py` into a real pipeline) — benefits from having the DSL in place first only loosely; really just needs a caller. Could proceed independently of (1).
 3. **Prompt Budget Manager** (PLANNED, greenfield) — no dependency on (1) or (2); purely about file abbreviation and token estimation for LLM-prompt construction during refactor-plan generation.
 4. **Capability Manager / larger v10 work** — depends on whichever of the above land, since it's the broader orchestration layer.
@@ -154,10 +154,11 @@ This ordering matches the user's own stated recommended order exactly — the ev
 
 ## 6. Recommended next milestone
 
-**Architecture Regression Test DSL** (Stage 2, as the user already planned), for three converging reasons verified this session:
-1. It's a PARTIAL, not a PLANNED-from-scratch item — `rules_engine.py` already has rule loading, fact-gathering from 5 engines, structured reporting, shadow/enforcing modes, and a CLI entry (`genesis gate`). The remaining work is narrowly scoped: add temporal/regression rule keys and history comparison to an existing, tested, production-wired system.
-2. It has no dependency on the other remaining gaps (Partial Re-analysis Scoping, Prompt Budget Manager) — it can proceed in isolation without blocking or being blocked.
-3. It directly enables Genesis to dogfood its own architecture rules over time (one of the user's stated Stage 2 goals), which neither of the other two deferred items does on its own.
+~~**Architecture Regression Test DSL**~~ — **done, see §4 item 1.** With that gap closed, the two remaining items from §4 are, in order:
+1. **Partial Re-analysis Scoping** (PARTIAL → wire `dependency_index.py` into a real pipeline) — the scoping math already exists and is tested in isolation (§5) but has no effect on any running workflow; the remaining work is purely wiring a caller.
+2. **Prompt Budget Manager** (PLANNED, greenfield) — file abbreviation and token estimation for LLM-prompt construction during refactor-plan generation. No dependency on (1).
+
+Both are independent of each other and can proceed in isolation — this is unchanged from §4's original ordering, just renumbered now that the DSL item is closed.
 
 ---
 

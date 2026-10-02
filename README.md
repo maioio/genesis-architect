@@ -317,7 +317,7 @@ pip install -e ".[dev]"
 pytest -q
 
 # Or run the suite plus end-to-end CLI checks against a real install
-docker build -f Dockerfile.test -t genesis-test . && docker run --rm genesis-test
+docker build -f docker/Dockerfile.test -t genesis-test . && docker run --rm genesis-test
 ```
 
 Please read the [Code of Conduct](CODE_OF_CONDUCT.md) and

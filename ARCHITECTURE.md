@@ -447,7 +447,7 @@ python -c "from genesis_architect.core.import_graph import build_graph; \
            print(g['cycle_count'], 'cycles across', g['module_count'], 'modules')"
 
 # Full suite plus end-to-end CLI checks against a real install
-docker build -f Dockerfile.test -t genesis-test . && docker run --rm genesis-test
+docker build -f docker/Dockerfile.test -t genesis-test . && docker run --rm genesis-test
 ```
 
 Nothing in this document is asserted rather than measured. If a number here

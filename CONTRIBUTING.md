@@ -65,7 +65,7 @@ runs fully offline.
 To reproduce CI exactly, including the checks that only catch packaging bugs:
 
 ```bash
-docker build -f Dockerfile.test -t genesis-test .
+docker build -f docker/Dockerfile.test -t genesis-test .
 docker run --rm genesis-test
 ```
 
@@ -88,7 +88,7 @@ are invisible from a repo checkout and only show up here.
 | `SKILL.md` under 480 lines | `wc -l SKILL.md` |
 | No em or en dashes in reader-facing docs | CI grep step (README, SKILL, CONTRIBUTING, SECURITY, CODE_OF_CONDUCT, docs/) |
 | All tests pass on Python 3.11, 3.12, 3.13 | `pytest tests/` matrix |
-| Packaged install works | `docker build -f Dockerfile.test` job |
+| Packaged install works | `docker build -f docker/Dockerfile.test` job |
 | Required package data ships in the wheel | build-artifacts job |
 | Eval schema valid | `python scripts/eval_runner.py --mode validate` |
 | Scaffold smoke test | CI: all 8 language/tier combos |

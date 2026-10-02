@@ -1,6 +1,6 @@
 # Reproducible test + smoke-check environment for Genesis Architect.
 #
-#   docker build -f Dockerfile.test -t genesis-test .
+#   docker build -f docker/Dockerfile.test -t genesis-test .
 #   docker run --rm genesis-test              # full suite + CLI smoke tests
 #   docker run --rm genesis-test pytest -q    # just the suite
 #

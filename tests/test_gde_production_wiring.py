@@ -21,7 +21,7 @@ import pytest
 
 def _make_report(gate_outcome_str: str = "pass", pending_writes=None):
     """Build a minimal SessionReport-like object for testing."""
-    from genesis_architect.pro.gde_types import (
+    from genesis_architect_pro.gde_types import (
         GDEMode, LifecycleStage, GateReport, GateOutcome, GateResult, GateAction,
         SessionReport,
     )
@@ -64,11 +64,11 @@ def _make_report(gate_outcome_str: str = "pass", pending_writes=None):
 
 class TestEngineRegistration:
     def test_import_does_not_crash(self):
-        import genesis_architect.pro.gde_engine_registration  # noqa: F401
+        import genesis_architect_pro.gde_engine_registration  # noqa: F401
 
     def test_core_engines_registered(self):
         """All original 8 core engines must be registered (registry may have more)."""
-        from genesis_architect.pro.engine_registry import get_default_registry
+        from genesis_architect_pro.engine_registry import get_default_registry
         reg = get_default_registry()
         required = {
             "import_graph", "architecture_scorer", "antipattern_detector",
@@ -80,8 +80,8 @@ class TestEngineRegistration:
         assert not missing, f"Missing core engines: {missing}"
 
     def test_recovery_phase_order(self):
-        from genesis_architect.pro.engine_registry import get_default_registry
-        from genesis_architect.pro.gde_types import GDEMode
+        from genesis_architect_pro.engine_registry import get_default_registry
+        from genesis_architect_pro.gde_types import GDEMode
 
         reg = get_default_registry()
         groups = reg.parallel_groups_for_mode(GDEMode.RECOVERY)
@@ -95,16 +95,16 @@ class TestEngineRegistration:
         assert flat.index("recovery_report") > flat.index("fragility_classifier")
 
     def test_import_graph_is_required(self):
-        from genesis_architect.pro.engine_registry import get_default_registry
-        from genesis_architect.pro.gde_types import GDEMode
+        from genesis_architect_pro.engine_registry import get_default_registry
+        from genesis_architect_pro.gde_types import GDEMode
 
         reg = get_default_registry()
         descs = {d.id: d for d in reg.ordered_for_mode(GDEMode.RECOVERY)}
         assert descs["import_graph"].is_optional is False
 
     def test_document_mode_includes_c4(self):
-        from genesis_architect.pro.engine_registry import get_default_registry
-        from genesis_architect.pro.gde_types import GDEMode
+        from genesis_architect_pro.engine_registry import get_default_registry
+        from genesis_architect_pro.gde_types import GDEMode
 
         reg = get_default_registry()
         ids = [d.id for d in reg.ordered_for_mode(GDEMode.DOCUMENT)]
@@ -113,11 +113,11 @@ class TestEngineRegistration:
     def test_registration_is_idempotent(self):
         """Importing registration twice must not raise or double-register."""
         import importlib
-        import genesis_architect.pro.gde_engine_registration as m
+        import genesis_architect_pro.gde_engine_registration as m
         importlib.reload(m)  # second registration pass — should be no-op
 
     def test_adapters_module_importable(self):
-        import genesis_architect.pro.gde_engine_adapters  # noqa: F401
+        import genesis_architect_pro.gde_engine_adapters  # noqa: F401
 
 
 # ---------------------------------------------------------------------------
@@ -127,15 +127,15 @@ class TestEngineRegistration:
 
 class TestEngineAdapters:
     def _ctx(self):
-        from genesis_architect.pro.gde_types import SessionContext, GDEMode
+        from genesis_architect_pro.gde_types import SessionContext, GDEMode
         ctx = SessionContext(mode=GDEMode.RECOVERY)
         ctx.project_dir = Path(tempfile.mkdtemp())
         return ctx
 
     def test_import_graph_adapter_returns_dict(self):
-        from genesis_architect.pro.gde_engine_adapters import gde_run_import_graph
+        from genesis_architect_pro.gde_engine_adapters import gde_run_import_graph
         ctx = self._ctx()
-        with patch("genesis_architect.pro.import_graph.load_or_build") as mock_load:
+        with patch("genesis_architect_pro.import_graph.load_or_build") as mock_load:
             mock_graph = MagicMock()
             mock_graph.cycles = []
             mock_graph.dark_modules = []
@@ -147,39 +147,39 @@ class TestEngineAdapters:
         assert "_confidence" in result
 
     def test_import_graph_adapter_handles_exception(self):
-        from genesis_architect.pro.gde_engine_adapters import gde_run_import_graph
+        from genesis_architect_pro.gde_engine_adapters import gde_run_import_graph
         ctx = self._ctx()
-        with patch("genesis_architect.pro.import_graph.load_or_build", side_effect=RuntimeError("fail")):
+        with patch("genesis_architect_pro.import_graph.load_or_build", side_effect=RuntimeError("fail")):
             result = gde_run_import_graph(ctx)
         assert result["_confidence"] < 1.0
         assert result["_warnings"]
 
     def test_architecture_scorer_adapter_handles_exception(self):
-        from genesis_architect.pro.gde_engine_adapters import gde_run_architecture_scorer
+        from genesis_architect_pro.gde_engine_adapters import gde_run_architecture_scorer
         ctx = self._ctx()
-        with patch("genesis_architect.pro.architecture_scorer.score_project", side_effect=RuntimeError("fail")):
+        with patch("genesis_architect_pro.architecture_scorer.score_project", side_effect=RuntimeError("fail")):
             result = gde_run_architecture_scorer(ctx)
         assert result["_confidence"] < 1.0
 
     def test_antipattern_adapter_handles_exception(self):
-        from genesis_architect.pro.gde_engine_adapters import gde_run_antipattern_detector
+        from genesis_architect_pro.gde_engine_adapters import gde_run_antipattern_detector
         ctx = self._ctx()
-        with patch("genesis_architect.pro.antipattern_detector.detect_all", side_effect=RuntimeError("fail")):
+        with patch("genesis_architect_pro.antipattern_detector.detect_all", side_effect=RuntimeError("fail")):
             result = gde_run_antipattern_detector(ctx)
         assert result["_confidence"] < 1.0
 
     def test_c4_adapter_handles_exception(self):
-        from genesis_architect.pro.gde_engine_adapters import gde_run_c4_generator
+        from genesis_architect_pro.gde_engine_adapters import gde_run_c4_generator
         ctx = self._ctx()
-        with patch("genesis_architect.pro.c4_generator.generate_c4_doc", side_effect=RuntimeError("fail")):
+        with patch("genesis_architect_pro.c4_generator.generate_c4_doc", side_effect=RuntimeError("fail")):
             result = gde_run_c4_generator(ctx)
         assert result["_confidence"] < 1.0
 
     def test_security_adapter_returns_paths_on_success(self):
-        from genesis_architect.pro.gde_engine_adapters import gde_run_security_templates
+        from genesis_architect_pro.gde_engine_adapters import gde_run_security_templates
         ctx = self._ctx()
         with patch(
-            "genesis_architect.pro.security_templates.generate_security_docs",
+            "genesis_architect_pro.security_templates.generate_security_docs",
             return_value={"stride_path": "/a/STRIDE.md", "owasp_path": "/a/OWASP.md"},
         ):
             result = gde_run_security_templates(ctx)
@@ -194,15 +194,15 @@ class TestEngineAdapters:
 
 class TestApproveCommit:
     def test_approve_raises_on_hard_block(self):
-        from genesis_architect.pro import GenesisDecisionEngine
+        from genesis_architect_pro import GenesisDecisionEngine
         gde = GenesisDecisionEngine(project_dir=Path(tempfile.mkdtemp()))
         report = _make_report("hard_block")
         with pytest.raises(RuntimeError, match="HARD_BLOCK"):
             gde.approve(report)
 
     def test_approve_returns_approval_request_on_pass(self):
-        from genesis_architect.pro import GenesisDecisionEngine
-        from genesis_architect.pro.gde_types import ApprovalRequest
+        from genesis_architect_pro import GenesisDecisionEngine
+        from genesis_architect_pro.gde_types import ApprovalRequest
         project_dir = Path(tempfile.mkdtemp())
         gde = GenesisDecisionEngine(project_dir=project_dir)
         report = _make_report("pass")
@@ -212,8 +212,8 @@ class TestApproveCommit:
         assert "mode=recovery" in req.summary
 
     def test_commit_reject_returns_success(self):
-        from genesis_architect.pro import GenesisDecisionEngine
-        from genesis_architect.pro.gde_types import ApprovalDecision, ApprovalChoice, CommitResult
+        from genesis_architect_pro import GenesisDecisionEngine
+        from genesis_architect_pro.gde_types import ApprovalDecision, ApprovalChoice, CommitResult
         project_dir = Path(tempfile.mkdtemp())
         gde = GenesisDecisionEngine(project_dir=project_dir)
         report = _make_report("pass")
@@ -227,8 +227,8 @@ class TestApproveCommit:
         assert not result.committed
 
     def test_commit_defer_returns_success_no_writes(self):
-        from genesis_architect.pro import GenesisDecisionEngine
-        from genesis_architect.pro.gde_types import ApprovalDecision, ApprovalChoice
+        from genesis_architect_pro import GenesisDecisionEngine
+        from genesis_architect_pro.gde_types import ApprovalDecision, ApprovalChoice
         project_dir = Path(tempfile.mkdtemp())
         gde = GenesisDecisionEngine(project_dir=project_dir)
         report = _make_report("pass")
@@ -241,8 +241,8 @@ class TestApproveCommit:
         assert not result.committed
 
     def test_commit_hard_block_returns_failed(self):
-        from genesis_architect.pro import GenesisDecisionEngine
-        from genesis_architect.pro.gde_types import ApprovalDecision, ApprovalChoice
+        from genesis_architect_pro import GenesisDecisionEngine
+        from genesis_architect_pro.gde_types import ApprovalDecision, ApprovalChoice
         project_dir = Path(tempfile.mkdtemp())
         gde = GenesisDecisionEngine(project_dir=project_dir)
         report = _make_report("hard_block")
@@ -256,8 +256,8 @@ class TestApproveCommit:
 
     def test_commit_approve_executes_write_op(self):
         """End-to-end: write operation with payload is written to disk."""
-        from genesis_architect.pro import GenesisDecisionEngine, save_session
-        from genesis_architect.pro.gde_types import (
+        from genesis_architect_pro import GenesisDecisionEngine, save_session
+        from genesis_architect_pro.gde_types import (
             ApprovalDecision, ApprovalChoice, SessionContext, WriteOperation, GDEMode,
         )
 
@@ -287,8 +287,8 @@ class TestApproveCommit:
             assert result.success is True
 
     def test_execute_write_operation_creates_file(self):
-        from genesis_architect.pro import GenesisDecisionEngine
-        from genesis_architect.pro.gde_types import WriteOperation
+        from genesis_architect_pro import GenesisDecisionEngine
+        from genesis_architect_pro.gde_types import WriteOperation
 
         with tempfile.TemporaryDirectory() as tmp:
             project_dir = Path(tmp)
@@ -304,8 +304,8 @@ class TestApproveCommit:
             assert (project_dir / "subdir" / "file.txt").read_text() == "content"
 
     def test_execute_write_operation_json_payload(self):
-        from genesis_architect.pro import GenesisDecisionEngine
-        from genesis_architect.pro.gde_types import WriteOperation
+        from genesis_architect_pro import GenesisDecisionEngine
+        from genesis_architect_pro.gde_types import WriteOperation
 
         with tempfile.TemporaryDirectory() as tmp:
             project_dir = Path(tmp)
@@ -322,8 +322,8 @@ class TestApproveCommit:
             assert content["key"] == "value"
 
     def test_execute_write_operation_none_payload_is_noop(self):
-        from genesis_architect.pro import GenesisDecisionEngine
-        from genesis_architect.pro.gde_types import WriteOperation
+        from genesis_architect_pro import GenesisDecisionEngine
+        from genesis_architect_pro.gde_types import WriteOperation
 
         with tempfile.TemporaryDirectory() as tmp:
             project_dir = Path(tmp)
@@ -346,16 +346,16 @@ class TestApproveCommit:
 
 class TestCLI:
     def _run_cli(self, argv, capsys=None):
-        from genesis_architect.pro.gde_cli import main
+        from genesis_architect_pro.gde_cli import main
         return main(argv)
 
     def test_classify_only_returns_zero(self):
-        from genesis_architect.pro.gde_cli import main
+        from genesis_architect_pro.gde_cli import main
         rc = main(["decide", "--classify-only", "diagnose the project", "--no-commit"])
         assert rc == 0
 
     def test_classify_only_recovery_mode(self, capsys):
-        from genesis_architect.pro.gde_cli import main
+        from genesis_architect_pro.gde_cli import main
         import io
         from contextlib import redirect_stdout
         buf = io.StringIO()
@@ -366,44 +366,20 @@ class TestCLI:
 
     def test_bare_instruction_without_subcommand(self):
         """Bare `genesis <instruction>` (no 'decide' keyword) must work."""
-        from genesis_architect.pro.gde_cli import main
+        from genesis_architect_pro.gde_cli import main
         rc = main(["--classify-only", "diagnose the project and identify drift"])
         assert rc == 0
 
     def test_help_exits_zero(self):
-        from genesis_architect.pro.gde_cli import main
+        from genesis_architect_pro.gde_cli import main
         with pytest.raises(SystemExit) as exc:
             main(["--help"])
         assert exc.value.code == 0
 
     def test_invalid_dir_returns_error(self):
-        from genesis_architect.pro.gde_cli import main
+        from genesis_architect_pro.gde_cli import main
         rc = main(["decide", "--classify-only", "diagnose", "--dir", "/nonexistent/path/xyz"])
         assert rc == 1
-
-    def test_engine_commands_are_never_gated(self):
-        """Genesis is fully free: no command may be blocked behind a license.
-
-        This is the regression guard for the open-source relicensing - if a
-        paywall is ever reintroduced at the CLI entry point, this fails.
-        """
-        from genesis_architect.pro.gde_cli import main
-        rc = main(["decide", "--classify-only", "diagnose the project"])
-        assert rc == 0
-
-    def test_no_license_module_exists(self):
-        """The licensing machinery must stay deleted, not merely bypassed."""
-        import importlib
-        with pytest.raises(ModuleNotFoundError):
-            importlib.import_module("genesis_architect.pro.license")
-
-    def test_license_command_explains_everything_is_free(self, capsys):
-        """`genesis license` is kept only to answer old muscle memory."""
-        from genesis_architect.pro.gde_cli import main
-        rc = main(["license"])
-        assert rc == 0
-        out = capsys.readouterr().out.lower()
-        assert "free" in out and "open source" in out
 
     # -----------------------------------------------------------------
     # Regression tests for the QA report (genesis-pro-qa-report.md)
@@ -412,53 +388,39 @@ class TestCLI:
     def test_memory_status_does_not_crash_when_empty(self, tmp_path):
         """memory_status() returns {filename: int|False} (flat); cmd_memory
         used to call .get() on that int/bool and crash with AttributeError."""
-        from genesis_architect.pro.gde_cli import main
+        from genesis_architect_pro.gde_cli import main
         rc = main(["memory", "--status", "--dir", str(tmp_path)])
         assert rc == 0
 
     def test_memory_status_does_not_crash_when_populated(self, tmp_path):
-        from genesis_architect.pro.gde_cli import main
+        from genesis_architect_pro.gde_cli import main
         assert main(["memory", "--init", "--dir", str(tmp_path)]) == 0
         assert main(["memory", "--status", "--dir", str(tmp_path)]) == 0
 
     def test_ui_writes_workspace_file(self, tmp_path):
         """write_workspace(project_root, out_name) recomputes state itself;
         cmd_ui used to pass it (WorkspaceState, Path) and crash with TypeError."""
-        from genesis_architect.pro.gde_cli import main
+        from genesis_architect_pro.gde_cli import main
         rc = main(["ui", "--dir", str(tmp_path)])
         assert rc == 0
         assert (tmp_path / ".genesis" / "ui" / "workspace.html").is_file()
 
     def test_doctor_reports_ready(self):
-        """Nothing is gated, so a healthy install is always ready to work."""
-        from genesis_architect.pro.gde_cli import main
+        from genesis_architect_pro.gde_cli import main
         rc = main(["doctor"])
         assert rc == 0
-
-    def test_license_activate_is_a_friendly_noop(self, capsys):
-        """Old `genesis license activate <key>` scripts must not error out."""
-        from genesis_architect.pro.gde_cli import main
-        rc = main(["license", "activate", "gpro_some-old-key.sig"])
-        assert rc == 0
-        assert "free" in capsys.readouterr().out.lower()
-
-    def test_license_status_reports_free(self, capsys):
-        from genesis_architect.pro.gde_cli import main
-        rc = main(["license", "status"])
-        assert rc == 0
-        assert "free" in capsys.readouterr().out.lower()
 
     def test_recover_command_classifies_as_recovery_high_confidence(self, tmp_path, capsys):
         """genesis recover <path> is a thin wrapper around decide — the site
         advertises it as a literal single/two-word command."""
-        from genesis_architect.pro.gde_cli import main
+        from genesis_architect_pro.gde_cli import main
         rc = main(["recover", str(tmp_path), "--classify-only"])
         assert rc == 0
         out = capsys.readouterr().out.lower()
         assert "recovery" in out
 
     def test_harden_command_classifies_as_gate(self, tmp_path, capsys):
-        from genesis_architect.pro.gde_cli import main
+        from genesis_architect_pro.gde_cli import main
         rc = main(["harden", str(tmp_path), "--classify-only"])
         assert rc == 0
         out = capsys.readouterr().out.lower()
@@ -468,7 +430,7 @@ class TestCLI:
         """A mistyped/unregistered single-word command (e.g. 'doctr', or the
         website's old 'harden'/'recover'/'doctor' before they were wired up)
         must not be silently swallowed into a low-confidence decide guess."""
-        from genesis_architect.pro.gde_cli import main
+        from genesis_architect_pro.gde_cli import main
         rc = main(["doctr"])
         assert rc == 1
         assert "unknown command" in capsys.readouterr().err.lower()
@@ -476,7 +438,7 @@ class TestCLI:
     def test_terse_real_word_still_routes_to_decide(self):
         """A single word that matches at least one intent signal (unlike a
         typo) must still fall through to decide, not the unknown-command guard."""
-        from genesis_architect.pro.gde_cli import main
+        from genesis_architect_pro.gde_cli import main
         rc = main(["--classify-only", "refactor"])
         assert rc == 0
 
@@ -484,18 +446,18 @@ class TestCLI:
         """Regression guard: a leading flag like --classify-only (from a bare
         `genesis --classify-only "..."` invocation) must never be mistaken
         for an unknown command token."""
-        from genesis_architect.pro.gde_cli import main
+        from genesis_architect_pro.gde_cli import main
         rc = main(["--classify-only", "diagnose the project and identify drift"])
         assert rc == 0
 
     def test_telemetry_status_shows_consent_prompt_when_undecided(self, tmp_path, capsys):
-        from genesis_architect.pro.gde_cli import main
+        from genesis_architect_pro.gde_cli import main
         rc = main(["telemetry", "status", "--dir", str(tmp_path)])
         assert rc == 0
         assert "help improve genesis" in capsys.readouterr().out.lower()
 
     def test_telemetry_enable_then_status_reports_on(self, tmp_path, capsys):
-        from genesis_architect.pro.gde_cli import main
+        from genesis_architect_pro.gde_cli import main
         assert main(["telemetry", "enable", "--dir", str(tmp_path)]) == 0
         rc = main(["telemetry", "status", "--dir", str(tmp_path)])
         assert rc == 0
@@ -504,7 +466,7 @@ class TestCLI:
         assert "anonymous install id" in out
 
     def test_telemetry_disable_after_enable(self, tmp_path, capsys):
-        from genesis_architect.pro.gde_cli import main
+        from genesis_architect_pro.gde_cli import main
         assert main(["telemetry", "enable", "--dir", str(tmp_path)]) == 0
         assert main(["telemetry", "disable", "--dir", str(tmp_path)]) == 0
         capsys.readouterr()  # discard enable/disable output
@@ -513,8 +475,8 @@ class TestCLI:
         assert "telemetry is off" in capsys.readouterr().out.lower()
 
     def test_telemetry_clear_reports_count(self, tmp_path, capsys):
-        from genesis_architect.pro.gde_cli import main
-        from genesis_architect.pro.product_intelligence import record_event, set_consent
+        from genesis_architect_pro.gde_cli import main
+        from genesis_architect_pro.product_intelligence import record_event, set_consent
         set_consent(True, tmp_path)
         record_event("engine_used", {"engine": "recovery", "tier": "pro"}, tmp_path)
         rc = main(["telemetry", "clear", "--dir", str(tmp_path)])
@@ -526,7 +488,7 @@ class TestCLI:
         is dropped from the event (a single bad field doesn't reject the
         whole event, per sanitize_event's own contract) — but the unsafe
         value itself must never end up in what's stored on disk."""
-        from genesis_architect.pro.product_intelligence import read_events, record_event, set_consent
+        from genesis_architect_pro.product_intelligence import read_events, record_event, set_consent
         set_consent(True, tmp_path)
         record_event("friction_point", {"where": r"C:\Users\secret\project"}, tmp_path)
         events = read_events(tmp_path)
@@ -543,8 +505,8 @@ class TestCLI:
 class TestNewModeWiring:
     def test_all_7_modes_have_engines(self):
         """All GDE modes must have at least one engine registered."""
-        from genesis_architect.pro.engine_registry import get_default_registry
-        from genesis_architect.pro.gde_types import GDEMode
+        from genesis_architect_pro.engine_registry import get_default_registry
+        from genesis_architect_pro.gde_types import GDEMode
 
         reg = get_default_registry()
         for mode in GDEMode:
@@ -553,14 +515,14 @@ class TestNewModeWiring:
             assert n >= 1, f"Mode {mode.value} has no engines registered"
 
     def test_13_engines_total(self):
-        from genesis_architect.pro.engine_registry import get_default_registry
+        from genesis_architect_pro.engine_registry import get_default_registry
 
         reg = get_default_registry()
         assert len(reg._descriptors) >= 13
 
     def test_research_mode_phases(self):
-        from genesis_architect.pro.engine_registry import get_default_registry
-        from genesis_architect.pro.gde_types import GDEMode
+        from genesis_architect_pro.engine_registry import get_default_registry
+        from genesis_architect_pro.gde_types import GDEMode
 
         reg = get_default_registry()
         groups = reg.parallel_groups_for_mode(GDEMode.RESEARCH)
@@ -570,8 +532,8 @@ class TestNewModeWiring:
         assert "evidence_pack" in ids
 
     def test_build_mode_has_scaffold_engine(self):
-        from genesis_architect.pro.engine_registry import get_default_registry
-        from genesis_architect.pro.gde_types import GDEMode
+        from genesis_architect_pro.engine_registry import get_default_registry
+        from genesis_architect_pro.gde_types import GDEMode
 
         reg = get_default_registry()
         groups = reg.parallel_groups_for_mode(GDEMode.BUILD)
@@ -579,8 +541,8 @@ class TestNewModeWiring:
         assert "build_scaffold" in ids
 
     def test_committee_mode_includes_analysis_and_synthesis(self):
-        from genesis_architect.pro.engine_registry import get_default_registry
-        from genesis_architect.pro.gde_types import GDEMode
+        from genesis_architect_pro.engine_registry import get_default_registry
+        from genesis_architect_pro.gde_types import GDEMode
 
         reg = get_default_registry()
         groups = reg.parallel_groups_for_mode(GDEMode.COMMITTEE)
@@ -589,8 +551,8 @@ class TestNewModeWiring:
         assert "committee_analysis" in ids
 
     def test_source_registry_adapter_handles_exception(self):
-        from genesis_architect.pro.gde_engine_adapters import gde_run_source_registry
-        from genesis_architect.pro.gde_types import GDEMode, SessionContext
+        from genesis_architect_pro.gde_engine_adapters import gde_run_source_registry
+        from genesis_architect_pro.gde_types import GDEMode, SessionContext
 
         with tempfile.TemporaryDirectory() as tmp:
             ctx = SessionContext(mode=GDEMode.RESEARCH)
@@ -599,9 +561,41 @@ class TestNewModeWiring:
             assert isinstance(result, dict)
             assert "_confidence" in result
 
+    def test_research_outline_adapter_no_outline_yet(self):
+        from genesis_architect_pro.gde_engine_adapters import gde_run_research_outline
+        from genesis_architect_pro.gde_types import GDEMode, SessionContext
+
+        with tempfile.TemporaryDirectory() as tmp:
+            ctx = SessionContext(mode=GDEMode.RESEARCH)
+            ctx.project_dir = Path(tmp)
+            result = gde_run_research_outline(ctx)
+            assert isinstance(result, dict)
+            assert result["items"] == []
+            assert result["_confidence"] <= 0.5
+
+    def test_research_outline_adapter_reads_a_confirmed_outline(self):
+        from genesis_architect_pro.gde_engine_adapters import gde_run_research_outline
+        from genesis_architect_pro.gde_types import GDEMode, SessionContext
+        from genesis_architect_pro.research_outline import Outline, save_outline
+
+        with tempfile.TemporaryDirectory() as tmp:
+            project_dir = Path(tmp)
+            save_outline(
+                Outline(topic="library shortlist", items=["fastapi"], fields=["license"]),
+                project_dir,
+            )
+            ctx = SessionContext(mode=GDEMode.RESEARCH)
+            ctx.project_dir = project_dir
+
+            result = gde_run_research_outline(ctx)
+            assert result["topic"] == "library shortlist"
+            assert result["items"] == ["fastapi"]
+            assert result["_confidence"] == 1.0
+            assert result["_warnings"] == []
+
     def test_field_intelligence_adapter_handles_exception(self):
-        from genesis_architect.pro.gde_engine_adapters import gde_run_field_intelligence
-        from genesis_architect.pro.gde_types import GDEMode, SessionContext
+        from genesis_architect_pro.gde_engine_adapters import gde_run_field_intelligence
+        from genesis_architect_pro.gde_types import GDEMode, SessionContext
         from unittest.mock import patch
 
         with tempfile.TemporaryDirectory() as tmp:
@@ -609,7 +603,7 @@ class TestNewModeWiring:
             ctx.project_dir = Path(tmp)
             ctx.instruction = "test tool"
 
-            with patch("genesis_architect.pro.field_intelligence.run_field_workflow",
+            with patch("genesis_architect_pro.field_intelligence.run_field_workflow",
                        side_effect=RuntimeError("network unavailable")):
                 result = gde_run_field_intelligence(ctx)
 
@@ -618,8 +612,8 @@ class TestNewModeWiring:
             assert result["findings"] == []
 
     def test_committee_adapter_returns_perspectives(self):
-        from genesis_architect.pro.gde_engine_adapters import gde_run_committee_analysis
-        from genesis_architect.pro.gde_types import GDEMode, SessionContext
+        from genesis_architect_pro.gde_engine_adapters import gde_run_committee_analysis
+        from genesis_architect_pro.gde_types import GDEMode, SessionContext
 
         with tempfile.TemporaryDirectory() as tmp:
             ctx = SessionContext(mode=GDEMode.COMMITTEE)
@@ -632,8 +626,8 @@ class TestNewModeWiring:
             assert isinstance(result["_confidence"], float)
 
     def test_committee_adapter_with_upstream_results(self):
-        from genesis_architect.pro.gde_engine_adapters import gde_run_committee_analysis
-        from genesis_architect.pro.gde_types import (
+        from genesis_architect_pro.gde_engine_adapters import gde_run_committee_analysis
+        from genesis_architect_pro.gde_types import (
             GDEMode, SessionContext, EngineResult, EngineStatus
         )
 
@@ -653,57 +647,13 @@ class TestNewModeWiring:
             assert result["perspective_count"] >= 1
             assert any(p["lens"] == "Architecture" for p in result["perspectives"])
 
-    def test_build_scaffold_adapter_missing_vision(self):
-        from genesis_architect.pro.gde_engine_adapters import gde_run_build_scaffold
-        from genesis_architect.pro.gde_types import GDEMode, SessionContext
-
-        with tempfile.TemporaryDirectory() as tmp:
-            ctx = SessionContext(mode=GDEMode.BUILD)
-            ctx.project_dir = Path(tmp)
-            ctx.instruction = ""  # no vision
-            result = gde_run_build_scaffold(ctx)
-            assert result["_confidence"] <= 0.3
-            assert "BUILD mode requires" in result["_warnings"][0]
-
-    def test_research_outline_adapter_no_outline_yet(self):
-        from genesis_architect.pro.gde_engine_adapters import gde_run_research_outline
-        from genesis_architect.pro.gde_types import GDEMode, SessionContext
-
-        with tempfile.TemporaryDirectory() as tmp:
-            ctx = SessionContext(mode=GDEMode.RESEARCH)
-            ctx.project_dir = Path(tmp)
-            result = gde_run_research_outline(ctx)
-            assert isinstance(result, dict)
-            assert result["items"] == []
-            assert result["_confidence"] <= 0.5
-
-    def test_research_outline_adapter_reads_a_confirmed_outline(self):
-        from genesis_architect.pro.gde_engine_adapters import gde_run_research_outline
-        from genesis_architect.pro.gde_types import GDEMode, SessionContext
-        from genesis_architect.pro.research_outline import Outline, save_outline
-
-        with tempfile.TemporaryDirectory() as tmp:
-            project_dir = Path(tmp)
-            save_outline(
-                Outline(topic="library shortlist", items=["fastapi"], fields=["license"]),
-                project_dir,
-            )
-            ctx = SessionContext(mode=GDEMode.RESEARCH)
-            ctx.project_dir = project_dir
-
-            result = gde_run_research_outline(ctx)
-            assert result["topic"] == "library shortlist"
-            assert result["items"] == ["fastapi"]
-            assert result["_confidence"] == 1.0
-            assert result["_warnings"] == []
-
     def test_red_team_adapter_discloses_missing_api_key(self):
         """D-7: the wrapper GDE actually calls must itself disclose the skip,
         not just the underlying critique_with_llm — this is the code path
         that a real GDE run exercises, and it had no direct test before."""
         import os
-        from genesis_architect.pro.gde_engine_adapters import gde_run_red_team_critic
-        from genesis_architect.pro.gde_types import GDEMode, SessionContext
+        from genesis_architect_pro.gde_engine_adapters import gde_run_red_team_critic
+        from genesis_architect_pro.gde_types import GDEMode, SessionContext
 
         with tempfile.TemporaryDirectory() as tmp:
             ctx = SessionContext(mode=GDEMode.GATE)
@@ -720,8 +670,8 @@ class TestNewModeWiring:
         """A broken LLM call must surface a warning, never masquerade as a
         clean adversarial pass that simply found nothing."""
         import os
-        from genesis_architect.pro.gde_engine_adapters import gde_run_red_team_critic
-        from genesis_architect.pro.gde_types import GDEMode, SessionContext
+        from genesis_architect_pro.gde_engine_adapters import gde_run_red_team_critic
+        from genesis_architect_pro.gde_types import GDEMode, SessionContext
 
         with tempfile.TemporaryDirectory() as tmp:
             ctx = SessionContext(mode=GDEMode.GATE)
@@ -729,7 +679,7 @@ class TestNewModeWiring:
 
             with patch.dict(os.environ, {"ANTHROPIC_API_KEY": "test-key"}):
                 with patch(
-                    "genesis_architect.pro.red_team_critic.critique_with_llm",
+                    "genesis_architect_pro.red_team_critic.critique_with_llm",
                     side_effect=RuntimeError("network unavailable"),
                 ):
                     result = gde_run_red_team_critic(ctx)
@@ -740,9 +690,9 @@ class TestNewModeWiring:
         """The success path: a present key and a working call must actually
         fold LLM findings into the result, not just avoid warning."""
         import os
-        from genesis_architect.pro.gde_engine_adapters import gde_run_red_team_critic
-        from genesis_architect.pro.gde_types import GDEMode, SessionContext
-        from genesis_architect.pro.red_team_critic import RedTeamFinding
+        from genesis_architect_pro.gde_engine_adapters import gde_run_red_team_critic
+        from genesis_architect_pro.gde_types import GDEMode, SessionContext
+        from genesis_architect_pro.red_team_critic import RedTeamFinding
 
         with tempfile.TemporaryDirectory() as tmp:
             ctx = SessionContext(mode=GDEMode.GATE)
@@ -755,7 +705,7 @@ class TestNewModeWiring:
             )
             with patch.dict(os.environ, {"ANTHROPIC_API_KEY": "test-key"}):
                 with patch(
-                    "genesis_architect.pro.red_team_critic.critique_with_llm",
+                    "genesis_architect_pro.red_team_critic.critique_with_llm",
                     return_value=[fake_finding],
                 ):
                     result = gde_run_red_team_critic(ctx)
@@ -765,3 +715,15 @@ class TestNewModeWiring:
                 for f in result["findings"]
             )
             assert not any("ANTHROPIC_API_KEY" in w for w in result["_warnings"])
+
+    def test_build_scaffold_adapter_missing_vision(self):
+        from genesis_architect_pro.gde_engine_adapters import gde_run_build_scaffold
+        from genesis_architect_pro.gde_types import GDEMode, SessionContext
+
+        with tempfile.TemporaryDirectory() as tmp:
+            ctx = SessionContext(mode=GDEMode.BUILD)
+            ctx.project_dir = Path(tmp)
+            ctx.instruction = ""  # no vision
+            result = gde_run_build_scaffold(ctx)
+            assert result["_confidence"] <= 0.3
+            assert "BUILD mode requires" in result["_warnings"][0]

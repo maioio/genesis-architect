@@ -49,13 +49,13 @@ import warnings
 from pathlib import Path
 
 
-from genesis_architect.pro.model_store import (
+from genesis_architect_pro.model_store import (
     ArchModel, ModelNode, ModelResponsibility, ModelStore,
 )
-from genesis_architect.pro.drift_detector import (
+from genesis_architect_pro.drift_detector import (
     DriftFlags, detect_drift, compute_drift_flags,
 )
-from genesis_architect.pro.recovery_scan import scan
+from genesis_architect_pro.recovery_scan import scan
 
 
 # ---------------------------------------------------------------------------
@@ -541,21 +541,21 @@ class TestScanDriftFlagsIntegration:
 
 class TestPackageExports:
     def test_drift_flags_exported(self):
-        from genesis_architect.pro import DriftFlags
+        from genesis_architect_pro import DriftFlags
         assert DriftFlags is not None
 
     def test_vagrant_candidate_exported(self):
-        from genesis_architect.pro import VagrantCandidate
+        from genesis_architect_pro import VagrantCandidate
         assert VagrantCandidate is not None
 
     def test_stale_candidate_exported(self):
-        from genesis_architect.pro import StaleCandidate
+        from genesis_architect_pro import StaleCandidate
         assert StaleCandidate is not None
 
     def test_detect_drift_exported(self):
-        from genesis_architect.pro import detect_drift
+        from genesis_architect_pro import detect_drift
         assert callable(detect_drift)
 
     def test_compute_drift_flags_exported(self):
-        from genesis_architect.pro import compute_drift_flags
+        from genesis_architect_pro import compute_drift_flags
         assert callable(compute_drift_flags)

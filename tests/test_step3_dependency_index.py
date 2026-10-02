@@ -60,39 +60,39 @@ def _make_large_modules(n: int) -> dict:
 
 class TestBuildDependencyIndex:
     def test_returns_dependency_index(self):
-        from genesis_architect.pro.dependency_index import build_dependency_index
+        from genesis_architect_pro.dependency_index import build_dependency_index
         idx = build_dependency_index({})
-        from genesis_architect.pro.dependency_index import DependencyIndex
+        from genesis_architect_pro.dependency_index import DependencyIndex
         assert isinstance(idx, DependencyIndex)
 
     def test_empty_modules_produces_empty_index(self):
-        from genesis_architect.pro.dependency_index import build_dependency_index
+        from genesis_architect_pro.dependency_index import build_dependency_index
         idx = build_dependency_index({})
         assert len(idx) == 0
         assert idx.edge_count == 0
 
     def test_node_count_equals_len(self):
         mods = _make_modules(("a.py", "b.py"), ("b.py", "c.py"))
-        from genesis_architect.pro.dependency_index import build_dependency_index
+        from genesis_architect_pro.dependency_index import build_dependency_index
         idx = build_dependency_index(mods)
         assert len(idx) == 3
 
     def test_edge_count_correct(self):
         mods = _make_modules(("a.py", "b.py"), ("a.py", "c.py"), ("b.py", "c.py"))
-        from genesis_architect.pro.dependency_index import build_dependency_index
+        from genesis_architect_pro.dependency_index import build_dependency_index
         idx = build_dependency_index(mods)
         assert idx.edge_count == 3
 
     def test_outgoing_edges(self):
         mods = _make_modules(("a.py", "b.py"), ("a.py", "c.py"))
-        from genesis_architect.pro.dependency_index import build_dependency_index
+        from genesis_architect_pro.dependency_index import build_dependency_index
         idx = build_dependency_index(mods)
         assert idx.outgoing["a.py"] == {"b.py", "c.py"}
         assert idx.outgoing["b.py"] == set()
 
     def test_incoming_edges(self):
         mods = _make_modules(("a.py", "c.py"), ("b.py", "c.py"))
-        from genesis_architect.pro.dependency_index import build_dependency_index
+        from genesis_architect_pro.dependency_index import build_dependency_index
         idx = build_dependency_index(mods)
         assert idx.incoming["c.py"] == {"a.py", "b.py"}
         assert idx.incoming["a.py"] == set()
@@ -101,7 +101,7 @@ class TestBuildDependencyIndex:
         mods = {"solo.py": {"imports": [], "imported_by": [],
                              "fan_out": 0, "fan_in": 0,
                              "lines": 5, "is_entry_point": False, "layer": "unknown"}}
-        from genesis_architect.pro.dependency_index import build_dependency_index
+        from genesis_architect_pro.dependency_index import build_dependency_index
         idx = build_dependency_index(mods)
         assert idx.incoming["solo.py"] == set()
         assert idx.outgoing["solo.py"] == set()
@@ -109,7 +109,7 @@ class TestBuildDependencyIndex:
 
     def test_all_modules_present_in_both_maps(self):
         mods = _make_modules(("a.py", "b.py"), ("b.py", "c.py"), ("c.py", "d.py"))
-        from genesis_architect.pro.dependency_index import build_dependency_index
+        from genesis_architect_pro.dependency_index import build_dependency_index
         idx = build_dependency_index(mods)
         for m in ("a.py", "b.py", "c.py", "d.py"):
             assert m in idx.incoming, f"{m} missing from incoming"
@@ -118,7 +118,7 @@ class TestBuildDependencyIndex:
     def test_chain_structure_correct(self):
         """a → b → c → d"""
         mods = _make_modules(("a.py", "b.py"), ("b.py", "c.py"), ("c.py", "d.py"))
-        from genesis_architect.pro.dependency_index import build_dependency_index
+        from genesis_architect_pro.dependency_index import build_dependency_index
         idx = build_dependency_index(mods)
         assert idx.outgoing["a.py"] == {"b.py"}
         assert idx.incoming["b.py"] == {"a.py"}
@@ -130,7 +130,7 @@ class TestBuildDependencyIndex:
     def test_cycle_handled_without_error(self):
         """a → b → a (cycle should not raise)"""
         mods = _make_modules(("a.py", "b.py"), ("b.py", "a.py"))
-        from genesis_architect.pro.dependency_index import build_dependency_index
+        from genesis_architect_pro.dependency_index import build_dependency_index
         idx = build_dependency_index(mods)
         assert idx.edge_count == 2
         assert "a.py" in idx.incoming["b.py"]
@@ -138,23 +138,23 @@ class TestBuildDependencyIndex:
 
     def test_importers_of_method(self):
         mods = _make_modules(("x.py", "y.py"), ("z.py", "y.py"))
-        from genesis_architect.pro.dependency_index import build_dependency_index
+        from genesis_architect_pro.dependency_index import build_dependency_index
         idx = build_dependency_index(mods)
         assert idx.importers_of("y.py") == {"x.py", "z.py"}
 
     def test_imports_of_method(self):
         mods = _make_modules(("a.py", "b.py"), ("a.py", "c.py"))
-        from genesis_architect.pro.dependency_index import build_dependency_index
+        from genesis_architect_pro.dependency_index import build_dependency_index
         idx = build_dependency_index(mods)
         assert idx.imports_of("a.py") == {"b.py", "c.py"}
 
     def test_importers_of_unknown_module_returns_empty_set(self):
-        from genesis_architect.pro.dependency_index import build_dependency_index
+        from genesis_architect_pro.dependency_index import build_dependency_index
         idx = build_dependency_index({})
         assert idx.importers_of("nonexistent.py") == set()
 
     def test_imports_of_unknown_module_returns_empty_set(self):
-        from genesis_architect.pro.dependency_index import build_dependency_index
+        from genesis_architect_pro.dependency_index import build_dependency_index
         idx = build_dependency_index({})
         assert idx.imports_of("nonexistent.py") == set()
 
@@ -175,7 +175,7 @@ class TestBuildDependencyIndex:
                                  "lines": 15, "is_entry_point": False, "layer": "unknown"},
             },
         }
-        from genesis_architect.pro.dependency_index import build_dependency_index
+        from genesis_architect_pro.dependency_index import build_dependency_index
         idx = build_dependency_index(graph["modules"])
         assert len(idx) == 3
         assert idx.edge_count == 3
@@ -189,29 +189,29 @@ class TestBuildDependencyIndex:
 
 class TestAffectedScope:
     def test_affected_scope_fields(self):
-        from genesis_architect.pro.dependency_index import AffectedScope
+        from genesis_architect_pro.dependency_index import AffectedScope
         scope = AffectedScope(changed_files=["a.py"], consumer_files=["b.py"])
         assert scope.changed_files == ["a.py"]
         assert scope.consumer_files == ["b.py"]
 
     def test_total_property(self):
-        from genesis_architect.pro.dependency_index import AffectedScope
+        from genesis_architect_pro.dependency_index import AffectedScope
         scope = AffectedScope(changed_files=["a.py", "b.py"], consumer_files=["c.py"])
         assert scope.total == 3
 
     def test_all_files_sorted_union(self):
-        from genesis_architect.pro.dependency_index import AffectedScope
+        from genesis_architect_pro.dependency_index import AffectedScope
         scope = AffectedScope(changed_files=["z.py", "a.py"], consumer_files=["m.py"])
         assert scope.all_files() == ["a.py", "m.py", "z.py"]
 
     def test_all_files_deduplicates(self):
-        from genesis_architect.pro.dependency_index import AffectedScope
+        from genesis_architect_pro.dependency_index import AffectedScope
         scope = AffectedScope(changed_files=["a.py"], consumer_files=["a.py"])
         # AffectedScope.all_files() deduplicates via set union
         assert scope.all_files() == ["a.py"]
 
     def test_empty_scope_has_zero_total(self):
-        from genesis_architect.pro.dependency_index import AffectedScope
+        from genesis_architect_pro.dependency_index import AffectedScope
         assert AffectedScope().total == 0
 
 
@@ -221,38 +221,38 @@ class TestAffectedScope:
 
 class TestComputeAffectedScope:
     def _build_idx(self, *edges):
-        from genesis_architect.pro.dependency_index import build_dependency_index
+        from genesis_architect_pro.dependency_index import build_dependency_index
         return build_dependency_index(_make_modules(*edges))
 
     def test_modify_op_marks_file_as_changed(self):
         idx = self._build_idx(("a.py", "b.py"))
-        from genesis_architect.pro.dependency_index import compute_affected_scope
+        from genesis_architect_pro.dependency_index import compute_affected_scope
         scope = compute_affected_scope([{"type": "MODIFY", "path": "b.py"}], idx)
         assert "b.py" in scope.changed_files
 
     def test_consumers_of_changed_file_included(self):
         idx = self._build_idx(("a.py", "b.py"), ("c.py", "b.py"))
-        from genesis_architect.pro.dependency_index import compute_affected_scope
+        from genesis_architect_pro.dependency_index import compute_affected_scope
         scope = compute_affected_scope([{"type": "MODIFY", "path": "b.py"}], idx)
         assert "a.py" in scope.consumer_files
         assert "c.py" in scope.consumer_files
 
     def test_changed_file_not_in_consumer_files(self):
         idx = self._build_idx(("a.py", "b.py"))
-        from genesis_architect.pro.dependency_index import compute_affected_scope
+        from genesis_architect_pro.dependency_index import compute_affected_scope
         scope = compute_affected_scope([{"type": "MODIFY", "path": "b.py"}], idx)
         assert "b.py" not in scope.consumer_files
 
     def test_delete_op_marks_file_as_changed(self):
         idx = self._build_idx(("a.py", "b.py"))
-        from genesis_architect.pro.dependency_index import compute_affected_scope
+        from genesis_architect_pro.dependency_index import compute_affected_scope
         scope = compute_affected_scope([{"type": "DELETE", "path": "b.py"}], idx)
         assert "b.py" in scope.changed_files
         assert "a.py" in scope.consumer_files
 
     def test_create_op_marks_new_file_as_changed(self):
         idx = self._build_idx(("a.py", "b.py"))
-        from genesis_architect.pro.dependency_index import compute_affected_scope
+        from genesis_architect_pro.dependency_index import compute_affected_scope
         scope = compute_affected_scope([{"type": "CREATE", "path": "new.py"}], idx)
         assert "new.py" in scope.changed_files
         # new.py has no importers yet → no consumers
@@ -260,7 +260,7 @@ class TestComputeAffectedScope:
 
     def test_move_op_includes_both_old_and_new_path(self):
         idx = self._build_idx(("a.py", "b.py"))
-        from genesis_architect.pro.dependency_index import compute_affected_scope
+        from genesis_architect_pro.dependency_index import compute_affected_scope
         scope = compute_affected_scope(
             [{"type": "MOVE", "path": "b.py", "new_path": "src/b.py"}], idx
         )
@@ -269,7 +269,7 @@ class TestComputeAffectedScope:
 
     def test_multiple_operations_union(self):
         idx = self._build_idx(("a.py", "b.py"), ("c.py", "d.py"))
-        from genesis_architect.pro.dependency_index import compute_affected_scope
+        from genesis_architect_pro.dependency_index import compute_affected_scope
         scope = compute_affected_scope([
             {"type": "MODIFY", "path": "b.py"},
             {"type": "MODIFY", "path": "d.py"},
@@ -282,14 +282,14 @@ class TestComputeAffectedScope:
     def test_no_multi_hop(self):
         """a → b → c; modify c should NOT include a in consumers (one hop only)."""
         idx = self._build_idx(("a.py", "b.py"), ("b.py", "c.py"))
-        from genesis_architect.pro.dependency_index import compute_affected_scope
+        from genesis_architect_pro.dependency_index import compute_affected_scope
         scope = compute_affected_scope([{"type": "MODIFY", "path": "c.py"}], idx)
         assert "b.py" in scope.consumer_files     # direct importer
         assert "a.py" not in scope.consumer_files  # two hops — not included
 
     def test_empty_operations_produces_empty_scope(self):
         idx = self._build_idx(("a.py", "b.py"))
-        from genesis_architect.pro.dependency_index import compute_affected_scope
+        from genesis_architect_pro.dependency_index import compute_affected_scope
         scope = compute_affected_scope([], idx)
         assert scope.changed_files == []
         assert scope.consumer_files == []
@@ -297,7 +297,7 @@ class TestComputeAffectedScope:
 
     def test_operation_with_no_path_skipped(self):
         idx = self._build_idx(("a.py", "b.py"))
-        from genesis_architect.pro.dependency_index import compute_affected_scope
+        from genesis_architect_pro.dependency_index import compute_affected_scope
         scope = compute_affected_scope([{"type": "MODIFY", "path": ""}], idx)
         assert scope.changed_files == []
 
@@ -313,14 +313,14 @@ class TestComputeAffectedScope:
                           "fan_out": 0, "fan_in": 3, "lines": 20,
                           "is_entry_point": False, "layer": "unknown"},
         }
-        from genesis_architect.pro.dependency_index import build_dependency_index, compute_affected_scope
+        from genesis_architect_pro.dependency_index import build_dependency_index, compute_affected_scope
         idx = build_dependency_index(mods)
         scope = compute_affected_scope([{"type": "MODIFY", "path": "shared.py"}], idx)
         assert scope.consumer_files == sorted(scope.consumer_files)
 
     def test_changed_files_sorted(self):
         idx = self._build_idx()
-        from genesis_architect.pro.dependency_index import compute_affected_scope
+        from genesis_architect_pro.dependency_index import compute_affected_scope
         scope = compute_affected_scope([
             {"type": "MODIFY", "path": "z.py"},
             {"type": "MODIFY", "path": "a.py"},
@@ -333,7 +333,7 @@ class TestComputeAffectedScope:
         refactoring_planner.py produces.
         """
         mods = _make_modules(("src/main.py", "src/utils.py"))
-        from genesis_architect.pro.dependency_index import build_dependency_index, compute_affected_scope
+        from genesis_architect_pro.dependency_index import build_dependency_index, compute_affected_scope
         idx = build_dependency_index(mods)
         # Mimick the output of _rule_hub_splitter operations
         ops = [
@@ -352,16 +352,16 @@ class TestComputeAffectedScope:
 
 class TestPackageExports:
     def test_build_dependency_index_exported_from_package(self):
-        from genesis_architect.pro import build_dependency_index  # noqa: F401
+        from genesis_architect_pro import build_dependency_index  # noqa: F401
 
     def test_compute_affected_scope_exported_from_package(self):
-        from genesis_architect.pro import compute_affected_scope  # noqa: F401
+        from genesis_architect_pro import compute_affected_scope  # noqa: F401
 
     def test_dependency_index_class_exported(self):
-        from genesis_architect.pro import DependencyIndex  # noqa: F401
+        from genesis_architect_pro import DependencyIndex  # noqa: F401
 
     def test_affected_scope_class_exported(self):
-        from genesis_architect.pro import AffectedScope  # noqa: F401
+        from genesis_architect_pro import AffectedScope  # noqa: F401
 
 
 # ---------------------------------------------------------------------------
@@ -373,7 +373,7 @@ class TestBackwardCompatibility:
         (tmp_path / "pyproject.toml").write_text("[tool.poetry]\nname='x'\n")
         (tmp_path / "src").mkdir()
         (tmp_path / "src" / "main.py").write_text("import os\n")
-        from genesis_architect.pro.import_graph import build_graph
+        from genesis_architect_pro.import_graph import build_graph
         graph = build_graph(tmp_path)
         assert "modules" in graph
         assert "language" in graph
@@ -382,7 +382,7 @@ class TestBackwardCompatibility:
         (tmp_path / "pyproject.toml").write_text("[tool.poetry]\nname='x'\n")
         (tmp_path / "src").mkdir()
         (tmp_path / "src" / "main.py").write_text("import os\n")
-        from genesis_architect.pro.architecture_scorer import score_project
+        from genesis_architect_pro.architecture_scorer import score_project
         result = score_project(tmp_path)
         assert "total" in result
 
@@ -390,7 +390,7 @@ class TestBackwardCompatibility:
         (tmp_path / "pyproject.toml").write_text("[tool.poetry]\nname='x'\n")
         (tmp_path / "src").mkdir()
         (tmp_path / "src" / "main.py").write_text("import os\n")
-        from genesis_architect.pro.refactoring_planner import generate_plan
+        from genesis_architect_pro.refactoring_planner import generate_plan
         plan = generate_plan(tmp_path)
         assert hasattr(plan, "steps")
 
@@ -398,7 +398,7 @@ class TestBackwardCompatibility:
         (tmp_path / "pyproject.toml").write_text("[tool.poetry]\nname='x'\n")
         (tmp_path / "src").mkdir()
         (tmp_path / "src" / "main.py").write_text("import os\n")
-        from genesis_architect.pro.antipattern_detector import detect_all
+        from genesis_architect_pro.antipattern_detector import detect_all
         report = detect_all(tmp_path)
         assert hasattr(report, "patterns")
 
@@ -414,7 +414,7 @@ class TestPerformance:
 
     def test_build_1000_nodes_under_500ms(self):
         mods = _make_large_modules(1000)
-        from genesis_architect.pro.dependency_index import build_dependency_index
+        from genesis_architect_pro.dependency_index import build_dependency_index
         t0 = time.perf_counter()
         idx = build_dependency_index(mods)
         elapsed_ms = (time.perf_counter() - t0) * 1000
@@ -426,7 +426,7 @@ class TestPerformance:
 
     def test_build_5000_nodes_under_500ms(self):
         mods = _make_large_modules(5000)
-        from genesis_architect.pro.dependency_index import build_dependency_index
+        from genesis_architect_pro.dependency_index import build_dependency_index
         t0 = time.perf_counter()
         idx = build_dependency_index(mods)
         elapsed_ms = (time.perf_counter() - t0) * 1000
@@ -441,7 +441,7 @@ class TestPerformance:
         Look up the same hub in both a small (100) and large (5000) index.
         The lookup time ratio should be < 10x (true O(1) dicts stay flat).
         """
-        from genesis_architect.pro.dependency_index import build_dependency_index
+        from genesis_architect_pro.dependency_index import build_dependency_index
 
         REPS = 10_000
 
@@ -469,7 +469,7 @@ class TestPerformance:
     def test_lookup_per_node_under_100us(self):
         """Each individual lookup on a 5000-node graph is under 100µs."""
         mods = _make_large_modules(5000)
-        from genesis_architect.pro.dependency_index import build_dependency_index
+        from genesis_architect_pro.dependency_index import build_dependency_index
         idx = build_dependency_index(mods)
 
         REPS = 50_000
@@ -489,7 +489,7 @@ class TestPerformance:
         should complete in < 50 ms.
         """
         mods = _make_large_modules(5000)
-        from genesis_architect.pro.dependency_index import build_dependency_index, compute_affected_scope
+        from genesis_architect_pro.dependency_index import build_dependency_index, compute_affected_scope
         idx = build_dependency_index(mods)
         ops = [{"type": "MODIFY", "path": f"leaf_{i}.py"} for i in range(50)]
 

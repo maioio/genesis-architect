@@ -3,56 +3,47 @@ requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "genesis-architect"
-version = "9.0.0"
-description = "Research before you build. Genesis Architect mines real GitHub issues, forks and post-mortems to find the failures others hit building what you are building - then scaffolds a project with those mitigations already in place. Dual-licensed (AGPL-3.0 + Commercial)."
+name = "genesis-architect-pro"
+version = "8.0.0"
+description = "Genesis Architect Pro - architecture analysis, anti-pattern detection, security hardening, C4 diagrams, deep research intelligence, a decision engine for every mode, and a voice-capable IDE-aware Companion. Dual-licensed (AGPL-3.0 + Commercial)."
 readme = "README.md"
-requires-python = ">=3.11"
 license = "AGPL-3.0-or-later"
-authors = [{ name = "Maio Eshet" }]
-keywords = [
-    "architecture", "scaffolding", "code-analysis", "static-analysis",
-    "technical-debt", "cli", "developer-tools", "ai", "llm", "c4",
-]
+requires-python = ">=3.11"
 classifiers = [
     "Development Status :: 5 - Production/Stable",
-    "Environment :: Console",
     "Intended Audience :: Developers",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Software Development :: Quality Assurance",
-    "Topic :: Software Development :: Code Generators",
-    "Typing :: Typed",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Software Development :: Documentation",
 ]
 dependencies = [
-    "typer>=0.12",
-    "anthropic>=0.40,<1.0",
-    "litellm>=1.50",
+    "genesis-architect>=5.4.0",
+    "cryptography>=42",
+    # `genesis organize` reads a human-edited `.genesis/organize_rules.yaml`.
+    # workspace_organizer.load_rules() imports this lazily and fails safe to
+    # built-in defaults if it's missing, so a stale/uninstalled environment
+    # degrades rather than crashes — this is a base-dependency declaration
+    # so a fresh install has it without needing an optional extra.
+    "pyyaml>=6.0",
 ]
-
-[project.urls]
-Homepage = "https://github.com/maioio/genesis-architect"
-Repository = "https://github.com/maioio/genesis-architect"
-Issues = "https://github.com/maioio/genesis-architect/issues"
-Changelog = "https://github.com/maioio/genesis-architect/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
 dev = ["pytest>=8", "ruff>=0.4", "pytest-cov>=5"]
-
-# --- Optional subsystems -------------------------------------------------
-# Everything below is optional. The code degrades gracefully without these
-# and prints the matching `pip install genesis-architect[<extra>]` hint.
 tui = ["rich>=13"]
 companion = ["plyer>=2.1"]
+# Companion App optional subsystems — code degrades gracefully without these,
+# and prints the matching `pip install genesis-architect-pro[<extra>]` hint.
 streaming = ["websockets>=12"]
-committee = ["anthropic>=0.40"]
 voice = [
-    "faster-whisper>=1.0", "sounddevice>=0.4", "numpy>=1.24",
-    "webrtcvad-wheels>=2.0.10",
-    # VAD only (base package - no extras): a self-contained, ONNX-bundled neural
+    "faster-whisper>=1.0", "sounddevice>=0.4", "numpy>=1.24", "webrtcvad-wheels>=2.0.10",
+    # VAD only (base package — no extras): a self-contained, ONNX-bundled neural
     # VAD, much more accurate than webrtcvad/energy fallback at telling speech
     # from noise. Deliberately NOT pipecat-ai[whisper] or [kokoro]: [whisper]
     # just wraps the same faster-whisper already used directly above (no gain,
@@ -60,27 +51,42 @@ voice = [
     # Python >=3.14 (kokoro-onnx's numba pin has no 3.14 wheel yet).
     "pipecat-ai>=1.7",
 ]
+committee = ["anthropic>=0.40"]
+# `genesis mcp serve` — the FastMCP stdio server that exposes Genesis's four
+# read-only analysis tools to MCP clients (Claude Code, Cursor, …). Optional:
+# `genesis mcp list`/`call` work without it, and `mcp_tools.mcp_available()`
+# gates `serve` so a missing SDK degrades to a clear install hint, not a crash.
+mcp = ["mcp>=1.2"]
 # Everything for the full desktop Companion experience.
-all = [
+companion-full = [
     "plyer>=2.1", "rich>=13", "websockets>=12",
     "faster-whisper>=1.0", "sounddevice>=0.4", "numpy>=1.24",
     "webrtcvad-wheels>=2.0.10", "pipecat-ai>=1.7", "anthropic>=0.40",
-    # kokoro >=0.8 pins Python <3.13 - 0.7.x is the newest that installs everywhere.
+    # kokoro >=0.8 pins Python <3.13 — 0.7.x is the newest that installs everywhere.
     "kokoro>=0.7", "soundfile>=0.12", "sherpa-onnx>=1.10",
     # Native floating window (frameless, always-on-top) for the Companion panel.
     "pywebview>=5.0",
 ]
+# Pro — all optional subsystems (used by genesis-sync.yml CI and docs).
+pro = [
+    "plyer>=2.1", "rich>=13", "websockets>=12",
+    "faster-whisper>=1.0", "sounddevice>=0.4", "numpy>=1.24",
+    "webrtcvad-wheels>=2.0.10", "pipecat-ai>=1.7", "anthropic>=0.40",
+    # kokoro >=0.8 pins Python <3.13 — 0.7.x is the newest that installs everywhere.
+    "kokoro>=0.7", "soundfile>=0.12", "sherpa-onnx>=1.10",
+    "pywebview>=5.0",
+    # The MCP server surface (`genesis mcp serve`).
+    "mcp>=1.2",
+]
 
 [project.scripts]
-genesis = "genesis_architect.cli_entry:main"
+genesis = "genesis_architect_pro.gde_cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
 [tool.setuptools.package-data]
-# Read at import time - if these stop shipping, the installed package breaks.
-"genesis_architect.core" = ["data/*.toml"]
-"genesis_architect.pro" = ["data/*.json"]
+genesis_architect_pro = ["data/*.json"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -90,21 +96,3 @@ addopts = "-v --tb=short"
 [tool.ruff]
 line-length = 100
 target-version = "py311"
-
-[tool.ruff.lint]
-select = ["E", "F", "W", "I", "UP", "S"]
-ignore = [
-    "S101",   # assert in tests is fine
-    "S310",   # urllib.request.urlopen - we validate inputs manually
-    "S607",   # partial executable path - git/python are standard system executables
-    "S110",   # try-except-pass - intentional silent fallback in subprocess helpers
-    "S112",   # try-except-continue - intentional skip on unreadable workflow files
-    "S602",   # shell=True - commands are built from validated templates, not user input
-    "S603",   # subprocess with trusted internal paths (sys.executable + project scripts)
-    "UP031",  # % format in GraphQL query string - not a string format, embedded in GQL
-    "E501",   # line too long - docstrings and LLM prompts are exempt
-]
-
-[tool.ruff.lint.per-file-ignores]
-"tests/*" = ["S"]
-"scripts/*.py" = ["E501"]

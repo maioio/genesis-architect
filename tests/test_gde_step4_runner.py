@@ -4,14 +4,14 @@ from __future__ import annotations
 
 import pytest
 
-from genesis_architect.pro.engine_registry import EngineRegistry
-from genesis_architect.pro.gde_planner import build_plan
-from genesis_architect.pro.gde_runner import (
+from genesis_architect_pro.engine_registry import EngineRegistry
+from genesis_architect_pro.gde_planner import build_plan
+from genesis_architect_pro.gde_runner import (
     _PENALTY_OPTIONAL_FAIL,
     _PENALTY_REQUIRED_FAIL,
     run_plan,
 )
-from genesis_architect.pro.gde_types import (
+from genesis_architect_pro.gde_types import (
     EngineCategory,
     EngineDescriptor,
     EngineStatus,
@@ -353,9 +353,9 @@ class TestParallelExecution:
 
 class TestBackwardCompatibility:
     def test_in_init(self):
-        import genesis_architect.pro as pkg
+        import genesis_architect_pro as pkg
         assert hasattr(pkg, "run_plan")
 
     def test_importable_directly(self):
-        from genesis_architect.pro.gde_runner import run_plan as rp
+        from genesis_architect_pro.gde_runner import run_plan as rp
         assert callable(rp)

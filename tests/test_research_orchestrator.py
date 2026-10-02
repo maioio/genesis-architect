@@ -3,7 +3,7 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from genesis_architect.pro.research_orchestrator import (
+from genesis_architect_pro.research_orchestrator import (
     ResearchSummary,
     RepoResult,
     build_summary_from_raw,
@@ -21,7 +21,7 @@ from genesis_architect.pro.research_orchestrator import (
     save_to_vault,
     load_from_vault,
 )
-from genesis_architect.pro.research_outline import Outline
+from genesis_architect_pro.research_outline import Outline
 
 
 # --- helpers ---
@@ -79,7 +79,7 @@ def test_floor_message_includes_options():
 def test_quality_full():
     summary = ResearchSummary(vision="test")
     summary.repos = [RepoResult(f"o/r{i}", 100, "", "", True) for i in range(9)]
-    from genesis_architect.pro.pitfall_ranker import RankedPitfall
+    from genesis_architect_pro.pitfall_ranker import RankedPitfall
     summary.pitfall_candidates = [
         RankedPitfall(f"Issue {i}", f"https://x/{i}", "github_issues", "high", "pitfall", "x")
         for i in range(6)

@@ -1,0 +1,66 @@
+{
+  "version": 2,
+  "updated": "2026-06-28",
+  "tiers": {
+    "official":  {"priority": 100, "role": "Official truth"},
+    "local":     {"priority": 99,  "role": "Real project state"},
+    "security":  {"priority": 98,  "role": "Security and dependency risk"},
+    "source":    {"priority": 97,  "role": "Truth from the code and the field"},
+    "qa":        {"priority": 90,  "role": "Common problems, errors, examples"},
+    "packages":  {"priority": 88,  "role": "Versions, popularity, maintenance"},
+    "field":     {"priority": 85,  "role": "Real pain, workarounds, sentiment"},
+    "blog":      {"priority": 82,  "role": "Depth, case studies, tutorials"},
+    "research":  {"priority": 80,  "role": "AI/ML, algorithms, benchmarks"},
+    "learning":  {"priority": 76,  "role": "Long-form explanation, patterns"},
+    "market":    {"priority": 40,  "role": "Demand and trend signal ONLY - not engineering truth"}
+  },
+  "sources": [
+    {"id": "official_docs", "name": "Official / API / SDK docs", "tier": "official", "access": "crawl", "route": "crawl4ai", "free": true, "evidence_weight": 1.0},
+    {"id": "rfcs_specs", "name": "RFCs / specifications", "tier": "official", "access": "crawl", "route": "crawl4ai", "free": true, "evidence_weight": 1.0},
+
+    {"id": "github_rest", "name": "GitHub REST API", "tier": "source", "access": "api", "route": "github_api", "free": true, "evidence_weight": 0.98, "url": "https://docs.github.com/rest"},
+    {"id": "github_graphql", "name": "GitHub GraphQL API", "tier": "source", "access": "api", "route": "github_api", "free": true, "evidence_weight": 0.98, "url": "https://docs.github.com/graphql"},
+    {"id": "github_issues", "name": "GitHub Issues / PRs / Discussions", "tier": "source", "access": "api", "route": "github_api", "free": true, "evidence_weight": 0.97},
+    {"id": "github_releases", "name": "Releases / changelogs / git history", "tier": "source", "access": "api", "route": "github_api", "free": true, "evidence_weight": 0.95},
+
+    {"id": "osv", "name": "OSV.dev", "tier": "security", "access": "api", "route": "osv_api", "free": true, "evidence_weight": 1.0, "url": "https://osv.dev/"},
+    {"id": "nvd", "name": "NVD", "tier": "security", "access": "api", "route": "http", "free": true, "evidence_weight": 1.0, "url": "https://nvd.nist.gov/"},
+    {"id": "cve_mitre", "name": "CVE (MITRE)", "tier": "security", "access": "api", "route": "http", "free": true, "evidence_weight": 1.0, "url": "https://cve.mitre.org/"},
+    {"id": "github_advisories", "name": "GitHub Security Advisories", "tier": "security", "access": "api", "route": "github_api", "free": true, "evidence_weight": 1.0},
+    {"id": "snyk_db", "name": "Snyk DB", "tier": "security", "access": "scrape", "route": "firecrawl", "free": false, "evidence_weight": 0.95},
+
+    {"id": "pypi", "name": "PyPI", "tier": "packages", "access": "api", "route": "http", "free": true, "evidence_weight": 0.9, "url": "https://pypi.org/"},
+    {"id": "npm", "name": "npm", "tier": "packages", "access": "api", "route": "http", "free": true, "evidence_weight": 0.9, "url": "https://www.npmjs.com/"},
+    {"id": "crates", "name": "crates.io", "tier": "packages", "access": "api", "route": "http", "free": true, "evidence_weight": 0.9, "url": "https://crates.io/"},
+    {"id": "maven", "name": "Maven Central", "tier": "packages", "access": "api", "route": "http", "free": true, "evidence_weight": 0.9, "url": "https://search.maven.org/"},
+    {"id": "nuget", "name": "NuGet", "tier": "packages", "access": "api", "route": "http", "free": true, "evidence_weight": 0.9, "url": "https://www.nuget.org/"},
+
+    {"id": "stackoverflow", "name": "Stack Overflow", "tier": "qa", "access": "api", "route": "stackexchange_api", "free": false, "evidence_weight": 0.9, "url": "https://stackoverflow.com/"},
+    {"id": "stackexchange", "name": "Stack Exchange (advanced search)", "tier": "qa", "access": "api", "route": "stackexchange_api", "free": false, "evidence_weight": 0.88, "url": "https://api.stackexchange.com/docs/advanced-search"},
+
+    {"id": "reddit", "name": "Reddit", "tier": "field", "access": "scrape", "route": "firecrawl_then_apify", "free": false, "evidence_weight": 0.85, "url": "https://www.reddit.com/"},
+    {"id": "reddit_answers", "name": "Reddit Answers (AI layer)", "tier": "field", "access": "scrape", "route": "firecrawl_then_apify", "free": false, "evidence_weight": 0.82, "url": "https://www.reddit.com/answers/"},
+    {"id": "hackernews", "name": "Hacker News", "tier": "field", "access": "api", "route": "hn_algolia", "free": false, "evidence_weight": 0.85, "url": "https://hn.algolia.com/api"},
+    {"id": "lobsters", "name": "Lobste.rs", "tier": "field", "access": "scrape", "route": "crawl4ai", "free": false, "evidence_weight": 0.8, "url": "https://lobste.rs/"},
+
+    {"id": "dev_to", "name": "DEV", "tier": "blog", "access": "crawl", "route": "crawl4ai", "free": false, "evidence_weight": 0.8, "url": "https://dev.to/"},
+    {"id": "hashnode", "name": "Hashnode", "tier": "blog", "access": "crawl", "route": "crawl4ai", "free": false, "evidence_weight": 0.78, "url": "https://hashnode.com/"},
+    {"id": "eng_blogs", "name": "Company engineering blogs", "tier": "blog", "access": "crawl", "route": "crawl4ai", "free": false, "evidence_weight": 0.82},
+
+    {"id": "arxiv", "name": "arXiv", "tier": "research", "access": "api", "route": "http", "free": false, "evidence_weight": 0.85, "url": "https://arxiv.org/"},
+    {"id": "paperswithcode", "name": "Papers with Code", "tier": "research", "access": "api", "route": "http", "free": false, "evidence_weight": 0.85, "url": "https://paperswithcode.com/"},
+
+    {"id": "youtube", "name": "YouTube (transcripts, talks)", "tier": "learning", "access": "scrape", "route": "exa_youtube_then_watch", "free": false, "evidence_weight": 0.76, "url": "https://www.youtube.com/"},
+
+    {"id": "instagram", "name": "Instagram (market/trend signal)", "tier": "market", "access": "scrape", "route": "firecrawl_then_apify", "free": false, "evidence_weight": 0.3, "note": "Demand and trend signal only. Never presented as an engineering-truth source."},
+
+    {"id": "local_code", "name": "Source code / tests / CI logs / TODO-FIXME / crash reports", "tier": "local", "access": "local", "route": "local_fs", "free": true, "evidence_weight": 0.99}
+  ],
+  "engine_profiles": {
+    "research_intelligence": ["official", "source", "security", "packages", "qa", "research"],
+    "developer_field": ["field", "qa", "learning", "market"],
+    "security": ["security", "packages", "source"],
+    "project_discovery": ["market", "field", "blog", "packages"],
+    "recovery": ["local", "source", "security"]
+  }
+}

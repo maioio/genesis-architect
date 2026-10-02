@@ -22,7 +22,7 @@ import json
 import warnings
 
 
-from genesis_architect.pro.model_store import (
+from genesis_architect_pro.model_store import (
     ModelStore,
     ArchModel,
     ModelNode,
@@ -674,22 +674,22 @@ class TestIsPlannesDiverged:
 
 class TestPackageImports:
     def test_model_store_importable_from_package(self):
-        from genesis_architect.pro import ModelStore  # noqa: F401
+        from genesis_architect_pro import ModelStore  # noqa: F401
 
     def test_arch_model_importable_from_package(self):
-        from genesis_architect.pro import ArchModel  # noqa: F401
+        from genesis_architect_pro import ArchModel  # noqa: F401
 
     def test_model_node_importable_from_package(self):
-        from genesis_architect.pro import ModelNode  # noqa: F401
+        from genesis_architect_pro import ModelNode  # noqa: F401
 
     def test_model_link_importable_from_package(self):
-        from genesis_architect.pro import ModelLink  # noqa: F401
+        from genesis_architect_pro import ModelLink  # noqa: F401
 
     def test_model_group_importable_from_package(self):
-        from genesis_architect.pro import ModelGroup  # noqa: F401
+        from genesis_architect_pro import ModelGroup  # noqa: F401
 
     def test_model_responsibility_importable_from_package(self):
-        from genesis_architect.pro import ModelResponsibility  # noqa: F401
+        from genesis_architect_pro import ModelResponsibility  # noqa: F401
 
 
 class TestNoProductionImpact:
@@ -697,7 +697,7 @@ class TestNoProductionImpact:
         (tmp_path / "pyproject.toml").write_text("[tool.poetry]\nname='x'\n")
         (tmp_path / "src").mkdir()
         (tmp_path / "src" / "main.py").write_text("import os\n")
-        from genesis_architect.pro.architecture_scorer import score_project
+        from genesis_architect_pro.architecture_scorer import score_project
         result = score_project(tmp_path)
         assert "total" in result
         assert "confidence" in result
@@ -706,7 +706,7 @@ class TestNoProductionImpact:
         (tmp_path / "pyproject.toml").write_text("[tool.poetry]\nname='x'\n")
         (tmp_path / "src").mkdir()
         (tmp_path / "src" / "main.py").write_text("import os\n")
-        from genesis_architect.pro.refactoring_planner import generate_plan
+        from genesis_architect_pro.refactoring_planner import generate_plan
         plan = generate_plan(tmp_path)
         assert hasattr(plan, "steps")
 

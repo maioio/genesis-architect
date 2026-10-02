@@ -1,22 +1,21 @@
-"""The `genesis_architect.pro` public API is lazy (PEP 562) — kept honest here.
+"""The package's public API is lazy (PEP 562) — these assert it stays honest.
 
-That subpackage used to import all 43 of its modules eagerly to re-export
-them. It now resolves names on first access, which keeps the public API
-identical while removing the facade from the dependency graph.
+`genesis_architect_pro/__init__.py` used to import all 43 modules eagerly to
+re-export them. It now resolves names on first access, which keeps the public
+API identical while removing the package facade from the dependency graph.
 
 The risk that swap introduces is silent: a name listed in `__all__` with no
 entry in the lazy table, or an entry pointing at the wrong attribute, does not
-fail at import — it fails later, for whoever imports that one name. The same
-conversion in the Pro package got five aliased exports wrong, and this is the
-shape of test that caught it. This package is published, so a miss here
-reaches downstream users rather than only us.
+fail at import — it fails later, for whoever imports that one name. The
+conversion did in fact get five aliased exports wrong, and this is the shape
+of test that caught it.
 """
 
 import importlib
 
 import pytest
 
-import genesis_architect.pro as pkg
+import genesis_architect_pro as pkg
 
 
 class TestLazyExportTables:
@@ -67,49 +66,21 @@ class TestLazyExportTables:
         assert name in pkg.__dict__
         assert getattr(pkg, name) is first
 
-    def test_reload_does_not_serve_stale_objects(self):
-        """importlib.reload() must rebind, as the eager version did.
-
-        Reload re-executes the module body in the *existing* __dict__, so a
-        name cached by __getattr__ before the reload would survive and shadow
-        it permanently — the package would keep handing back the old object.
-        Found by adversarial review, not by the suite.
-        """
-        name = "GenesisDecisionEngine"
-        before = getattr(pkg, name)
-        assert name in pkg.__dict__, "cache did not populate"
-
-        importlib.reload(pkg)
-        assert name not in pkg.__dict__, "stale export survived reload"
-        assert getattr(pkg, name) is not None
-        assert getattr(pkg, name) is before  # same module object, re-resolved
-
-    def test_star_import_still_exposes_the_api(self):
-        """`from genesis_architect.pro import *` is a documented usage.
-
-        Star-import reads __all__ and resolves each name through __getattr__,
-        so it is exercised here rather than assumed.
-        """
-        namespace: dict = {}
-        exec("from genesis_architect.pro import *", namespace)  # noqa: S102
-        for name in pkg.__all__:
-            assert name in namespace, f"star-import missed {name}"
-
 
 class TestFacadeStaysOutOfTheGraph:
-    def test_importing_the_subpackage_does_not_pull_the_world(self):
+    def test_importing_the_package_does_not_pull_the_world(self):
         """The reason for the change, asserted rather than assumed.
 
-        Checked in a subprocess because this test session has already imported
-        most of the package.
+        Importing the package must not drag in the engine layer. Checked in a
+        subprocess because this test session has already imported most of it.
         """
         import subprocess
         import sys
 
         code = (
-            "import sys, genesis_architect.pro; "
+            "import sys, genesis_architect_pro; "
             "loaded = [m for m in sys.modules "
-            "if m.startswith('genesis_architect.pro.')]; "
+            "if m.startswith('genesis_architect_pro.')]; "
             "print(len(loaded))"
         )
         proc = subprocess.run([sys.executable, "-c", code],
@@ -118,7 +89,7 @@ class TestFacadeStaysOutOfTheGraph:
         submodules_loaded = int(proc.stdout.strip())
         # Eager re-export pulled in 43 modules plus everything they imported.
         assert submodules_loaded < 10, (
-            f"importing the subpackage loaded {submodules_loaded} submodules; "
+            f"importing the package loaded {submodules_loaded} submodules; "
             "the facade is eager again"
         )
 
@@ -128,9 +99,9 @@ class TestFacadeStaysOutOfTheGraph:
 
         code = (
             "import sys; "
-            "from genesis_architect.pro import GenesisDecisionEngine; "
-            "print('genesis_architect.pro.decision_engine' in sys.modules, "
-            "'genesis_architect.pro.video_research' in sys.modules)"
+            "from genesis_architect_pro import GenesisDecisionEngine; "
+            "print('genesis_architect_pro.decision_engine' in sys.modules, "
+            "'genesis_architect_pro.video_research' in sys.modules)"
         )
         proc = subprocess.run([sys.executable, "-c", code],
                               capture_output=True, text=True, timeout=120)

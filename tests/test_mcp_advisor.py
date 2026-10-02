@@ -11,7 +11,7 @@ import json
 
 import pytest
 
-from genesis_architect.pro.mcp_advisor import (
+from genesis_architect_pro.mcp_advisor import (
     CATALOG,
     AdvisorReport,
     advise,
@@ -162,35 +162,6 @@ class TestDetectSignals:
     def test_non_github_remote_not_flagged(self, tmp_path):
         _git_remote(tmp_path, "https://gitlab.com/acme/thing.git")
         assert detect_signals(tmp_path).has_github_remote is False
-
-    def test_lookalike_host_not_flagged(self, tmp_path):
-        """A host that merely contains "github.com" is not github.com.
-
-        Detection used to search the config text for the substring, which
-        answered True here. CodeQL flagged it as
-        py/incomplete-url-substring-sanitization; the host is parsed and
-        compared properly now.
-        """
-        _git_remote(tmp_path, "https://evil-github.com.attacker.net/acme/x.git")
-        assert detect_signals(tmp_path).has_github_remote is False
-
-    def test_github_com_mentioned_but_not_a_remote(self, tmp_path):
-        """A mention elsewhere in the file is not a remote either."""
-        git = tmp_path / ".git"
-        git.mkdir(exist_ok=True)
-        config = "\n".join([
-            "# cloned from github.com once, now hosted elsewhere",
-            '[remote "origin"]',
-            "\turl = https://gitlab.com/acme/thing.git",
-            "",
-        ])
-        (git / "config").write_text(config, encoding="utf-8")
-        assert detect_signals(tmp_path).has_github_remote is False
-
-    def test_ssh_github_remote_detected(self, tmp_path):
-        """scp-style remotes are the common SSH form and must still count."""
-        _git_remote(tmp_path, "git@github.com:acme/thing.git")
-        assert detect_signals(tmp_path).has_github_remote is True
 
 
 # ---------------------------------------------------------------------------
@@ -472,15 +443,15 @@ class TestFormatting:
 
 class TestCLI:
     def test_advise_exits_zero(self, tmp_path):
-        from genesis_architect.pro.gde_cli import main
+        from genesis_architect_pro.gde_cli import main
         assert main(["advise", "--dir", str(tmp_path)]) == 0
 
     def test_advise_bad_dir_exits_one(self, tmp_path):
-        from genesis_architect.pro.gde_cli import main
+        from genesis_architect_pro.gde_cli import main
         assert main(["advise", "--dir", str(tmp_path / "nope")]) == 1
 
     def test_advise_json_output(self, tmp_path, capsys):
-        from genesis_architect.pro.gde_cli import main
+        from genesis_architect_pro.gde_cli import main
         _git_remote(tmp_path)
         main(["advise", "--dir", str(tmp_path), "--json"])
         payload = json.loads(capsys.readouterr().out)
@@ -488,13 +459,13 @@ class TestCLI:
         assert any(r["tool_id"] == "github" for r in payload["local"])
 
     def test_advise_local_only_flag(self, tmp_path, capsys):
-        from genesis_architect.pro.gde_cli import main
+        from genesis_architect_pro.gde_cli import main
         _outcomes(tmp_path, [{"task_kind": "research", "profile": "p", "accepted": True}])
         main(["advise", "--dir", str(tmp_path), "--local-only", "--json"])
         payload = json.loads(capsys.readouterr().out)
         assert payload["global"] == []
 
     def test_in_package_namespace(self):
-        import genesis_architect.pro as pkg
+        import genesis_architect_pro as pkg
         for name in ("advise", "advise_local", "advise_global", "detect_signals"):
             assert hasattr(pkg, name)

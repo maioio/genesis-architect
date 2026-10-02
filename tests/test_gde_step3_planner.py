@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 
-from genesis_architect.pro.engine_registry import EngineRegistry
-from genesis_architect.pro.gde_planner import _UNIVERSAL_GATES, build_plan
-from genesis_architect.pro.gde_types import (
+from genesis_architect_pro.engine_registry import EngineRegistry
+from genesis_architect_pro.gde_planner import _UNIVERSAL_GATES, build_plan
+from genesis_architect_pro.gde_types import (
     EngineCategory,
     EngineDescriptor,
     ExecutionPlan,
@@ -249,9 +249,9 @@ class TestDefaultRegistry:
 
 class TestBackwardCompatibility:
     def test_in_init(self):
-        import genesis_architect.pro as pkg
+        import genesis_architect_pro as pkg
         assert hasattr(pkg, "build_plan")
 
     def test_importable_directly(self):
-        from genesis_architect.pro.gde_planner import build_plan as bp
+        from genesis_architect_pro.gde_planner import build_plan as bp
         assert callable(bp)

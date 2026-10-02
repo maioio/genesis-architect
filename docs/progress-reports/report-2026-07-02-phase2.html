@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Genesis PRO — דוח התקדמות | פאזה 2</title>
+<style>
+  :root {
+    --bg:#0d0f14;--surface:#161920;--surface2:#1e222d;--border:#2a2f3d;
+    --accent:#6c63ff;--accent2:#00d4aa;--warn:#f59e0b;--danger:#ef4444;
+    --success:#22c55e;--text:#e2e8f0;--muted:#64748b;--code:#a78bfa;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;font-size:15px;line-height:1.7}
+  .header{background:linear-gradient(135deg,#1a1040 0%,#0d1f3c 100%);border-bottom:1px solid var(--border);padding:40px 60px 32px;position:relative;overflow:hidden}
+  .header::before{content:'';position:absolute;top:-40px;left:-40px;width:300px;height:300px;background:radial-gradient(circle,rgba(108,99,255,0.15) 0%,transparent 70%);pointer-events:none}
+  .header-tag{display:inline-block;background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.4);color:var(--success);font-size:11px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;padding:4px 12px;border-radius:4px;margin-bottom:16px}
+  .header h1{font-size:32px;font-weight:700;color:#fff;margin-bottom:8px}
+  .header .subtitle{color:var(--muted);font-size:14px}
+  .header .date{position:absolute;top:40px;left:60px;color:var(--muted);font-size:13px}
+  .container{max-width:960px;margin:0 auto;padding:48px 60px}
+  .stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:48px}
+  .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px 24px;text-align:center}
+  .stat-card .num{font-size:36px;font-weight:700;color:var(--accent);line-height:1;margin-bottom:6px}
+  .stat-card .num.green{color:var(--success)}
+  .stat-card .label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em}
+  .section{margin-bottom:40px}
+  .section-title{font-size:13px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+  .file-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .file-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 16px}
+  .file-card.new{border-color:rgba(108,99,255,0.4);background:rgba(108,99,255,0.04)}
+  .file-name{font-family:monospace;font-size:12px;color:var(--code);margin-bottom:4px}
+  .file-desc{font-size:13px;color:var(--muted)}
+  .badge{display:inline-block;font-size:10px;font-weight:700;padding:1px 7px;border-radius:4px;margin-left:6px;vertical-align:middle}
+  .badge-new{background:rgba(108,99,255,0.15);color:var(--accent)}
+  .badge-rust{background:rgba(245,158,11,0.15);color:var(--warn)}
+  .badge-ts{background:rgba(56,189,248,0.15);color:#38bdf8}
+  .badge-react{background:rgba(0,212,170,0.15);color:var(--accent2)}
+  .phase-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:40px}
+  .phase-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:18px 20px}
+  .phase-card.done{border-color:rgba(34,197,94,0.4);background:rgba(34,197,94,0.03)}
+  .phase-card.active{border-color:var(--accent);background:rgba(108,99,255,0.05)}
+  .phase-num{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px}
+  .phase-name{font-size:14px;font-weight:700;color:var(--text);margin-bottom:6px}
+  .phase-card.done .phase-name{color:var(--success)}
+  .phase-card.active .phase-name{color:var(--accent)}
+  .phase-status{font-size:12px;color:var(--muted)}
+  .phase-bar{height:3px;background:var(--border);border-radius:2px;margin-top:12px;overflow:hidden}
+  .phase-bar-fill{height:100%;border-radius:2px}
+  .arch-box{background:var(--surface);border:1px solid var(--border);border-right:3px solid var(--accent);border-radius:8px;padding:20px 24px;margin-bottom:12px}
+  .arch-box h4{font-size:13px;font-weight:700;color:var(--accent);margin-bottom:8px}
+  .arch-box p{font-size:13px;color:var(--muted);line-height:1.6}
+  code{font-family:'Cascadia Code','Fira Code',monospace;font-size:12px;background:rgba(108,99,255,0.12);color:var(--code);padding:1px 6px;border-radius:3px}
+  .next-cta{background:linear-gradient(135deg,rgba(108,99,255,0.1) 0%,rgba(0,212,170,0.05) 100%);border:1px solid rgba(108,99,255,0.3);border-radius:12px;padding:28px 32px;margin-top:40px}
+  .next-cta h3{font-size:16px;font-weight:700;color:var(--accent2);margin-bottom:12px}
+  .next-cta ul{list-style:none;padding:0}
+  .next-cta li{padding:6px 0;font-size:14px;color:var(--text);display:flex;align-items:center;gap:10px}
+  .next-cta li::before{content:'→';color:var(--accent2);font-weight:700;flex-shrink:0}
+  .footer{border-top:1px solid var(--border);padding:24px 60px;display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:12px}
+  .footer-logo{font-weight:700;color:var(--accent);font-size:14px}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="date">2 יולי 2026</div>
+  <div class="header-tag">✅ פאזה 2 הושלמה</div>
+  <h1>Genesis PRO Companion App</h1>
+  <p class="subtitle">Tauri v2 Shell + React Frontend + WebSocket Client — מוכן לבנייה</p>
+</div>
+
+<div class="container">
+
+  <div class="stats-row">
+    <div class="stat-card"><div class="num green">1,602</div><div class="label">טסטים עוברים</div></div>
+    <div class="stat-card"><div class="num">22</div><div class="label">קבצים חדשים</div></div>
+    <div class="stat-card"><div class="num">4</div><div class="label">שפות (Python/Rust/TS/CSS)</div></div>
+    <div class="stat-card"><div class="num green">0</div><div class="label">רגרסיות</div></div>
+  </div>
+
+  <!-- Phase timeline -->
+  <div class="section">
+    <div class="section-title">מפת פאזות</div>
+    <div class="phase-grid">
+      <div class="phase-card done">
+        <div class="phase-num">פאזה 1</div>
+        <div class="phase-name">✅ תשתית Python</div>
+        <div class="phase-status">companion --serve, InboundRouter, GateNotifier</div>
+        <div class="phase-bar"><div class="phase-bar-fill" style="width:100%;background:var(--success)"></div></div>
+      </div>
+      <div class="phase-card done">
+        <div class="phase-num">פאזה 2</div>
+        <div class="phase-name">✅ Tauri Shell + React</div>
+        <div class="phase-status">Rust sidecar, WS client, כל ה-components</div>
+        <div class="phase-bar"><div class="phase-bar-fill" style="width:100%;background:var(--success)"></div></div>
+      </div>
+      <div class="phase-card active">
+        <div class="phase-num">פאזה 3</div>
+        <div class="phase-name">חיבור אינטליגנציה</div>
+        <div class="phase-status">Voice PTT, IDE hints, gate resume</div>
+        <div class="phase-bar"><div class="phase-bar-fill" style="width:0%;background:var(--accent)"></div></div>
+      </div>
+      <div class="phase-card">
+        <div class="phase-num">פאזה 4</div>
+        <div class="phase-name">הפצה</div>
+        <div class="phase-status">.msi / .dmg / .AppImage, code signing</div>
+        <div class="phase-bar"><div class="phase-bar-fill" style="width:0%;background:var(--accent)"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Files created -->
+  <div class="section">
+    <div class="section-title">קבצים שנוצרו — פאזה 2</div>
+    <div class="file-grid">
+
+      <div class="file-card new">
+        <div class="file-name">companion/app/src-tauri/src/lib.rs <span class="badge badge-rust">Rust</span></div>
+        <div class="file-desc">App entry — spawn sidecar on setup, register commands, kill on exit</div>
+      </div>
+      <div class="file-card new">
+        <div class="file-name">companion/app/src-tauri/src/sidecar.rs <span class="badge badge-rust">Rust</span></div>
+        <div class="file-desc">spawn_sidecar(): מפעיל genesis companion --serve, קורא READY token=, שומר handle</div>
+      </div>
+      <div class="file-card new">
+        <div class="file-name">companion/app/src-tauri/src/commands.rs <span class="badge badge-rust">Rust</span></div>
+        <div class="file-desc">6 Tauri commands: get_ws_credentials, read_session_state, toggle_panel, restart_sidecar, open_canvas, anchor_panel_to_bubble</div>
+      </div>
+      <div class="file-card new">
+        <div class="file-name">companion/app/src-tauri/tauri.conf.json</div>
+        <div class="file-desc">2 חלונות: bubble (72×72, always-on-top, transparent) + panel (380×620, hidden). CSP מאפשר ws://127.0.0.1:47291</div>
+      </div>
+      <div class="file-card new">
+        <div class="file-name">companion/app/src/ws/schema.ts <span class="badge badge-ts">TypeScript</span></div>
+        <div class="file-desc">Zod schemas לכל 14 סוגי events: EnvelopeSchema + payload schema לכל type</div>
+      </div>
+      <div class="file-card new">
+        <div class="file-name">companion/app/src/ws/client.ts <span class="badge badge-ts">TypeScript</span></div>
+        <div class="file-desc">GenesisWSClient: state machine disconnected→connecting→authing→open→reconnecting, exponential backoff, 30s watchdog, Zod validation</div>
+      </div>
+      <div class="file-card new">
+        <div class="file-name">companion/app/src/store/store.ts <span class="badge badge-ts">TypeScript</span></div>
+        <div class="file-desc">Zustand store — engines Map, pendingGate, pendingDiff, committeeSynthesis, voiceState. selectActivityLevel() כ-derived selector</div>
+      </div>
+      <div class="file-card new">
+        <div class="file-name">companion/app/src/components/Bubble.tsx <span class="badge badge-react">React</span></div>
+        <div class="file-desc">עיגול 64px, animated ring לפי activityLevel, badge לpending gates, data-tauri-drag-region, toggle_panel on click</div>
+      </div>
+      <div class="file-card new">
+        <div class="file-name">companion/app/src/components/Panel/EngineProgress.tsx <span class="badge badge-react">React</span></div>
+        <div class="file-desc">רשימת מנועים חיה — status icon, confidence badge, spin animation בזמן running</div>
+      </div>
+      <div class="file-card new">
+        <div class="file-name">companion/app/src/components/Panel/ConfidenceMeter.tsx <span class="badge badge-react">React</span></div>
+        <div class="file-desc">SVG arc gauge 0-100%, color-coded (green/yellow/red), risk level</div>
+      </div>
+      <div class="file-card new">
+        <div class="file-name">companion/app/src/components/Panel/GateStatus.tsx <span class="badge badge-react">React</span></div>
+        <div class="file-desc">Banner לgate פתוח עם כפתורי Approve/Reject/Defer</div>
+      </div>
+      <div class="file-card new">
+        <div class="file-name">companion/app/src/components/Panel/ResultSummary.tsx <span class="badge badge-react">React</span></div>
+        <div class="file-desc">תוצאת session אחרון — mode, session ID, committee synthesis verdict</div>
+      </div>
+      <div class="file-card new">
+        <div class="file-name">companion/app/src/components/Approval/ApprovalModal.tsx <span class="badge badge-react">React</span></div>
+        <div class="file-desc">Full-panel overlay כשיש gate + diff: diff preview HTML + כפתורי Approve/Reject/Defer</div>
+      </div>
+      <div class="file-card new">
+        <div class="file-name">companion/app/src/actions/approvals.ts <span class="badge badge-ts">TypeScript</span></div>
+        <div class="file-desc">sendApproval(), sendIntent(), sendVoiceStart(), sendVoiceEnd() — שולח על WebSocket</div>
+      </div>
+      <div class="file-card new">
+        <div class="file-name">companion/app/src/styles/tokens.css</div>
+        <div class="file-desc">Design tokens: colors, radii, shadows, typography, activity-level animations (pulse-thinking, pulse-blocked, spin, fade-in)</div>
+      </div>
+      <div class="file-card new">
+        <div class="file-name">companion/app/src/panel/PanelApp.tsx <span class="badge badge-react">React</span></div>
+        <div class="file-desc">Panel root — header עם activity dot, ConfidenceMeter, EngineProgress, GateStatus, ResultSummary, ApprovalModal</div>
+      </div>
+      <div class="file-card new">
+        <div class="file-name">companion/app/src/bubble/BubbleApp.tsx + main.tsx <span class="badge badge-react">React</span></div>
+        <div class="file-desc">Bubble root — מאזין ל-Tauri IPC events מהפאנל, לא מחזיק WebSocket</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Architecture highlights -->
+  <div class="section">
+    <div class="section-title">הדגשים הארכיטקטורים</div>
+
+    <div class="arch-box">
+      <h4>Token flow — stdout בלבד</h4>
+      <p>Python מדפיס <code>READY token=&lt;64-hex&gt;</code>. Rust קורא מ-stdout (לא מקובץ, לא env var). Frontend מקבל דרך <code>get_ws_credentials()</code>. Token לא נוגע לדיסק לעולם.</p>
+    </div>
+    <div class="arch-box">
+      <h4>Orphan protection</h4>
+      <p>Rust שומר Child handle. על <code>RunEvent::ExitRequested</code> — קורא <code>kill_sidecar()</code>. Windows: <code>taskkill /F</code>. Unix: SIGTERM + 500ms + kill. בדיקה עם force-quit חובה לפני release.</p>
+    </div>
+    <div class="arch-box">
+      <h4>Bubble ↔ Panel — IPC, לא WebSocket כפול</h4>
+      <p>Panel מחזיק את ה-WebSocket. אחרי כל event שמגיע ל-Panel, הוא עושה <code>app.emit("genesis://event", ...)</code>. Bubble מאזין דרך <code>listen()</code> של Tauri — מונע double-auth.</p>
+    </div>
+    <div class="arch-box">
+      <h4>activityLevel — derived, לא stored</h4>
+      <p><code>selectActivityLevel(state)</code> הוא selector טהור. Bubble מרשם רק אליו — לא מתרנדר על כל engine event. 0 re-renders מיותרים.</p>
+    </div>
+  </div>
+
+  <!-- Next -->
+  <div class="next-cta">
+    <h3>פאזה 3 — חיבור אינטליגנציה (הבא)</h3>
+    <ul>
+      <li>Panel מפיץ events ל-Bubble דרך <code>app.emit()</code> — מחבר את הIPC</li>
+      <li>Voice PTT — Web Audio capture → sendVoiceEnd() → STT → GDE → TTS playback</li>
+      <li>Gate resume — InboundRouter._run_gde מחובר לgde.approve()/commit()</li>
+      <li>IDE Bridge update_index — אחרי כל ריצת GDE, מעדכן את הindex</li>
+      <li>VS Code Extension — build pipeline (.vsix)</li>
+      <li>Icons + app bundle assets</li>
+      <li><code>npm install &amp;&amp; cargo check</code> — ולידציה ראשונה</li>
+    </ul>
+  </div>
+
+</div>
+
+<div class="footer">
+  <div class="footer-logo">Genesis PRO</div>
+  <div>דוח אוטומטי | פאזה 2 | 2 יולי 2026</div>
+  <div>1,602 טסטים • פאזה 1+2 הושלמו • פאזה 3 הבאה</div>
+</div>
+
+</body>
+</html>

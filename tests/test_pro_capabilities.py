@@ -43,7 +43,7 @@ def _make_python_project(root: Path, *, with_tests: bool = False) -> None:
 class TestArchitectureScorer:
     def test_score_returns_required_keys(self, tmp_path):
         _make_python_project(tmp_path)
-        from genesis_architect.pro.architecture_scorer import score_project
+        from genesis_architect_pro.architecture_scorer import score_project
         result = score_project(tmp_path)
 
         assert "total" in result
@@ -54,7 +54,7 @@ class TestArchitectureScorer:
         assert "layering" in result
 
     def test_score_label_mapping(self):
-        from genesis_architect.pro.architecture_scorer import score_label
+        from genesis_architect_pro.architecture_scorer import score_label
         assert score_label(90) == "EXCELLENT"
         assert score_label(75) == "GOOD"
         assert score_label(55) == "FAIR"
@@ -63,7 +63,7 @@ class TestArchitectureScorer:
 
     def test_all_adaptive_profiles_run(self, tmp_path):
         _make_python_project(tmp_path)
-        from genesis_architect.pro.architecture_scorer import score_project
+        from genesis_architect_pro.architecture_scorer import score_project
         profiles = [
             "default", "frontend-spa", "backend-monolith",
             "microservices", "data-pipeline", "library",
@@ -74,7 +74,7 @@ class TestArchitectureScorer:
 
     def test_score_history_appended(self, tmp_path):
         _make_python_project(tmp_path)
-        from genesis_architect.pro.architecture_scorer import (
+        from genesis_architect_pro.architecture_scorer import (
             score_project, append_score_history, load_score_history
         )
         result = score_project(tmp_path)
@@ -87,7 +87,7 @@ class TestArchitectureScorer:
 
     def test_score_history_accumulates(self, tmp_path):
         _make_python_project(tmp_path)
-        from genesis_architect.pro.architecture_scorer import (
+        from genesis_architect_pro.architecture_scorer import (
             score_project, append_score_history, load_score_history
         )
         score = score_project(tmp_path)
@@ -105,7 +105,7 @@ class TestArchitectureScorer:
 class TestAntipatternDetector:
     def test_detect_all_returns_report(self, tmp_path):
         _make_python_project(tmp_path)
-        from genesis_architect.pro.antipattern_detector import detect_all
+        from genesis_architect_pro.antipattern_detector import detect_all
         report = detect_all(tmp_path)
 
         assert hasattr(report, "patterns")
@@ -118,7 +118,7 @@ class TestAntipatternDetector:
 
     def test_to_dict_has_severity_counts(self, tmp_path):
         _make_python_project(tmp_path)
-        from genesis_architect.pro.antipattern_detector import detect_all
+        from genesis_architect_pro.antipattern_detector import detect_all
         d = detect_all(tmp_path).to_dict()
         for key in ("critical_count", "high_count", "medium_count", "low_count"):
             assert key in d
@@ -162,7 +162,7 @@ class TestAntipatternDetector:
         }
         (genesis_dir / "import_graph.json").write_text(json.dumps(graph))
 
-        from genesis_architect.pro.antipattern_detector import detect_all
+        from genesis_architect_pro.antipattern_detector import detect_all
         report = detect_all(tmp_path)
         types = {p["type"] for p in report.to_dict()["patterns"]}
         assert "god-class" in types
@@ -196,7 +196,7 @@ class TestAntipatternDetector:
         }
         (genesis_dir / "import_graph.json").write_text(json.dumps(graph))
 
-        from genesis_architect.pro.antipattern_detector import detect_all
+        from genesis_architect_pro.antipattern_detector import detect_all
         report = detect_all(tmp_path)
         types = {p["type"] for p in report.to_dict()["patterns"]}
         assert "circular-dep" in types
@@ -208,7 +208,7 @@ class TestAntipatternDetector:
 
 class TestGitAnalyzer:
     def test_non_git_dir_returns_empty(self, tmp_path):
-        from genesis_architect.pro.git_analyzer import per_module_churn
+        from genesis_architect_pro.git_analyzer import per_module_churn
         result = per_module_churn(tmp_path, days=90)
         assert isinstance(result, dict)
         assert len(result) == 0
@@ -231,7 +231,7 @@ class TestGitAnalyzer:
             capture_output=True, check=False, cwd=str(tmp_path)
         )
 
-        from genesis_architect.pro.git_analyzer import per_module_churn
+        from genesis_architect_pro.git_analyzer import per_module_churn
         result = per_module_churn(tmp_path, days=90)
         assert isinstance(result, dict)
 
@@ -253,7 +253,7 @@ class TestGitAnalyzer:
             capture_output=True, check=False, cwd=str(tmp_path)
         )
 
-        from genesis_architect.pro.git_analyzer import per_module_churn
+        from genesis_architect_pro.git_analyzer import per_module_churn
         result = per_module_churn(tmp_path, days=90)
         if result:
             first = next(iter(result.values()))
@@ -268,7 +268,7 @@ class TestGitAnalyzer:
 class TestFragilityClassifier:
     def test_classify_all_returns_report(self, tmp_path):
         _make_python_project(tmp_path, with_tests=True)
-        from genesis_architect.pro.fragility_classifier import classify_all
+        from genesis_architect_pro.fragility_classifier import classify_all
         report = classify_all(tmp_path)
 
         assert hasattr(report, "classifications")
@@ -278,14 +278,14 @@ class TestFragilityClassifier:
 
     def test_counts_have_three_categories(self, tmp_path):
         _make_python_project(tmp_path)
-        from genesis_architect.pro.fragility_classifier import classify_all
+        from genesis_architect_pro.fragility_classifier import classify_all
         d = classify_all(tmp_path).to_dict()
         for key in ("volatile_count", "fragile_count", "stable_count"):
             assert key in d
 
     def test_write_fragility_map_creates_file(self, tmp_path):
         _make_python_project(tmp_path)
-        from genesis_architect.pro.fragility_classifier import classify_all, write_fragility_map
+        from genesis_architect_pro.fragility_classifier import classify_all, write_fragility_map
         report = classify_all(tmp_path)
 
         output_path = tmp_path / "FRAGILITY_MAP.md"
@@ -303,7 +303,7 @@ class TestFragilityClassifier:
 class TestRefactoringPlanner:
     def test_generate_plan_returns_plan(self, tmp_path):
         _make_python_project(tmp_path)
-        from genesis_architect.pro.refactoring_planner import generate_plan
+        from genesis_architect_pro.refactoring_planner import generate_plan
         plan = generate_plan(tmp_path)
 
         assert hasattr(plan, "steps")
@@ -311,7 +311,7 @@ class TestRefactoringPlanner:
 
     def test_plan_dict_has_steps_key(self, tmp_path):
         _make_python_project(tmp_path)
-        from genesis_architect.pro.refactoring_planner import generate_plan
+        from genesis_architect_pro.refactoring_planner import generate_plan
         d = generate_plan(tmp_path).to_dict()
         assert "steps" in d
         assert isinstance(d["steps"], list)
@@ -325,7 +325,7 @@ class TestRefactoringPlanner:
         (src / "god.py").write_text("\n".join(imports) + "\n")
         (tmp_path / "pyproject.toml").write_text("[tool.poetry]\nname='x'\n")
 
-        from genesis_architect.pro.refactoring_planner import generate_plan
+        from genesis_architect_pro.refactoring_planner import generate_plan
         d = generate_plan(tmp_path).to_dict()
 
         for step in d["steps"]:
@@ -334,7 +334,7 @@ class TestRefactoringPlanner:
 
     def test_write_refactoring_plan_md_creates_file(self, tmp_path):
         _make_python_project(tmp_path)
-        from genesis_architect.pro.refactoring_planner import generate_plan, write_refactoring_plan_md
+        from genesis_architect_pro.refactoring_planner import generate_plan, write_refactoring_plan_md
         plan = generate_plan(tmp_path)
         write_refactoring_plan_md(plan, tmp_path / "REFACTORING_PLAN.md")
 
@@ -348,7 +348,7 @@ class TestRefactoringPlanner:
 class TestC4Generator:
     def test_generate_c4_doc_returns_string(self, tmp_path):
         _make_python_project(tmp_path)
-        from genesis_architect.pro.c4_generator import generate_c4_doc
+        from genesis_architect_pro.c4_generator import generate_c4_doc
         result = generate_c4_doc(tmp_path)
 
         assert isinstance(result, str)
@@ -357,14 +357,14 @@ class TestC4Generator:
     def test_generate_c4_doc_writes_file(self, tmp_path):
         _make_python_project(tmp_path)
         output = tmp_path / "docs" / "architecture" / "C4_ARCHITECTURE.md"
-        from genesis_architect.pro.c4_generator import generate_c4_doc
+        from genesis_architect_pro.c4_generator import generate_c4_doc
         generate_c4_doc(tmp_path, output_path=output)
 
         assert output.exists()
 
     def test_c4_doc_contains_architecture_content(self, tmp_path):
         _make_python_project(tmp_path)
-        from genesis_architect.pro.c4_generator import generate_c4_doc
+        from genesis_architect_pro.c4_generator import generate_c4_doc
         content = generate_c4_doc(tmp_path)
         assert "```mermaid" in content or "graph" in content or "C4" in content or "Container" in content
 
@@ -384,7 +384,7 @@ class TestSecurityTemplates:
         (tmp_path / ".genesis").mkdir(exist_ok=True)
         (tmp_path / ".genesis" / "evidence.json").write_text(json.dumps(evidence))
 
-        from genesis_architect.pro.security_templates import generate_security_docs
+        from genesis_architect_pro.security_templates import generate_security_docs
         generate_security_docs(tmp_path)
 
         stride = tmp_path / "docs" / "security" / "STRIDE_ANALYSIS.md"
@@ -398,7 +398,7 @@ class TestSecurityTemplates:
         (tmp_path / ".genesis").mkdir(exist_ok=True)
         (tmp_path / ".genesis" / "evidence.json").write_text(json.dumps(evidence))
 
-        from genesis_architect.pro.security_templates import generate_security_docs
+        from genesis_architect_pro.security_templates import generate_security_docs
         generate_security_docs(tmp_path)
 
         owasp = tmp_path / "docs" / "security" / "OWASP_CHECKLIST.md"
@@ -408,7 +408,7 @@ class TestSecurityTemplates:
 
     def test_generate_security_docs_works_without_evidence(self, tmp_path):
         _make_python_project(tmp_path)
-        from genesis_architect.pro.security_templates import generate_security_docs
+        from genesis_architect_pro.security_templates import generate_security_docs
         generate_security_docs(tmp_path)  # must not raise
 
         stride = tmp_path / "docs" / "security" / "STRIDE_ANALYSIS.md"
@@ -422,7 +422,7 @@ class TestSecurityTemplates:
         (tmp_path / ".genesis").mkdir(exist_ok=True)
         (tmp_path / ".genesis" / "evidence.json").write_text(json.dumps(evidence))
 
-        from genesis_architect.pro.security_templates import generate_security_docs
+        from genesis_architect_pro.security_templates import generate_security_docs
         generate_security_docs(tmp_path)
 
         owasp = (tmp_path / "docs" / "security" / "OWASP_CHECKLIST.md").read_text()

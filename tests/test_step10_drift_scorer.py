@@ -69,23 +69,23 @@ import warnings
 from pathlib import Path
 
 
-from genesis_architect.pro.drift_detector import (
+from genesis_architect_pro.drift_detector import (
     DriftFlags, VagrantCandidate, StaleCandidate,
 )
-from genesis_architect.pro.drift_scorer import (
+from genesis_architect_pro.drift_scorer import (
     DriftScorerConfig, NodeDriftScore, DriftScore,
     score_drift, compute_drift_score, _risk_level,
 )
-from genesis_architect.pro.source_anchor import (
+from genesis_architect_pro.source_anchor import (
     AnchorReport, AnchorResult, AnchorEntry,
 )
-from genesis_architect.pro.model_store import (
+from genesis_architect_pro.model_store import (
     ArchModel, ModelNode, ModelResponsibility, ModelStore,
 )
-from genesis_architect.pro.decay_regressor import (
+from genesis_architect_pro.decay_regressor import (
     DecayForecast, RegressionResult,
 )
-from genesis_architect.pro.recovery_scan import scan
+from genesis_architect_pro.recovery_scan import scan
 
 
 # ---------------------------------------------------------------------------
@@ -765,21 +765,21 @@ class TestScanDriftScoreIntegration:
 
 class TestPackageExports:
     def test_drift_scorer_config_exported(self):
-        from genesis_architect.pro import DriftScorerConfig
+        from genesis_architect_pro import DriftScorerConfig
         assert DriftScorerConfig is not None
 
     def test_node_drift_score_exported(self):
-        from genesis_architect.pro import NodeDriftScore
+        from genesis_architect_pro import NodeDriftScore
         assert NodeDriftScore is not None
 
     def test_drift_score_exported(self):
-        from genesis_architect.pro import DriftScore
+        from genesis_architect_pro import DriftScore
         assert DriftScore is not None
 
     def test_score_drift_exported(self):
-        from genesis_architect.pro import score_drift
+        from genesis_architect_pro import score_drift
         assert callable(score_drift)
 
     def test_compute_drift_score_exported(self):
-        from genesis_architect.pro import compute_drift_score
+        from genesis_architect_pro import compute_drift_score
         assert callable(compute_drift_score)

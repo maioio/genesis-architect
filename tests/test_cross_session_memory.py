@@ -3,7 +3,7 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from genesis_architect.pro.cross_session_memory import (
+from genesis_architect_pro.cross_session_memory import (
     restore_session,
     save_phase2,
     save_phase4,

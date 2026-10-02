@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from genesis_architect.pro import mcp_tools as m
+from genesis_architect_pro import mcp_tools as m
 
 
 def _project(tmp_path: Path) -> Path:

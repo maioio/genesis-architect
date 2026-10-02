@@ -1,31 +1,29 @@
 ﻿"""Tests for import_graph.py - shared multi-language import graph builder."""
 import json
 import textwrap
-from pathlib import Path
 
-import pytest
 
 
 class TestDetectLanguage:
     def test_detects_python_from_pyproject(self, tmp_path):
         (tmp_path / "pyproject.toml").write_text("[tool.poetry]\nname='x'")
-        from genesis_architect.core.import_graph import detect_language
+        from genesis_architect_pro.import_graph import detect_language
         assert detect_language(tmp_path) == "python"
 
     def test_detects_from_package_json(self, tmp_path):
         (tmp_path / "package.json").write_text('{"name": "x"}')
-        from genesis_architect.core.import_graph import detect_language
+        from genesis_architect_pro.import_graph import detect_language
         lang = detect_language(tmp_path)
         assert lang in ("javascript", "typescript")
 
     def test_detects_go_from_go_mod(self, tmp_path):
         (tmp_path / "go.mod").write_text("module example.com/x\n\ngo 1.21")
-        from genesis_architect.core.import_graph import detect_language
+        from genesis_architect_pro.import_graph import detect_language
         assert detect_language(tmp_path) == "go"
 
     def test_detects_rust_from_cargo_toml(self, tmp_path):
         (tmp_path / "Cargo.toml").write_text('[package]\nname = "x"\nversion = "0.1.0"')
-        from genesis_architect.core.import_graph import detect_language
+        from genesis_architect_pro.import_graph import detect_language
         assert detect_language(tmp_path) == "rust"
 
 
@@ -39,7 +37,7 @@ class TestPythonImportExtraction:
             from pathlib import Path
             from mymodule import something
         """))
-        from genesis_architect.core.import_graph import _extract_python_imports
+        from genesis_architect_pro.import_graph import _extract_python_imports
         imports = _extract_python_imports(src / "app.py", tmp_path)
         assert "os" in imports
         assert "sys" in imports
@@ -49,12 +47,12 @@ class TestPythonImportExtraction:
     def test_handles_syntax_error_gracefully(self, tmp_path):
         bad_file = tmp_path / "bad.py"
         bad_file.write_text("def broken(:\n    pass")
-        from genesis_architect.core.import_graph import _extract_python_imports
+        from genesis_architect_pro.import_graph import _extract_python_imports
         result = _extract_python_imports(bad_file, tmp_path)
         assert result == []
 
     def test_handles_missing_file_gracefully(self, tmp_path):
-        from genesis_architect.core.import_graph import _extract_python_imports
+        from genesis_architect_pro.import_graph import _extract_python_imports
         result = _extract_python_imports(tmp_path / "nonexistent.py", tmp_path)
         assert result == []
 
@@ -68,7 +66,7 @@ class TestJsTsImportExtraction:
             import bar from '../lib/bar';
             const baz = require('./baz');
         """))
-        from genesis_architect.core.import_graph import _extract_js_ts_imports
+        from genesis_architect_pro.import_graph import _extract_js_ts_imports
         imports = _extract_js_ts_imports(src / "index.ts", tmp_path)
         assert "./utils" in imports
         assert "../lib/bar" in imports
@@ -78,7 +76,7 @@ class TestJsTsImportExtraction:
         src = tmp_path / "src"
         src.mkdir()
         (src / "app.ts").write_text("import express from 'express';\nimport { z } from 'zod';")
-        from genesis_architect.core.import_graph import _extract_js_ts_imports
+        from genesis_architect_pro.import_graph import _extract_js_ts_imports
         imports = _extract_js_ts_imports(src / "app.ts", tmp_path)
         assert "express" in imports
         assert "zod" in imports
@@ -96,7 +94,7 @@ class TestGoImportExtraction:
                 "github.com/user/myapp/internal/core"
             )
         """))
-        from genesis_architect.core.import_graph import _extract_go_imports
+        from genesis_architect_pro.import_graph import _extract_go_imports
         imports = _extract_go_imports(f, tmp_path)
         assert "fmt" in imports
         assert "os" in imports
@@ -105,29 +103,29 @@ class TestGoImportExtraction:
 
 class TestLayerDetection:
     def test_detects_domain_layer(self):
-        from genesis_architect.core.import_graph import _detect_layer
+        from genesis_architect_pro.import_graph import _detect_layer
         assert _detect_layer("src/domain/user.py") == "domain"
 
     def test_detects_infrastructure_layer(self):
-        from genesis_architect.core.import_graph import _detect_layer
+        from genesis_architect_pro.import_graph import _detect_layer
         assert _detect_layer("src/infrastructure/db.py") == "infrastructure"
 
     def test_detects_presentation_layer(self):
-        from genesis_architect.core.import_graph import _detect_layer
+        from genesis_architect_pro.import_graph import _detect_layer
         assert _detect_layer("src/views/home.py") == "presentation"
 
     def test_detects_test_layer(self):
-        from genesis_architect.core.import_graph import _detect_layer
+        from genesis_architect_pro.import_graph import _detect_layer
         assert _detect_layer("tests/test_app.py") == "test"
 
     def test_returns_unknown_for_unrecognised(self):
-        from genesis_architect.core.import_graph import _detect_layer
+        from genesis_architect_pro.import_graph import _detect_layer
         assert _detect_layer("src/xyz_completely_custom/widget.py") == "unknown"
 
 
 class TestCycleDetection:
     def test_detects_simple_cycle(self):
-        from genesis_architect.core.import_graph import _find_cycles
+        from genesis_architect_pro.import_graph import _find_cycles
         adj = {
             "a.py": ["b.py"],
             "b.py": ["a.py"],
@@ -140,7 +138,7 @@ class TestCycleDetection:
         assert "a.py" in all_nodes or "b.py" in all_nodes
 
     def test_no_cycles_in_dag(self):
-        from genesis_architect.core.import_graph import _find_cycles
+        from genesis_architect_pro.import_graph import _find_cycles
         adj = {
             "a.py": ["b.py"],
             "b.py": ["c.py"],
@@ -150,7 +148,7 @@ class TestCycleDetection:
         assert cycles == []
 
     def test_three_node_cycle(self):
-        from genesis_architect.core.import_graph import _find_cycles
+        from genesis_architect_pro.import_graph import _find_cycles
         adj = {
             "a.py": ["b.py"],
             "b.py": ["c.py"],
@@ -168,7 +166,7 @@ class TestBuildGraph:
         (src / "main.py").write_text("from src import app\n")
         (src / "app.py").write_text("import os\n")
 
-        from genesis_architect.core.import_graph import build_graph
+        from genesis_architect_pro.import_graph import build_graph
         graph = build_graph(tmp_path, language="python", save=False)
 
         assert graph["language"] == "python"
@@ -182,8 +180,8 @@ class TestBuildGraph:
         src.mkdir()
         (src / "main.py").write_text("import os\n")
 
-        from genesis_architect.core.import_graph import build_graph
-        graph = build_graph(tmp_path, language="python", save=True)
+        from genesis_architect_pro.import_graph import build_graph
+        build_graph(tmp_path, language="python", save=True)
 
         cache = tmp_path / ".genesis" / "import_graph.json"
         assert cache.exists()
@@ -195,54 +193,12 @@ class TestBuildGraph:
         src.mkdir()
         (src / "app.py").write_text("import os\n")
 
-        from genesis_architect.core.import_graph import build_graph, load_or_build
+        from genesis_architect_pro.import_graph import build_graph, load_or_build
         build_graph(tmp_path, language="python", save=True)
 
         # Second call should load from cache
         graph = load_or_build(tmp_path)
         assert graph["language"] == "python"
-
-    def test_load_or_build_detects_new_file_without_manual_cache_delete(self, tmp_path):
-        import os
-        import time
-
-        src = tmp_path / "src"
-        src.mkdir()
-        (src / "app.py").write_text("import os\n")
-
-        from genesis_architect.core.import_graph import load_or_build
-        graph = load_or_build(tmp_path, language="python")
-        assert "src/app.py" in graph["modules"]
-        assert "src/new_module.py" not in graph["modules"]
-
-        # Force the new file's mtime strictly after the cache file's mtime -
-        # on filesystems with coarse mtime resolution a same-tick write can
-        # otherwise look identical to the cached state.
-        cache_path = tmp_path / ".genesis" / "import_graph.json"
-        time.sleep(1.1)
-        (src / "new_module.py").write_text("x = 1\n")
-        newer = cache_path.stat().st_mtime + 5
-        os.utime(src / "new_module.py", (newer, newer))
-
-        graph = load_or_build(tmp_path, language="python")
-        assert "src/new_module.py" in graph["modules"], (
-            "new file must appear without deleting .genesis/import_graph.json by hand"
-        )
-
-    def test_load_or_build_detects_removed_file(self, tmp_path):
-        src = tmp_path / "src"
-        src.mkdir()
-        (src / "app.py").write_text("import os\n")
-        (src / "gone.py").write_text("x = 1\n")
-
-        from genesis_architect.core.import_graph import load_or_build
-        graph = load_or_build(tmp_path, language="python")
-        assert "src/gone.py" in graph["modules"]
-
-        (src / "gone.py").unlink()
-
-        graph = load_or_build(tmp_path, language="python")
-        assert "src/gone.py" not in graph["modules"]
 
     def test_fan_in_fan_out_computed(self, tmp_path):
         src = tmp_path / "src"
@@ -254,101 +210,10 @@ class TestBuildGraph:
         (src / "app.py").write_text("import os\n")
         (src / "utils.py").write_text("import sys\n")
 
-        from genesis_architect.core.import_graph import build_graph
+        from genesis_architect_pro.import_graph import build_graph
         graph = build_graph(tmp_path, language="python", save=False)
 
         # All modules should have fan_in and fan_out keys
         for mod, data in graph["modules"].items():
             assert "fan_in" in data
             assert "fan_out" in data
-
-
-class TestTypeCheckingImportsAreNotRuntimeEdges:
-    """`if TYPE_CHECKING:` imports never execute, so they are not dependencies.
-
-    Counting them overstates coupling, and it makes two reasonable goals
-    mutually exclusive: a module that declares its re-exports for static
-    analysis - so type checkers and CodeQL can see a PEP 562 lazy API - would
-    register that declaration as real fan-out and be re-flagged as a god class.
-    """
-
-    @staticmethod
-    def _imports(tmp_path, source):
-        import textwrap
-
-        from genesis_architect.core.import_graph import _extract_python_imports
-
-        f = tmp_path / "m.py"
-        f.write_text(textwrap.dedent(source), encoding="utf-8")
-        return _extract_python_imports(f, tmp_path)
-
-    def test_type_checking_body_is_not_counted(self, tmp_path):
-        found = self._imports(tmp_path, """
-            from typing import TYPE_CHECKING
-
-            if TYPE_CHECKING:
-                from pkg.types_only import Thing
-        """)
-        assert not any("types_only" in m for m in found)
-
-    def test_attribute_form_is_recognised(self, tmp_path):
-        """`if typing.TYPE_CHECKING:` is the same guard, spelled differently."""
-        found = self._imports(tmp_path, """
-            import typing
-
-            if typing.TYPE_CHECKING:
-                from pkg.types_only import Thing
-        """)
-        assert not any("types_only" in m for m in found)
-
-    def test_runtime_imports_beside_the_guard_still_counted(self, tmp_path):
-        """Pruning the guard must not prune its neighbours."""
-        found = self._imports(tmp_path, """
-            from typing import TYPE_CHECKING
-
-            import os
-            from pkg.real import Thing
-
-            if TYPE_CHECKING:
-                from pkg.types_only import Other
-        """)
-        assert "os" in found
-        assert "pkg.real" in found
-        assert not any("types_only" in m for m in found)
-
-    def test_else_branch_is_counted(self, tmp_path):
-        """The else branch runs at runtime - that is why one gets written."""
-        found = self._imports(tmp_path, """
-            from typing import TYPE_CHECKING
-
-            if TYPE_CHECKING:
-                from pkg.types_only import Thing
-            else:
-                from pkg.at_runtime import Thing
-        """)
-        assert "pkg.at_runtime" in found
-        assert not any("types_only" in m for m in found)
-
-    def test_negated_guard_body_is_counted(self, tmp_path):
-        """`if not TYPE_CHECKING:` runs. Matching the bare name would invert it."""
-        found = self._imports(tmp_path, """
-            from typing import TYPE_CHECKING
-
-            if not TYPE_CHECKING:
-                from pkg.at_runtime import Thing
-        """)
-        assert "pkg.at_runtime" in found
-
-    def test_guard_nested_inside_a_function(self, tmp_path):
-        """The guard is usually module level, but nesting must behave the same."""
-        found = self._imports(tmp_path, """
-            from typing import TYPE_CHECKING
-
-            def f():
-                if TYPE_CHECKING:
-                    from pkg.types_only import Thing
-                from pkg.real import Other
-                return Other
-        """)
-        assert "pkg.real" in found
-        assert not any("types_only" in m for m in found)

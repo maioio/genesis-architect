@@ -5,7 +5,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from genesis_architect.pro.video_research import (
+from genesis_architect_pro.video_research import (
     build_youtube_queries,
     parse_exa_video_results,
     format_video_signals,
@@ -199,7 +199,7 @@ def test_deep_research_command_asks_for_pitfalls():
 # --- firecrawl -> exa-shape adapter (Reddit/Instagram channel) ---
 
 def test_firecrawl_to_exa_shape_maps_description_to_text():
-    from genesis_architect.pro.video_research import firecrawl_to_exa_shape
+    from genesis_architect_pro.video_research import firecrawl_to_exa_shape
     fc = [{"url": "https://www.reddit.com/r/x/comments/1/abc", "title": "T",
            "description": "D", "position": 1}]
     out = firecrawl_to_exa_shape(fc)
@@ -209,7 +209,7 @@ def test_firecrawl_to_exa_shape_maps_description_to_text():
 
 
 def test_firecrawl_reddit_results_become_signals():
-    from genesis_architect.pro.video_research import (
+    from genesis_architect_pro.video_research import (
         firecrawl_to_exa_shape, parse_exa_results,
     )
     fc = [{"url": "https://www.reddit.com/r/FastAPI/comments/1/x",

@@ -5,7 +5,7 @@ weight, engine profiles, the market=signal-only rule, and per-project overrides
 that add/replace sources without code changes.
 """
 
-from genesis_architect.pro.source_registry import (
+from genesis_architect_pro.source_registry import (
     load_registry, add_project_source,
 )
 

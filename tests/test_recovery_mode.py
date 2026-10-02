@@ -7,7 +7,7 @@ from pathlib import Path
 
 def test_version_drift_detected(tmp_path: Path):
     """version_drift returns True when package.json and pyproject.toml have different versions."""
-    from genesis_architect.pro.recovery_scan import version_drift
+    from genesis_architect_pro.recovery_scan import version_drift
 
     (tmp_path / "package.json").write_text('{"name": "test", "version": "1.0.0"}')
     (tmp_path / "pyproject.toml").write_text('[project]\nname = "test"\nversion = "2.0.0"\n')
@@ -18,7 +18,7 @@ def test_version_drift_detected(tmp_path: Path):
 
 def test_version_no_drift(tmp_path: Path):
     """version_drift returns consistent versions when they match."""
-    from genesis_architect.pro.recovery_scan import version_drift
+    from genesis_architect_pro.recovery_scan import version_drift
 
     (tmp_path / "package.json").write_text('{"name": "test", "version": "1.2.3"}')
     result = version_drift(tmp_path)
@@ -27,7 +27,7 @@ def test_version_no_drift(tmp_path: Path):
 
 def test_external_url_count_finds_urls(tmp_path: Path):
     """external_url_count counts hardcoded URLs in source files."""
-    from genesis_architect.pro.recovery_scan import external_url_count
+    from genesis_architect_pro.recovery_scan import external_url_count
 
     src = tmp_path / "src"
     src.mkdir()
@@ -40,7 +40,7 @@ def test_external_url_count_finds_urls(tmp_path: Path):
 
 def test_external_url_count_ignores_node_modules(tmp_path: Path):
     """external_url_count must skip node_modules."""
-    from genesis_architect.pro.recovery_scan import external_url_count
+    from genesis_architect_pro.recovery_scan import external_url_count
 
     nm = tmp_path / "node_modules" / "lib"
     nm.mkdir(parents=True)
@@ -52,7 +52,7 @@ def test_external_url_count_ignores_node_modules(tmp_path: Path):
 
 def test_scan_returns_all_keys(tmp_path: Path):
     """scan() must return all required keys even on an empty project."""
-    from genesis_architect.pro.recovery_scan import scan
+    from genesis_architect_pro.recovery_scan import scan
 
     # Create minimal git repo so git commands don't error
     (tmp_path / ".git").mkdir()
@@ -67,7 +67,7 @@ def test_scan_returns_all_keys(tmp_path: Path):
 
 def test_scan_json_serialisable(tmp_path: Path):
     """scan() output must be JSON-serialisable (used by genesis recover pipeline)."""
-    from genesis_architect.pro.recovery_scan import scan
+    from genesis_architect_pro.recovery_scan import scan
 
     (tmp_path / ".git").mkdir()
     result = scan(tmp_path)

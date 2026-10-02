@@ -3,14 +3,14 @@
 from __future__ import annotations
 
 
-from genesis_architect.pro.gde_gate_engine import (
+from genesis_architect_pro.gde_gate_engine import (
     _CONFIDENCE_BLOCK_THRESHOLD,
     _CONFIDENCE_DEGRADED_THRESHOLD,
     _DRIFT_CRITICAL_SCORE,
     _RESEARCH_COVERAGE_LOW_THRESHOLD,
     evaluate_gates,
 )
-from genesis_architect.pro.gde_types import (
+from genesis_architect_pro.gde_types import (
     EngineResult,
     EngineStatus,
     GateOutcome,
@@ -470,9 +470,9 @@ class TestOverallOutcome:
 
 class TestBackwardCompatibility:
     def test_in_init(self):
-        import genesis_architect.pro as pkg
+        import genesis_architect_pro as pkg
         assert hasattr(pkg, "evaluate_gates")
 
     def test_importable_directly(self):
-        from genesis_architect.pro.gde_gate_engine import evaluate_gates as eg
+        from genesis_architect_pro.gde_gate_engine import evaluate_gates as eg
         assert callable(eg)

@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Genesis PRO — Release Readiness Report</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg:     #0d0e14;
+  --s1:     #13151f;
+  --s2:     #1c1f2e;
+  --border: #2a2d3e;
+  --accent: #6c63ff;
+  --green:  #00d4aa;
+  --warn:   #fbbf24;
+  --danger: #f87171;
+  --muted:  #6b7280;
+  --text:   #e8eaf0;
+  --r:      10px;
+}
+body {
+  background: var(--bg); color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 14px; line-height: 1.65;
+  padding: 48px 28px 80px; max-width: 920px; margin: 0 auto;
+}
+.stamp { font-size: 11px; color: var(--muted); letter-spacing:.07em; text-transform:uppercase; margin-bottom:12px; }
+h1 { font-size: 30px; font-weight: 900; letter-spacing:-.03em; margin-bottom: 6px; }
+.sub { color: var(--muted); font-size: 13px; margin-bottom: 40px; }
+.stats { display: grid; grid-template-columns: repeat(5,1fr); gap: 10px; margin-bottom: 48px; }
+.stat { background:var(--s1); border:1px solid var(--border); border-radius:var(--r); padding:18px 14px; text-align:center; }
+.stat-n { font-size:28px; font-weight:900; line-height:1; }
+.stat-n.g { color:var(--green); } .stat-n.a { color:var(--accent); } .stat-n.w { color:var(--warn); }
+.stat-l { font-size:10px; color:var(--muted); margin-top:5px; text-transform:uppercase; letter-spacing:.07em; }
+section { margin-bottom: 44px; }
+h2 { font-size:15px; font-weight:800; border-bottom:1px solid var(--border); padding-bottom:10px; margin-bottom:18px; display:flex; align-items:center; gap:8px; }
+h2::before { content:''; display:block; width:8px; height:8px; border-radius:50%; background:var(--accent); flex-shrink:0; }
+.tbl { width:100%; border-collapse:collapse; font-size:12.5px; }
+.tbl th { text-align:right; padding:9px 12px; font-size:11px; color:var(--muted); font-weight:600; border-bottom:1px solid var(--border); text-transform:uppercase; letter-spacing:.06em; }
+.tbl td { padding:10px 12px; border-bottom:1px solid var(--border); vertical-align:middle; }
+.tbl tr:last-child td { border-bottom:none; }
+.tbl tr:hover td { background:var(--s2); }
+.b { display:inline-block; font-size:10px; font-weight:700; padding:2px 9px; border-radius:99px; text-transform:uppercase; letter-spacing:.05em; white-space:nowrap; }
+.bg { background:rgba(0,212,170,.12); color:var(--green); }
+.ba { background:rgba(108,99,255,.12); color:var(--accent); }
+.bw { background:rgba(251,191,36,.12); color:var(--warn); }
+.bd { background:rgba(248,113,113,.12); color:var(--danger); }
+.check-list { list-style:none; display:flex; flex-direction:column; gap:6px; }
+.check-list li { display:flex; align-items:flex-start; gap:10px; padding:10px 14px; border-radius:var(--r); background:var(--s1); border:1px solid var(--border); font-size:12.5px; }
+.check-list li .ico { flex-shrink:0; font-size:14px; margin-top:1px; }
+.check-list li .lbl { font-weight:700; display:block; margin-bottom:2px; }
+.check-list li .desc { color:var(--muted); font-size:11.5px; line-height:1.5; }
+.done-icon::before { content:'✓'; color:var(--green); font-weight:900; }
+.warn-icon::before { content:'!'; color:var(--warn); font-weight:900; }
+.block-icon::before { content:'✕'; color:var(--danger); font-weight:900; }
+.fixes { background:var(--s1); border:1px solid var(--border); border-radius:var(--r); padding:18px 20px; margin-bottom:12px; }
+.fixes h3 { font-size:13px; font-weight:700; margin-bottom:10px; display:flex; align-items:center; gap:8px; }
+.fixes code { background:var(--s2); padding:2px 6px; border-radius:4px; font-family:monospace; font-size:11.5px; color:var(--accent); }
+.fixes ul { color:var(--muted); font-size:12px; padding-right:14px; line-height:1.8; }
+.fixes ul li { list-style:disc; }
+footer { margin-top:60px; padding-top:24px; border-top:1px solid var(--border); display:flex; justify-content:space-between; font-size:11px; color:var(--muted); }
+.mark { font-weight:900; color:var(--accent); }
+</style>
+</head>
+<body>
+
+<p class="stamp">Genesis PRO · Release Readiness Report · 2026-07-03</p>
+<h1>מוכן לשחרור</h1>
+<p class="sub">Audit מלא — מה עובד, מה תוקן, מה נשאר לך לעשות לפני GA</p>
+
+<div class="stats">
+  <div class="stat"><div class="stat-n g">1,649</div><div class="stat-l">tests ✓</div></div>
+  <div class="stat"><div class="stat-n g">0</div><div class="stat-l">TS errors</div></div>
+  <div class="stat"><div class="stat-n g">0</div><div class="stat-l">Rust errors</div></div>
+  <div class="stat"><div class="stat-n g">0</div><div class="stat-l">deprecations</div></div>
+  <div class="stat"><div class="stat-n w">3</div><div class="stat-l">actions ממך</div></div>
+</div>
+
+<!-- FIXES THIS SESSION -->
+<section>
+  <h2>מה תוקן בסשן הזה</h2>
+
+  <div class="fixes">
+    <h3><span class="b bg">תוקן</span> &nbsp; websockets deprecation warning</h3>
+    <ul>
+      <li><code>server.py</code> — <code>WebSocketServerProtocol</code> הוחלף ב-<code>websockets.asyncio.server.ServerConnection</code></li>
+      <li>תואם websockets 14-16+, ללא <code>DeprecationWarning</code></li>
+      <li>אומת: <code>python -W error::DeprecationWarning -c "from genesis_architect_pro.streaming.server import CompanionServer"</code> → OK</li>
+    </ul>
+  </div>
+
+  <div class="fixes">
+    <h3><span class="b bg">תוקן</span> &nbsp; First-run UX ב-Tauri כשגנסיס לא מותקן</h3>
+    <ul>
+      <li><code>store.ts</code> — הוסף <code>sidecarError: string | null</code> + <code>setSidecarError()</code></li>
+      <li><code>Bubble.tsx</code> — listen ל-<code>genesis://sidecar-error</code>, מציג setup card עם הוראות pip</li>
+      <li><code>commands.rs</code> — הוסף <code>resize_bubble(width, height)</code> command לפתוח חלון</li>
+      <li><code>lib.rs</code> — רשום <code>resize_bubble</code> ב-invoke_handler</li>
+      <li>כשגנסיס לא בPATH: הbubble מתרחב ל-300×170 ומציג הוראות התקנה ברורות</li>
+    </ul>
+  </div>
+
+  <div class="fixes">
+    <h3><span class="b bg">עודכן</span> &nbsp; CAPABILITY_GAP_REPORT — כל 4 gaps קריטיים מומשו</h3>
+    <ul>
+      <li>G-CRIT-01 Dual-Layer Model → <code>model_store.py</code> ✅</li>
+      <li>G-CRIT-02 Model Diff Engine → <code>model_store.py</code> ✅</li>
+      <li>G-CRIT-03 Source Anchors → <code>source_anchor.py</code> ✅</li>
+      <li>G-CRIT-06 WLS Decay Regression → <code>decay_regressor.py</code> ✅</li>
+      <li>הדוח עודכן עם implementation status table + הפניה לקבצים</li>
+    </ul>
+  </div>
+</section>
+
+<!-- FULL FEATURE STATUS -->
+<section>
+  <h2>סטטוס מלא — כל הפיצ'רים</h2>
+  <table class="tbl">
+    <thead><tr><th>פיצ'ר</th><th>סטטוס</th><th>אומת</th></tr></thead>
+    <tbody>
+      <tr><td><b>17 Analysis Engines</b> — score, anti-patterns, fragility, C4, security, knowledge graph</td><td><span class="b bg">✓ shipped</span></td><td>1,649 tests ✓</td></tr>
+      <tr><td><b>Genesis Decision Engine</b> — 7 modes, 12 gates, APPROVE→COMMIT</td><td><span class="b bg">✓ shipped</span></td><td>tests ✓</td></tr>
+      <tr><td><b>Committee Engine</b> — 5 advisors, anti-sycophancy</td><td><span class="b bg">✓ shipped</span></td><td>tests ✓</td></tr>
+      <tr><td><b>genesis sync</b> — 3-zone, GitHub Actions, weekly cron</td><td><span class="b bg">✓ shipped</span></td><td>tests ✓</td></tr>
+      <tr><td><b>WebSocket Streaming</b> — 20 event types, auth token, bidirectional</td><td><span class="b bg">✓ shipped</span></td><td>tests ✓ + deprecation fixed</td></tr>
+      <tr><td><b>Floating Assistant web UI</b> — genesis companion --ui, bubble+panel, live engines</td><td><span class="b bg">✓ shipped</span></td><td>end-to-end verified</td></tr>
+      <tr><td><b>Voice STT/TTS</b> — faster-whisper + Kokoro + MMS Hebrew + wake word</td><td><span class="b ba">early access</span></td><td>--setup/--listen/--speak verified</td></tr>
+      <tr><td><b>IDE Bridge</b> — HTTP server port 47292, pattern index hot-swap</td><td><span class="b bg">✓ shipped</span></td><td>update_index() implemented</td></tr>
+      <tr><td><b>VS Code Extension</b> — cursor events, rate-limited, .vsix built</td><td><span class="b ba">early access</span></td><td>out/extension.js + .vsix exist</td></tr>
+      <tr><td><b>Tauri Desktop App</b> — Bubble+Panel, IPC, gate approval, VoicePTT</td><td><span class="b ba">early access</span></td><td>cargo check ✓, npm build ✓</td></tr>
+      <tr><td><b>First-run UX</b> — setup card כשגנסיס לא בPATH</td><td><span class="b bg">✓ shipped</span></td><td>תוקן בסשן הזה ✓</td></tr>
+      <tr><td><b>Auto-updater</b> — tauri-plugin-updater + GitHub Releases</td><td><span class="b ba">early access</span></td><td>cargo check ✓, חסר signing key</td></tr>
+      <tr><td><b>GitHub Actions CI/CD</b> — Win/Mac/Linux matrix build + VS Code publish</td><td><span class="b ba">early access</span></td><td>YAML valid, חסר GitHub Secrets</td></tr>
+      <tr><td><b>Dual-Layer Model</b> — planned vs. committed architecture</td><td><span class="b bg">✓ shipped</span></td><td>model_store.py ✓</td></tr>
+      <tr><td><b>Model Diff Engine</b> — architecture diff between runs</td><td><span class="b bg">✓ shipped</span></td><td>ModelDiff, NodeChange ✓</td></tr>
+      <tr><td><b>Source Anchors</b> — C4 claims anchored to file+line</td><td><span class="b bg">✓ shipped</span></td><td>source_anchor.py ✓</td></tr>
+      <tr><td><b>WLS Decay Regression</b> — statistical forecast + 95% CI</td><td><span class="b bg">✓ shipped</span></td><td>decay_regressor.py ✓</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- WHAT YOU NEED TO DO -->
+<section>
+  <h2>מה נשאר לך לעשות (פעולות ידניות — לא קוד)</h2>
+  <ul class="check-list">
+    <li>
+      <span class="ico warn-icon"></span>
+      <span>
+        <span class="lbl">הפוש לאתר (origin/main)</span>
+        <span class="desc">
+          ה-build החדש של landing page מחכה ב-<code>/tmp/genesis-main-wt</code>.
+          הרץ: <code>cd /tmp/genesis-main-wt && git push origin main</code>
+        </span>
+      </span>
+    </li>
+    <li>
+      <span class="ico warn-icon"></span>
+      <span>
+        <span class="lbl">Tauri signing key (לפני release)</span>
+        <span class="desc">
+          <code>npx tauri signer generate -w ~/.tauri/genesis-companion.key</code>
+          → העתק pubkey ל-<code>tauri.conf.json</code> plugins.updater.pubkey
+          → הוסף <code>TAURI_SIGNING_PRIVATE_KEY</code> ל-GitHub Secrets
+        </span>
+      </span>
+    </li>
+    <li>
+      <span class="ico warn-icon"></span>
+      <span>
+        <span class="lbl">App icon — החלפה בלוגו Genesis האמיתי</span>
+        <span class="desc">
+          <code>npx tauri icon genesis_architect_logos/genesis_architect_blue_300dpi.png</code>
+          (מייצר כל הגדלים אוטומטית, מעדכן src-tauri/icons/)
+        </span>
+      </span>
+    </li>
+    <li>
+      <span class="ico block-icon"></span>
+      <span>
+        <span class="lbl">Windows Authenticode cert (לפני GA)</span>
+        <span class="desc">
+          ללא זה: SmartScreen מציג "Unknown Publisher". לא חוסם, אבל פוגע ב-UX.
+          ראה <code>companion/docs/code-signing.md</code> — DigiCert EV cert, ~$350/yr.
+        </span>
+      </span>
+    </li>
+    <li>
+      <span class="ico block-icon"></span>
+      <span>
+        <span class="lbl">Apple Developer Program (לפני macOS launch)</span>
+        <span class="desc">
+          $99/yr. ללא זה: Gatekeeper מחסום. הוראות ב-<code>companion/docs/code-signing.md</code>.
+        </span>
+      </span>
+    </li>
+    <li>
+      <span class="ico warn-icon"></span>
+      <span>
+        <span class="lbl">VS Code publisher account + VSCE_PAT</span>
+        <span class="desc">
+          פתח account ב-marketplace.visualstudio.com/manage → publisher: "genesis-pro"
+          → קבל PAT → הוסף <code>VSCE_PAT</code> ל-GitHub Secrets
+        </span>
+      </span>
+    </li>
+  </ul>
+</section>
+
+<!-- BUILD VERIFICATION -->
+<section>
+  <h2>Build Verification — אומת בסשן הזה</h2>
+  <table class="tbl">
+    <thead><tr><th>בדיקה</th><th>פקודה</th><th>תוצאה</th></tr></thead>
+    <tbody>
+      <tr><td>Python tests</td><td><code>pytest tests/ -q</code></td><td><span class="b bg">1,649 passed, 0 failed</span></td></tr>
+      <tr><td>TypeScript check</td><td><code>npx tsc --noEmit</code></td><td><span class="b bg">0 errors</span></td></tr>
+      <tr><td>Rust compile</td><td><code>cargo check</code></td><td><span class="b bg">Finished, 0 errors</span></td></tr>
+      <tr><td>Vite build</td><td><code>npm run build:web</code></td><td><span class="b bg">built in 1.15s, 0 errors</span></td></tr>
+      <tr><td>Websockets deprecation</td><td><code>python -W error::DeprecationWarning ...</code></td><td><span class="b bg">OK — no warnings</span></td></tr>
+      <tr><td>VS Code extension .vsix</td><td>file exists</td><td><span class="b bg">genesis-companion-0.1.0.vsix ✓</span></td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- RELEASE COMMAND -->
+<section>
+  <h2>פקודת Release — כשמוכן</h2>
+  <div style="background:var(--s1);border:1px solid var(--border);border-radius:var(--r);padding:18px 20px;font-family:monospace;font-size:12px;color:var(--accent);line-height:2;">
+    # 1. הוסף GitHub Secrets (ראה companion/docs/code-signing.md)<br>
+    # 2. עדכן pubkey ב-tauri.conf.json<br>
+    # 3. הרץ:<br>
+    <span style="color:var(--text);">git tag companion-v1.0.0</span><br>
+    <span style="color:var(--text);">git push pro/main --tags</span><br>
+    # → GitHub Actions בונה Win MSI + macOS DMG + Linux AppImage<br>
+    # → Draft Release נפתח עם כל הartifacts<br>
+    # → latest.json מועלה → auto-update פעיל
+  </div>
+</section>
+
+<footer>
+  <span><span class="mark">Genesis PRO</span> · Release Readiness Report · מוכן לGA</span>
+  <span>2026-07-03 · Maio Eshet · 1,649 tests · 0 errors</span>
+</footer>
+</body>
+</html>

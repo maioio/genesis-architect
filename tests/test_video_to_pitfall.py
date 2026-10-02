@@ -3,7 +3,7 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from genesis_architect.pro.video_to_pitfall import (
+from genesis_architect_pro.video_to_pitfall import (
     extract_from_watch_output,
     append_to_pitfalls_md,
     summarize_extraction,

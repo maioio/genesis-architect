@@ -39,14 +39,14 @@ import warnings
 from pathlib import Path
 
 
-from genesis_architect.pro.model_store import (
+from genesis_architect_pro.model_store import (
     ArchModel, ModelNode, ModelResponsibility, ModelStore,
 )
-from genesis_architect.pro.source_anchor import (
+from genesis_architect_pro.source_anchor import (
     AnchorEntry, AnchorResult, AnchorReport,
     PersistResult, anchor_responsibilities, persist_anchors,
 )
-from genesis_architect.pro.recovery_scan import scan
+from genesis_architect_pro.recovery_scan import scan
 
 
 # ---------------------------------------------------------------------------
@@ -579,9 +579,9 @@ class TestPersistResult:
 
 class TestPackageExports:
     def test_persist_result_exported(self):
-        from genesis_architect.pro import PersistResult
+        from genesis_architect_pro import PersistResult
         assert PersistResult is not None
 
     def test_persist_anchors_exported(self):
-        from genesis_architect.pro import persist_anchors
+        from genesis_architect_pro import persist_anchors
         assert callable(persist_anchors)

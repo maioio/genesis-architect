@@ -13,7 +13,7 @@ from pathlib import Path
 
 import pytest
 
-from genesis_architect.pro.engines.committee.collapse_detector import (
+from genesis_architect_pro.engines.committee.collapse_detector import (
     apply_manufactured_cap,
     build_divergence_map,
     build_voting_record,
@@ -21,16 +21,16 @@ from genesis_architect.pro.engines.committee.collapse_detector import (
     detect_collapse,
     find_minority_view,
 )
-from genesis_architect.pro.engines.committee.journal import append_journal_entry
-from genesis_architect.pro.engines.committee.pipeline import (
+from genesis_architect_pro.engines.committee.journal import append_journal_entry
+from genesis_architect_pro.engines.committee.pipeline import (
     _extract_field,
     _extract_float,
     _parse_position,
     _needs_peer_review,
     run_committee,
 )
-from genesis_architect.pro.engines.committee.transparency import apply_transparency
-from genesis_architect.pro.engines.committee.types import (
+from genesis_architect_pro.engines.committee.transparency import apply_transparency
+from genesis_architect_pro.engines.committee.types import (
     AdvisorPosition,
     CollapseType,
     CommitteeContext,

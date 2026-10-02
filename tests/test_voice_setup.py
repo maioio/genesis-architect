@@ -10,8 +10,8 @@ from __future__ import annotations
 from pathlib import Path
 from unittest.mock import patch
 
-from genesis_architect.pro.voice import setup as vsetup
-from genesis_architect.pro.voice import readiness, run_setup, VoiceReadiness
+from genesis_architect_pro.voice import setup as vsetup
+from genesis_architect_pro.voice import readiness, run_setup, VoiceReadiness
 
 
 # ---------------------------------------------------------------------------

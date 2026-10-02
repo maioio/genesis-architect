@@ -1,344 +1,150 @@
-<div align="center">
+# Genesis Architect Pro — v8.0.0
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="assets/logos/genesis_architect_white_on_black_300dpi.png">
-  <source media="(prefers-color-scheme: light)" srcset="assets/logos/genesis_architect_blue_300dpi.png">
-  <img src="assets/logos/genesis_architect_blue_300dpi.png" alt="Genesis Architect" width="220">
-</picture>
+The intelligence layer for [Genesis Architect](https://github.com/maioio/genesis-architect).
 
-# Genesis Architect
+The free core researches GitHub and scaffolds a working MVP. Pro adds deep codebase analysis,
+a cross-source Knowledge Graph, and the Genesis Decision Engine — a 7-mode, 13-engine pipeline
+that routes any plain-English instruction to the right analysis without an LLM guess.
 
-**Most projects fail by repeating mistakes that were already solved in someone else's repository.**
+## Codebase Intelligence Engines
 
-Genesis Architect reads those repositories first. It mines closed issues, active forks and
-post-mortems from projects like the one you are about to build, extracts the failures that
-keep recurring, and generates a scaffold with those mitigations already in place.
+| Engine | What it does |
+|--------|--------------|
+| **Import Graph** | Multi-language dependency graph (Python, JS/TS, Go, Rust) with cycle detection |
+| **Architecture Scorer** | 0–100 quality score across 4 dimensions, 6 adaptive profiles, trend history |
+| **Anti-Pattern Detector** | 7 structural detectors: god-class, hub-file, circular deps, dead code, and more |
+| **Fragility Classifier** | STABLE / FRAGILE / VOLATILE per module — driven by git churn + test coverage |
+| **Refactoring Planner** | Tier-1/2 refactor steps with projected score impact |
+| **C4 Generator** | C4 Level 1–3 architecture diagrams (Mermaid, GitHub-native) |
+| **Security Templates** | STRIDE threat model + OWASP Top 10 checklist, archetype-aware |
+| **Knowledge Graph** | Links code, CVEs, risks, and decisions into one queryable graph |
 
-Then it stays. It diagnoses drift, scores architecture, models threats, and tells you which
-modules are too fragile to touch.
+## Genesis Decision Engine (GDE)
 
-[![CI](https://img.shields.io/github/actions/workflow/status/maioio/genesis-architect/ci.yml?branch=main&style=flat-square&label=CI)](https://github.com/maioio/genesis-architect/actions)
-[![PyPI](https://img.shields.io/pypi/v/genesis-architect?style=flat-square)](https://pypi.org/project/genesis-architect/)
-[![Python](https://img.shields.io/pypi/pyversions/genesis-architect?style=flat-square)](https://pypi.org/project/genesis-architect/)
-[![License: AGPL v3](https://img.shields.io/badge/license-AGPL--3.0-blue?style=flat-square)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-2852%20passing-brightgreen?style=flat-square)](tests/)
-[![Cycles](https://img.shields.io/badge/import%20cycles-0-brightgreen?style=flat-square)](ARCHITECTURE.md)
-[![Anti-patterns](https://img.shields.io/badge/critical%20anti--patterns-0-brightgreen?style=flat-square)](ARCHITECTURE.md)
+Routes any plain-English instruction across 7 modes and 13 engines, with a static gate policy:
 
-</div>
+| Mode | Engines | What happens |
+|------|---------|--------------|
+| `recovery` | 5 | Import graph → score → anti-patterns → fragility → recovery report |
+| `research` | 3 | Source registry → field intelligence (Reddit Answers) → evidence pack |
+| `refactor` | 5 | Import graph → score → anti-patterns → refactoring plan |
+| `gate` | 5 | Import graph → score → anti-patterns → fragility → security gate |
+| `build` | 1 | Delegates to genesis-architect free core scaffolder |
+| `document` | 3 | Import graph → C4 diagrams + security templates |
+| `committee` | 5 | Full analysis pass → multi-perspective synthesis + divergence report |
 
----
+### Gate policy
 
-> [!IMPORTANT]
-> **Everything is free now.** Genesis used to be open-core: a free package plus a paid,
-> license-gated `genesis-architect-pro`. As of v8.0.0 there is no paid tier. Every engine
-> that was behind the paywall (decision engine, knowledge graph, threat modelling, C4
-> component diagrams, voice companion, video-to-pitfall) ships in this package under
-> AGPL-3.0. No key, no account, no telemetry by default. The former Pro repository's
-> source now lives in [`genesis-architect-pro/`](genesis-architect-pro/), and its commit
-> history is on this repository's `pro/*` branches.
+Two gates can never be bypassed:
+- `PLAN_WRITE` — hard block on any write targeting `planned.json`
+- `RULES_FAIL` — hard block on rules engine hard failure
 
----
-
-## Genesis audited itself
-
-The obvious question about a tool that grades architecture is whether it would
-survive its own grading. In v9.0.0 it was pointed at its own source, and the
-answer was no. It found four import cycles, seven critical anti-patterns, a
-1,974-line CLI module importing 31 others, and twenty-one CI actions pinned to
-tags that their owners could move at any time.
-
-All of it is now zero.
-
-| | before | after |
-|---|---|---|
-| Import cycles | 4 | **0** |
-| Critical anti-patterns | 7 | **0** |
-| Unpinned CI actions | 21 | **0** |
-| Largest module fan-out | 31 | **9** |
-| Architecture score | 67 | **89** |
-
-> Three of the rules that produced those findings turned out to be wrong, and
-> fixing them was part of the release. The hub-file rule counted *test* files as
-> coupling, which meant adding tests degraded your score. It could not tell a
-> shared type vocabulary from a hub, or a standalone script from a god class.
-> Each now discriminates on evidence from the dependency graph.
->
-> **Your scores may move on 9.0.0.** That is the correction landing, not a
-> regression.
-
-The full method, including how interface parity was proven byte-for-byte across
-a nine-module split, is in [ARCHITECTURE.md](ARCHITECTURE.md).
-
----
+All other gates (CONFIDENCE_LOW, DRIFT_CRITICAL, SECURITY_RISK, WRITE_SCOPE, DEGRADED_MODE) are soft blocks, overridable with `--yes`.
 
 ## Install
 
 ```bash
-pip install genesis-architect
+pip install genesis-architect-pro
 ```
 
-That is the whole install. Optional extras add voice and the streaming Companion UI:
+## CLI
 
 ```bash
-pip install "genesis-architect[all]"
+# Which command runs which engine — the authoritative list
+genesis engines
+
+# Full 7-stage pipeline: classify → plan → execute → gate → report → approve → commit
+genesis decide "diagnose the project and identify drift"
+
+# Classify only (no execution)
+genesis decide --classify-only "generate C4 diagrams"
+
+# Auto-approve all writes (CI mode)
+genesis decide --yes "run a full recovery scan"
+
+# Analysis without committing any files
+genesis decide --no-commit "check compliance and security"
+
+# Third-party dependencies per module, plus their advisories
+genesis deps .
+genesis deps --package httpx --ecosystem pypi
+
+# Restorable research/build context from a previous session
+genesis memory --sessions
+
+# Print decision log
+genesis explain
 ```
 
-## Start
+Every command above takes `--json` for machine-readable output. On `decide`,
+`recover` and `harden`, `--json` implies `--no-commit`: a piped consumer cannot
+answer the approval prompt, so those runs are analysis-only.
+
+`genesis engines` is generated from the capability map, and a test fails if any
+module in the package is neither mapped to a command nor declared internal — so
+the list above cannot quietly drift from what actually ships. The tables in this
+README are a summary; `genesis engines` is the source of truth.
+
+### Research
 
 ```bash
-# Research GitHub, then scaffold a project with the mitigations built in
-genesis init a Python CLI for analyzing log files
+# Print the collection contract: full JSON schema, one filled example per stream
+genesis research "a Python HTTP client library"
 
-# Point it at code that already exists
-genesis recover .        # drift, broken imports, anti-patterns, fragile modules
-genesis harden .         # STRIDE threat model, OWASP checklist, secrets scan
+# Merge, rank and summarise pre-collected streams
+genesis research "<topic>" --json-data research_data.json
 
-# Or just say what you want; it routes to the right engines
-genesis decide "why is this project so hard to change?"
+# Feed a /watch analysis back in as cited PITFALLS.md entries
+genesis research "<topic>" --absorb watch-output.txt
+
+# Force the research floor's unit when the vision has no repo corpus
+genesis research "<topic>" --json-data data.json --domain non-code
 ```
 
----
+The research floor is a gate, not a suggestion: it reports thin research rather
+than presenting it as sufficient. What adapts is the unit it counts — repos for
+a software vision, authoritative sources for a vision with no repo corpus.
 
-## What it actually produces
+## Python API
 
-Run: `genesis init a Python CLI for analyzing log files`
+```python
+from genesis_architect_pro import GenesisDecisionEngine
+from pathlib import Path
 
-**Pitfalls found in real GitHub issues, before a single file is written:**
+gde = GenesisDecisionEngine(project_dir=Path("."))
 
-| # | Issue | Found in | Root cause | Built-in mitigation |
-|---|-------|----------|-----------|---------------------|
-| 1 | [pallets/click#2416](https://github.com/pallets/click/issues/2416) | 4/5 repos | Business logic inside a Click callback, untestable | `cli.py` only parses args, all logic in `core.py` |
-| 2 | [pallets/click#2558](https://github.com/pallets/click/issues/2558) | 3/5 repos | Type stubs change in Click 8.1.4 breaks mypy silently | Pin `click>=8.1.7`, `# type: ignore` only where needed |
-| 3 | [pallets/click#1846](https://github.com/pallets/click/issues/1846) | 3/5 repos | Raw file path from CLI args allows `../../../etc/passwd` | `get_safe_path(base, user_input)` in `utils/security.py` |
-| 4 | [fastapi/typer#522](https://github.com/fastapi/typer/issues/522) | 5/5 repos | No input validation produces cryptic tracebacks | `click.BadParameter` at entry point before processing |
+# Full pipeline
+report = gde.run("diagnose the project and identify drift")
+print(f"Mode: {report.mode.value}")
+print(f"Confidence: {report.overall_confidence:.2f}")
+print(f"Gate: {report.gate_report.overall.value}")
 
-**Scaffold generated, 12 files, no empty stubs:**
-
-```
-log-analyzer/
-├── src/log_analyzer/
-│   ├── main.py        # Click CLI, args only, delegates to core
-│   ├── core.py        # All logic here, testable without subprocess
-│   └── utils/
-│       └── security.py  # get_safe_path(), path traversal guard
-├── tests/test_core.py
-├── .github/workflows/ci.yml   # tests, secrets, SAST, quality gate
-├── pyproject.toml     # click>=8.1.7 pinned, mypy strict, pytest config
-├── RESEARCH.md        # 5 repos analyzed, every source verified live
-├── PITFALLS.md        # the pitfalls above, with full root cause analysis
-└── ROADMAP.md         # scaffold, tests, CI, quality, ship
+# APPROVE + COMMIT
+request = gde.approve(report)          # inspect pending writes
+decision = request.auto_approve()      # or build ApprovalDecision manually
+result = gde.commit(report, decision)  # atomic tmp → rename writes
 ```
 
-Every cited issue URL is checked by CI. A 404 fails the build.
+## Direct engine access
 
----
+```python
+from genesis_architect_pro import (
+    build_graph, score_project, detect_all,
+    classify_all, generate_plan, generate_c4_doc,
+    generate_security_docs,
+)
 
-## When not to use it
-
-Genesis is overkill for a throwaway script, a one-off utility, or anything under
-100 lines you will delete next week. It earns its keep on projects you intend to
-maintain, anything touching auth, file I/O or external APIs, and libraries other
-people will depend on.
-
----
-
-## What is included
-
-Everything below ships in `pip install genesis-architect`.
-
-**Research and scaffolding**
-- GitHub repo scan (15 to 20 repos, filtered by stars, recency, language)
-- Issue mining, up to 20 closed bug issues per repo across the top 5
-- Fork analysis ranked by merged PRs in the last 6 months, not by stars
-- Multi-source research orchestration with recency and corroboration scoring
-- Evidence packs: every recommendation carries its sources and a confidence grade
-- Knowledge vault, local cache with 6-month TTL
-
-**Analysis**
-- Import graph for Python, TypeScript/JavaScript, Go, Rust, with cycle detection
-- Architecture scoring and anti-pattern detection
-- Fragility classification: which modules are stable, fragile, or do-not-touch
-- Drift detection against a committed architecture model
-- C4 diagrams, all three levels, rendered as Mermaid
-- Knowledge graph linking modules, CVEs, risks and decisions into one queryable graph
-
-**Security**
-- STRIDE threat model and OWASP Top 10 checklist, tailored per project type
-- Offline secrets scanning with redaction
-- Dependency CVE lookup via OSV.dev, no API key required
-
-**Working alongside you**
-- Decision engine with seven modes, routed from plain language
-- Per-project memory and a decision journal as plain Markdown in `.genesis/`
-- Companion UI, voice control, and video-to-pitfall extraction (optional extras)
-
-Full command reference: [`genesis --help`](#start), and [SKILL.md](SKILL.md) for the
-Claude Code / Cursor integration.
-
----
-
-## How it works
-
-Before writing a file, Genesis runs real research:
-
-1. **Finds 15 to 20 repositories** solving the problem you described.
-2. **Mines their closed issues** for recurring failures, security patches and
-   architecture regrets.
-3. **Synthesizes what survived** in production across those projects.
-4. **Turns each pitfall into a concrete code task**, not a document to read later.
-
-The difference from a template: the scaffold reflects what actually broke for the
-people who built this before you.
-
----
-
-## Under the hood
-
-Four mechanisms do most of the structural work. Each is small, and each exists
-because the obvious alternative was measurably wrong.
-
-**Dependency graphs from the AST, not from text.** Imports are read by walking
-the parsed tree, so a module named in a docstring or a comment is not an edge.
-Imports under `if TYPE_CHECKING:` are pruned too - they never execute, so they
-are not dependencies. The `else:` branch and `if not TYPE_CHECKING:` *are*
-walked, because that code does run.
-
-**Fan-out ceilings with margin.** A module importing more than 15 others is
-flagged; above 30 it is critical. Genesis holds its own modules to 11, and the
-widest is 9. A module sitting exactly on a threshold is a latent breach, not a
-pass.
-
-**Cycle detection on the hard edges only.** Engines declare `requires`
-(a backward edge, topologically sorted, must stay acyclic) separately from
-`handoffs` (a forward edge, advisory). Handoff loops are legal on purpose:
-`diagnose -> plan -> enforce -> re-diagnose` is a workflow, not a defect.
-
-**Lazy public API (PEP 562).** Importing `genesis_architect.pro` used to pull in
-all 43 of its modules. Names now resolve on first attribute access; the API is
-identical and fewer than ten submodules load. The eager imports are kept under
-`if TYPE_CHECKING:` so type checkers and static analysis still see the whole
-surface - which costs nothing at runtime and, since the scanner understands the
-guard, nothing in coupling either.
-
-> Every one of those claims is measured in CI, not asserted here. `genesis
-> recover .` will tell you the same numbers about your own project.
-
----
-
-## Use it inside Claude Code, Cursor or Codex
-
-Genesis ships as an agent skill. Clone it where your agent looks for skills:
-
-```bash
-# Claude Code
-git clone https://github.com/maioio/genesis-architect ~/.claude/skills/genesis-architect
-
-# Codex CLI
-git clone https://github.com/maioio/genesis-architect ~/.codex/skills/genesis-architect
-
-# Cursor: copy SKILL.md to .cursor/rules/genesis-architect.md
+graph  = build_graph("/path/to/project")
+score  = score_project("/path/to/project")
+issues = detect_all("/path/to/project")
+frags  = classify_all("/path/to/project")
+plan   = generate_plan("/path/to/project")
 ```
-
-Then describe what you want in plain language. [SKILL.md](SKILL.md) defines the routing.
-
----
-
-## Configuration
-
-Genesis calls an LLM through [LiteLLM](https://github.com/BerriAI/litellm), so any
-provider works: Anthropic, OpenAI, Gemini, or a local Ollama model.
-
-```bash
-genesis config set LLM_API_KEY <your-key>
-genesis config set GITHUB_TOKEN <token>   # optional, raises the rate limit
-```
-
-Local analysis (`recover`, `harden`, import graph, C4, knowledge graph) runs fully
-offline and needs no key at all.
-
-Telemetry is **off** by default and opt-in only: `genesis telemetry status`.
-
----
-
-## Repository layout
-
-```
-genesis-architect/
-├── src/genesis_architect/
-│   ├── core/            31 modules - language-agnostic analysis
-│   │   ├── import_graph.py        the dependency graph everything derives from
-│   │   ├── antipattern_detector.py god-class, hub-file, circular-dep rules
-│   │   └── urls.py                host matching for untrusted URLs
-│   └── pro/             63 modules - the decision engine and its engines
-│       ├── engine_registry.py     the DAG, cycle detection, topological order
-│       ├── engine_bootstrap.py    composition root; the only place engines register
-│       ├── gde_gate_engine.py     the 14-gate policy table
-│       ├── commands/    10 modules - the CLI, one module per command group
-│       ├── engines/      8 modules - individual analysis engines
-│       ├── voice/        5 modules - the voice companion
-│       └── streaming/    5 modules - incremental output
-├── tests/               97 files, 2852 tests
-├── scripts/
-│   └── architecture_invariants.py regenerates ARCHITECTURE_INVARIANTS.json
-├── genesis-architect-pro/       the former Pro repository, with its own pyproject.toml
-├── ARCHITECTURE.md              how the analysis works, mechanism by mechanism
-├── ARCHITECTURE_INVARIANTS.json every structural number, generated from the code
-├── SKILL.md                     the agent-facing instruction file
-└── docs/                        the built landing page, ADRs, and an archive
-```
-
-### Where to look
-
-| If you want to | Read |
-|---|---|
-| Use it | [Start](#start) here, then [SKILL.md](SKILL.md) for agent use |
-| Understand a finding it reported | [ARCHITECTURE.md §2](ARCHITECTURE.md) - the rules and their discriminators |
-| Trust a number in this README | [ARCHITECTURE_INVARIANTS.json](ARCHITECTURE_INVARIANTS.json) - generated, not typed |
-| Change how imports are counted | `core/import_graph.py`, then [ARCHITECTURE.md §7](ARCHITECTURE.md) |
-| Add an engine | `pro/engine_bootstrap.py` is the only registration point; [CONTRIBUTING.md](CONTRIBUTING.md) has the walkthrough |
-| Add a CLI command | `pro/commands/` - one module per group, each held to fan-out ≤ 11 |
-| Change a gate's severity | `pro/gde_gate_engine.py`, `_GATE_POLICY` |
-| Consume this repo as an agent | [ARCHITECTURE_INVARIANTS.json](ARCHITECTURE_INVARIANTS.json) parses; the prose does not |
-
-> Structural numbers above are generated by
-> `python scripts/architecture_invariants.py`, and CI fails if the committed
-> JSON disagrees with the live package. If this table and that file ever
-> conflict, the file is right.
-
----
-
-## Contributing
-
-Issues and pull requests are welcome. Start with [CONTRIBUTING.md](CONTRIBUTING.md);
-it covers the dev setup, the test suite, and how to add a scaffold layout or engine.
-
-```bash
-git clone https://github.com/maioio/genesis-architect
-cd genesis-architect
-pip install -e ".[dev]"
-pytest -q
-
-# Or run the suite plus end-to-end CLI checks against a real install
-docker build -f docker/Dockerfile.test -t genesis-test . && docker run --rm genesis-test
-```
-
-Please read the [Code of Conduct](CODE_OF_CONDUCT.md) and
-[Security Policy](SECURITY.md) before reporting a vulnerability.
-
----
 
 ## License
 
-[GNU AGPL-3.0-or-later](LICENSE). Copyright (C) 2026 Maio Eshet.
-
-You can use, modify and redistribute Genesis freely under the AGPL-3.0, including
-commercially. The one obligation: if you modify it and offer it to others over a
-network, you must publish your modified source under the same license. Running it on
-your own code, in your own company, changes nothing for you. If those copyleft terms
-do not work for your product, see the commercial option below.
-
-Releases up to v5.4.1 were published under MIT and remain available under those terms.
+AGPL-3.0 by default — no license key, no gate. See LICENSE, and the section below
+for commercial use.
 
 ## 📝 License and Commercial Use
 
@@ -349,12 +155,3 @@ This project is open-source and dual-licensed.
 2. **Commercial License:** If you wish to use this software in a closed-source commercial product, or need a custom license without the copyleft restrictions of the AGPLv3, **a commercial license is required**.
 
 For commercial licensing inquiries, please contact: maio.eshet@gmail.com
-
----
-
-<div align="center">
-
-If Genesis saved you from a bad architecture decision,
-[star it](https://github.com/maioio/genesis-architect/stargazers) so other people find it.
-
-</div>

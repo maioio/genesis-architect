@@ -8,7 +8,7 @@ import urllib.request
 from unittest.mock import patch
 
 
-from genesis_architect.pro.ide_bridge import IDEBridgeServer, build_index_from_engine_results
+from genesis_architect_pro.ide_bridge import IDEBridgeServer, build_index_from_engine_results
 
 
 # ---------------------------------------------------------------------------
@@ -247,7 +247,7 @@ class TestIDEBridgeHTTP:
 
         emitted = []
         with patch(
-            "genesis_architect.pro.ide_bridge.server.default_emitter"
+            "genesis_architect_pro.ide_bridge.server.default_emitter"
         ) as mock_emitter:
             mock_emitter.emit = lambda msg: emitted.append(msg)
 

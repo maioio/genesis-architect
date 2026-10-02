@@ -29,7 +29,7 @@ import json
 import re
 
 
-from genesis_architect.pro.recovery_report import generate_report, RecoveryReport
+from genesis_architect_pro.recovery_report import generate_report, RecoveryReport
 
 
 # ---------------------------------------------------------------------------

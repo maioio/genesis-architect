@@ -21,7 +21,7 @@ from pathlib import Path
 
 import pytest
 
-from genesis_architect.pro.gde_types import (
+from genesis_architect_pro.gde_types import (
     ApprovalChoice,
     DecisionEntry,
     EngineCategory,
@@ -37,12 +37,12 @@ from genesis_architect.pro.gde_types import (
     SessionContext,
     WriteOperation,
 )
-from genesis_architect.pro.engine_registry import (
+from genesis_architect_pro.engine_registry import (
     EngineRegistry,
     RegistryError,
     get_default_registry,
 )
-from genesis_architect.pro import gde_session as sess_mod
+from genesis_architect_pro import gde_session as sess_mod
 
 
 # ---------------------------------------------------------------------------
@@ -62,7 +62,7 @@ def _make_descriptor(
     return EngineDescriptor(
         id=engine_id,
         name=f"Test Engine {engine_id}",
-        module=f"genesis_architect.pro.{engine_id.replace('-', '_')}",
+        module=f"genesis_architect_pro.{engine_id.replace('-', '_')}",
         entry_point="run",
         category=EngineCategory.ANALYSIS,
         input_keys=["import_graph"],
@@ -531,8 +531,8 @@ class TestEngineFailureModes:
         assert reg.validate() == []
 
     def test_production_registry_has_no_empty_failure_modes(self) -> None:
-        import genesis_architect.pro.gde_engine_registration  # noqa: F401
-        from genesis_architect.pro.engine_registry import get_default_registry
+        import genesis_architect_pro.gde_engine_registration  # noqa: F401
+        from genesis_architect_pro.engine_registry import get_default_registry
 
         errors = [e for e in get_default_registry().validate()
                  if "empty failure mode" in e]
@@ -540,8 +540,8 @@ class TestEngineFailureModes:
 
     def test_production_registry_declares_some_failure_modes(self) -> None:
         """Guards against the field silently regressing to empty."""
-        import genesis_architect.pro.gde_engine_registration  # noqa: F401
-        from genesis_architect.pro.engine_registry import get_default_registry
+        import genesis_architect_pro.gde_engine_registration  # noqa: F401
+        from genesis_architect_pro.engine_registry import get_default_registry
 
         reg = get_default_registry()
         declared = [d for d in reg._descriptors.values() if d.failure_modes]
@@ -554,29 +554,29 @@ class TestFailureModeSurfacing:
     skip them."""
 
     def test_shown_on_failure(self) -> None:
-        from genesis_architect.pro.gde_cli import _failure_modes_for
-        import genesis_architect.pro.gde_engine_registration  # noqa: F401
+        from genesis_architect_pro.gde_cli import _failure_modes_for
+        import genesis_architect_pro.gde_engine_registration  # noqa: F401
 
         result = _make_engine_result("import_graph", status=EngineStatus.FAILED)
         modes = _failure_modes_for("import_graph", result)
         assert modes, "import_graph declares failure modes and just failed"
 
     def test_shown_on_degraded(self) -> None:
-        from genesis_architect.pro.gde_cli import _failure_modes_for
-        import genesis_architect.pro.gde_engine_registration  # noqa: F401
+        from genesis_architect_pro.gde_cli import _failure_modes_for
+        import genesis_architect_pro.gde_engine_registration  # noqa: F401
 
         result = _make_engine_result("import_graph", status=EngineStatus.DEGRADED)
         assert _failure_modes_for("import_graph", result)
 
     def test_hidden_on_success(self) -> None:
-        from genesis_architect.pro.gde_cli import _failure_modes_for
-        import genesis_architect.pro.gde_engine_registration  # noqa: F401
+        from genesis_architect_pro.gde_cli import _failure_modes_for
+        import genesis_architect_pro.gde_engine_registration  # noqa: F401
 
         result = _make_engine_result("import_graph", status=EngineStatus.SUCCESS)
         assert _failure_modes_for("import_graph", result) == []
 
     def test_unknown_engine_id_is_safe(self) -> None:
-        from genesis_architect.pro.gde_cli import _failure_modes_for
+        from genesis_architect_pro.gde_cli import _failure_modes_for
 
         result = _make_engine_result("not-a-real-engine", status=EngineStatus.FAILED)
         assert _failure_modes_for("not-a-real-engine", result) == []
@@ -656,16 +656,16 @@ class TestEngineHandoffs:
 
     def test_production_registry_handoffs_are_valid(self) -> None:
         """Whatever the real registry declares must actually resolve."""
-        import genesis_architect.pro.gde_engine_registration  # noqa: F401
-        from genesis_architect.pro.engine_registry import get_default_registry
+        import genesis_architect_pro.gde_engine_registration  # noqa: F401
+        from genesis_architect_pro.engine_registry import get_default_registry
 
         errors = [e for e in get_default_registry().validate() if "hands off" in e]
         assert errors == []
 
     def test_production_registry_actually_declares_handoffs(self) -> None:
         """Guards against the forward edge silently regressing to empty."""
-        import genesis_architect.pro.gde_engine_registration  # noqa: F401
-        from genesis_architect.pro.engine_registry import get_default_registry
+        import genesis_architect_pro.gde_engine_registration  # noqa: F401
+        from genesis_architect_pro.engine_registry import get_default_registry
 
         reg = get_default_registry()
         populated = [d for d in reg._descriptors.values() if d.handoffs]
@@ -678,8 +678,8 @@ class TestEngineHandoffs:
         is a real loop in the shipped registry: diagnose, plan, enforce,
         re-diagnose. It must coexist with a CLEAN validate().
         """
-        import genesis_architect.pro.gde_engine_registration  # noqa: F401
-        from genesis_architect.pro.engine_registry import get_default_registry
+        import genesis_architect_pro.gde_engine_registration  # noqa: F401
+        from genesis_architect_pro.engine_registry import get_default_registry
 
         reg = get_default_registry()
         edges = {i: list(d.handoffs) for i, d in reg._descriptors.items()}
@@ -705,8 +705,8 @@ class TestEngineHandoffs:
 
     def test_red_team_critic_is_terminal(self) -> None:
         """The final gate must not suggest continuing past itself."""
-        import genesis_architect.pro.gde_engine_registration  # noqa: F401
-        from genesis_architect.pro.engine_registry import get_default_registry
+        import genesis_architect_pro.gde_engine_registration  # noqa: F401
+        from genesis_architect_pro.engine_registry import get_default_registry
 
         assert get_default_registry()._descriptors["red_team_critic"].handoffs == []
 
@@ -759,8 +759,8 @@ class TestOptionalHandoffTargets:
         """The real fix site: importing the adapter must declare the exemption
         against the default registry, independent of whether registration
         itself succeeded in this process."""
-        from genesis_architect.pro.engine_registry import get_default_registry
-        from genesis_architect.pro.gde_knowledge_graph_adapter import (
+        from genesis_architect_pro.engine_registry import get_default_registry
+        from genesis_architect_pro.gde_knowledge_graph_adapter import (
             register_knowledge_graph,
         )
 
@@ -772,8 +772,8 @@ class TestOptionalHandoffTargets:
         """Simulates the exact scenario the audit flagged: some other engine
         hands off to knowledge_graph. Must validate clean regardless of
         whether knowledge_graph actually registered in this process."""
-        import genesis_architect.pro.gde_engine_registration  # noqa: F401
-        from genesis_architect.pro.engine_registry import get_default_registry
+        import genesis_architect_pro.gde_engine_registration  # noqa: F401
+        from genesis_architect_pro.engine_registry import get_default_registry
 
         reg = get_default_registry()
         original = reg._descriptors["red_team_critic"]
@@ -1071,7 +1071,7 @@ class TestDefaultRegistry:
 
 class TestBackwardCompatibility:
     def test_existing_exports_importable(self) -> None:
-        from genesis_architect.pro import (
+        from genesis_architect_pro import (
             compute_drift_score,
             generate_report,
             generate_report_for_project,
@@ -1083,11 +1083,11 @@ class TestBackwardCompatibility:
 
     def test_gde_types_in_init(self) -> None:
         # Step 6 added GenesisDecisionEngine to __init__.
-        import genesis_architect.pro as pkg
+        import genesis_architect_pro as pkg
         assert hasattr(pkg, "GenesisDecisionEngine")
 
     def test_new_modules_importable_directly(self) -> None:
-        from genesis_architect.pro import gde_types, engine_registry, gde_session
+        from genesis_architect_pro import gde_types, engine_registry, gde_session
         assert hasattr(gde_types, "GDEMode")
         assert hasattr(engine_registry, "EngineRegistry")
         assert hasattr(gde_session, "save_session")

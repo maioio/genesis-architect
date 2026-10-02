@@ -17,72 +17,72 @@ from pathlib import Path
 
 class TestStdlibFilter:
     def test_os_is_stdlib(self):
-        from genesis_architect.pro.stdlib_filter import is_stdlib_import
+        from genesis_architect_pro.stdlib_filter import is_stdlib_import
         assert is_stdlib_import("os") is True
 
     def test_os_path_dotted_is_stdlib(self):
-        from genesis_architect.pro.stdlib_filter import is_stdlib_import
+        from genesis_architect_pro.stdlib_filter import is_stdlib_import
         assert is_stdlib_import("os.path") is True
 
     def test_pathlib_is_stdlib(self):
-        from genesis_architect.pro.stdlib_filter import is_stdlib_import
+        from genesis_architect_pro.stdlib_filter import is_stdlib_import
         assert is_stdlib_import("pathlib") is True
 
     def test_typing_is_stdlib(self):
-        from genesis_architect.pro.stdlib_filter import is_stdlib_import
+        from genesis_architect_pro.stdlib_filter import is_stdlib_import
         assert is_stdlib_import("typing") is True
 
     def test_sys_is_stdlib(self):
-        from genesis_architect.pro.stdlib_filter import is_stdlib_import
+        from genesis_architect_pro.stdlib_filter import is_stdlib_import
         assert is_stdlib_import("sys") is True
 
     def test_tomllib_is_stdlib(self):
-        from genesis_architect.pro.stdlib_filter import is_stdlib_import
+        from genesis_architect_pro.stdlib_filter import is_stdlib_import
         assert is_stdlib_import("tomllib") is True
 
     def test_zoneinfo_is_stdlib(self):
-        from genesis_architect.pro.stdlib_filter import is_stdlib_import
+        from genesis_architect_pro.stdlib_filter import is_stdlib_import
         assert is_stdlib_import("zoneinfo") is True
 
     def test_asyncio_is_stdlib(self):
-        from genesis_architect.pro.stdlib_filter import is_stdlib_import
+        from genesis_architect_pro.stdlib_filter import is_stdlib_import
         assert is_stdlib_import("asyncio") is True
 
     def test_requests_is_not_stdlib(self):
-        from genesis_architect.pro.stdlib_filter import is_stdlib_import
+        from genesis_architect_pro.stdlib_filter import is_stdlib_import
         assert is_stdlib_import("requests") is False
 
     def test_numpy_is_not_stdlib(self):
-        from genesis_architect.pro.stdlib_filter import is_stdlib_import
+        from genesis_architect_pro.stdlib_filter import is_stdlib_import
         assert is_stdlib_import("numpy") is False
 
     def test_fastapi_is_not_stdlib(self):
-        from genesis_architect.pro.stdlib_filter import is_stdlib_import
+        from genesis_architect_pro.stdlib_filter import is_stdlib_import
         assert is_stdlib_import("fastapi") is False
 
     def test_empty_string_is_not_stdlib(self):
-        from genesis_architect.pro.stdlib_filter import is_stdlib_import
+        from genesis_architect_pro.stdlib_filter import is_stdlib_import
         assert is_stdlib_import("") is False
 
     def test_dotted_third_party_is_not_stdlib(self):
-        from genesis_architect.pro.stdlib_filter import is_stdlib_import
+        from genesis_architect_pro.stdlib_filter import is_stdlib_import
         assert is_stdlib_import("django.db.models") is False
 
     def test_python_stdlib_set_is_frozenset(self):
-        from genesis_architect.pro.stdlib_filter import PYTHON_STDLIB
+        from genesis_architect_pro.stdlib_filter import PYTHON_STDLIB
         assert isinstance(PYTHON_STDLIB, frozenset)
 
     def test_python_stdlib_has_minimum_coverage(self):
-        from genesis_architect.pro.stdlib_filter import PYTHON_STDLIB
+        from genesis_architect_pro.stdlib_filter import PYTHON_STDLIB
         # Must cover at least 80 stdlib names (Python 3.11 has 100+)
         assert len(PYTHON_STDLIB) >= 80
 
     def test_dataclasses_is_stdlib(self):
-        from genesis_architect.pro.stdlib_filter import is_stdlib_import
+        from genesis_architect_pro.stdlib_filter import is_stdlib_import
         assert is_stdlib_import("dataclasses") is True
 
     def test_concurrent_futures_is_stdlib(self):
-        from genesis_architect.pro.stdlib_filter import is_stdlib_import
+        from genesis_architect_pro.stdlib_filter import is_stdlib_import
         assert is_stdlib_import("concurrent.futures") is True
 
 
@@ -123,7 +123,7 @@ class TestBusFactor:
     def test_bus_factor_field_present_in_output(self, tmp_path):
         _init_git_repo(tmp_path)
         _commit(tmp_path, "init", {"main.py": "x = 1\n"})
-        from genesis_architect.pro.git_analyzer import per_module_churn
+        from genesis_architect_pro.git_analyzer import per_module_churn
         result = per_module_churn(tmp_path, days=90)
         if result:
             first = next(iter(result.values()))
@@ -132,7 +132,7 @@ class TestBusFactor:
     def test_authors_field_present_in_output(self, tmp_path):
         _init_git_repo(tmp_path)
         _commit(tmp_path, "init", {"main.py": "x = 1\n"})
-        from genesis_architect.pro.git_analyzer import per_module_churn
+        from genesis_architect_pro.git_analyzer import per_module_churn
         result = per_module_churn(tmp_path, days=90)
         if result:
             first = next(iter(result.values()))
@@ -142,7 +142,7 @@ class TestBusFactor:
     def test_single_author_bus_factor_is_one(self, tmp_path):
         _init_git_repo(tmp_path, user="Alice")
         _commit(tmp_path, "init", {"main.py": "x = 1\n"}, author_name="Alice")
-        from genesis_architect.pro.git_analyzer import per_module_churn
+        from genesis_architect_pro.git_analyzer import per_module_churn
         result = per_module_churn(tmp_path, days=90)
         if "main.py" in result:
             assert result["main.py"]["bus_factor"] == 1
@@ -151,7 +151,7 @@ class TestBusFactor:
         _init_git_repo(tmp_path, user="Alice")
         _commit(tmp_path, "init by Alice", {"main.py": "x = 1\n"}, author_name="Alice")
         _commit(tmp_path, "edit by Bob", {"main.py": "x = 2\n"}, author_name="Bob")
-        from genesis_architect.pro.git_analyzer import per_module_churn
+        from genesis_architect_pro.git_analyzer import per_module_churn
         result = per_module_churn(tmp_path, days=90)
         if "main.py" in result:
             assert result["main.py"]["bus_factor"] == 2
@@ -160,7 +160,7 @@ class TestBusFactor:
         _init_git_repo(tmp_path, user="Alice")
         _commit(tmp_path, "init", {"a.py": "x=1\n"}, author_name="Zara")
         _commit(tmp_path, "edit", {"a.py": "x=2\n"}, author_name="Alice")
-        from genesis_architect.pro.git_analyzer import per_module_churn
+        from genesis_architect_pro.git_analyzer import per_module_churn
         result = per_module_churn(tmp_path, days=90)
         if "a.py" in result:
             authors = result["a.py"]["authors"]
@@ -173,7 +173,7 @@ class TestBusFactor:
         real repositories, so git_analyzer reported 'no git history')."""
         _init_git_repo(tmp_path)
         _commit(tmp_path, "init", {"main.py": "x = 1\n", "pkg/util.py": "y = 2\n"})
-        from genesis_architect.pro.git_analyzer import _git_log, per_module_churn
+        from genesis_architect_pro.git_analyzer import _git_log, per_module_churn
         log = _git_log(tmp_path, days=90)
         assert len(log) == 1
         assert sorted(log[0]["files"]) == ["main.py", "pkg/util.py"]
@@ -183,7 +183,7 @@ class TestBusFactor:
         assert result["main.py"]["commits"] == 1
 
     def test_non_git_dir_still_returns_empty(self, tmp_path):
-        from genesis_architect.pro.git_analyzer import per_module_churn
+        from genesis_architect_pro.git_analyzer import per_module_churn
         result = per_module_churn(tmp_path, days=90)
         assert result == {}
 
@@ -191,7 +191,7 @@ class TestBusFactor:
         """Ensure bus_factor addition didn't remove existing output keys."""
         _init_git_repo(tmp_path)
         _commit(tmp_path, "init", {"main.py": "x = 1\n"})
-        from genesis_architect.pro.git_analyzer import per_module_churn
+        from genesis_architect_pro.git_analyzer import per_module_churn
         result = per_module_churn(tmp_path, days=90)
         if result:
             first = next(iter(result.values()))
@@ -205,32 +205,32 @@ class TestBusFactor:
 
 class TestBuildTimeline:
     def test_timeline_returns_correct_week_count(self):
-        from genesis_architect.pro.git_analyzer import build_timeline
+        from genesis_architect_pro.git_analyzer import build_timeline
         snapshots = build_timeline(commits=[], period_weeks=4)
         assert len(snapshots) == 4
 
     def test_timeline_sorted_ascending_by_week_start(self):
-        from genesis_architect.pro.git_analyzer import build_timeline
+        from genesis_architect_pro.git_analyzer import build_timeline
         snapshots = build_timeline(commits=[], period_weeks=6)
         dates = [s.week_start for s in snapshots]
         assert dates == sorted(dates)
 
     def test_all_zeros_when_no_commits(self):
-        from genesis_architect.pro.git_analyzer import build_timeline
+        from genesis_architect_pro.git_analyzer import build_timeline
         snapshots = build_timeline(commits=[], period_weeks=4)
         assert all(s.commits == 0 for s in snapshots)
         assert all(s.churn_lines == 0 for s in snapshots)
         assert all(s.active_files == 0 for s in snapshots)
 
     def test_week_start_is_monday(self):
-        from genesis_architect.pro.git_analyzer import build_timeline
+        from genesis_architect_pro.git_analyzer import build_timeline
         snapshots = build_timeline(commits=[], period_weeks=4)
         for s in snapshots:
             d = datetime.fromisoformat(s.week_start)
             assert d.weekday() == 0, f"{s.week_start} is not a Monday"
 
     def test_commit_counted_in_correct_week(self):
-        from genesis_architect.pro.git_analyzer import build_timeline, _to_monday
+        from genesis_architect_pro.git_analyzer import build_timeline, _to_monday
         # Make a commit dated exactly 1 week ago
         one_week_ago = datetime.now(UTC) - timedelta(weeks=1)
         expected_week = _to_monday(one_week_ago)
@@ -251,7 +251,7 @@ class TestBuildTimeline:
         assert matching[0].active_files == 1
 
     def test_commit_outside_window_ignored(self):
-        from genesis_architect.pro.git_analyzer import build_timeline
+        from genesis_architect_pro.git_analyzer import build_timeline
         # Commit from 20 weeks ago should be excluded from a 4-week window
         old_commit = [{
             "hash": "b" * 40,
@@ -266,7 +266,7 @@ class TestBuildTimeline:
         assert sum(s.commits for s in snapshots) == 0
 
     def test_missing_date_iso_skipped_gracefully(self):
-        from genesis_architect.pro.git_analyzer import build_timeline
+        from genesis_architect_pro.git_analyzer import build_timeline
         bad_commit = [{"hash": "c" * 40, "author": "X", "date_iso": "",
                        "subject": "bad", "files": [], "additions": 0, "deletions": 0}]
         # Must not raise
@@ -274,7 +274,7 @@ class TestBuildTimeline:
         assert len(snapshots) == 2
 
     def test_weekly_snapshot_dataclass_fields(self):
-        from genesis_architect.pro.git_analyzer import WeeklySnapshot
+        from genesis_architect_pro.git_analyzer import WeeklySnapshot
         s = WeeklySnapshot(week_start="2026-06-23", commits=3, churn_lines=100, active_files=5)
         assert s.week_start == "2026-06-23"
         assert s.commits == 3
@@ -288,13 +288,13 @@ class TestBuildTimeline:
 
 class TestRenderSparkline:
     def test_sparkline_length_matches_width(self):
-        from genesis_architect.pro.git_analyzer import WeeklySnapshot, render_sparkline
+        from genesis_architect_pro.git_analyzer import WeeklySnapshot, render_sparkline
         snaps = [WeeklySnapshot(f"2026-0{i+1}-01", commits=i) for i in range(6)]
         line = render_sparkline(snaps, metric="commits", width=6)
         assert len(line) == 6
 
     def test_sparkline_uses_block_chars(self):
-        from genesis_architect.pro.git_analyzer import WeeklySnapshot, render_sparkline
+        from genesis_architect_pro.git_analyzer import WeeklySnapshot, render_sparkline
         _BLOCKS = set(" ▁▂▃▄▅▆▇█")
         snaps = [WeeklySnapshot(f"2026-0{i+1}-01", commits=i * 5) for i in range(4)]
         line = render_sparkline(snaps, width=4)
@@ -302,36 +302,36 @@ class TestRenderSparkline:
             assert ch in _BLOCKS, f"Unexpected char: {ch!r}"
 
     def test_all_zero_values_produce_spaces(self):
-        from genesis_architect.pro.git_analyzer import WeeklySnapshot, render_sparkline
+        from genesis_architect_pro.git_analyzer import WeeklySnapshot, render_sparkline
         snaps = [WeeklySnapshot(f"2026-0{i+1}-01", commits=0) for i in range(4)]
         line = render_sparkline(snaps, width=4)
         assert line == "    "
 
     def test_max_value_produces_full_block(self):
-        from genesis_architect.pro.git_analyzer import WeeklySnapshot, render_sparkline
+        from genesis_architect_pro.git_analyzer import WeeklySnapshot, render_sparkline
         snaps = [WeeklySnapshot("2026-01-01", commits=100)]
         line = render_sparkline(snaps, width=1)
         assert line == "█"
 
     def test_empty_snapshots_returns_spaces(self):
-        from genesis_architect.pro.git_analyzer import render_sparkline
+        from genesis_architect_pro.git_analyzer import render_sparkline
         line = render_sparkline([], width=10)
         assert line == " " * 10
 
     def test_width_larger_than_snapshots(self):
-        from genesis_architect.pro.git_analyzer import WeeklySnapshot, render_sparkline
+        from genesis_architect_pro.git_analyzer import WeeklySnapshot, render_sparkline
         snaps = [WeeklySnapshot("2026-01-01", commits=5)]
         line = render_sparkline(snaps, width=4)
         assert len(line) == 4
 
     def test_width_smaller_than_snapshots(self):
-        from genesis_architect.pro.git_analyzer import WeeklySnapshot, render_sparkline
+        from genesis_architect_pro.git_analyzer import WeeklySnapshot, render_sparkline
         snaps = [WeeklySnapshot(f"2026-0{i+1}-01", commits=i) for i in range(8)]
         line = render_sparkline(snaps, width=4)
         assert len(line) == 4
 
     def test_metric_churn_lines_respected(self):
-        from genesis_architect.pro.git_analyzer import WeeklySnapshot, render_sparkline
+        from genesis_architect_pro.git_analyzer import WeeklySnapshot, render_sparkline
         # First snap: high churn, zero commits → churn metric should show high bar
         snaps = [
             WeeklySnapshot("2026-01-01", commits=0, churn_lines=500),
@@ -344,7 +344,7 @@ class TestRenderSparkline:
         assert _BLOCKS.index(line[0]) > _BLOCKS.index(line[1])
 
     def test_increasing_values_produce_ascending_bars(self):
-        from genesis_architect.pro.git_analyzer import WeeklySnapshot, render_sparkline
+        from genesis_architect_pro.git_analyzer import WeeklySnapshot, render_sparkline
         snaps = [WeeklySnapshot(f"2026-0{i+1}-01", commits=i * 10) for i in range(4)]
         line = render_sparkline(snaps, width=4)
         _BLOCKS = " ▁▂▃▄▅▆▇█"

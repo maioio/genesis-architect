@@ -126,7 +126,7 @@ def cmd_companion_listen(project_dir: Path) -> int:
     print("\n  Genesis voice listener")
     print(f"  Microphone: {'ready — ' + mic.detail if mic.available else 'NOT ready — ' + mic.detail}")
     if not mic.available:
-        print("  Install the voice extra: pip install genesis-architect-pro[voice]\n")
+        print('  Install the voice extra: pip install "genesis-architect[voice]"\n')
         return 1
 
     def _on(instruction: str) -> None:
@@ -197,7 +197,7 @@ def cmd_companion_ui(project_dir: Path, *, no_browser: bool = False) -> int:
         router = None
         print(f"\n  Backend not started ({exc}).")
         print("  Opening the UI in offline mode. For live engines, install:")
-        print("    pip install genesis-architect-pro[streaming]\n")
+        print('    pip install "genesis-architect[streaming]"\n')
 
     # Wake word -> the same router the panel's WebSocket uses, so "genesis ..."
     # spoken aloud behaves exactly like typing the instruction into the panel:

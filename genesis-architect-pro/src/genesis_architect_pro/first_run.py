@@ -112,7 +112,7 @@ def check_readiness() -> Readiness:
             ok=pro,
             required=True,
             detail="genesis-architect-pro is installed." if pro else
-                   "pip install genesis-architect-pro",
+                   'pip install "git+https://github.com/maioio/genesis-architect.git#subdirectory=genesis-architect-pro"',
         ),
     ]
     for dep, unlocks in OPTIONAL_DEPS.items():

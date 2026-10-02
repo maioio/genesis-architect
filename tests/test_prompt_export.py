@@ -506,7 +506,12 @@ class TestWritePrompts:
         with pytest.raises(NotADirectoryError):
             write_prompts(export, _touch(tmp_path, "file.txt"))
 
-    @pytest.mark.parametrize("rule, slug", [("../../etc", "etc"), ("!!!", "step")])
+    @pytest.mark.parametrize("rule, slug", [
+        ("../../etc", "etc"),
+        ("!!!", "step"),
+        ("a" * 300, "a" * 40),
+        ("a" * 39 + "-b", "a" * 39),
+    ])
     def test_filename_slug_is_safe(self, proj, rule, slug):
         sp = _one(_plan(_step(1, [], rule=rule)), proj)
         assert prompt_filename(sp) == f"step-01-{slug}-{sp.fingerprint}.md"

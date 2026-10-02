@@ -118,6 +118,7 @@ EXISTS = "exists"
 _TRIM_NOTE = "Context was trimmed to fit the budget. Do not assume the omitted parts:"
 _NO_FILES = "(no existing files to show)"
 _SLUG = re.compile(r"[^a-z0-9]+")
+_MAX_SLUG = 40   # a rule read from --plan can be any length; filenames cannot
 _MISSING = object()
 
 
@@ -524,7 +525,7 @@ def export_prompts(plan: RefactoringPlan, root: str | Path, selection: str | Ite
 
 
 def prompt_filename(step_prompt: StepPrompt) -> str:
-    slug = _SLUG.sub("-", step_prompt.step.rule.lower()).strip("-") or "step"
+    slug = _SLUG.sub("-", step_prompt.step.rule.lower()).strip("-")[:_MAX_SLUG].strip("-") or "step"
     return f"step-{step_prompt.step.id:02d}-{slug}-{step_prompt.fingerprint}.md"
 
 

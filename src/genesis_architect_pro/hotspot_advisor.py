@@ -287,7 +287,8 @@ def _repo_prefix(root: Path) -> str:
     )
     if result.returncode != 0:
         raise ValueError(f"could not locate {root.name} inside its git repository")
-    return result.stdout.strip()
+    # Only the newline: a directory name may start with a space.
+    return result.stdout.rstrip("\n")
 
 
 def _rebase(path: str, prefix: str) -> str | None:

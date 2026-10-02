@@ -587,6 +587,12 @@ class TestRealRepository:
         assert report.hotspots[0].partners[0].path in {"a.py", "b.py"}
         assert not (proj / ".genesis").exists()
 
+    def test_prefix_keeps_a_leading_space(self, tmp_path):
+        self._git(tmp_path, "init", "-q")
+        lead = tmp_path / " lead"
+        lead.mkdir()
+        assert _repo_prefix(lead) == " lead/"
+
 
 # ---------------------------------------------------------------------------
 # Output and CLI

@@ -191,7 +191,7 @@ Trigger 2: Wake word
 | Google STT | Poor Hebrew | Excellent | ~250ms | Cloud | Paid | ❌ Hebrew quality |
 
 **Recommendation:** Whisper.cpp large-v3-turbo via llama.cpp server. Ships as an
-optional dependency: `pip install genesis-architect-pro[voice]` downloads the model
+optional dependency: `pip install "genesis-architect[voice]"` downloads the model
 once (1.5GB). Falls back to `medium` on hardware with <4GB VRAM.
 
 #### TTS (Text-to-Speech)
@@ -355,7 +355,7 @@ to `gde.commit()`. The GDE atomic write guarantee (tmp → rename) remains.
 
 Install path:
 ```bash
-pip install genesis-architect-pro[voice]   # downloads Whisper + Piper + Kokoro
+pip install "genesis-architect[voice]"   # downloads Whisper + Piper + Kokoro
 ```
 Models download once to `~/.genesis/models/`. No server, no Docker.
 

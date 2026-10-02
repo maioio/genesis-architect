@@ -72,7 +72,8 @@ class TestDoctorReport:
     def test_report_when_not_ready(self, pro_missing):
         out = doctor_report()
         assert "readiness check" in out
-        assert "MISSING" in out and "pip install genesis-architect-pro" in out
+        assert "MISSING" in out
+        assert "#subdirectory=genesis-architect-pro" in out
 
     def test_report_when_ready(self):
         out = doctor_report()

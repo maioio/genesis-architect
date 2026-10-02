@@ -103,7 +103,7 @@ class CompanionServer:
         if not _WS_AVAILABLE:
             raise RuntimeError(
                 "websockets library not installed. "
-                "Run: pip install genesis-architect-pro[companion]"
+                'Run: pip install "genesis-architect[streaming]"'
             )
         self._port = port
         self._emitter = emitter or default_emitter

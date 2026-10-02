@@ -14,7 +14,7 @@ the WebSocket streaming layer, and the diff-approval flow. The UX posture (bubbl
 activity levels, notification tiers) is defined in FLOATING_ASSISTANT_SPEC.md and is **not
 repeated here**.
 
-**Single constraint:** no setup beyond `pip install genesis-architect-pro[companion]`.
+**Single constraint:** no setup beyond `pip install "genesis-architect[companion,streaming]"`.
 No Node, no Docker, no Rust toolchain required by the user. The Companion runs as a native
 desktop application compiled from Python.
 

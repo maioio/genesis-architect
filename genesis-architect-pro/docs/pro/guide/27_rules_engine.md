@@ -73,6 +73,19 @@ when listed, and with no history they are reported as **skipped**, not passed.
 | `score_not_declining_over` (`"4_weeks"`, `"28_days"`, or an int in weeks) | the score now is ≥ the score at the window start (`score_decline_tolerance` allows a drop) |
 | `max_change_coupling` (0..1) | no file pair co-changes above that confidence (`change_coupling_min_cochanges` defaults to 3; test files are exempt by default) |
 
+### Temporal regression rules
+
+These compare the current run against the **last prior run** recorded in
+`.genesis/score_history.jsonl` (the record written just before this one, never
+the run's own just-appended entry). With no prior run to compare against, the
+rule is reported as `INSUFFICIENT_HISTORY` — a distinct, non-failing status,
+never a silent `PASS`.
+
+| Rule | Passes when |
+|------|-------------|
+| `max_score_decline` (number ≥ 0) | `baseline.total - current.total <= value` |
+| `max_cycle_count_increase` (int ≥ 0) | `current.cycle_count - baseline.cycle_count <= value` |
+
 ### Typos fail
 
 A key the engine does not know fails as `unknown rule - not evaluated`, with

@@ -1,0 +1,443 @@
+<title>Genesis Voice Agent — Builder Brief</title>
+<style>
+  @import url('data:x;'); /* no-op guard */
+
+  :root {
+    --ground: #0e1417;
+    --panel: #151d21;
+    --panel-2: #1b262b;
+    --ink: #e7edf0;
+    --ink-dim: #9aabb2;
+    --ink-faint: #6b7d84;
+    --line: #26343a;
+    --signal: #43d9c4;      /* waveform teal — the accent */
+    --signal-dim: #2b8a7e;
+    --amber: #e8b64a;       /* warning / watch-out */
+    --amber-bg: #2a2417;
+    --coral: #e8735a;       /* skip / do-not-do */
+    --coral-bg: #2a1a16;
+    --good: #7fce6b;        /* adopt / confirmed */
+    --good-bg: #182417;
+    --mono: ui-monospace, "SF Mono", "Cascadia Code", "JetBrains Mono", Menlo, Consolas, monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background:
+      radial-gradient(1200px 600px at 78% -10%, #16262a 0%, transparent 60%),
+      var(--ground);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 64px 28px 96px;
+  }
+
+  /* ---- header ---- */
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--signal);
+    margin: 0 0 18px;
+  }
+  h1 {
+    font-size: clamp(30px, 5vw, 44px);
+    line-height: 1.08;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+    margin: 0 0 16px;
+    font-weight: 650;
+  }
+  .lede {
+    font-size: 18px;
+    color: var(--ink-dim);
+    max-width: 62ch;
+    margin: 0 0 8px;
+  }
+  .meta {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    color: var(--ink-faint);
+    margin-top: 22px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 20px;
+    border-top: 1px solid var(--line);
+    padding-top: 18px;
+  }
+  .meta b { color: var(--ink-dim); font-weight: 600; }
+
+  /* waveform strip */
+  .wave {
+    display: flex;
+    align-items: flex-end;
+    gap: 3px;
+    height: 40px;
+    margin: 34px 0 8px;
+    opacity: 0.85;
+  }
+  .wave span {
+    flex: 1;
+    background: linear-gradient(var(--signal), var(--signal-dim));
+    border-radius: 2px 2px 0 0;
+    min-height: 4px;
+  }
+
+  h2 {
+    font-size: 13px;
+    font-family: var(--mono);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-dim);
+    margin: 56px 0 4px;
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+  }
+  h2 .n {
+    color: var(--signal);
+    font-size: 12px;
+  }
+  h2::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--line);
+  }
+  .section-sub {
+    color: var(--ink-faint);
+    font-size: 14.5px;
+    margin: 6px 0 24px;
+  }
+
+  /* ---- verdict row ---- */
+  .verdict {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+    margin: 8px 0 4px;
+  }
+  .vcard {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 16px 16px 18px;
+  }
+  .vcard .tag {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    display: inline-block;
+    padding: 3px 9px;
+    border-radius: 20px;
+    margin-bottom: 10px;
+    font-weight: 600;
+  }
+  .t-adopt { background: var(--good-bg); color: var(--good); }
+  .t-watch { background: var(--amber-bg); color: var(--amber); }
+  .t-skip  { background: var(--coral-bg); color: var(--coral); }
+  .vcard p { margin: 0; font-size: 14px; color: var(--ink-dim); }
+  .vcard b { color: var(--ink); font-weight: 600; }
+
+  /* ---- item cards (the punch list) ---- */
+  .item {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--signal);
+    border-radius: 10px;
+    padding: 20px 22px;
+    margin-bottom: 14px;
+  }
+  .item.watch { border-left-color: var(--amber); }
+  .item.skip  { border-left-color: var(--coral); }
+  .item-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 14px;
+    flex-wrap: wrap;
+    margin-bottom: 6px;
+  }
+  .item-title {
+    font-size: 17px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    margin: 0;
+  }
+  .prio {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 5px;
+    white-space: nowrap;
+    border: 1px solid var(--line);
+    color: var(--ink-dim);
+  }
+  .prio.p1 { color: var(--signal); border-color: var(--signal-dim); }
+  .prio.p2 { color: var(--amber); border-color: #5a4d24; }
+  .item p { margin: 6px 0; color: var(--ink-dim); font-size: 14.5px; }
+  .item .why { color: var(--ink); }
+  .item b { color: var(--ink); font-weight: 600; }
+  .path {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    color: var(--signal);
+    background: var(--panel-2);
+    padding: 1px 6px;
+    border-radius: 4px;
+    border: 1px solid var(--line);
+  }
+  ul.tight { margin: 8px 0 2px; padding-left: 18px; }
+  ul.tight li { color: var(--ink-dim); font-size: 14.5px; margin: 4px 0; }
+  ul.tight li b { color: var(--ink); }
+
+  code {
+    font-family: var(--mono);
+    font-size: 12.5px;
+    background: var(--panel-2);
+    padding: 1px 5px;
+    border-radius: 4px;
+    color: #cfe9e3;
+  }
+
+  pre {
+    background: #0b1114;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 16px 18px;
+    overflow-x: auto;
+    font-family: var(--mono);
+    font-size: 12.5px;
+    line-height: 1.55;
+    color: #cbd8dc;
+    margin: 12px 0 4px;
+  }
+  pre .c { color: var(--ink-faint); }
+  pre .k { color: var(--signal); }
+  pre .s { color: var(--amber); }
+
+  /* pipeline diagram */
+  .flow {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    flex-wrap: wrap;
+    margin: 8px 0 6px;
+    font-family: var(--mono);
+    font-size: 12.5px;
+  }
+  .flow .node {
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-radius: 7px;
+    padding: 10px 13px;
+    color: var(--ink);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .flow .node small { color: var(--ink-faint); font-size: 11px; }
+  .flow .arrow {
+    display: flex;
+    align-items: center;
+    padding: 0 10px;
+    color: var(--signal);
+  }
+  .flow .node.local { border-color: var(--signal-dim); }
+
+  .callout {
+    background: linear-gradient(180deg, var(--amber-bg), transparent);
+    border: 1px solid #4a3f1e;
+    border-radius: 10px;
+    padding: 16px 18px;
+    margin: 20px 0;
+  }
+  .callout .k {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--amber);
+    display: block;
+    margin-bottom: 6px;
+  }
+  .callout p { margin: 0; color: var(--ink); font-size: 14.5px; }
+
+  footer {
+    margin-top: 64px;
+    padding-top: 22px;
+    border-top: 1px solid var(--line);
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--ink-faint);
+    line-height: 1.9;
+  }
+  footer b { color: var(--ink-dim); }
+  a { color: var(--signal); }
+</style>
+
+<div class="wrap">
+
+  <p class="eyebrow">Genesis Pro · Companion · Voice</p>
+  <h1>Voice Agent — Builder Brief</h1>
+  <p class="lede">Field notes for the agent building the Genesis voice companion, distilled from the Vercel AI Gateway voice reel (@eliron.giny, 30 Jun 2026) and checked against the code we already ship.</p>
+
+  <div class="wave" aria-hidden="true">
+    <span style="height:22%"></span><span style="height:48%"></span><span style="height:31%"></span>
+    <span style="height:70%"></span><span style="height:95%"></span><span style="height:60%"></span>
+    <span style="height:38%"></span><span style="height:82%"></span><span style="height:100%"></span>
+    <span style="height:55%"></span><span style="height:28%"></span><span style="height:66%"></span>
+    <span style="height:44%"></span><span style="height:88%"></span><span style="height:35%"></span>
+    <span style="height:72%"></span><span style="height:50%"></span><span style="height:24%"></span>
+    <span style="height:62%"></span><span style="height:40%"></span><span style="height:78%"></span>
+    <span style="height:30%"></span><span style="height:58%"></span><span style="height:20%"></span>
+  </div>
+
+  <div class="meta">
+    <span><b>Source</b> IG reel · Vercel AI Gateway voice / AI SDK 7 (beta)</span>
+    <span><b>Current code</b> voice/pipeline.py · voice/listener.py</span>
+    <span><b>Stance</b> local-first, borrow the behaviors not the cloud</span>
+  </div>
+
+  <!-- ============ TL;DR ============ -->
+  <h2><span class="n">00</span> The one-line takeaway</h2>
+  <p class="section-sub">Read this even if you read nothing else.</p>
+  <div class="item">
+    <p class="why"><b>The reel is not a blueprint — it's a behavior spec.</b> The underlying tech (speech-to-speech) is a year old, and it's cloud-only, so it conflicts with our local-first design. What's worth stealing is the <b>three conversational behaviors</b> that make a voice bot feel alive: knowing when the user stopped, shutting up when interrupted, and acting mid-sentence. Our current pipeline does <b>none of the three</b> yet. That's the work.</p>
+  </div>
+
+  <!-- ============ VERDICT ============ -->
+  <h2><span class="n">01</span> Verdict at a glance</h2>
+  <p class="section-sub">What to adopt, watch, and skip from the reel.</p>
+  <div class="verdict">
+    <div class="vcard">
+      <span class="tag t-adopt">Adopt</span>
+      <p><b>Barge-in</b>, <b>real end-of-turn detection</b>, and <b>mid-turn context prefetch</b> — implemented locally.</p>
+    </div>
+    <div class="vcard">
+      <span class="tag t-watch">Watch</span>
+      <p><b>AI SDK 7 audio-in/out</b> as an <b>opt-in cloud tier</b> only. Keep the same interface so it slots in later.</p>
+    </div>
+    <div class="vcard">
+      <span class="tag t-skip">Skip</span>
+      <p><b>Vercel gateway as the default path.</b> It needs a network hop + API key and would send audio off-device.</p>
+    </div>
+  </div>
+
+  <!-- ============ WHERE WE ARE ============ -->
+  <h2><span class="n">02</span> Where our code actually is today</h2>
+  <p class="section-sub">So you don't rebuild what exists — or assume features we don't have.</p>
+
+  <div class="flow">
+    <div class="node local">mic capture<small>listener.py · sounddevice</small></div>
+    <div class="arrow">→</div>
+    <div class="node local">STT<small>faster-whisper (he+en)</small></div>
+    <div class="arrow">→</div>
+    <div class="node local">GDE / logic<small>local engines</small></div>
+    <div class="arrow">→</div>
+    <div class="node local">TTS<small>Kokoro / MMS / eSpeak</small></div>
+  </div>
+
+  <ul class="tight">
+    <li><b>We already have</b> the classic 3-stage local pipeline, fully offline, with graceful degradation and honest no-ops when models are missing. Bilingual (Hebrew + English) with language auto-detect.</li>
+    <li><b>Wake word</b> exists but is <b>transcript-based</b>: it records a 2s window, transcribes the whole thing, and substring-matches "genesis"/"ג'נסיס". Works, but see the watch-outs below.</li>
+    <li><b>Capture is fixed-duration blocking</b> — <code>sd.rec(seconds)</code> then <code>sd.wait()</code>. There is <b>no streaming, no VAD-driven endpointing, no interrupt</b>. Turn length is a hardcoded cap (6–15s).</li>
+    <li><b>VAD</b> exists only as <code>vad_filter=True</code> inside faster-whisper — that trims silence <i>within a file</i>; it does <b>not</b> tell us in real time when the user stopped talking.</li>
+  </ul>
+
+  <!-- ============ THE THREE BEHAVIORS ============ -->
+  <h2><span class="n">03</span> The three behaviors to build</h2>
+  <p class="section-sub">This is the heart of the brief. Ranked by value.</p>
+
+  <div class="item">
+    <div class="item-head">
+      <p class="item-title">1 · Real end-of-turn detection (streaming VAD)</p>
+      <span class="prio p1">Priority 1</span>
+    </div>
+    <p class="why">Replace fixed-duration recording with a live VAD that ends the turn when the user goes quiet. Today we force everyone to talk in ≤6s bursts and cut them off; the reel's bot "knows when you stopped."</p>
+    <p><b>How:</b> stream mic frames through an <code>InputStream</code> callback into a ring buffer; run a lightweight VAD per frame (<code>webrtcvad</code> or Silero VAD ONNX — both local, tiny) and close the utterance after ~500–800ms of trailing silence. Then transcribe the captured span.</p>
+    <p><b>Touches:</b> <span class="path">voice/listener.py</span> — new streaming path alongside <code>_record()</code>; keep <code>listen_once()</code> as the PTT fallback.</p>
+  </div>
+
+  <div class="item">
+    <div class="item-head">
+      <p class="item-title">2 · Barge-in (interrupt while speaking)</p>
+      <span class="prio p1">Priority 1</span>
+    </div>
+    <p class="why">When the user starts talking, the assistant must go silent <i>immediately</i>. Right now TTS plays to completion — <code>sd.play(..., blocking=True)</code> — and nothing can stop it. This is the single biggest "feels clunky" fix.</p>
+    <p><b>How:</b> make playback interruptible — swap blocking playback for a non-blocking stream you can <code>sd.stop()</code>, guarded by a <code>threading.Event</code>. Run the VAD from behavior #1 <i>during</i> playback; on detected speech onset, stop playback and start capturing. Full-duplex: mic stays open while speaking.</p>
+    <p><b>Touches:</b> <span class="path">voice/pipeline.py</span> — <code>_play_kokoro</code>/<code>_play_mms</code>/<code>_play_espeak</code> need a shared cancel token; add <code>TTSPipeline.stop()</code>.</p>
+  </div>
+
+  <div class="item">
+    <div class="item-head">
+      <p class="item-title">3 · Mid-turn context prefetch (our version of "function calls mid-conversation")</p>
+      <span class="prio p1">Priority 1</span>
+    </div>
+    <p class="why">The reel's flashiest feature is the model running an action mid-sentence. We can match the <i>feel</i> without cloud: as soon as a partial transcript names a file/module, fire the Knowledge-Graph / fragility lookups in parallel, so results are ready the instant the user finishes. Response feels instant.</p>
+    <p><b>How:</b> on partial transcript → extract entity → <code>asyncio.create_task</code> the context fetch; on final transcript → await the (already-running) task and hand pre-loaded context to the engine before TTS.</p>
+    <pre><span class="c"># voice/pipeline.py — sketch</span>
+<span class="k">def</span> on_partial_transcript(self, partial: str):
+    entity = self.entity_extractor.extract(partial)
+    <span class="k">if</span> entity:
+        self._prefetch = asyncio.create_task(self.context.fetch(entity))
+
+<span class="k">def</span> on_final_transcript(self, text: str):
+    ctx = <span class="k">await</span> self._prefetch   <span class="c"># already done or nearly</span>
+    result = self.gde.run(text, context=ctx)
+    self.tts.speak(result.summary)</pre>
+    <p><b>Touches:</b> new partial/final transcript hooks in the listener + an entity extractor. Full design already in <span class="path">docs/pro/INSTAGRAM_REEL_RESEARCH_REPORT.md §3.1</span>.</p>
+  </div>
+
+  <!-- ============ WATCH-OUTS ============ -->
+  <h2><span class="n">04</span> Watch-outs in the current code</h2>
+  <p class="section-sub">Things that will bite once you add real-time behavior.</p>
+
+  <div class="item watch">
+    <div class="item-head">
+      <p class="item-title">Wake-word latency &amp; cost</p>
+      <span class="prio p2">Refactor</span>
+    </div>
+    <p>Transcribing a full 2s window every loop just to check for "genesis" is heavy and adds ~1–2s of lag before the assistant reacts. Keep the transcript-based path as the honest default, but slot a real wake model (openWakeWord / Porcupine) behind the <b>same</b> <code>is_wake()</code> interface — the code already anticipates this. Gate the heavy STT behind cheap VAD so you only transcribe when there's actual speech.</p>
+  </div>
+
+  <div class="item watch">
+    <div class="item-head">
+      <p class="item-title">Temp-file WAV per utterance</p>
+      <span class="prio p2">Perf</span>
+    </div>
+    <p><code>_transcribe_array()</code> writes a temp <code>.wav</code> to disk and re-reads it for every transcription. Fine for PTT, too slow for a streaming loop. Feed audio arrays to faster-whisper in memory instead.</p>
+  </div>
+
+  <div class="callout">
+    <span class="k">Don't break this invariant</span>
+    <p>Local-first is the moat. Code and file contents never leave the machine. Even if we add a cloud voice tier later, only the synthesized natural-language query and reply may cross the network — never code, never the codebase graph. Any barge-in / VAD / prefetch work must hold this line.</p>
+  </div>
+
+  <!-- ============ CLOUD TIER ============ -->
+  <h2><span class="n">05</span> The cloud tier (later, opt-in)</h2>
+  <p class="section-sub">Where the Vercel path actually fits.</p>
+  <div class="item">
+    <p>If we ever offer a lowest-latency, most-natural mode, <b>AI SDK 7 audio-in/audio-out</b> (OpenAI / xAI realtime via the gateway) is the right integration — it gives barge-in and turn-detection server-side, and keeps the API key off the client. Build behind a <code>cloud_tier=True</code> flag routing through the <b>same <code>VoicePipeline</code> interface</b> so the local and cloud modes are swappable. Default stays local. This is <b>Watch</b>, not now.</p>
+  </div>
+
+  <footer>
+    <b>Provenance</b> · IG reel @eliron.giny "Vercel AI Gateway voice", 30 Jun 2026 · top comment correctly notes speech-to-speech predates it (~OpenAI Realtime, late 2024).<br>
+    <b>Prior research</b> · docs/pro/INSTAGRAM_REEL_RESEARCH_REPORT.md · docs/pro/STT_TTS_DECISION_MATRIX.md<br>
+    <b>Scope</b> · Genesis Pro (private) · local-first voice with codebase awareness.
+  </footer>
+
+</div>

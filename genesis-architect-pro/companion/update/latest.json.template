@@ -1,0 +1,23 @@
+{
+  "version": "{{VERSION}}",
+  "notes": "Genesis Companion {{VERSION}} — see release notes on GitHub.",
+  "pub_date": "{{PUB_DATE}}",
+  "platforms": {
+    "windows-x86_64": {
+      "signature": "{{WIN_SIGNATURE}}",
+      "url": "https://github.com/genesis-architect/genesis-companion/releases/download/v{{VERSION}}/genesis-companion_{{VERSION}}_x64_en-US.msi.zip"
+    },
+    "darwin-x86_64": {
+      "signature": "{{MAC_SIGNATURE}}",
+      "url": "https://github.com/genesis-architect/genesis-companion/releases/download/v{{VERSION}}/genesis-companion_{{VERSION}}_x64.dmg.tar.gz"
+    },
+    "darwin-aarch64": {
+      "signature": "{{MAC_ARM_SIGNATURE}}",
+      "url": "https://github.com/genesis-architect/genesis-companion/releases/download/v{{VERSION}}/genesis-companion_{{VERSION}}_aarch64.dmg.tar.gz"
+    },
+    "linux-x86_64": {
+      "signature": "{{LINUX_SIGNATURE}}",
+      "url": "https://github.com/genesis-architect/genesis-companion/releases/download/v{{VERSION}}/genesis-companion_{{VERSION}}_amd64.AppImage.tar.gz"
+    }
+  }
+}

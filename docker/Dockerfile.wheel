@@ -1,6 +1,6 @@
 # Verifies the *shipped artifact*, not the repo.
 #
-#   docker build -f Dockerfile.wheel -t genesis-wheel .
+#   docker build -f docker/Dockerfile.wheel -t genesis-wheel .
 #   docker run --rm genesis-wheel
 #
 # Dockerfile.test installs with `pip install -e`, which leaves the repository

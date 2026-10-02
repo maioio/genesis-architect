@@ -206,4 +206,4 @@ def build_gif(output_path: str):
 
 
 if __name__ == "__main__":
-    build_gif("docs/assets/demo.gif")
+    build_gif("assets/demo.gif")

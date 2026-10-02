@@ -1,6 +1,6 @@
 # Full-capability audit image.
 #
-#   docker build -f Dockerfile.capabilities -t genesis-caps .
+#   docker build -f docker/Dockerfile.capabilities -t genesis-caps .
 #   docker run --rm genesis-caps
 #
 # Installs genesis-architect[all] from PyPI exactly as a user would, then

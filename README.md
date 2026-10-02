@@ -46,7 +46,7 @@ The obvious question about a tool that grades architecture is whether it would
 survive its own grading. In v9.0.0 it was pointed at its own source, and the
 answer was no. It found four import cycles, seven critical anti-patterns, a
 1,974-line CLI module importing 31 others, and twenty-one CI actions pinned to
-tags that their owners could move at any time.
+tags and branches that their owners could move at any time.
 
 All of it is now zero.
 
@@ -54,8 +54,8 @@ All of it is now zero.
 |---|---|---|
 | Import cycles | 4 | **0** |
 | Critical anti-patterns | 7 | **0** |
-| Unpinned CI actions | 21 | **0** |
-| Largest module fan-out | 31 | **9** |
+| Unpinned actions in this repo's CI workflows | 21 | **0** |
+| CLI fan-out (split into `pro/commands/`) | 31 | **9** |
 | Architecture score | 67 | **89** |
 
 > Three of the rules that produced those findings turned out to be wrong, and
@@ -78,7 +78,10 @@ a nine-module split, is in [ARCHITECTURE.md](ARCHITECTURE.md).
 pip install genesis-architect
 ```
 
-That is the whole install. Optional extras add voice and the streaming Companion UI:
+That is the whole install. The optional extras add the voice companion, the streaming
+Companion UI and its desktop window, desktop notifications, a richer terminal UI, and the
+committee engine. They pull in heavy native packages, so install them only if you want
+those features:
 
 ```bash
 pip install "genesis-architect[all]"
@@ -88,7 +91,7 @@ pip install "genesis-architect[all]"
 
 ```bash
 # Research GitHub, then scaffold a project with the mitigations built in
-genesis init a Python CLI for analyzing log files
+genesis init "a Python CLI for analyzing log files"
 
 # Point it at code that already exists
 genesis recover .        # drift, broken imports, anti-patterns, fragile modules
@@ -102,35 +105,45 @@ genesis decide "why is this project so hard to change?"
 
 ## What it actually produces
 
-Run: `genesis init a Python CLI for analyzing log files`
+This repository ships a real example: [`examples/python-cli/`](examples/python-cli/), a small
+Click CLI that counts the lines, words and characters in a file. Genesis generated it, and
+this repository's CI re-checks it on every push to `main` and every pull request.
 
-**Pitfalls found in real GitHub issues, before a single file is written:**
+**The pitfalls it planned for before any code was written:**
 
-| # | Issue | Found in | Root cause | Built-in mitigation |
-|---|-------|----------|-----------|---------------------|
-| 1 | [pallets/click#2416](https://github.com/pallets/click/issues/2416) | 4/5 repos | Business logic inside a Click callback, untestable | `cli.py` only parses args, all logic in `core.py` |
-| 2 | [pallets/click#2558](https://github.com/pallets/click/issues/2558) | 3/5 repos | Type stubs change in Click 8.1.4 breaks mypy silently | Pin `click>=8.1.7`, `# type: ignore` only where needed |
-| 3 | [pallets/click#1846](https://github.com/pallets/click/issues/1846) | 3/5 repos | Raw file path from CLI args allows `../../../etc/passwd` | `get_safe_path(base, user_input)` in `utils/security.py` |
-| 4 | [fastapi/typer#522](https://github.com/fastapi/typer/issues/522) | 5/5 repos | No input validation produces cryptic tracebacks | `click.BadParameter` at entry point before processing |
+| # | Pitfall | Source | Mitigation in the scaffold |
+|---|---------|--------|----------------------------|
+| 1 | Business logic inside a Click callback can only be tested through the CLI | Standard Click practice | `cli.py` only parses arguments; `core.process_file()` holds the logic |
+| 2 | Click 8.1.4 changed its type annotations and broke mypy checks | [pallets/click#2558](https://github.com/pallets/click/issues/2558) | `click>=8.1.7` pinned in `pyproject.toml` |
+| 3 | A raw path from the command line allows `../../../etc/passwd` | Standard path-traversal defence | Every file read and write goes through `get_safe_path()` in `utils/security.py` |
+| 4 | Errors without input validation reach the user as tracebacks | Standard Click practice | A missing input file is raised as `click.BadParameter`, a usage error |
 
-**Scaffold generated, 12 files, no empty stubs:**
+Only pitfall 2 is tied to an issue that describes it. The issues that the example's
+`PITFALLS.md` cites for pitfalls 1, 3 and 4 do not describe those problems, so this table
+lists them as standard practice.
+
+**The scaffold, 18 files, no empty stubs:**
 
 ```
-log-analyzer/
-├── src/log_analyzer/
-│   ├── main.py        # Click CLI, args only, delegates to core
-│   ├── core.py        # All logic here, testable without subprocess
+examples/python-cli/
+├── src/python_cli/
+│   ├── cli.py         # Click entry point, arguments only, delegates to core
+│   ├── core.py        # all logic, plain functions, testable without a subprocess
 │   └── utils/
-│       └── security.py  # get_safe_path(), path traversal guard
-├── tests/test_core.py
-├── .github/workflows/ci.yml   # tests, secrets, SAST, quality gate
-├── pyproject.toml     # click>=8.1.7 pinned, mypy strict, pytest config
-├── RESEARCH.md        # 5 repos analyzed, every source verified live
-├── PITFALLS.md        # the pitfalls above, with full root cause analysis
+│       └── security.py  # get_safe_path(), the path-traversal guard
+├── tests/             # test_core.py, test_security.py
+├── docs/adr/001-initial-architecture.md
+├── .github/workflows/ci.yml   # tests and lint, Gitleaks secret scan, SonarQube quality gate
+├── .genesis/evidence.json     # machine-readable evidence pack
+├── pyproject.toml     # click>=8.1.7 pinned, pytest and ruff config
+├── RESEARCH.md        # 16 repositories scanned
+├── PITFALLS.md        # the pitfalls above, with root cause and mitigation
+├── ARCHITECTURE_EVIDENCE.md   # each decision with its sources and confidence
 └── ROADMAP.md         # scaffold, tests, CI, quality, ship
 ```
 
-Every cited issue URL is checked by CI. A 404 fails the build.
+The example's own evidence pack grades its research `THIN` (confidence 0.64). Genesis
+reports how strong its evidence is instead of hiding it.
 
 ---
 
@@ -148,9 +161,10 @@ people will depend on.
 Everything below ships in `pip install genesis-architect`.
 
 **Research and scaffolding**
-- GitHub repo scan (15 to 20 repos, filtered by stars, recency, language)
+- GitHub repo scan: `genesis init` takes the 15 most-starred matching repos (over 50 stars,
+  optionally filtered by language); the agent workflow scans 15 to 20
 - Issue mining, up to 20 closed bug issues per repo across the top 5
-- Fork analysis ranked by merged PRs in the last 6 months, not by stars
+- Fork analysis ranked by merged PRs in the last 6 months, not by stars (agent workflow)
 - Multi-source research orchestration with recency and corroboration scoring
 - Evidence packs: every recommendation carries its sources and a confidence grade
 - Knowledge vault, local cache with 6-month TTL
@@ -171,10 +185,11 @@ Everything below ships in `pip install genesis-architect`.
 **Working alongside you**
 - Decision engine with seven modes, routed from plain language
 - Per-project memory and a decision journal as plain Markdown in `.genesis/`
-- Companion UI, voice control, and video-to-pitfall extraction (optional extras)
+- Companion UI and voice control (optional extras)
+- Video-to-pitfall extraction (needs `yt-dlp`, `ffmpeg` and a transcription API key)
 
 Full command reference: [`genesis --help`](#start), and [SKILL.md](SKILL.md) for the
-Claude Code / Cursor integration.
+Claude Code, Cursor and Codex integration.
 
 ---
 
@@ -182,7 +197,7 @@ Claude Code / Cursor integration.
 
 Before writing a file, Genesis runs real research:
 
-1. **Finds 15 to 20 repositories** solving the problem you described.
+1. **Finds up to 20 repositories** solving the problem you described.
 2. **Mines their closed issues** for recurring failures, security patches and
    architecture regrets.
 3. **Synthesizes what survived** in production across those projects.
@@ -200,25 +215,27 @@ because the obvious alternative was measurably wrong.
 
 **Dependency graphs from the AST, not from text.** Imports are read by walking
 the parsed tree, so a module named in a docstring or a comment is not an edge.
-Imports under `if TYPE_CHECKING:` are pruned too - they never execute, so they
+Imports under `if TYPE_CHECKING:` are pruned too: they never execute, so they
 are not dependencies. The `else:` branch and `if not TYPE_CHECKING:` *are*
 walked, because that code does run.
 
 **Fan-out ceilings with margin.** A module importing more than 15 others is
-flagged; above 30 it is critical. Genesis holds its own modules to 11, and the
-widest is 9. A module sitting exactly on a threshold is a latent breach, not a
-pass.
+flagged; above 30 it is critical. Genesis holds its own CLI command modules
+(`pro/commands/`) to 11, and the widest is 9. A module sitting exactly on a
+threshold is a latent breach, not a pass. Outside that boundary one module is
+over the line: `gde_engine_adapters.py` imports 21, and Genesis's own scan
+reports it as a high-severity god class.
 
 **Cycle detection on the hard edges only.** Engines declare `requires`
 (a backward edge, topologically sorted, must stay acyclic) separately from
 `handoffs` (a forward edge, advisory). Handoff loops are legal on purpose:
 `diagnose -> plan -> enforce -> re-diagnose` is a workflow, not a defect.
 
-**Lazy public API (PEP 562).** Importing `genesis_architect.pro` used to pull in
-all 43 of its modules. Names now resolve on first attribute access; the API is
-identical and fewer than ten submodules load. The eager imports are kept under
+**Lazy public API (PEP 562).** Importing `genesis_architect.pro` used to import
+42 of its submodules up front. Names now resolve on first attribute access; the
+API is identical and fewer than ten submodules load. The eager imports are kept under
 `if TYPE_CHECKING:` so type checkers and static analysis still see the whole
-surface - which costs nothing at runtime and, since the scanner understands the
+surface, which costs nothing at runtime and, since the scanner understands the
 guard, nothing in coupling either.
 
 > Every one of those claims is measured in CI, not asserted here. `genesis
@@ -234,10 +251,8 @@ Genesis ships as an agent skill. Clone it where your agent looks for skills:
 # Claude Code
 git clone https://github.com/maioio/genesis-architect ~/.claude/skills/genesis-architect
 
-# Codex CLI
-git clone https://github.com/maioio/genesis-architect ~/.codex/skills/genesis-architect
-
-# Cursor: copy SKILL.md to .cursor/rules/genesis-architect.md
+# Codex CLI, and Cursor (which also reads ~/.claude/skills)
+git clone https://github.com/maioio/genesis-architect ~/.agents/skills/genesis-architect
 ```
 
 Then describe what you want in plain language. [SKILL.md](SKILL.md) defines the routing.
@@ -254,8 +269,10 @@ genesis config set LLM_API_KEY <your-key>
 genesis config set GITHUB_TOKEN <token>   # optional, raises the rate limit
 ```
 
-Local analysis (`recover`, `harden`, import graph, C4, knowledge graph) runs fully
-offline and needs no key at all.
+Local analysis (`recover`, `harden`, import graph, C4, knowledge graph) needs no key
+at all. Everything except the dependency CVE lookup in `harden` runs offline. That
+lookup queries OSV.dev for Python dependencies, and without a network it returns no
+CVE results instead of failing, so treat an offline run as unchecked, not clean.
 
 Telemetry is **off** by default and opt-in only: `genesis telemetry status`.
 
@@ -277,7 +294,9 @@ genesis-architect/
 │       ├── commands/    10 modules - the CLI, one module per command group
 │       ├── engines/      8 modules - individual analysis engines
 │       ├── voice/        5 modules - the voice companion
-│       └── streaming/    5 modules - incremental output
+│       ├── streaming/    5 modules - incremental output
+│       ├── ide_bridge/   2 modules - localhost bridge for IDE cursor events
+│       └── data/         research source registry (JSON)
 ├── tests/               97 files, 2852 tests
 ├── scripts/
 │   └── architecture_invariants.py regenerates ARCHITECTURE_INVARIANTS.json
@@ -285,7 +304,8 @@ genesis-architect/
 ├── ARCHITECTURE.md              how the analysis works, mechanism by mechanism
 ├── ARCHITECTURE_INVARIANTS.json every structural number, generated from the code
 ├── SKILL.md                     the agent-facing instruction file
-└── docs/                        the built landing page, ADRs, and an archive
+├── examples/                    generated example projects, validated by CI
+└── docs/                        the landing page, ADRs, release notes, demos, and an archive
 ```
 
 ### Where to look
@@ -293,11 +313,11 @@ genesis-architect/
 | If you want to | Read |
 |---|---|
 | Use it | [Start](#start) here, then [SKILL.md](SKILL.md) for agent use |
-| Understand a finding it reported | [ARCHITECTURE.md §2](ARCHITECTURE.md) - the rules and their discriminators |
-| Trust a number in this README | [ARCHITECTURE_INVARIANTS.json](ARCHITECTURE_INVARIANTS.json) - generated, not typed |
+| Understand a finding it reported | [ARCHITECTURE.md §2](ARCHITECTURE.md): the rules and their discriminators |
+| Trust a number in this README | [ARCHITECTURE_INVARIANTS.json](ARCHITECTURE_INVARIANTS.json): generated, not typed |
 | Change how imports are counted | `core/import_graph.py`, then [ARCHITECTURE.md §7](ARCHITECTURE.md) |
-| Add an engine | `pro/engine_bootstrap.py` is the only registration point; [CONTRIBUTING.md](CONTRIBUTING.md) has the walkthrough |
-| Add a CLI command | `pro/commands/` - one module per group, each held to fan-out ≤ 11 |
+| Add an engine | `pro/engine_bootstrap.py`, the only registration point |
+| Add a CLI command | `pro/commands/`: one module per group, each held to fan-out ≤ 11 |
 | Change a gate's severity | `pro/gde_gate_engine.py`, `_GATE_POLICY` |
 | Consume this repo as an agent | [ARCHITECTURE_INVARIANTS.json](ARCHITECTURE_INVARIANTS.json) parses; the prose does not |
 
@@ -311,7 +331,8 @@ genesis-architect/
 ## Contributing
 
 Issues and pull requests are welcome. Start with [CONTRIBUTING.md](CONTRIBUTING.md);
-it covers the dev setup, the test suite, and how to add a scaffold layout or engine.
+it covers the dev setup, the test suite, the codebase layout, and how to add a language
+template.
 
 ```bash
 git clone https://github.com/maioio/genesis-architect
@@ -333,22 +354,16 @@ Please read the [Code of Conduct](CODE_OF_CONDUCT.md) and
 [GNU AGPL-3.0-or-later](LICENSE). Copyright (C) 2026 Maio Eshet.
 
 You can use, modify and redistribute Genesis freely under the AGPL-3.0, including
-commercially. The one obligation: if you modify it and offer it to others over a
-network, you must publish your modified source under the same license. Running it on
-your own code, in your own company, changes nothing for you. If those copyleft terms
-do not work for your product, see the commercial option below.
+commercially. The obligations start when you share it: if you distribute Genesis or a
+modified version, or let others use a modified version over a network, you must provide
+the source under the same license. Running it on your own code, in your own company,
+changes nothing for you.
+
+**Commercial license.** Genesis is dual-licensed. If you want to ship it inside a
+closed-source product, or need terms without the AGPL's copyleft, a commercial license
+is available. Contact maio.eshet@gmail.com.
 
 Releases up to v5.4.1 were published under MIT and remain available under those terms.
-
-## 📝 License and Commercial Use
-
-This project is open-source and dual-licensed.
-
-1. **Open Source License:** The code is available under the **AGPLv3 License**. You are free to use, modify, and distribute this software for personal or open-source projects, provided that you release your modifications and any software that integrates it under the same AGPLv3 license.
-
-2. **Commercial License:** If you wish to use this software in a closed-source commercial product, or need a custom license without the copyleft restrictions of the AGPLv3, **a commercial license is required**.
-
-For commercial licensing inquiries, please contact: maio.eshet@gmail.com
 
 ---
 

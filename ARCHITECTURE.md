@@ -256,16 +256,23 @@ rewrite would almost certainly have changed the count in one direction.
 ## 6 · Genesis measured against itself
 
 Every number below is produced by the rules above, run against this repository.
+The table is the 9.0.0 release record: the "after" column is the state that
+shipped as 9.0.0.
 
-| | before 9.0.0 | after |
+| | before 9.0.0 | after 9.0.0 |
 |---|---|---|
 | Import cycles | 4 | **0** |
 | Critical anti-patterns | 7 | **0** |
-| Unpinned CI actions | 21 | **0** |
-| Largest module fan-out | 31 | **9** |
-| Largest module, lines | 1,974 | 390 |
+| Unpinned actions in this repo's CI workflows | 21 | **0** |
+| CLI fan-out (split into `pro/commands/`) | 31 | **9** |
+| Largest CLI module, lines | 1,974 | 350 |
 | Architecture score | 67 | **89** |
 | Tests | 2,337 | **2,845** |
+
+The CLI rows measure the old monolithic CLI module against the widest and the
+longest module in `pro/commands/`. Outside the CLI, larger modules remain:
+`gde_engine_adapters.py` has a fan-out of 21, and `recovery_report.py` runs to
+1,257 lines.
 
 The CLI package after the split, against a self-imposed ceiling of 11:
 
@@ -283,11 +290,11 @@ The CLI package after the split, against a self-imposed ceiling of 11:
 | `gde_cli.py` (compatibility shim) | 1 | 132 |
 
 > The ceiling is 11 against a rule that flags at 15. A module sitting exactly on
-> a threshold is a latent breach, not a pass - the next feature tips it over.
+> a threshold is a latent breach, not a pass: the next feature tips it over.
 
 `companion_backend.py` exists because relocation alone could not get the
 companion family under the ceiling: it measured 14, and every pure-move seam
-landed at 11 or 12. The cause was real duplication - `--serve` and `--ui`
+landed at 11 or 12. The cause was real duplication: `--serve` and `--ui`
 brought the backend up with the same seven imports and the same seven steps in
 the same order. Two copies of a startup sequence is a live bug risk on its own,
 since a fix to one can miss the other.

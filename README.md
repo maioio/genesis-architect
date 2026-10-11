@@ -149,6 +149,6 @@ from maio.eshet@gmail.com. Releases up to v5.4.1 were MIT.
 <div align="center">
 
 If Genesis saved you from a bad architecture decision,
-[star it](https://github.com/maioio/genesis-architect/stargazers) so other people find it.
+[star it](https://github.com/maioio/genesis-architect) so other people find it.
 
 </div>

@@ -1,7 +1,8 @@
-# Website Copy - v9.0.0
+# Website Copy - v9.0.0 (copy deck)
 
-Copy blocks for the landing page (`genesis-react`), structured for direct
-lifting into components. Dark-mode first.
+Voice and copy reference for the site. The live site is built from tracked
+source in `site/`; it reads figures from `data/public-product-facts.json`.
+Numbers in this deck are release-time records, not the source of truth.
 
 **Voice rules for anything added later:** declarative, specific, no superlatives
 Genesis has not earned. Every number on the page is measured and reproducible by
@@ -35,7 +36,7 @@ research one:
 **Trust strip** - render as small monospace chips under the fold line:
 
 ```
-AGPL-3.0   ·   Python 3.11+   ·   2,845 tests   ·   0 import cycles   ·   no telemetry by default
+AGPL-3.0   ·   Python 3.11+   ·   tests (see facts file)   ·   0 import cycles   ·   no telemetry by default
 ```
 
 ---
@@ -68,7 +69,7 @@ is the only claim a competitor cannot copy without doing the work.
 | Import cycles | 4 | 0 |
 | Critical anti-patterns | 7 | 0 |
 | Unpinned CI actions | 21 | 0 |
-| Architecture score | 67 | 89 |
+| Architecture score (at the v9.0.0 release) | 67 | 89 |
 
 **Footnote, small type**
 
@@ -177,8 +178,7 @@ namespaces in one free package, not two products:
 pip install genesis-architect
 ```
 
-> That is the whole install. Optional extras add voice and the streaming
-> Companion UI: `pip install "genesis-architect[all]"`.
+> That is the whole install.
 
 **Three commands, as tabs or a terminal component:**
 
@@ -219,10 +219,10 @@ Single source of truth for the page. All are reproducible from the repo.
 
 | Token | v9.0.0 | Source |
 |---|---|---|
-| `TESTS` | 2,845 | `pytest --co -q` |
+| `TESTS` | see `data/public-product-facts.json` | `pytest --co -q` |
 | `CYCLES` | 0 | `build_graph('.')['cycle_count']` |
 | `CRITICALS` | 0 | `detect_all('.').critical_count` |
-| `SCORE` | 89 | `score_project('.')['total']` |
+| `SCORE` | see `data/public-product-facts.json` | `score_project('.')['total']` |
 | `ENGINES` | 19 | `get_default_registry()` |
 | `PY_MIN` | 3.11 | `pyproject.toml` |
 

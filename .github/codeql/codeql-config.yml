@@ -1,0 +1,5 @@
+name: genesis-codeql
+# demo/fixture is a deliberately fragile sample project (import cycle, bare except)
+# that the recover demo analyzes. It is data, not shipped code.
+paths-ignore:
+  - demo/fixture

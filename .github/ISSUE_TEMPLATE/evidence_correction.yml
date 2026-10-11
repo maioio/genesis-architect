@@ -1,0 +1,21 @@
+name: Evidence or research correction
+description: A finding, source, pitfall or published number is wrong
+labels: ["evidence"]
+body:
+  - type: markdown
+    attributes:
+      value: Genesis shows its sources. If one is wrong, stale or misread, say which.
+  - type: textarea
+    id: claim
+    attributes:
+      label: What does Genesis or the project claim?
+      description: Quote the finding, number or sentence, and where you saw it.
+    validations:
+      required: true
+  - type: textarea
+    id: correction
+    attributes:
+      label: What is correct, and how do you know?
+      description: Link a primary source.
+    validations:
+      required: true

@@ -33,7 +33,7 @@ When the user writes `genesis init [description]`, extract the vision and skip P
 `genesis init --deep-research [description]` - no time cap, all streams, full RESEARCH.md + PITFALLS.md + ROADMAP.md.
 `genesis audit [path]` - Phases 2-4 on existing codebase. Infer vision from README/package.json/go.mod; ask one question if nothing found. No scaffold. Phase 0.5 skipped.
 `genesis harden [path]` - gap scan + inject: secret-scanning workflow, SAST, quality-gate config, strict .gitignore. Scan src/ for hardcoded secrets (regex: [A-Za-z0-9]{32,}) and unsafe file opens. Output injected vs manual table. Phase 0.5 skipped.
-`genesis recover [path]` - analyze an existing project for fragility. Strictly read-only: no files modified, no code written. Phase 0.5 skipped.
+`genesis recover [path]` - analyze an existing project for fragility. Does not modify project source files and writes no code. May write Genesis-owned analysis artifacts: `.genesis/` and `FRAGILITY_MAP.md`. Phase 0.5 skipped.
 Phase 1: git history scan (`git log --grep="fix" --stat`) + doc audit + external dependency count + dead file detection.
 Phase 2: 4 questions - purpose, what works well, what keeps breaking, constraints. Wait for all answers.
 Phase 3: write FRAGILITY_MAP.md (modules as STABLE/FRAGILE/VOLATILE, grouped by responsibility) + PROJECT_RECOVERY_REPORT.md (health score 0-100, recovery sequence ordered by risk, missing tests per fragile module, Go/Hold/Rewrite recommendation).

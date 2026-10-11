@@ -5,7 +5,7 @@ that graph, the thresholds, and the discriminators that decide whether a
 finding is a defect or a false alarm.
 
 This document is about mechanism. For what Genesis produces, see the
-[README](README.md).
+[README](../../README.md).
 
 ---
 
@@ -255,7 +255,8 @@ rewrite would almost certainly have changed the count in one direction.
 
 ## 6 · Genesis measured against itself
 
-Every number below is produced by the rules above, run against this repository.
+The table below is a record of the v9.0.0 release work (measured at release time).
+Current figures are in `data/public-product-facts.json`.
 
 | | before 9.0.0 | after |
 |---|---|---|

@@ -1,26 +1,43 @@
-## What does this PR change?
+## Summary
 
-<!-- One sentence summary -->
+<!-- What changes, in one or two sentences. -->
 
-## Which phase or file does this affect?
+## Why
 
-- [ ] `SKILL.md` - workflow logic
-- [ ] `references/architecture-patterns.md` - language templates
-- [ ] `references/mcp-strategy.md` - MCP strategy
-- [ ] Documentation only
+<!-- The problem or the issue this closes. -->
 
-## How was it tested?
+## User impact
 
-<!-- Describe how you invoked the skill after your changes -->
+<!-- What a user of the CLI, the docs or the site notices. "None" is a fine answer. -->
 
-```
-genesis init [what you tested with]
-```
+## Scope
+
+- [ ] Code (`src/`)
+- [ ] Tests
+- [ ] Documentation (`docs/`, `README.md`)
+- [ ] Website (`site/`)
+- [ ] CI or GitHub configuration
+- [ ] Other:
+
+## Risk
+
+<!-- What could break, and how you would notice. -->
+
+## Testing
+
+<!-- Commands you ran and what they showed. -->
+
+## Public claims
+
+- Public claims changed? <!-- yes/no. A number or capability stated in README, site or metadata. -->
+- Metadata or facts regenerated? <!-- yes/no/not needed. generate_product_facts.py --write, sync_readme_facts.py --write -->
+- Docs changed? <!-- yes/no -->
+- Website changed? <!-- yes/no. If yes, attach a desktop and a mobile screenshot. -->
+- Security impact? <!-- yes/no. If yes, say what and why. Vulnerabilities go through SECURITY.md, not a PR. -->
 
 ## Checklist
 
-- [ ] User-facing text is language-agnostic (skill auto-detects and responds in the user's language)
-- [ ] All code, filenames, and comments are in English
-- [ ] No em dashes used (hyphens or colons only)
-- [ ] SKILL.md stays under 480 lines
-- [ ] CHANGELOG.md updated under `[Unreleased]`
+- [ ] Tests pass locally (`pytest -q`)
+- [ ] Any number in public text comes from `data/public-product-facts.json`
+- [ ] No new dependency without a reason stated above
+- [ ] CHANGELOG.md updated under `[Unreleased]` if behavior changed

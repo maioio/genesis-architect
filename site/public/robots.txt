@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://maioio.github.io/genesis-architect/sitemap-index.xml

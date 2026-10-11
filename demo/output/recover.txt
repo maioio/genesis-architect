@@ -1,0 +1,27 @@
+$ cd demo/fixture   # a four-file Python package, written for this demo
+$ genesis recover . --json
+
+Genesis 9.0.0  mode=recovery
+
+Import graph
+  cycle: invoice_tool/billing.py -> invoice_tool/models.py -> invoice_tool/billing.py
+
+Anti-patterns (1 critical, 0 high)
+  [CRITICAL] circular-dep in invoice_tool/billing.py
+    basis: cycle_length=2, deterministic graph cycle
+    fix:   Break the cycle by extracting shared types/interfaces into a new module that none of the cycle participants import from each other.
+
+Architecture score: 84 / 100  (modularity 100, coupling 98, cohesion 50, layering 100)
+
+Fragility
+  VOLATILE invoice_tool/billing.py  (REWRITE)
+  STABLE   invoice_tool/__init__.py  (GO)
+  STABLE   invoice_tool/cli.py  (GO)
+  STABLE   invoice_tool/models.py  (GO)
+
+Skipped, and why
+  git_analyzer: no git history found - churn data unavailable
+  red_team_critic: No ANTHROPIC_API_KEY - red-team LLM pass skipped, deterministic checks only.
+
+Files written next to the project: .genesis, FRAGILITY_MAP.md
+Source files edited: none

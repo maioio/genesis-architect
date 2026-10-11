@@ -9,6 +9,6 @@ because a claim about what a release contained is worth being able to check.
 They are **not** maintained. Anything here may describe a paid tier that no
 longer exists, a module that has been renamed, or a plan that was dropped.
 
-For current material see [ARCHITECTURE.md](../../ARCHITECTURE.md),
+For current material see [the architecture overview](../architecture/overview.md),
 [CHANGELOG.md](../../CHANGELOG.md) and the
 [README](../../README.md).

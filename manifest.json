@@ -1,7 +1,7 @@
 {
   "name": "genesis-architect",
-  "version": "8.0.0",
-  "description": "The only scaffolder that verifies its sources before building. Scans 15-20 real GitHub repos, mines their Issues for pitfalls, and generates a research-backed scaffold with validated citations.",
+  "version": "9.0.0",
+  "description": "Research before you build. Understand before you change. Genesis Architect mines real GitHub issues and post-mortems to scaffold new projects (genesis init) and to diagnose existing ones (genesis recover).",
   "author": "Maio Eshet",
   "license": "AGPL-3.0-or-later",
   "categories": [
@@ -33,5 +33,5 @@
     "codex": "git clone https://github.com/maioio/genesis-architect ~/.codex/skills/genesis-architect"
   },
   "homepage": "https://github.com/maioio/genesis-architect",
-  "quality_score": "78/100 (measured), see evals/quality_rubric.md"
+  "website": "https://maioio.github.io/genesis-architect/"
 }

@@ -2,7 +2,7 @@
 
 Audit date: 2026-10-11. Base: `origin/main` at 71e5ccf (PR #64 merged). Working branch: `feat/public-surface-v1`, worktree `genesis-public-surface` (the owner's PRE-v10 worktrees were not touched).
 
-This file is a planning artifact. It is deleted or moved to `docs/archive/` before the PR.
+Historical record of the Public Surface v1 audit, kept as evidence. It describes the repository as it was at the audit date, not its current state.
 
 ## 1. Root inventory (tracked, at audit time)
 
@@ -15,7 +15,7 @@ This file is a planning artifact. It is deleted or moved to `docs/archive/` befo
 | ARCHITECTURE_EVIDENCE.md | Output of the self-audit | Keep in root (blocker B1) |
 | ARCHITECTURE_INVARIANTS.json | Generated structural facts | Keep in root for now (blocker B2) |
 | WEBSITE_COPY.md | Landing copy | Move to site/content/website-copy.md when site/ exists |
-| PUBLIC_SURFACE_AUDIT.md | This file | Temporary |
+| PUBLIC_SURFACE_AUDIT.md | This file | Moved to docs/archive/public-surface-v1-audit.md |
 
 Directories: .claude, .github, assets, case_studies, docker, docs, evals, examples, genesis-architect-pro (historical, never deleted), references, scripts, src, tests, validation. 769 tracked files.
 

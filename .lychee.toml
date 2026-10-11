@@ -10,4 +10,4 @@ exclude = [
   # Not published until the Pages cutover (owner decision), so it 404s on main today.
   '^https://maioio\.github\.io/genesis-architect/.+',
 ]
-exclude_path = ["docs/archive", "genesis-architect-pro", "CHANGELOG.md", "PUBLIC_SURFACE_AUDIT.md"]
+exclude_path = ["docs/archive", "genesis-architect-pro", "CHANGELOG.md"]

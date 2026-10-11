@@ -542,23 +542,41 @@ def _():
     return ("PASS", f"routed correctly: {', '.join(ok)}")
 
 
-@check("Engine", "17 engines registered")
+def _canonical_counts() -> dict:
+    """Canonical engine/gate counts from the public product facts, if this is a
+    repository checkout. Against a PyPI install the file is absent and the
+    audit reports the live counts without comparing them."""
+    for parent in Path(__file__).resolve().parents:
+        f = parent / "data" / "public-product-facts.json"
+        if f.is_file():
+            return json.loads(f.read_text(encoding="utf-8"))
+    return {}
+
+
+@check("Engine", "engines registered match the canonical count")
 def _():
-    import genesis_architect.pro.gde_engine_registration as reg
+    from genesis_architect.pro.engine_bootstrap import ensure_registered
     from genesis_architect.pro.engine_registry import get_default_registry
-    reg._register_all()
-    r = get_default_registry()
-    d = getattr(r, "_descriptors", None) or getattr(r, "_engines", {})
-    assert len(d) == 17, f"{len(d)} engines"
-    return ("PASS", "17 engines")
+    ensure_registered()
+    n = len(get_default_registry().all())
+    assert n > 0, "no engines registered"
+    want = _canonical_counts().get("engines")
+    if want is not None:
+        assert n == want, f"{n} engines registered, facts file says {want}"
+    return ("PASS", f"{n} engines")
 
 
-@check("Engine", "12 approval gates with 2 hard-locked")
+@check("Engine", "approval gates match the canonical count, hard-block supported")
 def _():
     from genesis_architect.pro import gde_gate_engine as g
+    n = len(g._GATE_POLICY)
+    assert n > 0, "no gates defined"
+    want = _canonical_counts().get("gates")
+    if want is not None:
+        assert n == want, f"{n} gates defined, facts file says {want}"
     src = Path(g.__file__).read_text(encoding="utf-8")
     assert "hard" in src.lower()
-    return ("PASS", "gate engine present with hard-block support")
+    return ("PASS", f"{n} gates, hard-block supported")
 
 
 @check("Engine", "memory + decision journal as Markdown")

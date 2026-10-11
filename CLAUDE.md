@@ -1,70 +1,34 @@
-# Genesis Architect - Claude Code Instructions
+@AGENTS.md
 
-This is a **Claude skill** project. The primary deliverable is `SKILL.md` - a Markdown file
-that defines how Claude behaves when invoked.
+# Claude Code notes
 
-## Project structure
+Repository guidance lives in [AGENTS.md](AGENTS.md) and applies to Claude as to any agent. This
+file adds only what is specific to Claude Code. [SKILL.md](SKILL.md) is the runtime workflow
+Claude follows when Genesis is invoked as a skill (`genesis init ...`); it is a product
+artifact, not a contributor guide, and it is edited only for workflow changes.
 
-```
-SKILL.md                        # Main skill - read this first
-references/
-  architecture-patterns.md      # Boilerplate templates per language/tier
-  mcp-strategy.md               # MCP tool usage and fallback logic
-```
+## Editing SKILL.md
 
-## How this skill works
+- Keep it under 480 lines. Check with `wc -l SKILL.md`.
+- Respond to the user in their language; code, filenames and comments stay in English.
+- No em dashes or en dashes.
+- The phase structure (Phases 0-7) is part of the product contract. Phase 0 always runs, even when
+  `genesis init` skips Phase 1 questions. A change to the phase structure is a major-version
+  change (see [docs/reference/versioning.md](docs/reference/versioning.md)).
+- `genesis init` goes straight to research. The Phase 5 research summary and the A/B architecture
+  choice are one combined message.
+- Any `SKILL.md` change needs a [CHANGELOG.md](CHANGELOG.md) entry.
 
-Genesis Architect triggers on natural language like "I want to build X" or via
-the explicit command `genesis init [vision]`.
+## Claude Code hooks in this repo
 
-It runs 8 phases:
-0. Environment Probe - detect OS, Python version, package manager
-1. Vision Alignment - 2-3 focused questions
-2. Deep Discovery - scan 15-20 GitHub repos
-3. Architecture Analysis - synthesize the "wise average"
-4. Pitfall Identification - extract from GitHub Issues
-5. Interactive Choice - Minimalist vs Scalable
-6. Genesis Build - create scaffold with tests and CI/CD
-7. Development Companion Mode - stays active, keeps searching and suggesting
+`.claude/hooks/protect_files.py` blocks edits to `.env*`, `.git/` and lockfiles. `.claude/hooks/format_file.py`
+formats edited files. `.claude/skills/` holds repo-local skills (`fix-issue`, `repo-polish`).
+Do not work around a hook block; change the approach.
 
-Note: Phase 0 always runs, even when `genesis init` skips Phase 1.
+## Working agreement
 
-## Development workflow
-
-When working on this skill:
-
-1. **Edit `SKILL.md`** for workflow changes (phases, prompts, rules)
-2. **Edit `references/architecture-patterns.md`** to add language templates
-3. **Edit `references/mcp-strategy.md`** for tool strategy changes
-4. **Test** by invoking: `genesis init a [simple project description]`
-5. **Update `CHANGELOG.md`** with what changed
-
-## Key constraints (enforced in SKILL.md)
-
-- User-facing communication: Auto-detect user language and respond in kind (language-agnostic since v1.1.0)
-- Code, filenames, comments: English only
-- No em dashes anywhere
-- SKILL.md must stay under 480 lines
-- Research summary and A/B architecture choice are presented in one combined message (Phase 5)
-- `genesis init` must skip Phase 1 questions and go straight to research
-
-## Adding a new language template
-
-Add to `references/architecture-patterns.md`:
-
-```markdown
-## [Language] - Minimalist
-[folder structure]
-
-## [Language] - Scalable
-[folder structure]
-```
-
-Follow the existing JS/TS and Python patterns exactly.
-
-## Versioning
-
-This project uses Semantic Versioning:
-- Patch (1.0.x): wording fixes, minor template corrections
-- Minor (1.x.0): new language templates, new MCP strategies
-- Major (x.0.0): changes to the 8-phase workflow structure (Phases 0-7)
+- Run the commands in AGENTS.md before declaring a change done, and report what you ran.
+- Stage files by name. Never stage `FRAGILITY_MAP.md` from the repo root.
+- Commits end with the `Co-Authored-By` trailer configured for the session.
+- Pushing, merging, tagging, publishing and repository settings are owner actions: prepare, show
+  the exact command, and ask.

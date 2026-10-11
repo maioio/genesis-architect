@@ -128,5 +128,5 @@ jobs:
       - name: Check links in Markdown
         uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8 # v2
         with:
-          args: --config .lychee.toml --no-progress README.md CONTRIBUTING.md SECURITY.md demo docs/architecture site/src/content
+          args: --config .lychee.toml --no-progress README.md CONTRIBUTING.md SECURITY.md demo docs/architecture docs/evaluations docs/security docs/reference site/src/content
           fail: true

@@ -1,0 +1,12 @@
+cff-version: 1.2.0
+message: "If you use Genesis Architect in your work, please cite it using these metadata."
+title: "Genesis Architect"
+type: software
+version: 9.0.0
+date-released: 2026-08-23
+license: AGPL-3.0-or-later
+repository-code: "https://github.com/maioio/genesis-architect"
+url: "https://maioio.github.io/genesis-architect/"
+authors:
+  - family-names: Eshet
+    given-names: Maio

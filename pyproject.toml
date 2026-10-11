@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "genesis-architect"
 version = "9.0.0"
-description = "Research before you build. Genesis Architect mines real GitHub issues, forks and post-mortems to find the failures others hit building what you are building - then scaffolds a project with those mitigations already in place. Dual-licensed (AGPL-3.0 + Commercial)."
+description = "Research before you build. Genesis Architect mines real GitHub issues, forks and post-mortems to find the failures others hit building what you are building - then scaffolds a project with those mitigations already in place. AGPL-3.0-or-later; a commercial license is available."
 readme = "README.md"
 requires-python = ">=3.11"
 license = "AGPL-3.0-or-later"

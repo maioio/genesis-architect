@@ -5,7 +5,7 @@
 | Version | Supported | Notes |
 |---------|-----------|-------|
 | 9.x     | Yes       | Current. Single package, AGPL-3.0, no paid tier. |
-| 8.x     | Security fixes only | Previous major. |
+| 8.x     | No        | Superseded by 9.x. |
 | 5.4.x   | Security fixes only | Last open-core release (MIT). |
 | < 5.4   | No        | |
 

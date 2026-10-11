@@ -37,4 +37,4 @@ Telemetry is off by default and opt-in. `genesis telemetry` shows and changes th
 
 ## Optional extras
 
-`pip install "genesis-architect[all]"` adds the voice, Companion and committee subsystems. They pull heavy native packages and are not needed for analysis.
+The base install, `pip install genesis-architect`, is enough for normal analysis. The `[all]` extra is optional: `pip install "genesis-architect[all]"` adds the voice, Companion and committee subsystems, which pull heavy native packages.

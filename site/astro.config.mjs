@@ -8,6 +8,13 @@ export default defineConfig({
   integrations: [
     starlight({
       title: 'Genesis Architect',
+      favicon: '/favicon.svg',
+      head: [
+        { tag: 'meta', attrs: { property: 'og:image', content: 'https://maioio.github.io/genesis-architect/social-card.png' } },
+        { tag: 'meta', attrs: { name: 'twitter:card', content: 'summary_large_image' } },
+        // Scrollable code blocks must be keyboard reachable (axe: scrollable-region-focusable).
+        { tag: 'script', content: "document.addEventListener('DOMContentLoaded',()=>document.querySelectorAll('.expressive-code pre').forEach(p=>{if(p.scrollWidth>p.clientWidth)p.setAttribute('tabindex','0')}))" },
+      ],
       description: 'Research before you build. Understand before you change.',
       social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/maioio/genesis-architect' }],
       editLink: { baseUrl: 'https://github.com/maioio/genesis-architect/edit/main/site/' },

@@ -1,0 +1,129 @@
+name: Public Surface
+
+# Guards what visitors see: product facts, README claims, the documentation
+# site and its links. Secret scanning, CodeQL and dependency scanning already
+# live in ci.yml and codeql.yml and are deliberately not repeated here.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 5 * * 1'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: public-surface-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GENESIS_NO_AUTO_INSTALL: '1'
+
+jobs:
+  claims:
+    name: Facts and claims
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.12'
+
+      - name: Install package
+        run: pip install -e . -q
+
+      - name: Architecture invariants are current
+        run: python scripts/architecture_invariants.py --check
+
+      - name: Product facts are current
+        run: python scripts/public_surface/generate_product_facts.py --check
+
+      - name: README facts block is current
+        run: python scripts/public_surface/sync_readme_facts.py --check
+
+      - name: Public claims, versions and URLs
+        run: python scripts/public_surface/validate_public_claims.py
+
+      - name: Workflow files parse
+        run: |
+          pip install pyyaml -q
+          python -c "import glob,yaml;[yaml.safe_load(open(f,encoding='utf-8')) for f in glob.glob('.github/**/*.yml',recursive=True)];print('workflows ok')"
+
+  site:
+    name: Site build and checks
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: site
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: '3.12'
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+
+      - name: Clean install
+        run: npm ci
+
+      - name: Production build
+        run: npm run build
+
+      - name: Base path, internal routes, canonical URLs, banned content
+        working-directory: .
+        run: python scripts/public_surface/validate_site_build.py
+
+      - name: Install browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Playwright (desktop and mobile), axe, console errors
+        run: npx playwright test
+
+      - name: Lighthouse baseline
+        run: |
+          npx astro preview --host 127.0.0.1 --port 4322 &
+          curl --retry 20 --retry-delay 1 --retry-connrefused -fsS -o /dev/null http://127.0.0.1:4322/genesis-architect/
+          npx --yes lighthouse@13.5.0 http://127.0.0.1:4322/genesis-architect/ \
+            --chrome-flags="--headless=new --no-sandbox" --output=json \
+            --output-path="$RUNNER_TEMP/lh.json" --quiet \
+            --only-categories=performance,accessibility,best-practices,seo
+          node -e "
+            const r = require(process.env.RUNNER_TEMP + '/lh.json');
+            const floor = { performance: 0.9, accessibility: 0.95, 'best-practices': 0.9, seo: 0.95 };
+            let bad = 0;
+            for (const [k, min] of Object.entries(floor)) {
+              const s = r.categories[k].score;
+              console.log(k, s);
+              if (s < min) { console.error('below floor', k, min); bad = 1; }
+            }
+            process.exit(bad);
+          "
+
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: playwright-results
+          path: site/test-results
+          if-no-files-found: ignore
+
+  links:
+    name: External links
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Check links in Markdown
+        uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8 # v2
+        with:
+          args: --config .lychee.toml --no-progress README.md CONTRIBUTING.md SECURITY.md demo docs site/src/content
+          fail: true

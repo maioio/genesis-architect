@@ -49,7 +49,9 @@ const docs = [
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonical} />
-    <meta name="twitter:card" content="summary" />
+    <meta property="og:image" content={`${canonical}social-card.png`} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="icon" type="image/svg+xml" href={`${base}/favicon.svg`} />
     <script is:inline>
       try {
         const t = localStorage.getItem('gx-theme');

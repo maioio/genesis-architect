@@ -46,6 +46,9 @@ PROVENANCE = {
     "critical_antipatterns": "antipattern_detector.detect_all('.').critical_count",
     "architecture_score": "architecture_scorer.score_project('.')['total']",
     "tests": "pytest --collect-only -q",
+    "capabilities": "capability_catalog.build_catalog(), built from capability_map.CAPABILITIES",
+    "capability_families": "capability_catalog.FAMILIES",
+    "commands": "capability_catalog.COMMANDS",
 }
 
 
@@ -64,6 +67,7 @@ def collect() -> dict:
     from genesis_architect.core.antipattern_detector import detect_all
     from genesis_architect.core.architecture_scorer import score_project
     from genesis_architect.core.import_graph import build_graph
+    from genesis_architect.pro import capability_catalog
 
     project = tomllib.loads((REPO / "pyproject.toml").read_text(encoding="utf-8"))["project"]
     invariants = json.loads((REPO / "ARCHITECTURE_INVARIANTS.json").read_text(encoding="utf-8"))
@@ -89,6 +93,9 @@ def collect() -> dict:
         "critical_antipatterns": detect_all(str(REPO)).critical_count,
         "architecture_score": score["total"],
         "tests": _tests_collected(),
+        "capabilities": len(capability_catalog.build_catalog()),
+        "capability_families": len(capability_catalog.FAMILIES),
+        "commands": len(capability_catalog.COMMANDS),
         "provenance": PROVENANCE,
     }
 

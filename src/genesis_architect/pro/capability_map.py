@@ -208,6 +208,7 @@ CAPABILITIES: tuple[Capability, ...] = (
 # Plumbing: shared types, registries, adapters, and wiring. These have no
 # capability of their own to reach, so they are deliberately doorless.
 INTERNAL: frozenset[str] = frozenset({
+    "capability_catalog",
     "engine_registry",
     "gate_notifier_patch",
     "gde_cli",

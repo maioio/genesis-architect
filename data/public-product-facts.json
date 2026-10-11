@@ -13,7 +13,10 @@
   "import_cycles": 0,
   "critical_antipatterns": 0,
   "architecture_score": 93,
-  "tests": 2852,
+  "tests": 2861,
+  "capabilities": 50,
+  "capability_families": 9,
+  "commands": 22,
   "provenance": {
     "version": "pyproject.toml [project].version",
     "python_min": "pyproject.toml [project].requires-python",
@@ -26,6 +29,9 @@
     "import_cycles": "import_graph.build_graph('.')['cycle_count']",
     "critical_antipatterns": "antipattern_detector.detect_all('.').critical_count",
     "architecture_score": "architecture_scorer.score_project('.')['total']",
-    "tests": "pytest --collect-only -q"
+    "tests": "pytest --collect-only -q",
+    "capabilities": "capability_catalog.build_catalog(), built from capability_map.CAPABILITIES",
+    "capability_families": "capability_catalog.FAMILIES",
+    "commands": "capability_catalog.COMMANDS"
   }
 }

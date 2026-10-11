@@ -28,6 +28,7 @@ def render(facts: dict) -> str:
         ("Critical anti-patterns", str(facts["critical_antipatterns"])),
         ("Tests collected", f"{facts['tests']:,}"),
         ("Engines / approval gates", f"{facts['engines']} / {facts['gates']}"),
+        ("Mapped capabilities / commands", f"{facts['capabilities']} / {facts['commands']}"),
     ]
     lines = ["| Measured on this repository | Value |", "|---|---|"]
     lines += [f"| {k} | {v} |" for k, v in rows]

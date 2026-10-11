@@ -145,6 +145,8 @@ genesis recover .</code></pre>
           <div><dt>Tests collected</dt><dd>{facts.tests.toLocaleString('en-US')}</dd></div>
           <div><dt>Engines</dt><dd>{facts.engines}</dd></div>
           <div><dt>Approval gates</dt><dd>{facts.gates}</dd></div>
+          <div><dt>Mapped capabilities</dt><dd>{facts.capabilities}</dd></div>
+          <div><dt>Commands</dt><dd>{facts.commands}</dd></div>
         </dl>
       </section>
 
@@ -180,6 +182,11 @@ genesis recover .</code></pre>
             </li>
           ))}
         </ul>
+        <p>
+          These are the common starting points. Genesis maps {facts.capabilities} capabilities in {facts.capability_families} families,
+          each with its maturity, what it writes and what it needs:
+          <a href={doc('capabilities')}>the full capability catalog</a>. Engines and capabilities are counted differently, and the catalog explains how.
+        </p>
       </section>
 
       <section aria-labelledby="safety">

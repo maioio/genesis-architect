@@ -60,8 +60,9 @@ CI fails if this table drifts from the facts file.
 | Architecture score | 93 / 100 |
 | Import cycles | 0 |
 | Critical anti-patterns | 0 |
-| Tests collected | 2,852 |
+| Tests collected | 2,861 |
 | Engines / approval gates | 19 / 14 |
+| Mapped capabilities / commands | 50 / 22 |
 
 Generated for v9.0.0 from [`data/public-product-facts.json`](data/public-product-facts.json).
 
@@ -88,16 +89,35 @@ flowchart LR
 
 ## Capabilities
 
-| Goal | Commands |
-|---|---|
-| Start a project | `genesis init` |
-| Recover a codebase | `genesis recover .` |
-| Harden | `genesis harden .` (STRIDE, OWASP checklist, offline secrets scan) |
-| Check dependencies | `genesis deps` (CVE lookup through OSV.dev) |
-| Ask in plain language | `genesis decide "why is this project hard to change?"` |
-| Check your setup | `genesis doctor` |
+Genesis groups what it can do by the question you are asking. Each family links to the
+complete table in the [capability catalog](https://maioio.github.io/genesis-architect/capabilities/),
+which is generated from the code and lists maturity, what each capability writes and what it needs.
 
-Full list: [Commands](https://maioio.github.io/genesis-architect/commands/).
+| Family | You ask | Start with |
+|---|---|---|
+| Research & Evidence | What have others learned building this? | `genesis research`, `genesis init` |
+| New Project Architecture | Give me a starting structure that avoids known pitfalls | `genesis init` |
+| Existing Codebase Recovery | What is fragile here and why? | `genesis recover .` |
+| Architecture Intelligence | Cycles, anti-patterns, score, C4 diagrams, refactoring plan | `genesis recover .`, `genesis decide` |
+| Decision & Planning | Which option, and what could go wrong? | `genesis decide "..."`, `genesis explain` |
+| Security & Dependencies | Threat model, OWASP checklist, secrets, advisories | `genesis harden .`, `genesis deps` |
+| Memory & Learning | Remember what we decided in this project | `genesis memory` |
+| Automation & Sync | Keep checks running, fetch skill packs, clean up | `genesis sync`, `genesis fetch`, `genesis purge` |
+| Companion, UI & Voice | A canvas workspace and a local health page | `genesis ui`, `genesis companion` |
+| Agents & MCP | Use it from Claude Code, Cursor, Codex | `genesis advise`, [MCP](https://maioio.github.io/genesis-architect/mcp/) |
+
+### What needs what
+
+| | Commands |
+|---|---|
+| Fully offline, no key | `recover`, `harden`, `engines`, `explain`, `memory`, `doctor`, `advise`, `ui`, `decide` (deterministic engines) |
+| Network | `research` (live search), `deps` (OSV.dev advisories), `fetch` (git clone), `resolve` |
+| LLM key or local model | `init`, `publish`; `decide` can add an optional LLM critique that is disclosed when skipped |
+| Writes into your project | `recover`, `harden` and `decide` write `.genesis/`, reports and `FRAGILITY_MAP.md`; `fetch` and `purge` act only in a sandbox or with `--apply` |
+| Optional extras or experimental | voice, native companion window (experimental), committee critique, video research |
+| Kept for compatibility | `upgrade`, `license` (Genesis has no paid tier) |
+
+Command reference: [Commands](https://maioio.github.io/genesis-architect/commands/).
 
 ## Use it from your agent
 

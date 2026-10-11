@@ -22,7 +22,7 @@ modules are too fragile to touch.
   <a href="#start">Start</a> &middot;
   <a href="#what-it-actually-produces">Example output</a> &middot;
   <a href="#genesis-audited-itself">Self-audit</a> &middot;
-  <a href="ARCHITECTURE.md">Architecture</a> &middot;
+  <a href="docs/architecture/overview.md">Architecture</a> &middot;
   <a href="CONTRIBUTING.md">Contributing</a>
 </p>
 
@@ -31,8 +31,8 @@ modules are too fragile to touch.
 [![Python](https://img.shields.io/pypi/pyversions/genesis-architect?style=flat-square)](https://pypi.org/project/genesis-architect/)
 [![License: AGPL v3](https://img.shields.io/badge/license-AGPL--3.0-blue?style=flat-square)](LICENSE)
 [![Tests](https://img.shields.io/badge/tests-2852%20passing-brightgreen?style=flat-square)](tests/)
-[![Cycles](https://img.shields.io/badge/import%20cycles-0-brightgreen?style=flat-square)](ARCHITECTURE.md)
-[![Anti-patterns](https://img.shields.io/badge/critical%20anti--patterns-0-brightgreen?style=flat-square)](ARCHITECTURE.md)
+[![Cycles](https://img.shields.io/badge/import%20cycles-0-brightgreen?style=flat-square)](docs/architecture/overview.md)
+[![Anti-patterns](https://img.shields.io/badge/critical%20anti--patterns-0-brightgreen?style=flat-square)](docs/architecture/overview.md)
 
 </div>
 
@@ -105,7 +105,7 @@ All of it is now zero.
 > regression.
 
 The full method, including how interface parity was proven byte-for-byte across
-a nine-module split, is in [ARCHITECTURE.md](ARCHITECTURE.md).
+a nine-module split, is in [docs/architecture/overview.md](docs/architecture/overview.md).
 
 ---
 
@@ -291,7 +291,7 @@ genesis-architect/
 ├── scripts/
 │   └── architecture_invariants.py regenerates ARCHITECTURE_INVARIANTS.json
 ├── genesis-architect-pro/       the former Pro repository, with its own pyproject.toml
-├── ARCHITECTURE.md              how the analysis works, mechanism by mechanism
+├── docs/architecture/overview.md           how the analysis works, mechanism by mechanism
 ├── ARCHITECTURE_INVARIANTS.json every structural number, generated from the code
 ├── SKILL.md                     the agent-facing instruction file
 └── docs/                        the built landing page, ADRs, and an archive
@@ -302,9 +302,9 @@ genesis-architect/
 | If you want to | Read |
 |---|---|
 | Use it | [Start](#start) here, then [SKILL.md](SKILL.md) for agent use |
-| Understand a finding it reported | [ARCHITECTURE.md §2](ARCHITECTURE.md) - the rules and their discriminators |
+| Understand a finding it reported | [docs/architecture/overview.md §2](docs/architecture/overview.md) - the rules and their discriminators |
 | Trust a number in this README | [ARCHITECTURE_INVARIANTS.json](ARCHITECTURE_INVARIANTS.json) - generated, not typed |
-| Change how imports are counted | `core/import_graph.py`, then [ARCHITECTURE.md §7](ARCHITECTURE.md) |
+| Change how imports are counted | `core/import_graph.py`, then [docs/architecture/overview.md §7](docs/architecture/overview.md) |
 | Add an engine | `pro/engine_bootstrap.py` is the only registration point; [CONTRIBUTING.md](CONTRIBUTING.md) has the walkthrough |
 | Add a CLI command | `pro/commands/` - one module per group, each held to fan-out ≤ 11 |
 | Change a gate's severity | `pro/gde_gate_engine.py`, `_GATE_POLICY` |

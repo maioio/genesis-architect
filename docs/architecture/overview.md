@@ -5,7 +5,7 @@ that graph, the thresholds, and the discriminators that decide whether a
 finding is a defect or a false alarm.
 
 This document is about mechanism. For what Genesis produces, see the
-[README](README.md).
+[README](../../README.md).
 
 ---
 

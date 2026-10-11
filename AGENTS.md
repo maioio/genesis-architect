@@ -29,7 +29,7 @@ Python 3.11+. Stable line: 9.x. No paid tier.
 | `evals/` | Skill trigger-accuracy queries and rubric. |
 | `validation/` | Recorded Claude-only vs Genesis benchmark write-ups (historical, dated). |
 | `demo/` | Deterministic demo; `python demo/run_recover.py --check` verifies it against a real run. |
-| `examples/`, `case_studies/` | Sample scaffolds and write-ups. |
+| `examples/`, `docs/case-studies/` | Sample scaffolds and write-ups. |
 | `references/` | Source data the runtime reads. `folder-structures.toml` must be mirrored into `src/genesis_architect/core/data/`. |
 | `data/public-product-facts.json` | Canonical public facts. Generated. |
 | `genesis-architect-pro/` | Former Pro package source, kept for reference. **Do not edit or delete.** |

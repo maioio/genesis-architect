@@ -21,7 +21,7 @@ Run `genesis <command> --help` for exact options. A test compares this page with
 | Command | Status | Needs | What it does |
 |---|---|---|---|
 | `recover [PATH]` | PUBLIC | Nothing | Diagnose drift, broken imports, anti-patterns, decay. Writes `.genesis/` and `FRAGILITY_MAP.md`, never your source |
-| `harden [PATH]` | PUBLIC | Nothing | STRIDE threat model, OWASP Top 10 checklist, offline secrets scan. Writes its reports into the project |
+| `harden [PATH]` | PUBLIC | Nothing | STRIDE threat model, OWASP Top 10 checklist, offline secrets scan. Proposes its reports under `docs/security/`; they are written only after you approve (default is Defer) or pass `--yes` |
 | `deps [PATH]` | PUBLIC | Network for advisories (OSV.dev) | Third-party dependencies per module, plus advisories |
 | `decide "<text>"` | PUBLIC | Nothing; LLM critique optional | Run a full decision session on an instruction |
 | `explain` | PUBLIC | Nothing | Print the last session's decision log |

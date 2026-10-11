@@ -113,7 +113,7 @@ which is generated from the code and lists maturity, what each capability writes
 | Fully offline, no key | `recover`, `harden`, `engines`, `explain`, `memory`, `doctor`, `advise`, `ui`, `decide` (deterministic engines) |
 | Network | `research` (live search), `deps` (OSV.dev advisories), `fetch` (git clone), `resolve` |
 | LLM key or local model | `init`, `publish`; `decide` can add an optional LLM critique that is disclosed when skipped |
-| Writes into your project | `recover`, `harden` and `decide` write `.genesis/`, reports and `FRAGILITY_MAP.md`; `fetch` and `purge` act only in a sandbox or with `--apply` |
+| Writes into your project | `recover`, `harden` and `decide` write `.genesis/` and `FRAGILITY_MAP.md`; their report files (for example `PROJECT_RECOVERY_REPORT.md`, `docs/security/`) are written only after you approve (default is Defer) or pass `--yes`; `fetch` and `purge` act only in a sandbox or with `--apply` |
 | Optional extras or experimental | voice, native companion window (experimental), committee critique, video research |
 | Kept for compatibility | `upgrade`, `license` (Genesis has no paid tier) |
 

@@ -9,9 +9,5 @@ exclude = [
   '^http://localhost',
   '^http://127\.0\.0\.1',
   'example\.(com|org)',
-  # Not published until the Pages cutover (owner decision), so it 404s on main today.
-  '^https://maioio\.github\.io/genesis-architect/.+',
-  # Files added by this branch; they 404 on main until the PR merges.
-  '^https://github\.com/maioio/genesis-architect/blob/main/(data/public-product-facts\.json|docs/architecture/overview\.md)$',
 ]
 exclude_path = ["docs/archive", "genesis-architect-pro", "CHANGELOG.md"]

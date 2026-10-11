@@ -1,0 +1,307 @@
+---
+import facts from '../../../data/public-product-facts.json';
+
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+const doc = (slug: string) => `${base}/${slug}/`;
+const repo = facts.repository;
+const title = 'Genesis Architect: research before you build, understand before you change';
+const description =
+  'Genesis researches comparable open-source projects before you scaffold a new one, and diagnoses an existing codebase before you change it. Evidence first, approval before action.';
+const canonical = facts.website;
+
+const flow = [
+  ['Evidence', 'Sourced findings from public repositories or from your own code.'],
+  ['Analysis', 'Import graph, anti-patterns, architecture score.'],
+  ['Decision', 'Options with trade-offs, ranked against the evidence.'],
+  ['Approval', `${facts.gates} gates. Nothing acts without your sign-off.`],
+  ['Action', 'Scaffold or fix, only what was approved.'],
+  ['Verification', 'Re-run the analysis and compare.'],
+];
+
+const goals = [
+  ['Start a project', 'genesis init', 'Research, compare architectures, scaffold with tests and CI.', 'new-projects'],
+  ['Recover a codebase', 'genesis recover .', 'Diagnose cycles, anti-patterns and drift. Read-only.', 'existing-projects'],
+  ['Harden', 'genesis harden', 'Find security and quality gaps against a checklist.', 'commands'],
+  ['Check dependencies', 'genesis deps', 'Inspect declared dependencies for risk.', 'commands'],
+  ['Ask your agent', 'MCP tools', 'Four read-only tools for any MCP client.', 'mcp'],
+];
+
+const docs = [
+  ['getting-started', 'Getting started'],
+  ['new-projects', 'New projects'],
+  ['existing-projects', 'Existing projects'],
+  ['research-and-evidence', 'Research and evidence'],
+  ['approval-model', 'Approval model'],
+  ['commands', 'Commands'],
+  ['security', 'Security'],
+  ['limitations', 'Limitations'],
+];
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta name="twitter:card" content="summary" />
+    <script is:inline>
+      try {
+        const t = localStorage.getItem('gx-theme');
+        if (t) document.documentElement.dataset.theme = t;
+      } catch (e) {}
+    </script>
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to content</a>
+    <header class="top">
+      <a class="brand" href={`${base}/`}>Genesis Architect</a>
+      <nav aria-label="Primary">
+        <a href={doc('getting-started')}>Docs</a>
+        <a href={repo}>GitHub</a>
+        <button id="theme" type="button" aria-label="Toggle color theme">Theme</button>
+      </nav>
+    </header>
+
+    <main id="main">
+      <section class="hero">
+        <p class="kicker">v{facts.version} &middot; {facts.license}</p>
+        <h1>Research before you build.<br />Understand before you change.</h1>
+        <p class="lede">
+          Genesis researches comparable open-source projects before you start a new one, and diagnoses an existing
+          codebase before you touch it. Every recommendation cites evidence. Nothing acts without your approval.
+        </p>
+        <div class="cta">
+          <a class="btn primary" href={doc('getting-started')}>Get started</a>
+          <a class="btn" href={repo}>View on GitHub</a>
+        </div>
+        <pre class="term" aria-label="Install"><code>pip install genesis-architect</code></pre>
+      </section>
+
+      <section aria-labelledby="two">
+        <h2 id="two">Two entry points</h2>
+        <div class="cols">
+          <article class="card">
+            <h3>New project</h3>
+            <pre><code>genesis init "a CLI that syncs notes"</code></pre>
+            <p>Finds comparable repositories, mines their issues for pitfalls, lets you choose an architecture, then scaffolds it.</p>
+            <a href={doc('new-projects')}>New projects</a>
+          </article>
+          <article class="card">
+            <h3>Existing project</h3>
+            <pre><code>genesis recover .</code></pre>
+            <p>Reads your code without executing it. Reports import cycles, anti-patterns and a score, then proposes fixes for approval.</p>
+            <a href={doc('existing-projects')}>Existing projects</a>
+          </article>
+        </div>
+      </section>
+
+      <section aria-labelledby="demo">
+        <h2 id="demo">Run it yourself</h2>
+        <p>The fastest check needs no API key and changes nothing:</p>
+        <pre class="term"><code>pip install genesis-architect
+cd your-project
+genesis recover .</code></pre>
+        <p class="note">
+          <code>recover</code> is read-only. <code>init</code> needs an LLM key and sends your description to GitHub
+          and to that LLM. See <a href={doc('configuration')}>Configuration</a>.
+        </p>
+      </section>
+
+      <section aria-labelledby="self">
+        <h2 id="self">Genesis audits itself</h2>
+        <p>
+          These figures are generated from the code by a script and re-checked in CI. They are not typed by hand.
+          Source: <a href={`${repo}/blob/main/data/public-product-facts.json`}>data/public-product-facts.json</a>.
+        </p>
+        <dl class="facts">
+          <div><dt>Architecture score</dt><dd>{facts.architecture_score}<span>/100</span></dd></div>
+          <div><dt>Import cycles</dt><dd>{facts.import_cycles}</dd></div>
+          <div><dt>Critical anti-patterns</dt><dd>{facts.critical_antipatterns}</dd></div>
+          <div><dt>Tests collected</dt><dd>{facts.tests.toLocaleString('en-US')}</dd></div>
+          <div><dt>Engines</dt><dd>{facts.engines}</dd></div>
+          <div><dt>Approval gates</dt><dd>{facts.gates}</dd></div>
+        </dl>
+      </section>
+
+      <section aria-labelledby="evidence">
+        <h2 id="evidence">Evidence you can inspect</h2>
+        <p>
+          Genesis writes an evidence pack: what it looked at, what it found, and how thin or strong the evidence is.
+          When research is weak it says <code>THIN</code> instead of hiding it. The repository keeps a real pack for
+          Genesis itself:
+          <a href={`${repo}/blob/main/ARCHITECTURE_EVIDENCE.md`}>ARCHITECTURE_EVIDENCE.md</a>.
+        </p>
+        <p><a href={doc('research-and-evidence')}>How evidence works</a></p>
+      </section>
+
+      <section aria-labelledby="flow">
+        <h2 id="flow">From evidence to verified change</h2>
+        <ol class="flow">
+          {flow.map(([name, text]) => (
+            <li><strong>{name}</strong><span>{text}</span></li>
+          ))}
+        </ol>
+      </section>
+
+      <section aria-labelledby="goals">
+        <h2 id="goals">Capabilities by goal</h2>
+        <ul class="goals">
+          {goals.map(([name, cmd, text, slug]) => (
+            <li>
+              <h3>{name}</h3>
+              <code>{cmd}</code>
+              <p>{text}</p>
+              <a href={doc(slug)}>Read more<span class="sr"> about {name}</span></a>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section aria-labelledby="safety">
+        <h2 id="safety">Safety</h2>
+        <ul class="plain">
+          <li>Analyzed code is never executed.</li>
+          <li>Mutating commands are dry-run by default and need an explicit apply.</li>
+          <li>Secrets found in a scan are redacted in every report.</li>
+          <li>Telemetry is off unless you opt in.</li>
+        </ul>
+        <p><a href={doc('security')}>Security</a> &middot; <a href={doc('approval-model')}>Approval model</a></p>
+      </section>
+
+      <section aria-labelledby="integrations">
+        <h2 id="integrations">Works with your agent</h2>
+        <p>
+          Install as a skill for Claude Code, Cursor or Codex, or connect any MCP client to the read-only tools.
+        </p>
+        <p><a href={doc('agent-integrations')}>Agent integrations</a> &middot; <a href={doc('mcp')}>MCP</a></p>
+      </section>
+
+      <section aria-labelledby="install">
+        <h2 id="install">Install</h2>
+        <pre class="term"><code>pip install genesis-architect
+genesis doctor</code></pre>
+        <p>Python {facts.python_min} or newer.</p>
+      </section>
+
+      <section aria-labelledby="docs">
+        <h2 id="docs">Documentation</h2>
+        <ul class="doclist">
+          {docs.map(([slug, label]) => <li><a href={doc(slug)}>{label}</a></li>)}
+        </ul>
+      </section>
+
+      <section aria-labelledby="not">
+        <h2 id="not">When not to use it</h2>
+        <ul class="plain">
+          <li>Throwaway scripts. The research costs more than it saves.</li>
+          <li>Non-Python code you want analyzed. Analysis is Python-first.</li>
+          <li>When you need a verdict rather than a signal. The score points you at findings; read them.</li>
+        </ul>
+        <p><a href={doc('limitations')}>All limitations</a></p>
+      </section>
+
+      <section class="final" aria-labelledby="start">
+        <h2 id="start">Try it on a real project</h2>
+        <div class="cta">
+          <a class="btn primary" href={doc('getting-started')}>Get started</a>
+          <a class="btn" href={repo}>Star or read the source</a>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <p>
+        Genesis Architect v{facts.version} &middot; {facts.license} &middot;
+        <a href={repo}>GitHub</a> &middot; <a href={`${repo}/blob/main/SECURITY.md`}>Security policy</a>
+      </p>
+    </footer>
+
+    <script is:inline>
+      document.getElementById('theme').addEventListener('click', function () {
+        var cur = document.documentElement.dataset.theme ||
+          (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+        var next = cur === 'dark' ? 'light' : 'dark';
+        document.documentElement.dataset.theme = next;
+        try { localStorage.setItem('gx-theme', next); } catch (e) {}
+      });
+    </script>
+  </body>
+</html>
+
+<style is:global>
+  :root {
+    --bg: #0e1116; --fg: #e8eaed; --muted: #a3aab5; --line: #262c36; --card: #151a21;
+    --accent: #7cc4a4; --accent-fg: #0b1410;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --sans: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme='dark']) {
+      --bg: #fbfaf7; --fg: #1b1f24; --muted: #4f5864; --line: #dcd9d0; --card: #ffffff;
+      --accent: #1d6b4a; --accent-fg: #ffffff;
+    }
+  }
+  :root[data-theme='light'] {
+    --bg: #fbfaf7; --fg: #1b1f24; --muted: #4f5864; --line: #dcd9d0; --card: #ffffff;
+    --accent: #1d6b4a; --accent-fg: #ffffff;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 17px/1.6 var(--sans); }
+  a { color: var(--accent); text-underline-offset: 3px; }
+  a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+  .skip { position: absolute; left: -999px; }
+  .skip:focus { left: 16px; top: 8px; background: var(--card); padding: 8px 12px; z-index: 10; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .top { display: flex; justify-content: space-between; align-items: center; max-width: 960px; margin: 0 auto; padding: 16px; }
+  .top nav { display: flex; gap: 20px; align-items: center; }
+  .top a { color: var(--fg); text-decoration: none; }
+  .brand { font-weight: 600; }
+  .top button { background: none; border: 1px solid var(--line); color: var(--fg); border-radius: 6px; padding: 6px 10px; font: inherit; font-size: 14px; cursor: pointer; }
+  main, footer { max-width: 960px; margin: 0 auto; padding: 0 16px; }
+  section { padding: 48px 0; border-top: 1px solid var(--line); }
+  .hero { border-top: 0; padding-top: 56px; }
+  .kicker { font-family: var(--mono); font-size: 14px; color: var(--muted); margin: 0 0 16px; }
+  h1 { font-size: clamp(2rem, 6vw, 3.4rem); line-height: 1.1; letter-spacing: -0.02em; margin: 0 0 20px; font-weight: 650; }
+  h2 { font-size: 1.5rem; margin: 0 0 16px; letter-spacing: -0.01em; }
+  h3 { font-size: 1.05rem; margin: 0 0 8px; }
+  .lede { font-size: 1.15rem; color: var(--muted); max-width: 62ch; }
+  .cta { display: flex; gap: 12px; flex-wrap: wrap; margin: 24px 0; }
+  .btn { display: inline-block; padding: 10px 18px; border: 1px solid var(--line); border-radius: 8px; color: var(--fg); text-decoration: none; }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); font-weight: 600; }
+  pre { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; overflow-x: auto; margin: 12px 0; }
+  code { font-family: var(--mono); font-size: 0.92em; }
+  .cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 20px; }
+  .card pre { margin-top: 0; }
+  .note { color: var(--muted); font-size: 0.95rem; }
+  .facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin: 20px 0 0; }
+  .facts div { border: 1px solid var(--line); border-radius: 8px; padding: 14px; background: var(--card); }
+  .facts dt { font-size: 13px; color: var(--muted); }
+  .facts dd { margin: 4px 0 0; font-size: 1.8rem; font-weight: 650; }
+  .facts dd span { font-size: 1rem; color: var(--muted); font-weight: 400; }
+  .flow { list-style: none; counter-reset: s; padding: 0; margin: 0; display: grid; gap: 10px; }
+  .flow li { counter-increment: s; display: grid; grid-template-columns: 2rem 9rem 1fr; gap: 8px; align-items: baseline; padding: 10px 0; border-bottom: 1px solid var(--line); }
+  .flow li::before { content: counter(s); font-family: var(--mono); color: var(--muted); }
+  .flow span { color: var(--muted); }
+  .goals { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+  .goals li { border: 1px solid var(--line); border-radius: 10px; padding: 18px; background: var(--card); }
+  .goals p { margin: 8px 0; color: var(--muted); font-size: 0.95rem; }
+  .plain { padding-left: 20px; }
+  .doclist { columns: 2; list-style: none; padding: 0; }
+  .doclist li { padding: 4px 0; }
+  .final { text-align: left; }
+  footer { padding: 32px 16px 56px; color: var(--muted); font-size: 14px; border-top: 1px solid var(--line); }
+  @media (max-width: 560px) {
+    .flow li { grid-template-columns: 1.5rem 1fr; }
+    .flow li span { grid-column: 2; }
+    .doclist { columns: 1; }
+  }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+</style>

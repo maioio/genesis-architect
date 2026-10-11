@@ -13,7 +13,7 @@
   "import_cycles": 0,
   "critical_antipatterns": 0,
   "architecture_score": 93,
-  "tests": 2861,
+  "tests": 2863,
   "capabilities": 50,
   "capability_families": 9,
   "commands": 22,

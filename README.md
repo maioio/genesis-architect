@@ -55,11 +55,7 @@ modules are too fragile to touch.
 pip install genesis-architect
 ```
 
-That is the whole install. Optional extras add voice and the streaming Companion UI:
-
-```bash
-pip install "genesis-architect[all]"
-```
+That is the whole install.
 
 ## Start
 

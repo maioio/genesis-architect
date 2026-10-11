@@ -177,8 +177,7 @@ namespaces in one free package, not two products:
 pip install genesis-architect
 ```
 
-> That is the whole install. Optional extras add voice and the streaming
-> Companion UI: `pip install "genesis-architect[all]"`.
+> That is the whole install.
 
 **Three commands, as tabs or a terminal component:**
 

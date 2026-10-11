@@ -3,7 +3,7 @@ title: Commands
 description: Every genesis command, what it needs, what it writes and whether it is everyday, advanced or kept for compatibility.
 ---
 
-Run `genesis <command> --help` for exact options. A test compares this page with the real command list, so a command that exists but is missing here fails CI. For the capabilities behind each command see the [capability catalog](/genesis-architect/capabilities/).
+Run `genesis <command> --help` for exact options. A test compares this page with the real command list, so a command that exists but is missing here fails CI. For the capabilities behind each command see the [capability catalog](https://maioio.github.io/genesis-architect/capabilities/).
 
 **Status.** `PUBLIC` is the everyday surface. `ADVANCED` is supported but narrower. `LEGACY` is kept so old scripts keep working.
 

@@ -9,5 +9,9 @@ exclude = [
   '^http://localhost',
   '^http://127\.0\.0\.1',
   'example\.(com|org)',
+  # Our own site is validated against the built site/dist by
+  # scripts/public_surface/validate_site_urls.py, so a page can be linked in the
+  # PR that adds it, before it is deployed. Any other host is still checked.
+  '^https://maioio\.github\.io/genesis-architect(/|$)',
 ]
 exclude_path = ["docs/archive", "genesis-architect-pro", "CHANGELOG.md"]

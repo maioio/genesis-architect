@@ -1,6 +1,8 @@
 # Link check for Markdown sources. Built-site routes are checked by
 # scripts/public_surface/validate_site_build.py; this covers external links.
 accept = ["200..=299", "429"]
+# Internal routes are checked against the built site by validate_site_build.py.
+scheme = ["https"]
 max_retries = 3
 timeout = 20
 exclude = [
@@ -9,5 +11,7 @@ exclude = [
   'example\.(com|org)',
   # Not published until the Pages cutover (owner decision), so it 404s on main today.
   '^https://maioio\.github\.io/genesis-architect/.+',
+  # Files added by this branch; they 404 on main until the PR merges.
+  '^https://github\.com/maioio/genesis-architect/blob/main/(data/public-product-facts\.json|docs/architecture/overview\.md)$',
 ]
 exclude_path = ["docs/archive", "genesis-architect-pro", "CHANGELOG.md"]

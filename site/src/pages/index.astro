@@ -82,7 +82,7 @@ const docs = [
           <a class="btn primary" href={doc('getting-started')}>Get started</a>
           <a class="btn" href={repo}>View on GitHub</a>
         </div>
-        <pre class="term" aria-label="Install"><code>pip install genesis-architect</code></pre>
+        <pre tabindex="0" class="term" aria-label="Install"><code>pip install genesis-architect</code></pre>
       </section>
 
       <section aria-labelledby="two">
@@ -90,13 +90,13 @@ const docs = [
         <div class="cols">
           <article class="card">
             <h3>New project</h3>
-            <pre><code>genesis init "a CLI that syncs notes"</code></pre>
+            <pre tabindex="0"><code>genesis init "a CLI that syncs notes"</code></pre>
             <p>Finds comparable repositories, mines their issues for pitfalls, lets you choose an architecture, then scaffolds it.</p>
             <a href={doc('new-projects')}>New projects</a>
           </article>
           <article class="card">
             <h3>Existing project</h3>
-            <pre><code>genesis recover .</code></pre>
+            <pre tabindex="0"><code>genesis recover .</code></pre>
             <p>Reads your code without executing it. Reports import cycles, anti-patterns and a score, then proposes fixes for approval.</p>
             <a href={doc('existing-projects')}>Existing projects</a>
           </article>
@@ -106,7 +106,7 @@ const docs = [
       <section aria-labelledby="demo">
         <h2 id="demo">Run it yourself</h2>
         <p>The fastest check needs no API key and changes nothing:</p>
-        <pre class="term"><code>pip install genesis-architect
+        <pre tabindex="0" class="term"><code>pip install genesis-architect
 cd your-project
 genesis recover .</code></pre>
         <p class="note">
@@ -186,7 +186,7 @@ genesis recover .</code></pre>
 
       <section aria-labelledby="install">
         <h2 id="install">Install</h2>
-        <pre class="term"><code>pip install genesis-architect
+        <pre tabindex="0" class="term"><code>pip install genesis-architect
 genesis doctor</code></pre>
         <p>Python {facts.python_min} or newer.</p>
       </section>

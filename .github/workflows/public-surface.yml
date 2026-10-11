@@ -48,6 +48,9 @@ jobs:
       - name: Public claims, versions and URLs
         run: python scripts/public_surface/validate_public_claims.py
 
+      - name: Demo output matches a real recover run
+        run: python demo/run_recover.py --check
+
       - name: Workflow files parse
         run: |
           pip install pyyaml -q

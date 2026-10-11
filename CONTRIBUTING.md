@@ -2,6 +2,28 @@
 
 Thanks for your interest. This document covers everything you need to make a useful contribution.
 
+If you use a coding agent, read [AGENTS.md](AGENTS.md) too. It is the same rules in a form agents load automatically.
+
+---
+
+## Your first 15 minutes
+
+```bash
+git clone https://github.com/maioio/genesis-architect.git
+cd genesis-architect
+pip install -e ".[dev]"
+export GENESIS_NO_AUTO_INSTALL=1      # PowerShell: $env:GENESIS_NO_AUTO_INSTALL = "1"
+pytest -q                             # about 40 seconds, fully offline
+python demo/run_recover.py --check    # the deterministic demo; proves your setup matches CI
+```
+
+Then pick one small thing: a typo, a docs fix, or an issue labeled `good first issue`. Make the
+change on a branch, run the checks in [Before you open a PR](#before-you-open-a-pr), and open the
+PR. A first PR that fixes one thing well is worth more than a large one.
+
+Not sure where something lives? [AGENTS.md](AGENTS.md) has a repo map, and
+[docs/evaluations/index.md](docs/evaluations/index.md) shows what is tested and how to run it.
+
 ---
 
 ## What to work on
@@ -115,14 +137,88 @@ Follow the existing Python and TypeScript patterns exactly.
 
 ---
 
+## Adding an engine, gate, source or fixture
+
+Each of these has a test file you extend in the same PR.
+
+| You are adding | Where | Test to extend |
+|---|---|---|
+| An analysis engine | An adapter and a registration in `src/genesis_architect/pro/gde_engine_registration.py` | `tests/test_gde_*` |
+| A decision gate | A `_check_*` function in `src/genesis_architect/pro/gde_gate_engine.py` | `tests/test_gde_step5_gate_engine.py` |
+| A research source | `src/genesis_architect/pro/source_registry.py` | `tests/test_source_registry.py` |
+| A test fixture | A small directory under `tests/` (or `demo/fixture/` for the demo) | The test that uses it |
+
+Adding an engine or gate changes counts the project publishes. After the change, run the
+public-facts procedure below before you open the PR.
+
+---
+
+## Public facts and generated files
+
+Every public number (version, engine and gate counts, test count, score) comes from one chain:
+
+`pyproject.toml` and `ARCHITECTURE_INVARIANTS.json` -> `data/public-product-facts.json` -> the
+README facts block and the website.
+
+Do not edit the generated parts by hand. Regenerate them, then check:
+
+```bash
+python scripts/architecture_invariants.py --write
+python scripts/public_surface/generate_product_facts.py --write
+python scripts/public_surface/sync_readme_facts.py --write
+python scripts/public_surface/validate_public_claims.py
+```
+
+Generated, do not hand-edit: `data/public-product-facts.json`, the block between
+`<!-- facts:start -->` and `<!-- facts:end -->` in `README.md`, `ARCHITECTURE_INVARIANTS.json`,
+`ARCHITECTURE_EVIDENCE.md`, `demo/output/`. A release bump also updates the version in
+`CITATION.cff` by hand. See [docs/reference/versioning.md](docs/reference/versioning.md).
+
+Writing new docs: link to the facts file instead of repeating a number, label planned work as
+planned, and never describe v10 as current.
+
+---
+
+## Running the website
+
+```bash
+cd site
+npm ci
+npm run dev       # local preview
+npm run build     # production build
+cd ..
+python scripts/public_surface/validate_site_build.py
+```
+
+Needed only when you change `site/` or public docs.
+
+---
+
+## Before you open a PR
+
+```bash
+pytest -q
+python scripts/architecture_invariants.py --check
+python scripts/public_surface/generate_product_facts.py --check
+python scripts/public_surface/sync_readme_facts.py --check
+python scripts/public_surface/validate_public_claims.py
+python demo/run_recover.py --check
+python scripts/eval_runner.py --mode validate
+git diff --check
+```
+
 ## PR checklist
 
-- [ ] `pytest -q` passes
+- [ ] The commands above pass (CI runs them too)
 - [ ] `docker run --rm genesis-test` passes (or CI is green on your PR)
-- [ ] `python scripts/eval_runner.py --mode validate` exits 0
+- [ ] A behavior change has a test; a bug fix has a regression test
 - [ ] SKILL.md under 480 lines (if modified)
 - [ ] No em or en dashes in reader-facing docs
+- [ ] Public numbers changed only through the facts chain
 - [ ] `CHANGELOG.md` updated under `[Unreleased]`
+
+Keep PRs small and focused. Describe what changed and how you checked it; do not claim a test
+result you did not run.
 
 ---
 

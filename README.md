@@ -17,6 +17,15 @@ keep recurring, and generates a scaffold with those mitigations already in place
 Then it stays. It diagnoses drift, scores architecture, models threats, and tells you which
 modules are too fragile to touch.
 
+<p align="center">
+  <a href="#install">Install</a> &middot;
+  <a href="#start">Start</a> &middot;
+  <a href="#what-it-actually-produces">Example output</a> &middot;
+  <a href="#genesis-audited-itself">Self-audit</a> &middot;
+  <a href="ARCHITECTURE.md">Architecture</a> &middot;
+  <a href="CONTRIBUTING.md">Contributing</a>
+</p>
+
 [![CI](https://img.shields.io/github/actions/workflow/status/maioio/genesis-architect/ci.yml?branch=main&style=flat-square&label=CI)](https://github.com/maioio/genesis-architect/actions)
 [![PyPI](https://img.shields.io/pypi/v/genesis-architect?style=flat-square)](https://pypi.org/project/genesis-architect/)
 [![Python](https://img.shields.io/pypi/pyversions/genesis-architect?style=flat-square)](https://pypi.org/project/genesis-architect/)
@@ -37,6 +46,34 @@ modules are too fragile to touch.
 > AGPL-3.0. No key, no account, no telemetry by default. The former Pro repository's
 > source now lives in [`genesis-architect-pro/`](genesis-architect-pro/), and its commit
 > history is on this repository's `pro/*` branches.
+
+---
+
+## Install
+
+```bash
+pip install genesis-architect
+```
+
+That is the whole install. Optional extras add voice and the streaming Companion UI:
+
+```bash
+pip install "genesis-architect[all]"
+```
+
+## Start
+
+```bash
+# Research GitHub, then scaffold a project with the mitigations built in
+genesis init a Python CLI for analyzing log files
+
+# Point it at code that already exists
+genesis recover .        # drift, broken imports, anti-patterns, fragile modules
+genesis harden .         # STRIDE threat model, OWASP checklist, secrets scan
+
+# Or just say what you want; it routes to the right engines
+genesis decide "why is this project so hard to change?"
+```
 
 ---
 
@@ -69,34 +106,6 @@ All of it is now zero.
 
 The full method, including how interface parity was proven byte-for-byte across
 a nine-module split, is in [ARCHITECTURE.md](ARCHITECTURE.md).
-
----
-
-## Install
-
-```bash
-pip install genesis-architect
-```
-
-That is the whole install. Optional extras add voice and the streaming Companion UI:
-
-```bash
-pip install "genesis-architect[all]"
-```
-
-## Start
-
-```bash
-# Research GitHub, then scaffold a project with the mitigations built in
-genesis init a Python CLI for analyzing log files
-
-# Point it at code that already exists
-genesis recover .        # drift, broken imports, anti-patterns, fragile modules
-genesis harden .         # STRIDE threat model, OWASP checklist, secrets scan
-
-# Or just say what you want; it routes to the right engines
-genesis decide "why is this project so hard to change?"
-```
 
 ---
 

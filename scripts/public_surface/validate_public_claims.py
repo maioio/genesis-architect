@@ -21,6 +21,7 @@ FACTS = REPO / "data" / "public-product-facts.json"
 PROSE = ["README.md", "SKILL.md", "CONTRIBUTING.md", "SECURITY.md",
          "docs/architecture/overview.md", "ARCHITECTURE.md"]
 STALE_ORG = "maioio-projects"
+RECOVER_RO = re.compile(r"recover.*(?:read[- ]only|never writes|does not write)|(?:read[- ]only|never writes|does not write).*recover", re.I)
 
 # (label, regex with one numeric group, facts key)
 CLAIMS = [
@@ -60,6 +61,19 @@ def main() -> int:
                     if int(m.group(1).replace(",", "")) != facts[key]:
                         errors.append(f"{rel}:{lineno}: {label} {m.group(1)} != {facts[key]}")
     ran.append("stale-claims")
+
+    # recover writes .genesis/ and FRAGILITY_MAP.md, so it is not "read-only".
+    recover_scope = list(PROSE) + [
+        str(p.relative_to(REPO)) for p in (REPO / "site" / "src").rglob("*") if p.suffix in {".md", ".mdx", ".astro"}
+    ] + ["site/content/website-copy.md", "demo/README.md"]
+    for rel in recover_scope:
+        path = REPO / rel
+        if not path.exists():
+            continue
+        for lineno, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+            if RECOVER_RO.search(line):
+                errors.append(f"{rel}:{lineno}: recover is described as read-only; it writes .genesis/ and FRAGILITY_MAP.md")
+    ran.append("recover-contract")
 
     print("checks run: " + ", ".join(ran))
     for e in errors:

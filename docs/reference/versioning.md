@@ -53,3 +53,11 @@ Which versions receive security fixes, and how to report a vulnerability, is def
 
 No release schedule, no long-term support branches, and no response-time guarantee beyond the
 reporting window in SECURITY.md.
+
+## Changelog
+
+[CHANGELOG.md](../../CHANGELOG.md) is a single file in Keep a Changelog format with an
+`[Unreleased]` section, and every user-visible change adds an entry there in its own PR. A
+fragment-per-change directory (`changelog.d/`) is not used: with one maintainer and few
+concurrent PRs, merge conflicts in the changelog are rare, so the extra tooling would cost more
+than it saves. Revisit if conflicts become routine.

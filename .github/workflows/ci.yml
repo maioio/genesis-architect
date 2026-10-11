@@ -180,7 +180,7 @@ jobs:
           [ "$result" = "success" ] || exit 1
 
   # Named "Tests" to match the required check on main. That is not a fudge:
-  # this job runs the full suite (2295 tests) plus the CLI smoke tests against
+  # this job runs the full suite plus the CLI smoke tests against
   # a real install, and then the wheel acceptance test. It is the most
   # authoritative test signal in the repo, not a subset.
   packaged-install:

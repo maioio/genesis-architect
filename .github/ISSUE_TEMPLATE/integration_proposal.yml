@@ -1,0 +1,24 @@
+name: Integration or capability proposal
+description: Propose a new source, agent integration, language or engine
+labels: ["proposal"]
+body:
+  - type: markdown
+    attributes:
+      value: New sources and integrations are weighed for value, cost and risk before work starts. Fill in what you can.
+  - type: textarea
+    id: value
+    attributes:
+      label: What does it add that Genesis cannot do today?
+    validations:
+      required: true
+  - type: textarea
+    id: cost
+    attributes:
+      label: What does it cost to maintain, and what could go wrong?
+      description: Dependencies, rate limits, stability, data it would send elsewhere.
+    validations:
+      required: true
+  - type: textarea
+    id: lighter
+    attributes:
+      label: Is there a lighter alternative?

@@ -1,61 +1,46 @@
-name: Bug Report
-description: Something in the skill is not working correctly
+name: Bug report
+description: Genesis did something wrong or crashed
 labels: ["bug"]
 body:
   - type: markdown
     attributes:
       value: |
-        Thanks for taking the time to report a bug. Please fill out the fields below.
-
+        Do not include API keys or private code. Security problems go through SECURITY.md, not here.
   - type: textarea
     id: what-happened
     attributes:
       label: What happened?
-      description: What did the skill do that was wrong?
-      placeholder: "The skill generated an empty RESEARCH.md even though GitHub MCP was available..."
+      description: Include the exact command and the output you saw.
     validations:
       required: true
-
   - type: textarea
     id: expected
     attributes:
       label: What did you expect?
-      placeholder: "I expected to see a populated RESEARCH.md with at least 5 repos..."
     validations:
       required: true
-
-  - type: textarea
-    id: invocation
-    attributes:
-      label: How did you invoke the skill?
-      placeholder: "genesis init a REST API in TypeScript"
-    validations:
-      required: true
-
   - type: dropdown
-    id: phase
+    id: entry
     attributes:
-      label: Which phase failed?
+      label: Which entry point?
       options:
-        - Phase 1 - Vision Alignment
-        - Phase 2 - Deep Discovery
-        - Phase 3 - Architecture Analysis
-        - Phase 4 - Pitfall Identification
-        - Phase 5 - Interactive Choice
-        - Phase 6 - Genesis Build
-        - Phase 7 - Development Companion Mode
-        - Not sure
+        - genesis init
+        - genesis recover
+        - Another command
+        - MCP tools
+        - Agent skill (Claude Code, Cursor, Codex)
+        - Documentation site
     validations:
       required: true
-
-  - type: dropdown
-    id: tools
+  - type: input
+    id: version
     attributes:
-      label: Which MCP tools were available?
-      multiple: true
-      options:
-        - GitHub MCP
-        - Exa MCP
-        - Firecrawl MCP
-        - Web search only
-        - None / not sure
+      label: Output of `genesis --version`
+    validations:
+      required: true
+  - type: input
+    id: env
+    attributes:
+      label: Python version and operating system
+    validations:
+      required: true

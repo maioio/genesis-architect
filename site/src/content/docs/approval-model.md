@@ -3,7 +3,7 @@ title: Approval model
 description: What can change your project, and what has to approve it.
 ---
 
-Analysis is read-only. Writes are separate and gated.
+Analysis does not edit your source files. It does write its own reports (`.genesis/`, `FRAGILITY_MAP.md`). Changes to your code are separate and gated.
 
 ## Rules
 

@@ -39,9 +39,9 @@ pip install genesis-architect
 | You have | Run | What happens |
 |---|---|---|
 | An idea | `genesis init "a Python CLI for analyzing log files"` | Researches GitHub, shows pitfalls with sources, you pick an architecture, it scaffolds |
-| A codebase | `genesis recover .` | Read-only diagnosis: import cycles, anti-patterns, fragile modules, drift |
+| A codebase | `genesis recover .` | Diagnosis that leaves your source untouched: import cycles, anti-patterns, fragile modules, drift |
 
-`recover` needs no API key and never executes your code. `init` needs an LLM key and sends
+`recover` needs no API key, never executes your code and does not edit your source files. It writes its own reports to `.genesis/` and `FRAGILITY_MAP.md` in the project directory. `init` needs an LLM key and sends
 your description to GitHub and to that LLM ([configuration](https://maioio.github.io/genesis-architect/configuration/)).
 
 ## Demo

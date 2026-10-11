@@ -20,7 +20,7 @@ const flow = [
 
 const goals = [
   ['Start a project', 'genesis init', 'Research, compare architectures, scaffold with tests and CI.', 'new-projects'],
-  ['Recover a codebase', 'genesis recover .', 'Diagnose cycles, anti-patterns and drift. Read-only.', 'existing-projects'],
+  ['Recover a codebase', 'genesis recover .', 'Diagnose cycles, anti-patterns and drift. Your source is not edited.', 'existing-projects'],
   ['Harden', 'genesis harden', 'Find security and quality gaps against a checklist.', 'commands'],
   ['Check dependencies', 'genesis deps', 'Inspect declared dependencies for risk.', 'commands'],
   ['Ask your agent', 'MCP tools', 'Four read-only tools for any MCP client.', 'mcp'],
@@ -110,7 +110,7 @@ const docs = [
 cd your-project
 genesis recover .</code></pre>
         <p class="note">
-          <code>recover</code> is read-only. <code>init</code> needs an LLM key and sends your description to GitHub
+          <code>recover</code> does not edit your source; it writes reports to <code>.genesis/</code> and <code>FRAGILITY_MAP.md</code>. <code>init</code> needs an LLM key and sends your description to GitHub
           and to that LLM. See <a href={doc('configuration')}>Configuration</a>.
         </p>
       </section>

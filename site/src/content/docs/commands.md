@@ -28,7 +28,7 @@ Run `genesis <command> --help` for exact options. `genesis --help` is the source
 
 | Flag | Meaning |
 |---|---|
-| `--no-commit` | Analysis only, no writes |
+| `--no-commit` | Analysis only: skips the approve and commit stage. Reports are still written to `.genesis/` and `FRAGILITY_MAP.md` |
 | `--json` | Structured output; implies `--no-commit` |
 | `--yes`, `-y` | Auto-approve writes (CI) |
 | `--resume` | Resume a saved session |

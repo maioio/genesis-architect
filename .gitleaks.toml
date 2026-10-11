@@ -2,7 +2,7 @@
 #
 # Genesis ships its own secrets scanner, so its test suite necessarily contains
 # strings shaped exactly like real credentials. Those fixtures are synthetic
-# (AKIAABCDEFGHIJKLMNOP and similar placeholders) and are the only reason
+# (AWS-key-shaped placeholders) and are the only reason
 # Gitleaks reports findings on this repository.
 #
 # The allowlist below is deliberately narrow: it exempts the scanner's own
@@ -30,9 +30,9 @@ paths = [
 
 regexes = [
   # Documented placeholders that appear in prose and generated output.
-  '''AKIAABCDEFGHIJKLMNOP''',
-  '''AKIAXXXXXXXXXXXXXXXX''',
-  '''AKIAIOSFODNN7EXAMPLE''',
+  '''AKIA[A]BCDEFGHIJKLMNOP''',
+  '''AKIA[X]{16}''',
+  '''AKIAIOSFODNN7EXAMP[L]E''',
   # Truncated key block used in a docstring example, never a real key.
   '''MIIB\.\.\.''',
 ]

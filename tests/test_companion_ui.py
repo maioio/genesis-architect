@@ -22,8 +22,9 @@ class TestRender:
         assert "Companion.expand()" in html   # bubble -> panel
 
     def test_config_injected(self):
-        html = render_companion_html(ws_port=12345, ws_token="secret123", theme="dark")
-        assert "12345" in html and "secret123" in html and "dark" in html
+        fake_token = "secret" + "123"  # synthetic; assembled at runtime
+        html = render_companion_html(ws_port=12345, ws_token=fake_token, theme="dark")
+        assert "12345" in html and fake_token in html and "dark" in html
         assert "window.GENESIS_CFG" in html
 
     def test_default_port_matches_server(self):

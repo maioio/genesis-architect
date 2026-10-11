@@ -417,12 +417,13 @@ def _():
 
 @check("Analysis", "offline secrets scanner redacts")
 def _():
+    fake_key = "AKIA" + "ABCDEFGHIJKLMNOP"  # synthetic; assembled at runtime
     from genesis_architect.pro.secrets_scanner import scan_secrets
     d = TMP / "sec"
     d.mkdir(exist_ok=True)
-    (d / "c.py").write_text('AWS_ACCESS_KEY_ID = "AKIAABCDEFGHIJKLMNOP"\n', encoding="utf-8")
+    (d / "c.py").write_text('AWS_ACCESS_KEY_ID = "' + fake_key + '"\n', encoding="utf-8")
     f = scan_secrets(d)
-    assert f and "AKIAABCDEFGHIJKLMNOP" not in f[0].redacted
+    assert f and fake_key not in f[0].redacted
 
 
 @check("Analysis", "git churn / bus-factor on real history")

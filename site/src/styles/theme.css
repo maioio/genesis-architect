@@ -12,3 +12,7 @@
   --sl-color-accent: #0a6a94;
   --sl-color-accent-high: #064560;
 }
+
+/* Brand mark: official artwork is dark blue, so it sits on a white chip in dark mode. */
+.site-title img { height: 1.5rem; width: auto; border-radius: 6px; }
+:root[data-theme='dark'] .site-title img { background: #fff; padding: 3px 5px; box-sizing: content-box; }

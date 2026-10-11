@@ -8,8 +8,14 @@ export default defineConfig({
   integrations: [
     starlight({
       title: 'Genesis Architect',
-      favicon: '/favicon.svg',
+      favicon: '/favicon.ico',
+      logo: { src: './src/assets/genesis-mark.png', alt: 'Genesis Architect' },
       head: [
+        { tag: 'link', attrs: { rel: 'icon', type: 'image/png', sizes: '32x32', href: '/genesis-architect/favicon-32.png' } },
+        { tag: 'link', attrs: { rel: 'apple-touch-icon', href: '/genesis-architect/apple-touch-icon.png' } },
+        { tag: 'meta', attrs: { property: 'og:image:width', content: '1200' } },
+        { tag: 'meta', attrs: { property: 'og:image:height', content: '630' } },
+        { tag: 'meta', attrs: { name: 'twitter:image', content: 'https://maioio.github.io/genesis-architect/social-card.png' } },
         { tag: 'meta', attrs: { property: 'og:image', content: 'https://maioio.github.io/genesis-architect/social-card.png' } },
         { tag: 'meta', attrs: { name: 'twitter:card', content: 'summary_large_image' } },
         // Scrollable code blocks must be keyboard reachable (axe: scrollable-region-focusable).

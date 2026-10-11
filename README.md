@@ -340,15 +340,9 @@ do not work for your product, see the commercial option below.
 
 Releases up to v5.4.1 were published under MIT and remain available under those terms.
 
-## 📝 License and Commercial Use
-
-This project is open-source and dual-licensed.
-
-1. **Open Source License:** The code is available under the **AGPLv3 License**. You are free to use, modify, and distribute this software for personal or open-source projects, provided that you release your modifications and any software that integrates it under the same AGPLv3 license.
-
-2. **Commercial License:** If you wish to use this software in a closed-source commercial product, or need a custom license without the copyleft restrictions of the AGPLv3, **a commercial license is required**.
-
-For commercial licensing inquiries, please contact: maio.eshet@gmail.com
+**Commercial license.** If you want to use Genesis in a closed-source commercial product,
+or need terms without the AGPL copyleft, a commercial license is available:
+maio.eshet@gmail.com
 
 ---
 

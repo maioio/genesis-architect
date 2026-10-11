@@ -96,7 +96,7 @@ test('sitemap and robots.txt are served and consistent', async ({ request }) => 
 });
 
 test('favicon and social card are served', async ({ request }) => {
-  for (const f of ['favicon.svg', 'social-card.png']) {
+  for (const f of ['favicon.ico', 'favicon-32.png', 'apple-touch-icon.png', 'social-card.png']) {
     expect((await request.get(BASE + f)).status()).toBe(200);
   }
 });

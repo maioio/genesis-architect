@@ -1,4 +1,7 @@
 ---
+import { Image } from 'astro:assets';
+import mark from '../assets/genesis-mark.png';
+import lockup from '../assets/genesis-logo.png';
 import facts from '../../../data/public-product-facts.json';
 
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
@@ -50,8 +53,14 @@ const docs = [
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonical} />
     <meta property="og:image" content={`${canonical}social-card.png`} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Genesis Architect: evidence-first architecture for real software" />
     <meta name="twitter:card" content="summary_large_image" />
-    <link rel="icon" type="image/svg+xml" href={`${base}/favicon.svg`} />
+    <meta name="twitter:image" content={`${canonical}social-card.png`} />
+    <link rel="icon" href={`${base}/favicon.ico`} sizes="any" />
+    <link rel="icon" type="image/png" sizes="32x32" href={`${base}/favicon-32.png`} />
+    <link rel="apple-touch-icon" href={`${base}/apple-touch-icon.png`} />
     <script is:inline>
       try {
         const t = localStorage.getItem('gx-theme');
@@ -62,7 +71,10 @@ const docs = [
   <body>
     <a class="skip" href="#main">Skip to content</a>
     <header class="top">
-      <a class="brand" href={`${base}/`}>Genesis Architect</a>
+      <a class="brand" href={`${base}/`}>
+        <span class="chip"><Image src={mark} alt="" width={34} height={26} loading="eager" /></span>
+        <span>Genesis Architect</span>
+      </a>
       <nav aria-label="Primary">
         <a href={doc('getting-started')}>Docs</a>
         <a href={repo}>GitHub</a>
@@ -72,6 +84,9 @@ const docs = [
 
     <main id="main">
       <section class="hero">
+        <div class="hero-brand">
+          <span class="chip lg"><Image src={lockup} alt="Genesis Architect logo" width={132} height={132} loading="eager" /></span>
+        </div>
         <p class="kicker">v{facts.version} &middot; {facts.license}</p>
         <h1>Research before you build.<br />Understand before you change.</h1>
         <p class="lede">
@@ -239,19 +254,19 @@ genesis doctor</code></pre>
 <style is:global>
   :root {
     --bg: #0e1116; --fg: #e8eaed; --muted: #a3aab5; --line: #262c36; --card: #151a21;
-    --accent: #7cc4a4; --accent-fg: #0b1410;
+    --accent: #7cc4a4; --accent-fg: #0b1410; --chip: #ffffff;
     --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     --sans: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   }
   @media (prefers-color-scheme: light) {
     :root:not([data-theme='dark']) {
       --bg: #fbfaf7; --fg: #1b1f24; --muted: #4f5864; --line: #dcd9d0; --card: #ffffff;
-      --accent: #1d6b4a; --accent-fg: #ffffff;
+      --accent: #1d6b4a; --accent-fg: #ffffff; --chip: transparent;
     }
   }
   :root[data-theme='light'] {
     --bg: #fbfaf7; --fg: #1b1f24; --muted: #4f5864; --line: #dcd9d0; --card: #ffffff;
-    --accent: #1d6b4a; --accent-fg: #ffffff;
+    --accent: #1d6b4a; --accent-fg: #ffffff; --chip: transparent;
   }
   * { box-sizing: border-box; }
   html { scroll-behavior: smooth; }
@@ -264,7 +279,18 @@ genesis doctor</code></pre>
   .top { display: flex; justify-content: space-between; align-items: center; max-width: 960px; margin: 0 auto; padding: 16px; }
   .top nav { display: flex; gap: 20px; align-items: center; }
   .top a { color: var(--fg); text-decoration: none; }
-  .brand { font-weight: 600; }
+  .brand { font-weight: 600; display: inline-flex; align-items: center; gap: 10px; }
+  .chip { display: inline-flex; align-items: center; justify-content: center; background: var(--chip); border-radius: 8px; padding: 3px 5px; line-height: 0; }
+  .chip img { display: block; height: auto; }
+  .brand .chip img { width: 28px; height: 22px; }
+  .chip.lg { border-radius: 14px; padding: 10px; }
+  .hero-brand { margin: 0 0 24px; }
+  .brand { white-space: nowrap; }
+  @media (max-width: 480px) { .top { padding: 12px 16px; } .top nav { gap: 12px; } .brand { font-size: 16px; gap: 8px; } }
+  @media (max-width: 380px) { .top nav { gap: 8px; } .top button { padding: 6px 8px; } .brand { font-size: 15px; } }
+  @media (max-width: 340px) { .top { padding: 12px 10px; } .top nav { gap: 6px; font-size: 15px; } .brand { font-size: 14px; gap: 6px; } .brand .chip { padding: 2px 3px; } }
+  .hero-brand img { width: 96px; height: 96px; }
+  @media (min-width: 720px) { .hero-brand img { width: 132px; height: 132px; } }
   .top button { background: none; border: 1px solid var(--line); color: var(--fg); border-radius: 6px; padding: 6px 10px; font: inherit; font-size: 14px; cursor: pointer; }
   main, footer { max-width: 960px; margin: 0 auto; padding: 0 16px; }
   section { padding: 48px 0; border-top: 1px solid var(--line); }

@@ -1,28 +1,53 @@
 ---
 title: Commands
-description: The genesis command reference.
+description: Every genesis command, what it needs, what it writes and whether it is everyday, advanced or kept for compatibility.
 ---
 
-Run `genesis <command> --help` for exact options. `genesis --help` is the source for this page.
+Run `genesis <command> --help` for exact options. A test compares this page with the real command list, so a command that exists but is missing here fails CI. For the capabilities behind each command see the [capability catalog](https://maioio.github.io/genesis-architect/capabilities/).
 
-| Command | Purpose |
-|---|---|
-| `init` | Scan GitHub, mine pitfalls, scaffold a new project |
-| `research` | Multi-source research on a topic |
-| `recover [PATH]` | Diagnose drift, broken imports, anti-patterns, decay |
-| `harden [PATH]` | STRIDE threat model, OWASP Top 10, secrets scan |
-| `decide "<text>"` | Route an instruction to the right engines |
-| `explain` | Print the last session's decision log |
-| `engines` | List every engine and the command that reaches it |
-| `deps [PATH]` | Third-party dependencies per module, plus advisories |
-| `advise` | Recommend MCP servers and skills for this project; installs nothing |
-| `memory` | Show or manage per-project memory in `.genesis/` |
-| `doctor` | Readiness check for the install |
-| `config` | Set, get or show API keys |
-| `publish` | Generate a Show HN post and GitHub Release notes |
-| `ui`, `companion` | HTML canvas workspace and the local health page |
-| `sync`, `fetch`, `purge` | Autonomous sync, read-only skill-pack fetch, expired-resource cleanup |
-| `telemetry` | Manage opt-in telemetry. The default is off |
+**Status.** `PUBLIC` is the everyday surface. `ADVANCED` is supported but narrower. `LEGACY` is kept so old scripts keep working.
+
+## Start and research
+
+| Command | Status | Needs | What it does |
+|---|---|---|---|
+| `init` | PUBLIC | LLM key or local model, network | Research GitHub, mine pitfalls, scaffold a new project |
+| `research` | PUBLIC | Network (or `--json-data` offline) | Multi-source research on a topic |
+| `resolve` | ADVANCED | Network for the Stack Overflow step | Look up a known solution: local vault first, then Stack Overflow |
+| `publish` | PUBLIC | LLM key | Draft a Show HN post and release notes. You post them yourself |
+
+## Existing code
+
+| Command | Status | Needs | What it does |
+|---|---|---|---|
+| `recover [PATH]` | PUBLIC | Nothing | Diagnose drift, broken imports, anti-patterns, decay. Writes `.genesis/` and `FRAGILITY_MAP.md`, never your source |
+| `harden [PATH]` | PUBLIC | Nothing | STRIDE threat model, OWASP Top 10 checklist, offline secrets scan. Proposes its reports under `docs/security/`; they are written only after you approve (default is Defer) or pass `--yes` |
+| `deps [PATH]` | PUBLIC | Network for advisories (OSV.dev) | Third-party dependencies per module, plus advisories |
+| `decide "<text>"` | PUBLIC | Nothing; LLM critique optional | Run a full decision session on an instruction |
+| `explain` | PUBLIC | Nothing | Print the last session's decision log |
+| `memory` | PUBLIC | Nothing | Show or manage per-project memory in `.genesis/` |
+
+## Tooling, agents and setup
+
+| Command | Status | Needs | What it does |
+|---|---|---|---|
+| `engines` | PUBLIC | Nothing | List every engine and the command that reaches it |
+| `advise` | PUBLIC | Nothing | Recommend MCP servers and skills for this project. Installs nothing |
+| `doctor` | PUBLIC | Nothing | Readiness check for the install |
+| `config` | PUBLIC | Nothing | Set, get or show API keys |
+| `ui` | PUBLIC | Nothing | Generate the self-contained HTML canvas workspace |
+| `companion` | ADVANCED | Optional extras for voice and notifications | Local health page, notifications and optional voice |
+| `sync` | ADVANCED | Nothing | Autonomous sync: gate, findings, auto-apply of the GREEN zone only (`--dry-run` writes nothing) |
+| `fetch` | ADVANCED | Network, `git` | Fetch a trusted skill pack into a short-lived sandbox |
+| `purge` | ADVANCED | Nothing | Remove expired worktrees and locks. Dry run by default, `--apply` to remove |
+| `telemetry` | ADVANCED | Nothing | Manage opt-in telemetry. The default is off |
+
+## Kept for compatibility
+
+| Command | Status | What it does |
+|---|---|---|
+| `upgrade` | LEGACY | Does nothing useful: Genesis has no paid tier |
+| `license` | LEGACY | No license key is needed |
 
 ## Common flags
 

@@ -26,11 +26,19 @@ Research before you build. Understand before you change.
 
 ---
 
-Genesis reads the open-source projects that came before yours, mines their closed issues for
-the failures that keep recurring, and scaffolds a project with those mitigations already in
-place. For code that already exists, it builds the import graph, scores the architecture,
-and reports what is fragile before anyone changes it. Every recommendation carries its
-sources, and nothing acts without your approval.
+Genesis researches across the software ecosystem before you build, using the sources
+available in the current execution environment, then turns that evidence into architecture
+options you approve. It mines the failures that keep recurring in comparable projects and
+scaffolds with those mitigations already in place. For code that already exists, it builds
+the import graph, scores the architecture, and reports what is fragile before anyone changes
+it. Every recommendation carries its sources, and nothing acts without your approval.
+
+The sources depend on how you run it. The standalone `genesis init` CLI researches GitHub
+repositories and their issues. When Genesis runs as an agent skill, its research workflow can
+combine GitHub with available web and MCP sources, community discussions, package registries,
+security data and relevant media. Genesis's own MCP server is separate: four read-only
+analysis tools that do not use the network. See
+[Research and evidence](https://maioio.github.io/genesis-architect/research-and-evidence/).
 
 ```bash
 pip install genesis-architect
@@ -38,7 +46,7 @@ pip install genesis-architect
 
 | You have | Run | What happens |
 |---|---|---|
-| An idea | `genesis init "a Python CLI for analyzing log files"` | Researches GitHub, shows pitfalls with sources, you pick an architecture, it scaffolds |
+| An idea | `genesis init "a Python CLI for analyzing log files"` | The CLI researches GitHub repositories and issues (an agent skill can add more sources), shows pitfalls with sources, you pick an architecture, it scaffolds |
 | A codebase | `genesis recover .` | Diagnosis that leaves your source untouched: import cycles, anti-patterns, fragile modules, drift |
 
 `recover` needs no API key, never executes your code and does not edit your source files. It writes its own reports to `.genesis/` and `FRAGILITY_MAP.md` in the project directory. `init` needs an LLM key and sends
@@ -60,8 +68,9 @@ CI fails if this table drifts from the facts file.
 | Architecture score | 93 / 100 |
 | Import cycles | 0 |
 | Critical anti-patterns | 0 |
-| Tests collected | 2,852 |
+| Tests collected | 2,864 |
 | Engines / approval gates | 19 / 14 |
+| Mapped capabilities / commands | 50 / 22 |
 
 Generated for v9.0.0 from [`data/public-product-facts.json`](data/public-product-facts.json).
 
@@ -88,21 +97,42 @@ flowchart LR
 
 ## Capabilities
 
-| Goal | Commands |
-|---|---|
-| Start a project | `genesis init` |
-| Recover a codebase | `genesis recover .` |
-| Harden | `genesis harden .` (STRIDE, OWASP checklist, offline secrets scan) |
-| Check dependencies | `genesis deps` (CVE lookup through OSV.dev) |
-| Ask in plain language | `genesis decide "why is this project hard to change?"` |
-| Check your setup | `genesis doctor` |
+Genesis groups what it can do by the question you are asking. Each family links to the
+complete table in the [capability catalog](https://maioio.github.io/genesis-architect/capabilities/),
+which is generated from the code and lists maturity, what each capability writes and what it needs.
 
-Full list: [Commands](https://maioio.github.io/genesis-architect/commands/).
+| Family | You ask | Start with |
+|---|---|---|
+| Research & Evidence | What have others learned building this? | `genesis research`, `genesis init` |
+| New Project Architecture | Give me a starting structure that avoids known pitfalls | `genesis init` |
+| Existing Codebase Recovery | What is fragile here and why? | `genesis recover .` |
+| Architecture Intelligence | Cycles, anti-patterns, score, C4 diagrams, refactoring plan | `genesis recover .`, `genesis decide` |
+| Decision & Planning | Which option, and what could go wrong? | `genesis decide "..."`, `genesis explain` |
+| Security & Dependencies | Threat model, OWASP checklist, secrets, advisories | `genesis harden .`, `genesis deps` |
+| Memory & Learning | Remember what we decided in this project | `genesis memory` |
+| Automation & Sync | Keep checks running, fetch skill packs, clean up | `genesis sync`, `genesis fetch`, `genesis purge` |
+| Companion, UI & Voice | A canvas workspace and a local health page | `genesis ui`, `genesis companion` |
+| Agents & MCP | Use it from Claude Code, Cursor, Codex | `genesis advise`, [MCP](https://maioio.github.io/genesis-architect/mcp/) |
+
+### What needs what
+
+| | Commands |
+|---|---|
+| Fully offline, no key | `recover`, `harden`, `engines`, `explain`, `memory`, `doctor`, `advise`, `ui`, `decide` (deterministic engines) |
+| Network | `research` (live search), `deps` (OSV.dev advisories), `fetch` (git clone), `resolve` |
+| LLM key or local model | `init`, `publish`; `decide` can add an optional LLM critique that is disclosed when skipped |
+| Writes into your project | `recover`, `harden` and `decide` write `.genesis/` and `FRAGILITY_MAP.md`; their report files (for example `PROJECT_RECOVERY_REPORT.md`, `docs/security/`) are written only after you approve (default is Defer) or pass `--yes`; `fetch` and `purge` act only in a sandbox or with `--apply` |
+| Optional extras or experimental | voice, native companion window (experimental), committee critique, video research |
+| Kept for compatibility | `upgrade`, `license` (Genesis has no paid tier) |
+
+Command reference: [Commands](https://maioio.github.io/genesis-architect/commands/).
 
 ## Use it from your agent
 
 Genesis ships as an agent skill for Claude Code, Cursor and Codex, and exposes four
-read-only MCP tools. Setup: [Agent integrations](https://maioio.github.io/genesis-architect/agent-integrations/)
+read-only MCP analysis tools that do not use the network. As a skill it may also use whatever
+external MCP and web tools your agent has for research; that is separate from the tools
+Genesis exposes. Setup: [Agent integrations](https://maioio.github.io/genesis-architect/agent-integrations/)
 and [MCP](https://maioio.github.io/genesis-architect/mcp/).
 
 ## When not to use it

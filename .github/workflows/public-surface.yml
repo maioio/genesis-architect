@@ -39,6 +39,9 @@ jobs:
       - name: Architecture invariants are current
         run: python scripts/architecture_invariants.py --check
 
+      - name: Capability catalog is current
+        run: python scripts/public_surface/generate_capability_catalog.py --check
+
       - name: Product facts are current
         run: python scripts/public_surface/generate_product_facts.py --check
 
@@ -84,6 +87,10 @@ jobs:
       - name: Base path, internal routes, canonical URLs, banned content
         working-directory: .
         run: python scripts/public_surface/validate_site_build.py
+
+      - name: Links to our own site resolve in the build
+        working-directory: .
+        run: python scripts/public_surface/validate_site_urls.py
 
       - name: Install browser
         run: npx playwright install --with-deps chromium

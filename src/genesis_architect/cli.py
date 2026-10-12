@@ -309,7 +309,7 @@ def config(
 @app.command()
 def research(
     topic: str = typer.Argument(..., help="Topic to research, or a video URL with --video"),
-    video: bool = typer.Option(False, "--video", help="Deep video-to-pitfall analysis (Pro)"),
+    video: bool = typer.Option(False, "--video", help="Deep video-to-pitfall analysis (needs yt-dlp and ffmpeg)"),
     json_data: str = typer.Option(
         None, "--json-data", help="Path to JSON file with pre-collected research data"
     ),
@@ -331,7 +331,7 @@ def research(
 ):
     """Research a topic. Use --video for Pro video-to-pitfall analysis.
 
-    Multi-source research (Pro): checks the vault cache, then either prints a
+    Multi-source research: checks the vault cache, then either prints a
     data-collection guide or — with --json-data FILE — merges, ranks, and
     returns a structured summary of pre-collected results. --absorb feeds a
     /watch analysis back in as PITFALLS.md entries.

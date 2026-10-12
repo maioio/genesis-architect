@@ -26,11 +26,19 @@ Research before you build. Understand before you change.
 
 ---
 
-Genesis reads the open-source projects that came before yours, mines their closed issues for
-the failures that keep recurring, and scaffolds a project with those mitigations already in
-place. For code that already exists, it builds the import graph, scores the architecture,
-and reports what is fragile before anyone changes it. Every recommendation carries its
-sources, and nothing acts without your approval.
+Genesis researches across the software ecosystem before you build, using the sources
+available in the current execution environment, then turns that evidence into architecture
+options you approve. It mines the failures that keep recurring in comparable projects and
+scaffolds with those mitigations already in place. For code that already exists, it builds
+the import graph, scores the architecture, and reports what is fragile before anyone changes
+it. Every recommendation carries its sources, and nothing acts without your approval.
+
+The sources depend on how you run it. The standalone `genesis init` CLI researches GitHub
+repositories and their issues. When Genesis runs as an agent skill, its research workflow can
+combine GitHub with available web and MCP sources, community discussions, package registries,
+security data and relevant media. Genesis's own MCP server is separate: four read-only
+analysis tools that do not use the network. See
+[Research and evidence](https://maioio.github.io/genesis-architect/research-and-evidence/).
 
 ```bash
 pip install genesis-architect
@@ -38,7 +46,7 @@ pip install genesis-architect
 
 | You have | Run | What happens |
 |---|---|---|
-| An idea | `genesis init "a Python CLI for analyzing log files"` | Researches GitHub, shows pitfalls with sources, you pick an architecture, it scaffolds |
+| An idea | `genesis init "a Python CLI for analyzing log files"` | The CLI researches GitHub repositories and issues (an agent skill can add more sources), shows pitfalls with sources, you pick an architecture, it scaffolds |
 | A codebase | `genesis recover .` | Diagnosis that leaves your source untouched: import cycles, anti-patterns, fragile modules, drift |
 
 `recover` needs no API key, never executes your code and does not edit your source files. It writes its own reports to `.genesis/` and `FRAGILITY_MAP.md` in the project directory. `init` needs an LLM key and sends
@@ -60,7 +68,7 @@ CI fails if this table drifts from the facts file.
 | Architecture score | 93 / 100 |
 | Import cycles | 0 |
 | Critical anti-patterns | 0 |
-| Tests collected | 2,863 |
+| Tests collected | 2,864 |
 | Engines / approval gates | 19 / 14 |
 | Mapped capabilities / commands | 50 / 22 |
 
@@ -122,7 +130,9 @@ Command reference: [Commands](https://maioio.github.io/genesis-architect/command
 ## Use it from your agent
 
 Genesis ships as an agent skill for Claude Code, Cursor and Codex, and exposes four
-read-only MCP tools. Setup: [Agent integrations](https://maioio.github.io/genesis-architect/agent-integrations/)
+read-only MCP analysis tools that do not use the network. As a skill it may also use whatever
+external MCP and web tools your agent has for research; that is separate from the tools
+Genesis exposes. Setup: [Agent integrations](https://maioio.github.io/genesis-architect/agent-integrations/)
 and [MCP](https://maioio.github.io/genesis-architect/mcp/).
 
 ## When not to use it

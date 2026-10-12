@@ -107,3 +107,17 @@ def test_readme_names_every_family():
     readme = (REPO / "README.md").read_text(encoding="utf-8")
     missing = [t for t in cat.FAMILIES.values() if t not in readme]
     assert not missing, f"README.md capability table is missing families: {missing}"
+
+
+@needs_repo_files
+def test_research_surfaces_stay_distinct():
+    """CLI, agent skill and Genesis MCP server must not be described as one research surface."""
+    docs = REPO / "site" / "src" / "content" / "docs"
+    evidence = (docs / "research-and-evidence.md").read_text(encoding="utf-8")
+    for surface in ("Standalone CLI", "Agent skill", "Genesis MCP server"):
+        assert surface in evidence, f"research-and-evidence.md must describe: {surface}"
+    assert "not a list queried on every run" in evidence, "the source-registry count must be qualified"
+    mcp = (docs / "mcp.md").read_text(encoding="utf-8")
+    assert "do not mutate files, auto-fix or use the network" in mcp
+    assert "external MCP tools" in mcp, "mcp.md must separate external MCP use from the tools Genesis exposes"
+    assert "GitHub only" in (docs / "new-projects.md").read_text(encoding="utf-8")

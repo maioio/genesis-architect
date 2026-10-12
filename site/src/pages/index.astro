@@ -11,7 +11,7 @@ const doc = (slug: string) => `${base}/${slug}/`;
 const repo = facts.repository;
 const title = 'Genesis Architect: research before you build, understand before you change';
 const description =
-  'Genesis researches comparable open-source projects before you scaffold a new one, and diagnoses an existing codebase before you change it. Evidence first, approval before action.';
+  'Genesis researches across the software ecosystem, using the sources available where it runs, before you scaffold a new project, and diagnoses an existing codebase before you change it. Evidence first, approval before action.';
 const canonical = facts.website;
 
 const flow = [
@@ -28,7 +28,7 @@ const goals = [
   ['Recover a codebase', 'genesis recover .', 'Diagnose cycles, anti-patterns and drift. Your source is not edited.', 'existing-projects'],
   ['Harden', 'genesis harden', 'Find security and quality gaps against a checklist.', 'commands'],
   ['Check dependencies', 'genesis deps', 'Inspect declared dependencies for risk.', 'commands'],
-  ['Ask your agent', 'MCP tools', 'Four read-only tools for any MCP client.', 'mcp'],
+  ['Ask your agent', 'MCP tools', 'Four read-only analysis tools for any MCP client.', 'mcp'],
 ];
 
 const docs = [
@@ -92,8 +92,9 @@ const docs = [
         <p class="kicker">v{facts.version} &middot; {facts.license}</p>
         <h1>Research before you build.<br />Understand before you change.</h1>
         <p class="lede">
-          Genesis researches comparable open-source projects before you start a new one, and diagnoses an existing
-          codebase before you touch it. Every recommendation cites evidence. Nothing acts without your approval.
+          Genesis researches across the software ecosystem before you start a new project, using the sources available
+          where it runs, and diagnoses an existing codebase before you touch it. Every recommendation cites evidence.
+          Nothing acts without your approval.
         </p>
         <div class="cta">
           <a class="btn primary" href={doc('getting-started')}>Get started</a>
@@ -203,7 +204,8 @@ genesis recover .</code></pre>
       <section aria-labelledby="integrations">
         <h2 id="integrations">Works with your agent</h2>
         <p>
-          Install as a skill for Claude Code, Cursor or Codex, or connect any MCP client to the read-only tools.
+          Install as a skill for Claude Code, Cursor or Codex. As a skill, research can also draw on the web and MCP
+          tools your agent has. Or connect any MCP client to the four read-only analysis tools, which do not use the network.
         </p>
         <p><a href={doc('agent-integrations')}>Agent integrations</a> &middot; <a href={doc('mcp')}>MCP</a></p>
       </section>

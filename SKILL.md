@@ -400,6 +400,12 @@ Answer all three:
 
 If any answer is NO: announce "MVP VALIDATION FAILED: [reason]" and fix before Step 8. A scaffold with 50 files that cannot run is a failed build. Documents do not count as output.
 
+### Step 7.6: Optional final audit (Completion Guardian)
+Before declaring substantial work COMPLETE, READY TO SHIP, READY TO RELEASE or final (not after small edits), check whether the `project-completeness-audit` skill is available: `python scripts/completion_guardian.py detect --project .`.
+- Not installed: continue with the existing gates. Install nothing, never fail.
+- Installed: run `begin`, then the skill in FINAL mode. Findings are verification failures: fix them in the relevant workflow, re-audit. Only after a clear audit that really ran, `record --verdict clear` and `finalize`; report completion after `final_marked`.
+- Never mark just because Genesis tests are green. Details: `references/completion-guardian.md`.
+
 ### Step 8: Deliver summary
 Announce: "Genesis Architect complete. [bullet list of created files]. Next: [first ROADMAP phase]. Entering companion mode."
 

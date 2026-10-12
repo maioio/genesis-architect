@@ -12,6 +12,8 @@ Genesis exposes four read-only analysis tools. They take a `project_dir` and ret
 | `genesis_recovery_report` | The recovery diagnosis |
 | `genesis_gate` | The gate verdict for the project |
 
+These are the tools Genesis exposes. They are separate from any external MCP tools an agent uses for research while Genesis runs as a skill; see [Research and evidence](../research-and-evidence/).
+
 ## Running the server
 
 The tools are plain Python functions and work without any MCP SDK. To serve them over MCP, install the SDK and start the server from Python:

@@ -60,7 +60,7 @@ CI fails if this table drifts from the facts file.
 | Architecture score | 93 / 100 |
 | Import cycles | 0 |
 | Critical anti-patterns | 0 |
-| Tests collected | 2,852 |
+| Tests collected | 2,865 |
 | Engines / approval gates | 19 / 14 |
 
 Generated for v9.0.0 from [`data/public-product-facts.json`](data/public-product-facts.json).

@@ -68,7 +68,7 @@ CI fails if this table drifts from the facts file.
 | Architecture score | 93 / 100 |
 | Import cycles | 0 |
 | Critical anti-patterns | 0 |
-| Tests collected | 2,864 |
+| Tests collected | 2,877 |
 | Engines / approval gates | 19 / 14 |
 | Mapped capabilities / commands | 50 / 22 |
 

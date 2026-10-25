@@ -5,7 +5,11 @@ Pro depends on a compatible Free core.
 
 ## Updating
 
-- **pip:** `pip install -U genesis-architect-pro` — the changelog is surfaced.
+- **pip:** `pip install -U genesis-architect`. For the standalone Pro
+  distribution, re-run the git install with `--force-reinstall`:
+  `pip install --force-reinstall "git+https://github.com/maioio/genesis-architect.git#subdirectory=genesis-architect-pro"`
+  (its version number does not change on every commit, so `-U` alone can skip it).
+  The changelog is surfaced.
 - **desktop (future):** the Tauri updater handles signed releases, opt-in, with
   rollback. Updates are never applied silently mid-task.
 

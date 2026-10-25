@@ -119,7 +119,7 @@ def readiness() -> VoiceReadiness:
     if not _pkg_available("faster_whisper"):
         r.components.append(ComponentStatus(
             "stt", False, "faster-whisper not installed",
-            "pip install genesis-architect-pro[voice]"))
+            'pip install "genesis-architect[voice]"'))
     elif not WHISPER_LOCAL.exists():
         r.components.append(ComponentStatus(
             "stt", False, f"model not downloaded ({WHISPER_MODEL_ID})",
@@ -217,7 +217,7 @@ def missing_companion_packages() -> list[str]:
 def ensure_companion_packages(*, progress=None) -> ProvisionResult:
     """Install any missing Companion packages into the current environment.
 
-    This is what makes `pip install genesis-architect-pro` a one-command
+    This is what makes a plain install (no extras) a one-command
     install: the first `genesis companion --ui` pulls the rest automatically.
     Never raises — failures are reported per requirement with pip's own error.
     """
@@ -299,7 +299,7 @@ def run_setup(models_dir: Path | None = None) -> SetupResult:
     elif not _pkg_available("faster_whisper"):
         result.failed.append(
             "STT: faster-whisper not installed — "
-            "run `pip install genesis-architect-pro[voice]` then re-run --setup")
+            "run `pip install \"genesis-architect[voice]\"` then re-run --setup")
     else:
         try:
             from huggingface_hub import snapshot_download  # type: ignore[import]

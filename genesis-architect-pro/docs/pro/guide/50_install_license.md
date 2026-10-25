@@ -11,8 +11,10 @@ servers to install by hand. No license, either.
 
 ## Claude Code (available now)
 
-1. **Install:** `pip install genesis-architect-pro` (the free `genesis-architect`
-   core installs automatically as a dependency).
+1. **Install:** `pip install genesis-architect`, which ships the Pro engines as
+   `genesis_architect.pro`. For the standalone Pro distribution, which is not on
+   PyPI, run `pip install "git+https://github.com/maioio/genesis-architect.git#subdirectory=genesis-architect-pro"`
+   (the free `genesis-architect` core installs automatically as a dependency).
 2. **Start working:** Pro features are unconditionally available via the free
    core's pro_bridge — no key, no activation step.
 

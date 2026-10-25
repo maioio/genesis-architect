@@ -36,12 +36,14 @@ jobs:
       - uses: actions/checkout@<full-commit-sha>        # v4
       - uses: actions/setup-python@<full-commit-sha>    # v5
         with: { python-version: "3.12" }
-      - run: pip install genesis-architect-pro
+      - run: pip install "git+https://github.com/maioio/genesis-architect.git@<full-commit-sha>#subdirectory=genesis-architect-pro"
       - run: genesis gate --dir .
 ```
 
 The job only reads the repository, so `contents: read` is all it needs. Replace
-each `<full-commit-sha>` with the 40-character commit of the release you want:
+each `<full-commit-sha>` with the 40-character commit of the release you want
+(the `pip install` line too; `genesis gate` ships only in the standalone Pro
+distribution, which is installed from GitHub because it is not on PyPI):
 a tag can be moved, a SHA cannot. The gate's own `max_unpinned_actions` rule
 checks this.
 

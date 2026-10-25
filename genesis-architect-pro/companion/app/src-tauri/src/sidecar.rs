@@ -77,7 +77,7 @@ fn kill_stale_backends() {
 /// Returns Err if genesis is not found or if the token is not received within 15s.
 pub fn spawn_sidecar(state: &SidecarState) -> Result<(), String> {
     let genesis = find_genesis()
-        .ok_or_else(|| "genesis not found in PATH — run: pip install genesis-architect-pro[companion]".to_string())?;
+        .ok_or_else(|| "genesis not found in PATH. Run: pip install \"genesis-architect[companion,streaming]\"".to_string())?;
 
     // Clear any orphaned backend from a prior run before we bind the port.
     kill_stale_backends();

@@ -97,7 +97,7 @@ class STTPipeline:
         except ImportError:
             _log.warning(
                 "STT unavailable: faster-whisper not installed. "
-                "Run: pip install genesis-architect-pro[voice]"
+                'Run: pip install "genesis-architect[voice]"'
             )
         except Exception as exc:
             _log.warning("STT unavailable: %s", exc)

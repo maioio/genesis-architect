@@ -79,7 +79,7 @@ def mic_status() -> MicStatus:
     except ImportError:
         return MicStatus(False,
                          "sounddevice not installed. Run: "
-                         "pip install genesis-architect-pro[voice]")
+                         'pip install "genesis-architect[voice]"')
     try:
         inputs = [d["name"] for d in sd.query_devices()
                   if d.get("max_input_channels", 0) > 0]

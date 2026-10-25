@@ -5,7 +5,9 @@ End-to-end, the way Genesis runs it.
 ## 1. Point Genesis at the project
 
 ```bash
-pip install genesis-architect-pro
+pip install genesis-architect
+# or the standalone Pro distribution, which is not on PyPI:
+# pip install "git+https://github.com/maioio/genesis-architect.git#subdirectory=genesis-architect-pro"
 ```
 
 Run the recovery flow (the Decision Engine drives it in `RECOVERY` mode). The

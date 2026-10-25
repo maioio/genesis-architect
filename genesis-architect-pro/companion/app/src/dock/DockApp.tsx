@@ -268,8 +268,8 @@ export function DockApp() {
       {sidecarError ? (
         <div className="firstrun">
           <div className="firstrun-title">Genesis backend not found</div>
-          <p>Install Genesis Pro, then reopen the Companion:</p>
-          <code>pip install genesis-architect-pro</code>
+          <p>Install Genesis, then reopen the Companion:</p>
+          <code>pip install "genesis-architect[companion,streaming]"</code>
           <button
             className="primary-btn"
             onClick={() => invoke("restart_sidecar").then(() => setSidecarError(null)).catch(() => {})}

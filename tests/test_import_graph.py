@@ -352,3 +352,57 @@ class TestTypeCheckingImportsAreNotRuntimeEdges:
         """)
         assert "pkg.real" in found
         assert not any("types_only" in m for m in found)
+
+
+class TestRuntimeDataDirsExcluded:
+    """`resources/` and `logs/` hold runtime data, not source.
+
+    Counting files under them would distort fan-in/fan-out and coupling
+    metrics with files nothing ever imports as a module.
+    """
+
+    def test_resources_dir_excluded_from_collection(self, tmp_path):
+        from genesis_architect.core.import_graph import _collect_files
+
+        src = tmp_path / "src"
+        src.mkdir()
+        (src / "app.py").write_text("import os\n")
+        resources = tmp_path / "resources"
+        resources.mkdir()
+        (resources / "seed.py").write_text("import os\n")
+
+        found = _collect_files(tmp_path, [".py"])
+        assert any(p.name == "app.py" for p in found)
+        assert not any("resources" in p.parts for p in found)
+
+    def test_logs_dir_excluded_from_collection(self, tmp_path):
+        from genesis_architect.core.import_graph import _collect_files
+
+        src = tmp_path / "src"
+        src.mkdir()
+        (src / "app.py").write_text("import os\n")
+        logs = tmp_path / "logs"
+        logs.mkdir()
+        (logs / "replay.py").write_text("import os\n")
+
+        found = _collect_files(tmp_path, [".py"])
+        assert any(p.name == "app.py" for p in found)
+        assert not any("logs" in p.parts for p in found)
+
+    def test_resources_and_logs_do_not_skew_coupling(self, tmp_path):
+        from genesis_architect.core.import_graph import build_graph
+
+        src = tmp_path / "src"
+        src.mkdir()
+        (src / "app.py").write_text("import os\n")
+        resources = tmp_path / "resources"
+        resources.mkdir()
+        (resources / "dumped_module.py").write_text(
+            "from src.app import run\nfrom src.app import run as run2\n" * 5
+        )
+
+        graph = build_graph(tmp_path, language="python", save=False)
+        modules = graph["modules"]
+        assert not any("resources" in mod for mod in modules)
+        app_key = next(k for k in modules if k.endswith("app.py"))
+        assert modules[app_key]["fan_in"] == 0

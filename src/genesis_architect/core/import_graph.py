@@ -43,6 +43,9 @@ IGNORED_DIRS = frozenset({
     "node_modules", "venv", ".venv", "dist", "build",
     ".genesis", "__pycache__", ".pytest_cache", ".ruff_cache",
     "htmlcov", ".mypy_cache", "target", "vendor", ".git",
+    # Runtime data, not source: counting these would distort fan-in/fan-out
+    # and coupling metrics with files that are never imported as modules.
+    "resources", "logs",
 })
 
 EXT_MAP: dict[str, list[str]] = {

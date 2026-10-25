@@ -50,7 +50,7 @@ companion = ["plyer>=2.1"]
 streaming = ["websockets>=12"]
 committee = ["anthropic>=0.40"]
 voice = [
-    "faster-whisper>=1.0", "sounddevice>=0.4", "numpy>=1.24",
+    "faster-whisper>=1.2.1", "sounddevice>=0.4", "numpy>=1.24",
     "webrtcvad-wheels>=2.0.10",
     # VAD only (base package - no extras): a self-contained, ONNX-bundled neural
     # VAD, much more accurate than webrtcvad/energy fallback at telling speech
@@ -63,7 +63,7 @@ voice = [
 # Everything for the full desktop Companion experience.
 all = [
     "plyer>=2.1", "rich>=13", "websockets>=12",
-    "faster-whisper>=1.0", "sounddevice>=0.4", "numpy>=1.24",
+    "faster-whisper>=1.2.1", "sounddevice>=0.4", "numpy>=1.24",
     "webrtcvad-wheels>=2.0.10", "pipecat-ai>=1.7", "anthropic>=0.40",
     # kokoro >=0.8 pins Python <3.13 - 0.7.x is the newest that installs everywhere.
     "kokoro>=0.7", "soundfile>=0.12", "sherpa-onnx>=1.10",

@@ -68,7 +68,7 @@ all = [
     # kokoro >=0.8 pins Python <3.13 - 0.7.x is the newest that installs everywhere.
     "kokoro>=0.7", "soundfile>=0.12", "sherpa-onnx>=1.10",
     # Native floating window (frameless, always-on-top) for the Companion panel.
-    "pywebview>=5.0",
+    "pywebview>=6.2.1",
 ]
 
 [project.scripts]

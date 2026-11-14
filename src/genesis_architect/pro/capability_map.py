@@ -140,7 +140,7 @@ CAPABILITIES: tuple[Capability, ...] = (
                "Maps third-party imports per module and looks up their CVEs",
                "genesis deps [PATH]"),
     Capability("package_registry", "Package Registry",
-               "Validates packages against PyPI/npm/crates.io/Maven/NuGet + OSV",
+               "Looks up one package in PyPI, npm, crates.io, Maven or NuGet; also supplies the OSV.dev advisory lookup used by the project scan",
                "genesis deps [PATH] --package NAME"),
     Capability("stdlib_filter", "Stdlib Filter",
                "Separates standard-library imports from third-party ones",
@@ -222,9 +222,10 @@ CAPABILITIES: tuple[Capability, ...] = (
     Capability("first_run", "Readiness Check",
                "Install and optional-dependency readiness",
                "genesis doctor"),
-    Capability("model_store", "Model Store",
-               "Local STT/TTS model download and cache",
-               "genesis companion --setup"),
+    Capability("voice_model_setup", "Voice Model Setup",
+               "Downloads local STT/TTS models into ~/.genesis/models",
+               "genesis companion --setup",
+               source="src/genesis_architect/pro/voice/setup.py"),
     Capability("intent_classifier", "Intent Classifier",
                "Maps a plain-English instruction onto a mode",
                "genesis decide --classify-only \"<instruction>\""),
@@ -255,6 +256,9 @@ INTERNAL: frozenset[str] = frozenset({
     "gde_runner",
     "gde_session",
     "gde_types",
+    # Dual-layer architecture model (planned vs. observed) used by drift,
+    # import audit and recovery; reached through those capabilities.
+    "model_store",
     "capability_map",
 })
 

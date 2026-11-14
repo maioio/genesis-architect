@@ -32,7 +32,7 @@ genesis recover . --no-commit
 
 ```bash
 genesis config set LLM_API_KEY <your-key>
-genesis init a Python CLI for analyzing log files
+genesis init "a Python CLI for analyzing log files"
 ```
 
 `init` needs an LLM key and, for higher GitHub rate limits, a `GITHUB_TOKEN`. See [Configuration](../configuration/).

@@ -15,6 +15,7 @@ from __future__ import annotations
 import argparse
 import json
 import pathlib
+import re
 import sys
 
 REPO = pathlib.Path(__file__).resolve().parents[2]
@@ -45,10 +46,15 @@ def _door(command: str | None) -> str:
     raise ValueError(f"unknown door: {command!r}")
 
 
-def _test_files(module: str) -> list[str]:
+def _test_files(row: dict) -> list[str]:
+    """Tests that mention the capability: its id, or its real source module when that lives elsewhere."""
+    dotted = row["source_module"].removeprefix("src/").removesuffix(".py").replace("/", ".")
+    parent, _, stem = dotted.rpartition(".")
+    imported = r"from\s+" + re.escape(parent) + r"\s+import\s+[^\n]*\b" + re.escape(stem) + r"\b"
+    pattern = re.compile("|".join([re.escape(row["id"]), re.escape(dotted), imported]))
     hits = []
     for f in sorted((REPO / "tests").glob("test_*.py")):
-        if module in f.read_text(encoding="utf-8", errors="ignore"):
+        if pattern.search(f.read_text(encoding="utf-8", errors="ignore")):
             hits.append(f"tests/{f.name}")
     return hits
 
@@ -60,7 +66,7 @@ def collect() -> dict:
 
     rows = cat.build_catalog()
     for r in rows:
-        r["test_evidence"] = _test_files(r["id"])
+        r["test_evidence"] = _test_files(r)
         r["door"] = _door(r["command"])
         r["public_status"] = "PUBLIC" if r["command"] else "NO_DOOR"
         r["docs_url"] = "https://maioio.github.io/genesis-architect/capabilities/"

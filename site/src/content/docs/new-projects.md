@@ -4,7 +4,7 @@ description: What genesis init researches and writes, and what the agent-skill w
 ---
 
 ```bash
-genesis init a Python CLI for analyzing log files
+genesis init "a Python CLI for analyzing log files"
 ```
 
 Keep the description short. Long descriptions match nothing on GitHub.

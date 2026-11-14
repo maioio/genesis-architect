@@ -116,7 +116,7 @@ META: dict[str, Meta] = {
     "companion_window": Meta("companion", maturity="experimental", extra="pywebview", note="Native floating window; falls back to the browser page when pywebview is unavailable."),
     "gde_companion": Meta("companion", maturity="optional", extra="plyer (notifications)", note="Local health page uses the standard library only."),
     "ui_workspace": Meta("companion"),
-    "model_store": Meta("companion", maturity="optional", network="required", extra="voice extra", note="--setup downloads local STT/TTS models into ~/.genesis/models."),
+    "voice_model_setup": Meta("companion", maturity="optional", writes=_P, network="required", extra="voice extra", note="Models are cached in your home directory (~/.genesis/models), not in the project."),
     # Agents & MCP
     "mcp_advisor": Meta("agents", writes=_R, note="Recommends MCP servers and skills; installs nothing."),
     "mcp_tools": Meta("agents", writes=_R, maturity="optional", extra="mcp", note="Needs `pip install \"mcp<2\"` (mcp 2.x renamed FastMCP); there is no genesis subcommand, see the MCP page for how to start the server."),

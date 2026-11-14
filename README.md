@@ -118,7 +118,7 @@ flowchart LR
 1. **Evidence.** Public repositories and their issues for a new project; your own import graph for an existing one.
 2. **Analysis.** Dependency graph from the AST, anti-pattern rules, architecture score.
 3. **Decision.** Options with trade-offs, ranked against the evidence. Weak evidence is reported as `THIN`.
-4. **Approval.** Gate checks run on the session. A hard block stops it with nothing written; block-and-ask waits for your decision. Report files are written only after you approve.
+4. **Approval.** Gate checks run on the session. A hard block stops it and none of the proposed report files are written; block-and-ask waits for your decision. Proposed report files are written only after you approve (analysis state such as `.genesis/` and `FRAGILITY_MAP.md` is written during analysis).
 5. **Action.** Only what you approved.
 6. **Verification.** The analysis runs again and the result is compared.
 
@@ -137,7 +137,7 @@ each family below lists what it contains.
 | Security & Dependencies | 5 | Security Templates, Secrets Scanner, Dependency Scanner, Package Registry, Stdlib Filter |
 | Memory & Learning | 5 | Product Intelligence, Cross-Session Memory, Project Memory, Learning Engine, Progress Report |
 | Automation & Sync | 5 | Autonomous Sync, Skill Fetcher, Auto-Purge, Readiness Check, Release Drafts |
-| Companion, UI & Voice | 5 | Companion UI, Companion Window, Companion Backend, Canvas Workspace, Model Store |
+| Companion, UI & Voice | 5 | Companion UI, Companion Window, Companion Backend, Canvas Workspace, Voice Model Setup |
 | Agents & MCP | 2 | MCP Advisor, MCP Tools |
 
 55 capabilities in 9 families. The [capability catalog](https://maioio.github.io/genesis-architect/capabilities/) lists each one with its command, maturity, what it writes and what it needs.

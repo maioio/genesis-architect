@@ -19,11 +19,11 @@ These are the tools Genesis exposes. They are separate from any external MCP too
 The tools are plain Python functions and work without any MCP SDK. To serve them over MCP, install the SDK and start the server from Python:
 
 ```bash
-pip install mcp
+pip install "mcp<2"
 python -c "from genesis_architect.pro.mcp_tools import build_mcp_server; build_mcp_server().run()"
 ```
 
-There is no `genesis mcp` subcommand yet. See [Limitations](../limitations/).
+Pin `mcp<2`: version 2 of the SDK renamed `FastMCP`, which the server imports. There is no `genesis mcp` subcommand yet. See [Limitations](../limitations/).
 
 ## Client configuration
 

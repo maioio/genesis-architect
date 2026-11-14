@@ -148,8 +148,9 @@ each family below lists what it contains.
 
 | | Commands |
 |---|---|
-| Fully offline, no key | `recover`, `harden`, `research`, `engines`, `explain`, `memory`, `doctor`, `advise`, `ui`, `decide` (deterministic engines) |
-| Network | `init` (GitHub), `deps` (OSV.dev advisories), `fetch` (git clone), `resolve` (Stack Overflow when the local vault has no answer), `publish` (LLM) |
+| Fully offline, no key | `research`, `engines`, `explain`, `memory`, `doctor`, `advise`, `ui`, `deps --no-cve` |
+| Local engines, one optional lookup | `recover`, `harden`, `decide`: the engines run locally, but the gate step asks OSV.dev about up to 15 dependency names when a manifest lists them. If the lookup fails the session continues without it |
+| Network | `init` (GitHub), `deps` (OSV.dev advisories, skipped with `--no-cve`), `fetch` (git clone), `resolve` (Stack Overflow when the local vault has no answer), `publish` (LLM) |
 | LLM key or local model | `init`, `publish`. `decide` adds an optional LLM critique and an optional committee debate with `ANTHROPIC_API_KEY`; when the key is missing it says so and continues with the deterministic engines |
 | Writes into your project | `recover`, `harden` and `decide` write `.genesis/` and `FRAGILITY_MAP.md`; their report files (for example `PROJECT_RECOVERY_REPORT.md`, `docs/security/`) are written only after you approve (default is Defer) or pass `--yes`; `fetch` and `purge` act only in a sandbox or with `--apply` |
 | Optional extras or tools | voice models, desktop notifications, native companion window (experimental), the `/watch` skill for video research, `mcp` for the MCP server |

@@ -96,7 +96,7 @@ META: dict[str, Meta] = {
     # Security & Dependencies
     "security_templates": Meta("security", note="Generates a checklist and threat model; it is not a vulnerability scanner."),
     "secrets_scanner": Meta("security", writes=_R),
-    "dependency_scanner": Meta("security", writes=_R),
+    "dependency_scanner": Meta("security", writes=_R, network="optional", note="Looks up advisories on OSV.dev; `genesis deps --no-cve` keeps it offline."),
     "package_registry": Meta("security", writes=_R, network="optional"),
     "stdlib_filter": Meta("security", writes=_R),
     # Memory & Learning
@@ -119,7 +119,7 @@ META: dict[str, Meta] = {
     "model_store": Meta("companion", maturity="optional", network="required", extra="voice extra", note="--setup downloads local STT/TTS models into ~/.genesis/models."),
     # Agents & MCP
     "mcp_advisor": Meta("agents", writes=_R, note="Recommends MCP servers and skills; installs nothing."),
-    "mcp_tools": Meta("agents", writes=_R, maturity="optional", extra="mcp", note="Needs `pip install mcp`; there is no genesis subcommand, see the MCP page for how to start the server."),
+    "mcp_tools": Meta("agents", writes=_R, maturity="optional", extra="mcp", note="Needs `pip install \"mcp<2\"` (mcp 2.x renamed FastMCP); there is no genesis subcommand, see the MCP page for how to start the server."),
 }
 
 

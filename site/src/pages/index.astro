@@ -124,7 +124,7 @@ const docs = [
 
       <section aria-labelledby="demo">
         <h2 id="demo">Run it yourself</h2>
-        <p>The fastest check needs no API key and changes nothing:</p>
+        <p>The fastest check needs no API key and does not edit your source:</p>
         <pre tabindex="0" class="term"><code>pip install genesis-architect
 cd your-project
 genesis recover .</code></pre>
@@ -196,7 +196,7 @@ genesis recover .</code></pre>
         <ul class="plain">
           <li>Analyzed code is never executed.</li>
           <li>Proposed writes wait for your approval; hard-block gate checks stop the session first.</li>
-          <li>Mutating commands are dry-run by default and need an explicit apply.</li>
+          <li>Commands that delete are dry runs until you pass <code>--apply</code>; <code>--dry-run</code> and <code>--no-commit</code> keep the analysis commands from writing reports.</li>
           <li>Secrets found in a scan are redacted in every report.</li>
           <li>Telemetry is off unless you opt in.</li>
         </ul>

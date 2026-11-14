@@ -16,8 +16,8 @@ The standalone command writes a research brief. It does not write application co
 1. **Context.** It reads the current directory for hints about the project.
 2. **Research.** It searches GitHub only, for up to 15 repositories like the one you describe.
 3. **Mining.** It reads issues from the top 5 matches and pulls out the failures that recur.
-4. **Choice.** It shows what it found and asks you to pick an architecture direction: A Minimalist, B Scalable, C Quick or D Hybrid.
-5. **Brief.** Your configured LLM writes `RESEARCH.md` and `PITFALLS.md` into the output directory. Each pitfall points at the issue it came from.
+4. **Choice.** It shows what it found and asks you to pick an architecture direction: A Minimalist, B Scalable, C Quick or D Hybrid. In the standalone command the choice is echoed in the output; it does not change the files written.
+5. **Brief.** Your configured LLM writes `RESEARCH.md` and `PITFALLS.md` into the output directory (an existing file of the same name is overwritten), and the run is noted in `.genesis/vault/index.json`. Each pitfall points at the issue it came from.
 
 `init` needs `LLM_API_KEY` (`genesis config set LLM_API_KEY <key>`), even when `--model` points at a local model such as `ollama/llama3`. Without it, `init` stops before doing any research. Options: `--model`, `--name`, `--language`, `--output`.
 

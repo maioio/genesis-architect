@@ -17,7 +17,7 @@ genesis config show
 
 | Key | Used by | Required |
 |---|---|---|
-| `LLM_API_KEY` | `genesis init`, `genesis publish`, `genesis companion` | Yes, for those commands |
+| `LLM_API_KEY` | `genesis init`, `genesis publish` | Yes, for those commands |
 | `GITHUB_TOKEN` | GitHub search in `genesis init` | Recommended, for rate limits |
 
 `recover`, `harden`, `deps` and `doctor` need no keys.

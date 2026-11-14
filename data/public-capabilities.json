@@ -616,11 +616,11 @@
       "command": "genesis deps [PATH]",
       "maturity": "stable",
       "writes": "none",
-      "network": "none",
+      "network": "optional",
       "requires_llm": "no",
       "optional_dependency": null,
       "source_module": "src/genesis_architect/pro/dependency_scanner.py",
-      "limitation": null,
+      "limitation": "Looks up advisories on OSV.dev; `genesis deps --no-cve` keeps it offline.",
       "test_evidence": [
         "tests/test_dependency_scanner.py",
         "tests/test_gde_knowledge_graph_adapter.py"
@@ -1095,7 +1095,7 @@
       "requires_llm": "no",
       "optional_dependency": "mcp",
       "source_module": "src/genesis_architect/pro/mcp_tools.py",
-      "limitation": "Needs `pip install mcp`; there is no genesis subcommand, see the MCP page for how to start the server.",
+      "limitation": "Needs `pip install \"mcp<2\"` (mcp 2.x renamed FastMCP); there is no genesis subcommand, see the MCP page for how to start the server.",
       "test_evidence": [
         "tests/test_capability_catalog.py",
         "tests/test_mcp_tools.py",

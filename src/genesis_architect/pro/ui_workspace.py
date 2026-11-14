@@ -231,7 +231,7 @@ def render_workspace(project_root: Path | str = ".") -> str:
 <style>{_CSS}</style></head>
 <body>
   <h1>Genesis Architect — Workspace</h1>
-  <p class="sub">Live view of this project's engine outputs. Read-only; actions go through approval gates.</p>
+  <p class="sub">Live view of this project's engine outputs. Read-only; actions go through gate checks.</p>
   {_canvas_html(st, root)}
   {_floating_assistant_html(st)}
   <script>{_JS}</script>

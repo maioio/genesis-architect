@@ -82,7 +82,7 @@ A row with `Writes: nothing` does not change your files. Commands that write sta
 |---|---|---|---|---|---|
 | Security Templates | STRIDE threat model + OWASP Top 10 checklist, archetype-aware _Generates a checklist and threat model; it is not a vulnerability scanner._ | `genesis harden [PATH]` | stable | .genesis/ and reports | offline |
 | Secrets Scanner | Finds committed credentials and tokens | `genesis harden [PATH]` | stable | nothing | offline |
-| Dependency Scanner | Maps third-party imports per module and looks up their CVEs | `genesis deps [PATH]` | stable | nothing | offline |
+| Dependency Scanner | Maps third-party imports per module and looks up their CVEs _Looks up advisories on OSV.dev; `genesis deps --no-cve` keeps it offline._ | `genesis deps [PATH]` | stable | nothing | network optional |
 | Package Registry | Validates packages against PyPI/npm/crates.io/Maven/NuGet + OSV | `genesis deps [PATH] --package NAME` | stable | nothing | network optional |
 | Stdlib Filter | Separates standard-library imports from third-party ones | `genesis deps [PATH]` | stable | nothing | offline |
 
@@ -121,7 +121,7 @@ A row with `Writes: nothing` does not change your files. Commands that write sta
 | Capability | What it does | Command | Maturity | Writes | Needs |
 |---|---|---|---|---|---|
 | MCP Advisor | Recommends MCP servers and skills for this project _Recommends MCP servers and skills; installs nothing._ | `genesis advise` | stable | nothing | offline |
-| MCP Tools | Four read-only analysis tools served over MCP; no network, no writes _Needs `pip install mcp`; there is no genesis subcommand, see the MCP page for how to start the server._ | Genesis MCP server | optional | nothing | offline; mcp |
+| MCP Tools | Four read-only analysis tools served over MCP; no network, no writes _Needs `pip install "mcp<2"` (mcp 2.x renamed FastMCP); there is no genesis subcommand, see the MCP page for how to start the server._ | Genesis MCP server | optional | nothing | offline; mcp |
 
 ## Commands
 

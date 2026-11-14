@@ -19,4 +19,4 @@ The full policy, supported versions and scope are in [SECURITY.md](https://githu
 
 ## Generated scaffolds
 
-`genesis init` itself writes only `RESEARCH.md` and `PITFALLS.md`. When an agent follows the Genesis skill workflow and builds a project, the skill instructs it to include secret scanning, SAST, a quality gate, a path traversal guard, a non-root Dockerfile and a strict `.gitignore`. Those are produced by the agent, not by the CLI, so review them as you would any generated code.
+`genesis init` itself writes `RESEARCH.md` and `PITFALLS.md` (overwriting files of the same name in the output folder) and records the run in `.genesis/vault/index.json`; it writes no application code. When an agent follows the Genesis skill workflow and builds a project, the skill instructs it to include secret scanning, SAST, a quality gate, a path traversal guard, a non-root Dockerfile and a strict `.gitignore`. Those are produced by the agent, not by the CLI, so review them as you would any generated code.

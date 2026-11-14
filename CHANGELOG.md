@@ -9,6 +9,13 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+### Documentation
+- README, website and capability catalog now describe one model: generated capability families, with integrations (agent environments, MCP, Completion Guardian) listed separately and workflows not counted.
+- Gate wording: "gate checks" (14 defined, 9 evaluated) replaces "approval gates".
+- Completion Guardian documented as an optional, separately installed final-verification step.
+- MCP: install with `pip install "mcp<2"`; mcp 2.x renamed `FastMCP`.
+- `genesis init` notes: writes `.genesis/vault/index.json`, overwrites same-name files, and the A/B/C/D choice is echoed only.
+
 ## [9.0.0] - 2026-08-23
 
 An architecture release. Genesis analyses architecture for a living; this is

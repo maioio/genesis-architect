@@ -159,7 +159,7 @@ def init(
     for f in created:
         typer.echo(f"  Created: {f}")
     typer.echo(f"\nNext: cd {out_dir} and review RESEARCH.md and PITFALLS.md")
-    typer.echo("\nRun `genesis companion` to stay in active development mode.")
+    typer.echo("\nOnce the project has code, run `genesis recover .` to check it.")
 
 
 @app.command()

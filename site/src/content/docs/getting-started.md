@@ -26,7 +26,7 @@ cd your-project
 genesis recover . --no-commit
 ```
 
-`--no-commit` runs the analysis only. Nothing is written to your project. The report covers drift, broken imports, anti-patterns and fragile modules.
+`--no-commit` runs the analysis only. Your source files are not touched and no proposed report is written; Genesis still writes its own analysis output, `.genesis/` state and `FRAGILITY_MAP.md`. The report covers drift, broken imports, anti-patterns and fragile modules.
 
 ## First run on a new idea
 

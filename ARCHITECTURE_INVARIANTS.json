@@ -58,90 +58,170 @@
     "document",
     "committee"
   ],
+  "gate_breakdown": {
+    "hard_block": 2,
+    "block_ask": 7,
+    "warn": 5,
+    "evaluated_by_a_mode": 9
+  },
   "gates": [
     {
       "id": "PLAN_WRITE",
+      "title": "Planned file write blocked",
       "action": "hard_block",
       "overridable": false,
-      "confidence_penalty": 0.0
+      "confidence_penalty": 0.0,
+      "required_by_modes": [
+        "recovery",
+        "research",
+        "refactor",
+        "gate",
+        "build",
+        "document",
+        "committee"
+      ]
     },
     {
       "id": "RULES_FAIL",
+      "title": "Rules engine hard failure",
       "action": "hard_block",
       "overridable": false,
-      "confidence_penalty": 0.0
+      "confidence_penalty": 0.0,
+      "required_by_modes": [
+        "recovery",
+        "research",
+        "refactor",
+        "gate",
+        "build",
+        "document",
+        "committee"
+      ]
     },
     {
       "id": "CONFIDENCE_LOW",
+      "title": "Confidence below safe threshold",
       "action": "block_ask",
       "overridable": true,
-      "confidence_penalty": 0.15
+      "confidence_penalty": 0.15,
+      "required_by_modes": [
+        "recovery",
+        "research",
+        "refactor",
+        "gate",
+        "build",
+        "document",
+        "committee"
+      ]
     },
     {
       "id": "DRIFT_CRITICAL",
+      "title": "Critical drift detected",
       "action": "block_ask",
       "overridable": true,
-      "confidence_penalty": 0.15
+      "confidence_penalty": 0.15,
+      "required_by_modes": [
+        "recovery",
+        "refactor",
+        "committee"
+      ]
     },
     {
       "id": "SECURITY_RISK",
+      "title": "Security risk in proposed changes",
       "action": "block_ask",
       "overridable": true,
-      "confidence_penalty": 0.15
+      "confidence_penalty": 0.15,
+      "required_by_modes": [
+        "build"
+      ]
     },
     {
       "id": "POLICY_VIOLATION",
+      "title": "Policy violation detected",
       "action": "block_ask",
       "overridable": true,
-      "confidence_penalty": 0.15
+      "confidence_penalty": 0.15,
+      "required_by_modes": [
+        "gate"
+      ]
     },
     {
       "id": "COMMIT_CONFLICT",
+      "title": "Write conflict with committed model",
       "action": "block_ask",
       "overridable": true,
-      "confidence_penalty": 0.1
+      "confidence_penalty": 0.1,
+      "required_by_modes": []
     },
     {
       "id": "RED_TEAM_CRITICAL",
+      "title": "Red-team found a critical vulnerability",
       "action": "block_ask",
       "overridable": true,
-      "confidence_penalty": 0.15
+      "confidence_penalty": 0.15,
+      "required_by_modes": [
+        "recovery",
+        "research",
+        "refactor",
+        "gate",
+        "build",
+        "document",
+        "committee"
+      ]
     },
     {
       "id": "RESEARCH_COVERAGE_LOW",
+      "title": "Research coverage below threshold",
       "action": "block_ask",
       "overridable": true,
-      "confidence_penalty": 0.1
+      "confidence_penalty": 0.1,
+      "required_by_modes": [
+        "research"
+      ]
     },
     {
       "id": "WRITE_SCOPE",
+      "title": "Write operations pending",
       "action": "warn",
       "overridable": true,
-      "confidence_penalty": 0.05
+      "confidence_penalty": 0.05,
+      "required_by_modes": [
+        "refactor",
+        "build",
+        "committee"
+      ]
     },
     {
       "id": "REQUIRED_FAILED",
+      "title": "Required engine(s) failed",
       "action": "warn",
       "overridable": true,
-      "confidence_penalty": 0.05
+      "confidence_penalty": 0.05,
+      "required_by_modes": []
     },
     {
       "id": "DEGRADED_MODE",
+      "title": "Session running in degraded mode",
       "action": "warn",
       "overridable": true,
-      "confidence_penalty": 0.05
+      "confidence_penalty": 0.05,
+      "required_by_modes": []
     },
     {
       "id": "NO_ENGINES",
+      "title": "No engines ran for this mode",
       "action": "warn",
       "overridable": true,
-      "confidence_penalty": 0.0
+      "confidence_penalty": 0.0,
+      "required_by_modes": []
     },
     {
       "id": "RESEARCH_STALE",
+      "title": "Research results may be stale",
       "action": "warn",
       "overridable": true,
-      "confidence_penalty": 0.0
+      "confidence_penalty": 0.0,
+      "required_by_modes": []
     }
   ],
   "cli_modules": [

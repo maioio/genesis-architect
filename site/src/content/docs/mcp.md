@@ -10,7 +10,7 @@ Genesis exposes four read-only analysis tools. They take a `project_dir` and ret
 | `genesis_architecture_score` | 0 to 100 score with modularity, coupling, cohesion and layering |
 | `genesis_anti_patterns` | Anti-pattern findings with severity |
 | `genesis_recovery_report` | The recovery diagnosis |
-| `genesis_gate` | The gate verdict for the project |
+| `genesis_gate` | Validates the project against its `.genesis/rules.json` architecture regression rules |
 
 These are the tools Genesis exposes. They are separate from any external MCP tools an agent uses for research while Genesis runs as a skill; see [Research and evidence](../research-and-evidence/).
 

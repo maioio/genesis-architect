@@ -5,13 +5,13 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "genesis-architect"
 version = "9.0.0"
-description = "Evidence-first architecture for real software. Genesis researches how others solved the problem, scaffolds new projects with known pitfalls already mitigated, and diagnoses existing codebases (import cycles, anti-patterns, drift, security gaps). Nothing acts without approval. AGPL-3.0-or-later; a commercial license is available."
+description = "Evidence-first engineering architecture, recovery and decision system. Research before you build, understand before you change, verify before you call substantial work done. Gate checks run before proposed writes, and proposed writes wait for your approval. AGPL-3.0-or-later; a commercial license is available."
 readme = "README.md"
 requires-python = ">=3.11"
 license = "AGPL-3.0-or-later"
 authors = [{ name = "Maio Eshet" }]
 keywords = [
-    "architecture", "scaffolding", "code-analysis", "static-analysis",
+    "architecture", "recovery", "code-analysis", "static-analysis",
     "technical-debt", "cli", "developer-tools", "ai", "llm", "c4",
 ]
 classifiers = [

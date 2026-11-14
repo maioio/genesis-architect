@@ -11,20 +11,21 @@ const doc = (slug: string) => `${base}/${slug}/`;
 const repo = facts.repository;
 const title = 'Genesis Architect: research before you build, understand before you change';
 const description =
-  'Genesis researches across the software ecosystem, using the sources available where it runs, before you scaffold a new project, and diagnoses an existing codebase before you change it. Evidence first, approval before action.';
+  'Genesis is an evidence-first engineering architecture, recovery and decision system. Research before you build. Understand before you change. Verify before you call substantial work done.';
 const canonical = facts.website;
 
 const flow = [
   ['Evidence', 'Sourced findings from public repositories or from your own code.'],
   ['Analysis', 'Import graph, anti-patterns, architecture score.'],
   ['Decision', 'Options with trade-offs, ranked against the evidence.'],
-  ['Approval', `${facts.gates} gates. Nothing acts without your sign-off.`],
-  ['Action', 'Scaffold or fix, only what was approved.'],
+  ['Gate checks', `${facts.gates_active} evaluated of ${facts.gates} defined. Hard blocks stop the session.`],
+  ['Approval', 'Proposed writes wait for your decision.'],
+  ['Action', 'Only what was approved is written.'],
   ['Verification', 'Re-run the analysis and compare.'],
 ];
 
 const goals = [
-  ['Start a project', 'genesis init', 'Research, compare architectures, scaffold with tests and CI.', 'new-projects'],
+  ['Start a project', 'genesis init', 'Search GitHub, mine issues for pitfalls, choose an architecture, get RESEARCH.md and PITFALLS.md.', 'new-projects'],
   ['Recover a codebase', 'genesis recover .', 'Diagnose cycles, anti-patterns and drift. Your source is not edited.', 'existing-projects'],
   ['Harden', 'genesis harden', 'Find security and quality gaps against a checklist.', 'commands'],
   ['Check dependencies', 'genesis deps', 'Inspect declared dependencies for risk.', 'commands'],
@@ -92,9 +93,9 @@ const docs = [
         <p class="kicker">v{facts.version} &middot; {facts.license}</p>
         <h1>Research before you build.<br />Understand before you change.</h1>
         <p class="lede">
-          Genesis researches across the software ecosystem before you start a new project, using the sources available
-          where it runs, and diagnoses an existing codebase before you touch it. Every recommendation cites evidence.
-          Nothing acts without your approval.
+          An evidence-first engineering architecture, recovery and decision system. It researches before you start a
+          new project, diagnoses an existing codebase before you touch it, and checks its own gates before proposing
+          writes. Every recommendation cites evidence. Proposed writes wait for your approval.
         </p>
         <div class="cta">
           <a class="btn primary" href={doc('getting-started')}>Get started</a>
@@ -109,13 +110,13 @@ const docs = [
           <article class="card">
             <h3>New project</h3>
             <pre tabindex="0"><code>genesis init "a CLI that syncs notes"</code></pre>
-            <p>Finds comparable repositories, mines their issues for pitfalls, lets you choose an architecture, then scaffolds it.</p>
+            <p>Searches GitHub for comparable repositories, mines their issues for pitfalls and lets you choose an architecture. The CLI writes <code>RESEARCH.md</code> and <code>PITFALLS.md</code>; the agent skill goes further and builds the project.</p>
             <a href={doc('new-projects')}>New projects</a>
           </article>
           <article class="card">
             <h3>Existing project</h3>
             <pre tabindex="0"><code>genesis recover .</code></pre>
-            <p>Reads your code without executing it. Reports import cycles, anti-patterns and a score, then proposes fixes for approval.</p>
+            <p>Reads your code without executing it. Reports import cycles, anti-patterns and a score, then proposes writes that wait for your approval.</p>
             <a href={doc('existing-projects')}>Existing projects</a>
           </article>
         </div>
@@ -145,7 +146,7 @@ genesis recover .</code></pre>
           <div><dt>Critical anti-patterns</dt><dd>{facts.critical_antipatterns}</dd></div>
           <div><dt>Tests collected</dt><dd>{facts.tests.toLocaleString('en-US')}</dd></div>
           <div><dt>Engines</dt><dd>{facts.engines}</dd></div>
-          <div><dt>Approval gates</dt><dd>{facts.gates}</dd></div>
+          <div><dt>Gate checks</dt><dd>{facts.gates_active}<span> of {facts.gates}</span></dd></div>
           <div><dt>Mapped capabilities</dt><dd>{facts.capabilities}</dd></div>
           <div><dt>Commands</dt><dd>{facts.commands}</dd></div>
         </dl>
@@ -194,6 +195,7 @@ genesis recover .</code></pre>
         <h2 id="safety">Safety</h2>
         <ul class="plain">
           <li>Analyzed code is never executed.</li>
+          <li>Proposed writes wait for your approval; hard-block gate checks stop the session first.</li>
           <li>Mutating commands are dry-run by default and need an explicit apply.</li>
           <li>Secrets found in a scan are redacted in every report.</li>
           <li>Telemetry is off unless you opt in.</li>
@@ -206,6 +208,8 @@ genesis recover .</code></pre>
         <p>
           Install as a skill for Claude Code, Cursor or Codex. As a skill, research can also draw on the web and MCP
           tools your agent has. Or connect any MCP client to the four read-only analysis tools, which do not use the network.
+          Before an agent calls substantial work done, it can optionally run the separate
+          <a href={doc('completion-guardian')}>Completion Guardian</a>. Genesis works without it.
         </p>
         <p><a href={doc('agent-integrations')}>Agent integrations</a> &middot; <a href={doc('mcp')}>MCP</a></p>
       </section>

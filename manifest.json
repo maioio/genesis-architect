@@ -1,7 +1,7 @@
 {
   "name": "genesis-architect",
   "version": "9.0.0",
-  "description": "Research before you build. Understand before you change. Genesis Architect mines real GitHub issues and post-mortems to scaffold new projects (genesis init) and to diagnose existing ones (genesis recover).",
+  "description": "Research before you build. Understand before you change. Genesis Architect is an evidence-first engineering architecture, recovery and decision system: it mines real GitHub issues to inform new projects (genesis init) and diagnoses existing ones (genesis recover). Verify before you call substantial work done.",
   "author": "Maio Eshet",
   "license": "AGPL-3.0-or-later",
   "categories": [

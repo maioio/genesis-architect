@@ -9,7 +9,7 @@ genesis harden .             # STRIDE threat model, OWASP Top 10 checklist, secr
 genesis deps .               # third-party imports per module and their advisories
 ```
 
-`recover` and `harden` accept `--json` for machine-readable output and `--no-commit` to skip the approve and commit stage. Even then Genesis writes its own reports to `.genesis/` and `FRAGILITY_MAP.md` in the project directory; your source files are not edited.
+`recover` and `harden` accept `--json` for machine-readable output and `--no-commit` to skip the approve and commit stage, so no proposed report is written. Even then Genesis writes its analysis output, `.genesis/` state and `FRAGILITY_MAP.md`, in the project directory; your source files are not edited.
 
 ## What `recover` reports
 

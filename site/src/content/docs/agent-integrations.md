@@ -17,6 +17,8 @@ The skill triggers on phrases such as "I want to build", "scaffold" and `genesis
 
 As a skill, Genesis can use the web and MCP tools your agent already has (search, GitHub, package and security lookups) for research. That is separate from the four read-only MCP analysis tools Genesis exposes, which do not use the network. The standalone CLI does not do this broader research. See [Research and evidence](../research-and-evidence/).
 
+Before an agent declares substantial work done, it can optionally run the separate [Completion Guardian](../completion-guardian/). Genesis works without it.
+
 ## Machine-readable facts
 
 Agents that need the structure of Genesis can read `ARCHITECTURE_INVARIANTS.json` (engines, gates, modes, sources, tiers) and `data/public-product-facts.json` from the repository root. Both are generated from the code and checked in CI.

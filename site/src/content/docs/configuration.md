@@ -17,8 +17,8 @@ genesis config show
 
 | Key | Used by | Required |
 |---|---|---|
-| `LLM_API_KEY` | `genesis init` | Yes, for `init` |
-| `GITHUB_TOKEN` | GitHub search | Recommended, for rate limits |
+| `LLM_API_KEY` | `genesis init`, `genesis publish`, `genesis companion` | Yes, for those commands |
+| `GITHUB_TOKEN` | GitHub search in `genesis init` | Recommended, for rate limits |
 
 `recover`, `harden`, `deps` and `doctor` need no keys.
 
@@ -30,6 +30,9 @@ genesis config show
 | `GENESIS_COMPANION_MUTE` | Silence the Companion voice |
 | `GENESIS_MCP_CONFIG` | Path to MCP configuration used by `advise` |
 | `GENESIS_PSR_OUTPUT_DIR` | Output directory for PSR artifacts |
+| `ANTHROPIC_API_KEY` | Enables the optional LLM passes of `decide`: the five-advisor committee debate and the red-team critique. Without it the deterministic checks still run |
+| `GENESIS_COMPLETION_GUARDIAN_DIR` | Path to an installed [Completion Guardian](../completion-guardian/), for the optional final-verification bridge |
+| `GENESIS_COMPLETION_STATE_DIR` | Where the Guardian bridge keeps its state (default `~/.genesis/completion-audit/`) |
 
 ## Telemetry
 

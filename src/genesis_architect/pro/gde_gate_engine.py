@@ -1,8 +1,9 @@
 """Genesis Decision Engine — gate engine.
 
-Evaluates the 13 named approval gates against a SessionContext and
-produces a GateReport. Gate policy is a static table here — not scattered
-in orchestration logic.
+Evaluates the named gate checks a mode's plan requires against a
+SessionContext and produces a GateReport. Gate policy is a static table
+here — not scattered in orchestration logic. The planner decides which
+checks each mode runs (gde_planner._UNIVERSAL_GATES and _MODE_GATES).
 
 Hard-block gates (PLAN_WRITE, RULES_FAIL) are NEVER overridable.
 All other gates may be overridden if override_allowed=True.

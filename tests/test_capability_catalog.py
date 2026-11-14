@@ -121,3 +121,48 @@ def test_research_surfaces_stay_distinct():
     assert "do not mutate files, auto-fix or use the network" in mcp
     assert "external MCP tools" in mcp, "mcp.md must separate external MCP use from the tools Genesis exposes"
     assert "GitHub only" in (docs / "new-projects.md").read_text(encoding="utf-8")
+
+
+def test_every_door_is_real():
+    """A capability's door must be a real command, an importable module entry point or the MCP server."""
+    import importlib
+
+    from genesis_architect.pro.capability_map import MCP_SERVER_DOOR, MODULE_DOOR
+
+    names = {c.name for c in cat.COMMANDS}
+    for c in CAPABILITIES:
+        if c.command is None:
+            continue  # a recorded gap, listed as "none yet"
+        if c.command.startswith("genesis "):
+            word = c.command.split()[1]
+            assert word in names, f"{c.module}: door {c.command!r} is not a genesis command"
+        elif c.command.startswith(MODULE_DOOR):
+            dotted = c.command[len("python -m "):].split()[0]
+            mod = importlib.import_module(dotted)
+            assert callable(getattr(mod, "main", None)), f"{c.module}: {dotted} has no main()"
+        else:
+            assert c.command == MCP_SERVER_DOOR, f"{c.module}: unknown door {c.command!r}"
+            from genesis_architect.pro import mcp_tools
+            assert callable(mcp_tools.build_mcp_server)
+
+
+def test_every_source_module_exists():
+    for row in cat.build_catalog():
+        assert (REPO / row["source_module"]).is_file(), f"{row['id']}: {row['source_module']} does not exist"
+
+
+def test_workflows_and_integrations_are_not_counted():
+    """Workflows are sequences of capabilities and integrations are external, so neither is a family or a row."""
+    titles = {t.lower() for t in cat.FAMILIES.values()}
+    assert not any("verification" in t or "new project" in t for t in titles), titles
+    for row in cat.build_catalog():
+        blob = f"{row['id']} {row['name']}".lower()
+        assert "guardian" not in blob and "completeness" not in blob, f"{row['id']} looks like an integration"
+    assert "New Project Architecture" not in (REPO / "README.md").read_text(encoding="utf-8")
+
+
+@needs_repo_files
+def test_door_counts_add_up():
+    data = json.loads((REPO / "data/public-capabilities.json").read_text(encoding="utf-8"))
+    assert sum(data["counts"]["by_door"].values()) == data["counts"]["capabilities"]
+    assert data["counts"]["by_door"]["none"] == sum(1 for c in CAPABILITIES if c.command is None)

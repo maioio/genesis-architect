@@ -11,17 +11,17 @@ Run `genesis <command> --help` for exact options. A test compares this page with
 
 | Command | Status | Needs | What it does |
 |---|---|---|---|
-| `init` | PUBLIC | LLM key or local model, network | Research GitHub, mine pitfalls, scaffold a new project |
-| `research` | PUBLIC | Network (or `--json-data` offline) | Multi-source research on a topic |
+| `init` | PUBLIC | `LLM_API_KEY` (also with a local model), network | Research GitHub repos and their issues, then write `RESEARCH.md` and `PITFALLS.md`. Writes no application code; the full build is the [agent-skill workflow](../new-projects/) |
+| `research` | PUBLIC | Nothing | Rank research evidence you or your agent collected (`--json-data`); with no data it prints a collection guide. It does not search by itself. `--video` builds video search queries for `/watch`; `--absorb` turns a `/watch` analysis into `PITFALLS.md` entries |
 | `resolve` | ADVANCED | Network for the Stack Overflow step | Look up a known solution: local vault first, then Stack Overflow |
-| `publish` | PUBLIC | LLM key | Draft a Show HN post and release notes. You post them yourself |
+| `publish` | PUBLIC | `LLM_API_KEY` | Draft a Show HN post and release notes. You post them yourself |
 
 ## Existing code
 
 | Command | Status | Needs | What it does |
 |---|---|---|---|
-| `recover [PATH]` | PUBLIC | Nothing | Diagnose drift, broken imports, anti-patterns, decay. Writes `.genesis/` and `FRAGILITY_MAP.md`, never your source |
-| `harden [PATH]` | PUBLIC | Nothing | STRIDE threat model, OWASP Top 10 checklist, offline secrets scan. Proposes its reports under `docs/security/`; they are written only after you approve (default is Defer) or pass `--yes` |
+| `recover [PATH]` | PUBLIC | Nothing | Diagnose drift, broken imports, anti-patterns, decay. Writes `.genesis/` and `FRAGILITY_MAP.md`; `PROJECT_RECOVERY_REPORT.md` only after you approve. Never edits your source |
+| `harden [PATH]` | PUBLIC | Nothing | STRIDE threat model, OWASP Top 10 checklist, offline secrets scan. Writes `.genesis/` and `FRAGILITY_MAP.md`; proposes its reports under `docs/security/`; they are written only after you approve (default is Defer) or pass `--yes` |
 | `deps [PATH]` | PUBLIC | Network for advisories (OSV.dev) | Third-party dependencies per module, plus advisories |
 | `decide "<text>"` | PUBLIC | Nothing; LLM critique optional | Run a full decision session on an instruction |
 | `explain` | PUBLIC | Nothing | Print the last session's decision log |
@@ -53,9 +53,9 @@ Run `genesis <command> --help` for exact options. A test compares this page with
 
 | Flag | Meaning |
 |---|---|
-| `--no-commit` | Analysis only: skips the approve and commit stage. Reports are still written to `.genesis/` and `FRAGILITY_MAP.md` |
+| `--no-commit` | Analysis only: skips the approve and commit stages, so no proposed report is written. Analysis output is still written: `.genesis/` state and, when the fragility classifier runs (as in `recover` and `harden`), `FRAGILITY_MAP.md`. See the [approval model](../approval-model/) |
 | `--json` | Structured output; implies `--no-commit` |
-| `--yes`, `-y` | Auto-approve writes (CI) |
+| `--yes`, `-y` | Auto-approve pending writes (CI). Does not override a hard block |
 | `--resume` | Resume a saved session |
 | `--serial` | Run engines one at a time |
 | `--classify-only` | Classify the instruction, run nothing |

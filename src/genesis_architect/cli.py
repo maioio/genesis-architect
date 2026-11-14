@@ -6,7 +6,7 @@ import typer
 
 app = typer.Typer(
     name="genesis",
-    help="Research first. Build once. Scans real GitHub repos before scaffolding.",
+    help="Research first. Build once. Researches real GitHub repos and their issues before you build.",
     no_args_is_help=True,
 )
 
@@ -40,11 +40,11 @@ def init(
     model: str = typer.Option("claude-sonnet-4-6", "--model", "-m",
                                help="LLM model, routed via LiteLLM — e.g. 'claude-sonnet-4-6' "
                                     "(default), 'gpt-4o', 'gemini/gemini-2.0-flash', "
-                                    "'ollama/llama3' (local, no API key)"),
+                                    "'ollama/llama3' (local; LLM_API_KEY must still be set)"),
     name: str | None = typer.Option(None, "--name", "-n", help="Project name"),
     language: str | None = typer.Option(None, "--language", "-l", help="Primary language (python, typescript, go, rust, ...)"),
 ):
-    """Scan GitHub repos, mine pitfalls, and scaffold your project."""
+    """Research GitHub repos and their issues; write RESEARCH.md and PITFALLS.md."""
     from genesis_architect import config as cfg
     from genesis_architect.core import audit_inference, github, llm, nlu_gate, scaffolder, vault
     from genesis_architect.core.github import GitHubRateLimitError
@@ -122,7 +122,7 @@ def init(
     typer.echo("Phase 4: Choose your architecture:\n")
     typer.echo("  A) Minimalist - simple, small, easy to maintain")
     typer.echo("  B) Scalable   - full production setup, CI/CD, modular")
-    typer.echo("  C) Quick      - fastest possible scaffold, minimal config")
+    typer.echo("  C) Quick      - fastest possible setup, minimal config")
     typer.echo("  D) Hybrid     - mix of minimalist core + scalable extensions\n")
 
     def ask_fn():
@@ -137,10 +137,10 @@ def init(
         raise typer.Exit(0)
 
     arch_labels = {"A": "Minimalist", "B": "Scalable", "C": "Quick", "D": "Hybrid"}
-    typer.echo(f"\n  Building {arch_labels.get(arch_choice, arch_choice)} scaffold...\n")
+    typer.echo(f"\n  Writing the research brief for the {arch_labels.get(arch_choice, arch_choice)} option...\n")
 
-    # --- Phase 5: LLM analysis + scaffold ---
-    typer.echo("Phase 5: Analyzing with LLM and generating scaffold...")
+    # --- Phase 5: LLM analysis + research brief ---
+    typer.echo("Phase 5: Analyzing with LLM and writing RESEARCH.md and PITFALLS.md...")
     def llm_fn(prompt):
         return llm.ask(prompt, model=model, api_key=llm_api_key)
 
@@ -168,9 +168,9 @@ def companion(
     model: str = typer.Option("claude-sonnet-4-6", "--model", "-m",
                                help="LLM model, routed via LiteLLM — e.g. 'claude-sonnet-4-6' "
                                     "(default), 'gpt-4o', 'gemini/gemini-2.0-flash', "
-                                    "'ollama/llama3' (local, no API key)"),
+                                    "'ollama/llama3' (local; LLM_API_KEY must still be set)"),
 ):
-    """Stay active after scaffold - answers questions, detects when to exit."""
+    """Answer questions about your project with an LLM; type done or exit to quit."""
     from genesis_architect import config as cfg
     from genesis_architect.core import audit_inference, llm, resolve_engine
     from genesis_architect.core import companion as comp
@@ -229,7 +229,7 @@ def publish(
     model: str = typer.Option("claude-sonnet-4-6", "--model", "-m",
                                help="LLM model, routed via LiteLLM — e.g. 'claude-sonnet-4-6' "
                                     "(default), 'gpt-4o', 'gemini/gemini-2.0-flash', "
-                                    "'ollama/llama3' (local, no API key)"),
+                                    "'ollama/llama3' (local; LLM_API_KEY must still be set)"),
 ):
     """Generate Show HN post and GitHub Release notes, with copy-paste and browser AI options."""
     from genesis_architect import config as cfg
@@ -309,7 +309,7 @@ def config(
 @app.command()
 def research(
     topic: str = typer.Argument(..., help="Topic to research, or a video URL with --video"),
-    video: bool = typer.Option(False, "--video", help="Deep video-to-pitfall analysis (needs yt-dlp and ffmpeg)"),
+    video: bool = typer.Option(False, "--video", help="Build video search queries for the /watch skill, which downloads and transcribes (yt-dlp, ffmpeg)"),
     json_data: str = typer.Option(
         None, "--json-data", help="Path to JSON file with pre-collected research data"
     ),
@@ -329,7 +329,7 @@ def research(
         False, "--json", help="Emit the summary as JSON instead of formatted text"
     ),
 ):
-    """Research a topic. Use --video for Pro video-to-pitfall analysis.
+    """Research a topic. Use --video to build video search queries for /watch.
 
     Multi-source research: checks the vault cache, then either prints a
     data-collection guide or — with --json-data FILE — merges, ranks, and
@@ -357,7 +357,7 @@ def research(
                 "absorb_command": f'genesis research "{topic}" --absorb watch-output.txt',
             }, indent=2))
             return
-        typer.echo("Pro video research queries built:")
+        typer.echo("Video research queries built:")
         for platform, qs in queries.items():
             typer.echo(f"  {platform}: {len(qs)} queries")
         typer.echo("Run /watch on a chosen video, then feed the analysis back in:")

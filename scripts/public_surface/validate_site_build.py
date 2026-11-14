@@ -18,6 +18,8 @@ SITE = "https://maioio.github.io/genesis-architect"
 BANNED = [
     (re.compile(r"maioio-projects", re.I), "stale repository URL"),
     (re.compile(r"\bGet Pro\b|\bGumroad\b|\$9\s*/\s*mo", re.I), "paid-tier call to action"),
+    # An MDX comment in a plain .md page is not parsed; it renders as visible text.
+    (re.compile(r"<p>\s*\{/\*"), "MDX comment rendered as visible text"),
 ]
 
 

@@ -10,7 +10,7 @@ Genesis exposes four read-only analysis tools. They take a `project_dir` and ret
 | `genesis_architecture_score` | 0 to 100 score with modularity, coupling, cohesion and layering |
 | `genesis_anti_patterns` | Anti-pattern findings with severity |
 | `genesis_recovery_report` | The recovery diagnosis |
-| `genesis_gate` | The gate verdict for the project |
+| `genesis_gate` | Validates the project against its `.genesis/rules.json` architecture regression rules |
 
 These are the tools Genesis exposes. They are separate from any external MCP tools an agent uses for research while Genesis runs as a skill; see [Research and evidence](../research-and-evidence/).
 
@@ -19,11 +19,11 @@ These are the tools Genesis exposes. They are separate from any external MCP too
 The tools are plain Python functions and work without any MCP SDK. To serve them over MCP, install the SDK and start the server from Python:
 
 ```bash
-pip install mcp
+pip install "mcp<2"
 python -c "from genesis_architect.pro.mcp_tools import build_mcp_server; build_mcp_server().run()"
 ```
 
-There is no `genesis mcp` subcommand yet. See [Limitations](../limitations/).
+Pin `mcp<2`: version 2 of the SDK renamed `FastMCP`, which the server imports. There is no `genesis mcp` subcommand yet. See [Limitations](../limitations/).
 
 ## Client configuration
 

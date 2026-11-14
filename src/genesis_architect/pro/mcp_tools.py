@@ -125,7 +125,7 @@ def build_mcp_server():
     """
     if not mcp_available():
         raise RuntimeError(
-            "MCP SDK not installed. Install with: pip install mcp\n"
+            "MCP SDK not installed. Install with: pip install \"mcp<2\" (mcp 2.x renamed FastMCP)\n"
             "The Genesis analysis tools themselves work without it via "
             "call_tool()/list_tools()."
         )

@@ -21,14 +21,15 @@ export default defineConfig({
         // Scrollable code blocks and tables must be keyboard reachable (axe: scrollable-region-focusable).
         { tag: 'script', content: "document.addEventListener('DOMContentLoaded',()=>document.querySelectorAll('.expressive-code pre, .sl-markdown-content table').forEach(p=>{if(p.scrollWidth>p.clientWidth){p.setAttribute('tabindex','0');if(p.tagName==='TABLE'){p.setAttribute('role','region');p.setAttribute('aria-label','Scrollable table')}}}))" },
       ],
-      description: 'Research before you build. Understand before you change.',
+      description: 'Research before you build. Understand before you change. Verify before you call substantial work done.',
       social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/maioio/genesis-architect' }],
       editLink: { baseUrl: 'https://github.com/maioio/genesis-architect/edit/main/site/' },
       customCss: ['./src/styles/theme.css'],
       sidebar: [
         { label: 'Start', items: ['getting-started', 'new-projects', 'existing-projects'] },
         { label: 'How it works', items: ['research-and-evidence', 'architecture-analysis', 'decision-engine', 'approval-model'] },
-        { label: 'Reference', items: ['capabilities', 'commands', 'mcp', 'agent-integrations', 'configuration', 'security', 'troubleshooting'] },
+        { label: 'Reference', items: ['capabilities', 'commands', 'configuration', 'security', 'troubleshooting'] },
+        { label: 'Integrations', items: ['agent-integrations', 'mcp', 'completion-guardian'] },
         { label: 'Project', items: ['architecture', 'limitations', 'contributing'] },
       ],
     }),

@@ -26,13 +26,13 @@ def _build_parser() -> argparse.ArgumentParser:
         description="Genesis Decision Engine — route any instruction to the right engines",
         epilog=(
             "Core commands (from genesis-architect):\n"
-            "  init       Scan GitHub repos, mine pitfalls, and scaffold your project\n"
-            "  research   Multi-source research on a topic (--json-data to process results)\n"
-            "  publish    Generate Show HN post and GitHub Release notes\n"
+            "  init       Research GitHub repos and issues; write RESEARCH.md and PITFALLS.md\n"
+            "  research   Rank collected research evidence (--json-data); does not search by itself\n"
+            "  publish    Draft a Show HN post and GitHub Release notes (prints, writes nothing)\n"
             "  config     Manage API keys (set / get / show)\n"
-            "  upgrade    Show Pro status and how to unlock advanced features\n"
-            "\nNot sure which command runs the engine you want?\n"
-            "  genesis engines        Every engine, and the command that reaches it\n"
+            "  upgrade    Show install status (there is no paid tier)\n"
+            "\nNot sure which command reaches the capability you want?\n"
+            "  genesis engines        Every capability, and the door that reaches it\n"
             "\nRun `genesis <command> --help` for details on any command."
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -75,7 +75,7 @@ def _build_parser() -> argparse.ArgumentParser:
                         help="Output structured JSON (for piping / CI)")
 
     engines_p = sub.add_parser(
-        "engines", help="List every engine and the command that reaches it")
+        "engines", help="List every capability and the door that reaches it")
     engines_p.add_argument("--modules", action="store_true",
                            help="Show the implementing module next to each engine")
     engines_p.add_argument("--json", dest="json_output", action="store_true",

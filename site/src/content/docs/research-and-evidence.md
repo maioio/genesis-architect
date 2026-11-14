@@ -3,7 +3,7 @@ title: Research and evidence
 description: How sources are collected, checked and recorded.
 ---
 
-Genesis treats a claim without a source as a defect. The research path has three checks.
+Genesis treats a claim without a source as a defect. This page covers where research comes from, how sources are ranked and how citations are checked.
 
 ## Source registry and anchors
 
@@ -26,7 +26,9 @@ Using external MCP tools for research is a skill behavior of the host agent. It 
 
 ## Citation validation
 
-Citations are checked live. A URL that does not resolve fails validation, and the result is recorded rather than hidden.
+In the agent-skill workflow, `scripts/research_validator.py --verify-issues` checks over HTTP that every GitHub issue URL cited in `RESEARCH.md` resolves, and `--validate-pitfalls` rejects a pitfall in `PITFALLS.md` that has no issue link or no mitigation file. The workflow does not move on past a dead citation: it replaces the source or drops the claim. CI runs the same validator on the shipped example project.
+
+`genesis init` does not run this validator. Its pitfalls point at the issues they were mined from, but the links are not re-checked.
 
 ## Evidence pack
 
@@ -36,4 +38,4 @@ Citations are checked live. A URL that does not resolve fails validation, and th
 
 When research is thin, Genesis says so in the pack (`Quality: THIN`) instead of presenting a confident scaffold. Treat a thin pack as a prompt to narrow the description or research further.
 
-The counts for engines, gates and sources are published in [`data/public-product-facts.json`](https://github.com/maioio/genesis-architect/blob/main/data/public-product-facts.json) and generated from the code.
+The counts for engines, gate checks and sources are published in [`data/public-product-facts.json`](https://github.com/maioio/genesis-architect/blob/main/data/public-product-facts.json) and generated from the code.

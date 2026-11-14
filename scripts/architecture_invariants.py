@@ -44,6 +44,7 @@ def collect() -> dict:
     from genesis_architect.pro.engine_bootstrap import ensure_registered
     from genesis_architect.pro.engine_registry import get_default_registry
     from genesis_architect.pro.gde_gate_engine import _GATE_POLICY
+    from genesis_architect.pro.gde_planner import _MODE_GATES, _UNIVERSAL_GATES
     from genesis_architect.pro.gde_types import GDEMode
 
     ensure_registered()
@@ -64,6 +65,16 @@ def collect() -> dict:
         for p in (REPO / "src/genesis_architect/pro/commands").glob("*.py")
         if p.stem != "__init__"
     )
+
+    gates = [
+        {"id": g[0], "title": g[1], "action": g[3].value, "overridable": g[2],
+         "confidence_penalty": g[4],
+         "required_by_modes": [
+             m.value for m in GDEMode
+             if g[0] in _UNIVERSAL_GATES or g[0] in _MODE_GATES.get(m, [])
+         ]}
+        for g in _GATE_POLICY
+    ]
 
     return {
         "_comment": (
@@ -106,11 +117,15 @@ def collect() -> dict:
         ],
         "engines": engines,
         "modes": [m.value for m in GDEMode],
-        "gates": [
-            {"id": g[0], "action": g[3].value, "overridable": g[2],
-             "confidence_penalty": g[4]}
-            for g in _GATE_POLICY
-        ],
+        # A gate check runs only when the planner puts it in a mode's plan.
+        # required_by_modes is empty for a check that is defined but that no
+        # mode evaluates yet; public docs must not present those as active.
+        "gate_breakdown": {
+            **{action: sum(1 for g in gates if g["action"] == action)
+               for action in ("hard_block", "block_ask", "warn")},
+            "evaluated_by_a_mode": sum(1 for g in gates if g["required_by_modes"]),
+        },
+        "gates": gates,
         "cli_modules": [{"module": n, "fan_out": f} for n, f in cli],
     }
 

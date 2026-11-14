@@ -4,12 +4,14 @@ Completion Guardian is an optional, external completeness auditor:
 https://github.com/maioio/completion-guardian
 
 Genesis does not bundle, install or require it. When it is present, it adds one
-independent FINAL audit between "Genesis verification passed" and "work is complete".
+separate FINAL audit between "Genesis verification passed" and "work is complete".
+The agent performs that audit with Guardian's probe and checklist: it is a structured
+check, not an independent proof, and Guardian is not counted as a Genesis capability.
 When it is absent, Genesis finishes through its existing gates, unchanged.
 
 ## What Guardian adds
 
-- Independent audit of the whole project against what was claimed (README, CLI, docs, tests).
+- A whole-project audit, run by the agent, of what was claimed against what ships (README, CLI, docs, tests).
 - A fingerprint of the project state, so "audited" always means "this exact state".
 - `status` (deterministic JSON) and `mark` (record the audited state), owned by Guardian.
 

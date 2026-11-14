@@ -1,3 +1,5 @@
+> **Historical draft, not current.** Written for an early release. It describes `genesis check` and `genesis audit .`, which are not CLI commands, and an MIT licence; the project is AGPL-3.0-or-later. See the [README](../../README.md) for the current product.
+
 # Show HN: Genesis Architect - Claude skill that researches GitHub repos before scaffolding
 
 **Title (60 chars):**

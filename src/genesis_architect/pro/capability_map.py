@@ -1,4 +1,4 @@
-"""The capability map: every engine, and the command that reaches it.
+"""The capability map: every user-facing capability, and the door that reaches it.
 
 This module exists because of a specific, expensive failure. An agent using
 Genesis needed the recovery scan before extending code it had not diagnosed,
@@ -17,6 +17,13 @@ Two rules keep this honest:
 2. An entry with ``command=None`` is a declared gap, printed as such. A
    capability with no way to reach it should read as an admission, not be
    quietly omitted from the list.
+
+A door is a ``genesis`` command, a ``python -m`` module entry point
+(``MODULE_DOOR``) or the Genesis MCP server (``MCP_SERVER_DOOR``). The full
+new-project build that the agent skill performs is a workflow, not a
+capability, so it has no entry here. A capability implemented outside this
+package's top level names its file in ``source`` (a path relative to the
+repository root), and the drift guard checks that file.
 """
 
 from __future__ import annotations
@@ -24,12 +31,17 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 
+MODULE_DOOR = "python -m genesis_architect."   # prefix of a module entry point
+MCP_SERVER_DOOR = "Genesis MCP server"   # the read-only MCP server (mcp_tools)
+
+
 @dataclass(frozen=True)
 class Capability:
     module: str
     title: str
     what: str
-    command: str | None   # None = no CLI door yet (printed as a gap)
+    command: str | None   # None = no door yet (printed as a gap)
+    source: str | None = None   # repo-relative file when not in this package
 
     @property
     def reachable(self) -> bool:
@@ -77,6 +89,14 @@ CAPABILITIES: tuple[Capability, ...] = (
                "genesis recover [PATH]"),
 
     # --- research ---
+    Capability("scaffolder", "New-Project Research Brief",
+               "Searches GitHub repos and their issues, then writes RESEARCH.md and PITFALLS.md",
+               "genesis init \"<vision>\"",
+               source="src/genesis_architect/core/scaffolder.py"),
+    Capability("resolve_engine", "Error Resolver",
+               "Looks up a known error in the local vault, then Stack Overflow, and caches the answer",
+               "genesis resolve \"<error>\"",
+               source="src/genesis_architect/core/resolve_engine.py"),
     Capability("research_orchestrator", "Research Orchestrator",
                "Merges four research streams, ranks them, enforces the research floor",
                'genesis research "<topic>" [--json-data FILE]'),
@@ -94,20 +114,20 @@ CAPABILITIES: tuple[Capability, ...] = (
                "grid, saved as outline.json/fields.json",
                "genesis decide \"research <topic>\""),
     Capability("field_intelligence", "Field Intelligence",
-               "Practitioner signal from Reddit Answers and similar surfaces",
+               "Builds practitioner-signal queries and classifies the findings you bring back; does not fetch them",
                "genesis decide \"research <topic>\""),
     Capability("source_registry", "Source Registry",
                "Which sources are trusted for which kind of claim",
                "genesis decide \"research <topic>\""),
     Capability("source_anchor", "Source Anchor",
-               "Pins every claim to a retrievable source",
-               "genesis decide \"research <topic>\""),
+               "Pins drift findings to the file and line they came from",
+               "genesis recover [PATH]"),
     Capability("evidence_pack", "Evidence Pack",
                "Bundles the evidence behind a decision for review",
                "genesis decide \"research <topic>\""),
     Capability("product_intelligence", "Product Intelligence",
-               "Competitive and positioning signal for the vision",
-               "genesis decide \"research <topic>\""),
+               "Opt-in, local-only usage telemetry; off by default",
+               "genesis telemetry"),
 
     # --- security & dependencies ---
     Capability("security_templates", "Security Templates",
@@ -120,11 +140,8 @@ CAPABILITIES: tuple[Capability, ...] = (
                "Maps third-party imports per module and looks up their CVEs",
                "genesis deps [PATH]"),
     Capability("package_registry", "Package Registry",
-               "Validates packages against PyPI/npm/crates.io/Maven/NuGet + OSV",
+               "Looks up one package in PyPI, npm, crates.io, Maven or NuGet; also supplies the OSV.dev advisory lookup used by the project scan",
                "genesis deps [PATH] --package NAME"),
-    Capability("dependency_index", "Dependency Index",
-               "Caches the resolved dependency graph between runs",
-               "genesis deps [PATH]"),
     Capability("stdlib_filter", "Stdlib Filter",
                "Separates standard-library imports from third-party ones",
                "genesis deps [PATH]"),
@@ -151,6 +168,14 @@ CAPABILITIES: tuple[Capability, ...] = (
     Capability("rules_engine", "Rules Engine",
                "Hard and soft project rules, enforced at the gate",
                "genesis decide \"<instruction>\""),
+    Capability("committee", "Architecture Committee",
+               "Multi-perspective review of the engine results; flags lenses that disagree",
+               "genesis decide \"get a second opinion on <question>\"",
+               source="src/genesis_architect/pro/engines/committee/pipeline.py"),
+    Capability("decision_log", "Decision Log",
+               "Reads back what earlier decide sessions concluded and why",
+               "genesis explain",
+               source="src/genesis_architect/pro/gde_session.py"),
 
     # --- memory & session ---
     Capability("cross_session_memory", "Cross-Session Memory",
@@ -160,11 +185,11 @@ CAPABILITIES: tuple[Capability, ...] = (
                "The per-project .genesis/*.md memory files",
                "genesis memory"),
     Capability("learning_engine", "Learning Engine",
-               "Learns from accepted and rejected findings over time",
-               "genesis telemetry"),
+               "Feeds recorded outcomes back into the next round of advice",
+               "genesis advise"),
     Capability("progress_report", "Progress Report",
-               "What changed since the last session",
-               "genesis memory --status"),
+               "HTML report of build-phase progress; no command calls it yet",
+               None),
 
     # --- workspace & companion ---
     Capability("companion_ui", "Companion UI",
@@ -186,8 +211,8 @@ CAPABILITIES: tuple[Capability, ...] = (
                "Recommends MCP servers and skills for this project",
                "genesis advise"),
     Capability("mcp_tools", "MCP Tools",
-               "Exposes Genesis engines as MCP tools",
-               "genesis advise"),
+               "Four read-only analysis tools served over MCP; no network, no writes",
+               MCP_SERVER_DOOR),
     Capability("skill_fetcher", "Skill Fetcher",
                "Fetches a whitelisted skill pack into an ephemeral sandbox",
                "genesis fetch [SOURCE]"),
@@ -197,18 +222,29 @@ CAPABILITIES: tuple[Capability, ...] = (
     Capability("first_run", "Readiness Check",
                "Install and optional-dependency readiness",
                "genesis doctor"),
-    Capability("model_store", "Model Store",
-               "Local STT/TTS model download and cache",
-               "genesis companion --setup"),
+    Capability("voice_model_setup", "Voice Model Setup",
+               "Downloads local STT/TTS models into ~/.genesis/models",
+               "genesis companion --setup",
+               source="src/genesis_architect/pro/voice/setup.py"),
     Capability("intent_classifier", "Intent Classifier",
                "Maps a plain-English instruction onto a mode",
                "genesis decide --classify-only \"<instruction>\""),
+    Capability("publish_agent", "Release Drafts",
+               "Drafts release notes and a launch post from git history; writes no files",
+               "genesis publish",
+               source="src/genesis_architect/core/publish_agent.py"),
+    Capability("scaffold_generator", "Folder-Structure Generator",
+               "Writes a minimalist or scalable starter tree for Python, TypeScript, Go or Rust; never overwrites a file",
+               f"{MODULE_DOOR}core.scaffold_generator --language <lang> --tier <tier>",
+               source="src/genesis_architect/core/scaffold_generator.py"),
 )
 
 # Plumbing: shared types, registries, adapters, and wiring. These have no
 # capability of their own to reach, so they are deliberately doorless.
 INTERNAL: frozenset[str] = frozenset({
     "capability_catalog",
+    # Import-graph reverse-map helper; no command or engine calls it.
+    "dependency_index",
     "engine_registry",
     "gate_notifier_patch",
     "gde_cli",
@@ -220,6 +256,9 @@ INTERNAL: frozenset[str] = frozenset({
     "gde_runner",
     "gde_session",
     "gde_types",
+    # Dual-layer architecture model (planned vs. observed) used by drift,
+    # import audit and recovery; reached through those capabilities.
+    "model_store",
     "capability_map",
 })
 
@@ -249,9 +288,21 @@ def unmapped_modules() -> set[str]:
     return _package_modules() - mapped - INTERNAL
 
 
+def _source_exists(source: str) -> bool:
+    from pathlib import Path
+
+    # parents[2] is src/ in a checkout and site-packages in an install, so the
+    # check works in both; source paths are written relative to the repo root.
+    return (Path(__file__).parents[2] / source.removeprefix("src/")).is_file()
+
+
 def stale_entries() -> set[str]:
-    """Mapped modules that no longer exist in the package."""
-    return {c.module for c in CAPABILITIES} - _package_modules()
+    """Mapped capabilities whose implementing file no longer exists."""
+    package = _package_modules()
+    return {
+        c.module for c in CAPABILITIES
+        if not (_source_exists(c.source) if c.source else c.module in package)
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -267,7 +318,7 @@ def format_map(*, show_modules: bool = False) -> str:
     """The capability map as a readable table, grouped by command."""
     lines = [
         "",
-        "Genesis engines and the commands that reach them",
+        "Genesis capabilities and the doors that reach them",
         "=" * 62,
         "",
     ]
@@ -295,7 +346,7 @@ def format_map(*, show_modules: bool = False) -> str:
         lines.append(f"  Not yet accounted for in this map: {', '.join(sorted(unmapped))}")
         lines.append("")
 
-    lines.append(f"  {len(CAPABILITIES)} engines mapped. "
+    lines.append(f"  {len(CAPABILITIES)} capabilities mapped. "
                  f"Run `genesis <command> --help` for any command above.")
     lines.append("")
     return "\n".join(lines)
@@ -306,7 +357,8 @@ def to_dict() -> dict:
     return {
         "engines": [
             {"module": c.module, "title": c.title, "what": c.what,
-             "command": c.command, "reachable": c.reachable}
+             "command": c.command, "reachable": c.reachable,
+             "source": c.source or f"src/genesis_architect/pro/{c.module}.py"}
             for c in CAPABILITIES
         ],
         "internal_modules": sorted(INTERNAL),

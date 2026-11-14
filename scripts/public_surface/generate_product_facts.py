@@ -5,12 +5,15 @@ Every number the README, site, manifests and docs publish is read from here.
 Each value is derived from the package or the repository, never typed:
 
     version, python_min, license   pyproject.toml
-    engines, gates, modes,
+    engines, gates, gates_*, modes,
     research_sources, tiers        ARCHITECTURE_INVARIANTS.json (itself generated)
     import_cycles                  import_graph.build_graph('.')
     critical_antipatterns          antipattern_detector.detect_all('.')
     architecture_score             architecture_scorer.score_project('.')
     tests                          pytest --collect-only
+    capabilities, families,
+    commands                       capability_catalog (built from capability_map)
+    mcp_tools                      pro.mcp_tools.TOOLS
 
     python scripts/public_surface/generate_product_facts.py            # print
     python scripts/public_surface/generate_product_facts.py --write    # regenerate
@@ -38,7 +41,11 @@ PROVENANCE = {
     "python_min": "pyproject.toml [project].requires-python",
     "license": "pyproject.toml [project].license",
     "engines": "ARCHITECTURE_INVARIANTS.json counts.engines",
-    "gates": "ARCHITECTURE_INVARIANTS.json counts.gates",
+    "gates": "ARCHITECTURE_INVARIANTS.json counts.gates (gate checks defined)",
+    "gates_active": "ARCHITECTURE_INVARIANTS.json gate_breakdown.evaluated_by_a_mode",
+    "gates_hard_block": "ARCHITECTURE_INVARIANTS.json gate_breakdown.hard_block",
+    "gates_block_ask": "ARCHITECTURE_INVARIANTS.json gate_breakdown.block_ask",
+    "gates_warn": "ARCHITECTURE_INVARIANTS.json gate_breakdown.warn",
     "modes": "ARCHITECTURE_INVARIANTS.json counts.modes",
     "research_sources": "ARCHITECTURE_INVARIANTS.json counts.research_sources",
     "research_tiers": "ARCHITECTURE_INVARIANTS.json counts.research_tiers",
@@ -49,6 +56,7 @@ PROVENANCE = {
     "capabilities": "capability_catalog.build_catalog(), built from capability_map.CAPABILITIES",
     "capability_families": "capability_catalog.FAMILIES",
     "commands": "capability_catalog.COMMANDS",
+    "mcp_tools": "pro.mcp_tools.TOOLS (read-only tools served by the Genesis MCP server)",
 }
 
 
@@ -67,7 +75,7 @@ def collect() -> dict:
     from genesis_architect.core.antipattern_detector import detect_all
     from genesis_architect.core.architecture_scorer import score_project
     from genesis_architect.core.import_graph import build_graph
-    from genesis_architect.pro import capability_catalog
+    from genesis_architect.pro import capability_catalog, mcp_tools
 
     project = tomllib.loads((REPO / "pyproject.toml").read_text(encoding="utf-8"))["project"]
     invariants = json.loads((REPO / "ARCHITECTURE_INVARIANTS.json").read_text(encoding="utf-8"))
@@ -86,6 +94,10 @@ def collect() -> dict:
         "website": CANONICAL_SITE,
         "engines": counts["engines"],
         "gates": counts["gates"],
+        "gates_active": invariants["gate_breakdown"]["evaluated_by_a_mode"],
+        "gates_hard_block": invariants["gate_breakdown"]["hard_block"],
+        "gates_block_ask": invariants["gate_breakdown"]["block_ask"],
+        "gates_warn": invariants["gate_breakdown"]["warn"],
         "modes": counts["modes"],
         "research_sources": counts["research_sources"],
         "research_tiers": counts["research_tiers"],
@@ -96,6 +108,7 @@ def collect() -> dict:
         "capabilities": len(capability_catalog.build_catalog()),
         "capability_families": len(capability_catalog.FAMILIES),
         "commands": len(capability_catalog.COMMANDS),
+        "mcp_tools": len(mcp_tools.TOOLS),
         "provenance": PROVENANCE,
     }
 

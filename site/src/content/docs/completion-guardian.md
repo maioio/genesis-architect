@@ -6,7 +6,7 @@ description: An optional, separate completeness check the agent-skill workflow c
 [Completion Guardian](https://github.com/maioio/completion-guardian) is a separate tool. The Genesis agent-skill workflow can use it as a final check before it reports substantial work as complete, ready to ship or ready to release.
 
 - **Optional.** Genesis does not bundle, install or require it. Without it, Genesis finishes through its own checks, unchanged.
-- **Separate install.** You install it yourself, as the `project-completeness-audit` skill (or the `project-completion-guardian` plugin, which adds an automatic Stop hook).
+- **Separate install.** You install it yourself, as the `project-completeness-audit` skill (or the `project-completion-guardian` plugin, which adds an automatic Stop hook). Genesis does not search plugin caches, so a plugin-only install is not found unless `GENESIS_COMPLETION_GUARDIAN_DIR` points at the skill folder or the skill is also installed in one of the locations below.
 - **The agent does the audit.** The agent runs the skill in FINAL mode: it looks for what the project is missing or states falsely across code, tests, runtime behaviour, packaging, docs and public surface.
 - **Fingerprint-aware.** Guardian fingerprints the project state. A clear verdict covers that exact state; any later change invalidates it.
 - **Not a capability.** It is an integration, so it is not counted in the [capability catalog](/genesis-architect/capabilities/).
@@ -33,6 +33,8 @@ Passing Genesis tests is not a reason to record a clear verdict. The bridge cann
 | 0 | Proceed. Also returned when Guardian is not installed | Continue |
 | 3 | Blocked: findings, no clear audit, or the project changed after the audit | Fix, or run the audit again |
 | 4 | Degraded: Guardian could not run, or the mark did not take effect | Report it, rely on the Genesis checks, do not claim the project was audited |
+
+Without Guardian, exit 0 does not mean an audit ran. `finalize` reports `proceed_without_guardian` with `available` false, and any claim that the work is complete rests on the existing Genesis checks alone.
 
 ## Where Genesis looks
 

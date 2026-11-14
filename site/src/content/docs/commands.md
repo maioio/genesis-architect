@@ -21,9 +21,9 @@ Run `genesis <command> --help` for exact options. A test compares this page with
 | Command | Status | Needs | What it does |
 |---|---|---|---|
 | `recover [PATH]` | PUBLIC | Nothing | Diagnose drift, broken imports, anti-patterns, decay. Writes `.genesis/` and `FRAGILITY_MAP.md`; `PROJECT_RECOVERY_REPORT.md` only after you approve. Never edits your source |
-| `harden [PATH]` | PUBLIC | Nothing | STRIDE threat model, OWASP Top 10 checklist, offline secrets scan. Writes `.genesis/` and `FRAGILITY_MAP.md`; proposes its reports under `docs/security/`; they are written only after you approve (default is Defer) or pass `--yes` |
-| `deps [PATH]` | PUBLIC | Network for advisories (OSV.dev); `--no-cve` skips the lookup | Third-party dependencies per module, plus advisories |
-| `decide "<text>"` | PUBLIC | Nothing; LLM critique optional | Run a full decision session on an instruction |
+| `harden [PATH]` | PUBLIC | Nothing required; in gate mode it asks OSV.dev about up to 15 package names from Python imports, and skips the lookup if it fails | STRIDE threat model, OWASP Top 10 checklist, offline secrets scan. Writes `.genesis/` and `FRAGILITY_MAP.md`; proposes its reports under `docs/security/`; they are written only after you approve (default is Defer) or pass `--yes` |
+| `deps [PATH]` | PUBLIC | Network for advisories (OSV.dev); `--no-cve` skips the lookup | Third-party dependencies per module (read from Python imports), plus advisories. `--package NAME` also queries the PyPI, npm, crates.io, Maven and NuGet registries. Exits with code 1 when advisories are found |
+| `decide "<text>"` | PUBLIC | Nothing required; LLM critique optional; a session in gate mode can ask OSV.dev like `harden` | Run a full decision session on an instruction |
 | `explain` | PUBLIC | Nothing | Print the last session's decision log |
 | `memory` | PUBLIC | Nothing | Show or manage per-project memory in `.genesis/` |
 

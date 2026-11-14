@@ -12,7 +12,7 @@ Genesis is a single Python package. Every number on this site and in the README 
 | Import cycles | 0 | Cycles in this package's import graph |
 | Critical anti-patterns | 0 | Critical findings from the anti-pattern detector on this package |
 | Tests collected | 2,893 | `pytest --collect-only` on this repository |
-| User-facing capabilities | 55 in 9 families | Things a person can ask for, from the capability catalog. Workflows and integrations are not counted |
+| User-facing capabilities | 55 in 9 families | Things Genesis can do for a person, from the capability catalog. Workflows and integrations are not counted |
 | Top-level commands | 22 | `genesis` subcommands, including advanced and legacy ones |
 | Registered engines | 19 | Units the decision engine schedules. One engine can serve several capabilities |
 | Decision modes | 7 | Plans the decision engine can run, such as recovery and research |

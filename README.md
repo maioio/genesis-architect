@@ -91,7 +91,7 @@ and CI fails if this table drifts from the facts file.
 | Import cycles | 0 | Cycles in this package's import graph |
 | Critical anti-patterns | 0 | Critical findings from the anti-pattern detector on this package |
 | Tests collected | 2,893 | `pytest --collect-only` on this repository |
-| User-facing capabilities | 55 in 9 families | Things a person can ask for, from the capability catalog. Workflows and integrations are not counted |
+| User-facing capabilities | 55 in 9 families | Things Genesis can do for a person, from the capability catalog. Workflows and integrations are not counted |
 | Top-level commands | 22 | `genesis` subcommands, including advanced and legacy ones |
 | Registered engines | 19 | Units the decision engine schedules. One engine can serve several capabilities |
 | Decision modes | 7 | Plans the decision engine can run, such as recovery and research |
@@ -149,11 +149,11 @@ each family below lists what it contains.
 | | Commands |
 |---|---|
 | Fully offline, no key | `research`, `engines`, `explain`, `memory`, `doctor`, `advise`, `ui`, `deps --no-cve` |
-| Local engines, one optional lookup | `recover`, `harden`, `decide`: the engines run locally, but the gate step asks OSV.dev about up to 15 dependency names when a manifest lists them. If the lookup fails the session continues without it |
-| Network | `init` (GitHub), `deps` (OSV.dev advisories, skipped with `--no-cve`), `fetch` (git clone), `resolve` (Stack Overflow when the local vault has no answer), `publish` (LLM) |
+| Local engines, one optional lookup | `recover`, `harden`, `decide`: the engines run locally. Only a session in gate mode (`harden`, or a `decide` request that runs the gate) asks OSV.dev about up to 15 package names taken from Python imports; `recover` makes no OSV call, and non-Python projects have nothing to look up. If the lookup fails the session continues without it |
+| Network | `init` (GitHub), `deps` (OSV.dev advisories, skipped with `--no-cve`; `--package NAME` also queries the PyPI, npm, crates.io, Maven and NuGet registries), `fetch` (git clone), `resolve` (Stack Overflow when the local vault has no answer), `publish` (LLM) |
 | LLM key or local model | `init`, `publish`. `decide` adds an optional LLM critique and an optional committee debate with `ANTHROPIC_API_KEY`; when the key is missing it says so and continues with the deterministic engines |
 | Writes into your project | `recover`, `harden` and `decide` write `.genesis/` and `FRAGILITY_MAP.md`; their report files (for example `PROJECT_RECOVERY_REPORT.md`, `docs/security/`) are written only after you approve (default is Defer) or pass `--yes`; `fetch` and `purge` act only in a sandbox or with `--apply` |
-| Optional extras or tools | voice models, desktop notifications, native companion window (experimental), the `/watch` skill for video research, `mcp` for the MCP server |
+| Optional extras or tools | voice models, desktop notifications, native companion window (experimental), the `/watch` skill for video research, the MCP server (`pip install "mcp<2"`, then start it with `python -c "from genesis_architect.pro.mcp_tools import build_mcp_server; build_mcp_server().run()"`) |
 | Kept for compatibility | `upgrade`, `license` (Genesis has no paid tier) |
 
 Command reference: [Commands](https://maioio.github.io/genesis-architect/commands/).

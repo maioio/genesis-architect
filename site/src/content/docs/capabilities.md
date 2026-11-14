@@ -11,7 +11,7 @@ Each capability has a door, the way you reach it. 52 are `genesis` commands, 1 i
 
 Workflows are not counted here. Starting a new project, recovering an existing one and hardening a codebase are sequences of these capabilities, and the full new-project build is performed by the agent skill. The check scripts that skill runs along the way (citation, pitfall-coverage and scaffold smoke checks under `scripts/`) are steps of that workflow, not separate capabilities. Integrations such as the optional Completion Guardian are external tools and are not counted either.
 
-This count is different from the number of registered engines on the home page. Engines are the units the decision engine schedules; capabilities are the things a person can ask for. Several capabilities run inside one engine, and some engines serve several capabilities.
+This count is different from the number of registered engines on the home page. Engines are the units the decision engine schedules; capabilities are the things Genesis can do for a person. Several capabilities run inside one engine, and some engines serve several capabilities.
 
 ## How to read the tables
 
@@ -61,14 +61,14 @@ A row with `Writes: nothing` does not change your files. Commands that write sta
 | Anti-Pattern Detector | 7 structural detectors: god-class, hub-file, circular deps, dead code | `genesis recover [PATH]` | stable | nothing | offline |
 | Refactoring Planner | Tier-1/2 refactor steps with projected score impact | `genesis decide "refactor <target>"` | stable | nothing | offline |
 | C4 Generator | C4 Level 1-3 architecture diagrams as GitHub-native Mermaid | `genesis decide "document the architecture"` | stable | nothing | offline |
-| Knowledge Graph | Links code, CVEs, risks, and decisions into one queryable graph | `genesis decide "diagnose the project"` | stable | .genesis/ and reports | offline |
+| Knowledge Graph | Links code, CVEs, risks, and decisions into one queryable graph _In gate mode (`genesis harden`) it asks OSV.dev about up to 15 package names taken from Python imports; recover does not. A failed lookup is skipped._ | `genesis decide "diagnose the project"` | stable | .genesis/ and reports | network optional |
 | Folder-Structure Generator | Writes a minimalist or scalable starter tree for Python, TypeScript, Go or Rust; never overwrites a file _Writes into --output (default: the current folder) and creates missing files only; the agent skill offers the same trees as its architecture options._ | `python -m genesis_architect.core.scaffold_generator --language <lang> --tier <tier>` | stable | files on disk (see its note) | offline |
 
 ## Decision & Planning
 
 | Capability | What it does | Command | Maturity | Writes | Needs |
 |---|---|---|---|---|---|
-| Decision Engine | Routes an instruction to the right engines and gates the writes | `genesis decide "<instruction>"` | stable | .genesis/ and reports | offline |
+| Decision Engine | Routes an instruction to the right engines and gates the writes _Runs locally. When a session runs in gate mode it uses the knowledge graph, which can ask OSV.dev (see that row)._ | `genesis decide "<instruction>"` | stable | .genesis/ and reports | network optional |
 | Red Team Critic | Attacks the plan and separates evidence from inference _Deterministic checks always run; the LLM pass needs ANTHROPIC_API_KEY and is disclosed when skipped._ | `genesis decide "<instruction>"` | stable | .genesis/ and reports | network optional; LLM optional |
 | Engine Bootstrap | Registers every production engine, in dependency order | `genesis decide "<instruction>"` | stable | nothing | offline |
 | Rules Engine | Hard and soft project rules, enforced at the gate | `genesis decide "<instruction>"` | stable | nothing | offline |

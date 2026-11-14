@@ -19,6 +19,6 @@ The detector reports findings with a severity. The count of critical findings is
 
 ## Limits
 
-The analysis targets Python packages and reads static imports, so dynamic imports are invisible to it. The score is a signal for where to look, not a verdict.
+The analysis is built around Python packages (the import graph also reads TypeScript, JavaScript, Go and Rust sources) and reads static imports, so dynamic imports are invisible to it. The score is a signal for where to look, not a verdict.
 
 The full mechanism is in the [architecture overview](../architecture/).

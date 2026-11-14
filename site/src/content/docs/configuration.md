@@ -26,9 +26,12 @@ genesis config show
 
 | Variable | Effect |
 |---|---|
-| `GENESIS_NO_AUTO_INSTALL=1` | Disable pip installs by the Companion |
+| `GENESIS_NO_AUTO_INSTALL=1` | Disable the automatic pip installs of voice setup |
 | `GENESIS_COMPANION_MUTE` | Silence the Companion voice |
 | `GENESIS_MCP_CONFIG` | Path to MCP configuration used by `advise` |
+| `GITHUB_TOKEN` | Also read from the environment, as a fallback to the saved key, for GitHub rate limits |
+| `CLAUDE_CONFIG_DIR` | Alternate Claude config folder; the Guardian bridge looks for its skill under it |
+| `GENESIS_WHISPER_KEY` | Optional key for the video-research transcription step |
 | `GENESIS_PSR_OUTPUT_DIR` | Output directory for PSR artifacts |
 | `ANTHROPIC_API_KEY` | Enables the optional LLM passes of `decide`: the five-advisor committee debate and the red-team critique. Without it the deterministic checks still run |
 | `GENESIS_COMPLETION_GUARDIAN_DIR` | Path to an installed [Completion Guardian](../completion-guardian/), for the optional final-verification bridge |

@@ -82,11 +82,11 @@ META: dict[str, Meta] = {
     "architecture_scorer": Meta("architecture"),
     "antipattern_detector": Meta("architecture", writes=_R),
     "c4_generator": Meta("architecture", writes=_R),
-    "knowledge_graph": Meta("architecture"),
+    "knowledge_graph": Meta("architecture", network="optional", note="In gate mode (`genesis harden`) it asks OSV.dev about up to 15 package names taken from Python imports; recover does not. A failed lookup is skipped."),
     "refactoring_planner": Meta("architecture", writes=_R),
     "scaffold_generator": Meta("architecture", writes=_P, note="Writes into --output (default: the current folder) and creates missing files only; the agent skill offers the same trees as its architecture options."),
     # Decision & Planning
-    "decision_engine": Meta("decision"),
+    "decision_engine": Meta("decision", network="optional", note="Runs locally. When a session runs in gate mode it uses the knowledge graph, which can ask OSV.dev (see that row)."),
     "red_team_critic": Meta("decision", llm="optional", network="optional", note="Deterministic checks always run; the LLM pass needs ANTHROPIC_API_KEY and is disclosed when skipped."),
     "committee": Meta("decision", llm="optional", network="optional", note="The five-advisor debate needs ANTHROPIC_API_KEY; without it Genesis writes a labelled aggregation of the analysis engines instead."),
     "decision_log": Meta("decision", writes=_R),

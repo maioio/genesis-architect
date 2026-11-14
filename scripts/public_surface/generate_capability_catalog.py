@@ -113,7 +113,7 @@ def render_doc(data: dict) -> str:
         "Integrations such as the optional Completion Guardian are external tools and are not counted either.",
         "",
         "This count is different from the number of registered engines on the home page. "
-        "Engines are the units the decision engine schedules; capabilities are the things a person can ask for. "
+        "Engines are the units the decision engine schedules; capabilities are the things Genesis can do for a person. "
         "Several capabilities run inside one engine, and some engines serve several capabilities.",
         "",
         "## How to read the tables",

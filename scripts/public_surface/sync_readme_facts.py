@@ -52,7 +52,7 @@ def numbers_table(f: dict, link_prefix: str) -> str:
          "Critical findings from the anti-pattern detector on this package"),
         ("Tests collected", f"{f['tests']:,}", "`pytest --collect-only` on this repository"),
         ("User-facing capabilities", f"{f['capabilities']} in {f['capability_families']} families",
-         "Things a person can ask for, from the capability catalog. Workflows and integrations are not counted"),
+         "Things Genesis can do for a person, from the capability catalog. Workflows and integrations are not counted"),
         ("Top-level commands", str(f["commands"]),
          "`genesis` subcommands, including advanced and legacy ones"),
         ("Registered engines", str(f["engines"]),

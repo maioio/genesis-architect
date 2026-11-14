@@ -456,7 +456,7 @@
     {
       "id": "field_intelligence",
       "name": "Field Intelligence",
-      "summary": "Practitioner signal from Reddit Answers and similar surfaces",
+      "summary": "Builds practitioner-signal queries and classifies the findings you bring back; does not fetch them",
       "family": "research",
       "command": "genesis decide \"research <topic>\"",
       "maturity": "stable",
@@ -1307,7 +1307,7 @@
     {
       "name": "engines",
       "status": "PUBLIC",
-      "summary": "List every capability and the door that reaches it",
+      "summary": "List every capability and the command that reaches it",
       "system": "argparse"
     },
     {

@@ -35,8 +35,8 @@ relevant analysis, challenges the plan and runs gate checks that can stop the se
 wait for your answer. Every finding carries its source.
 
 Analysis state goes to `.genesis/`. The report files of `recover`, `harden` and `decide` are
-written after you approve them, and commands that delete anything are dry runs until you pass
-`--apply`.
+written after you approve them. `genesis purge` is a dry run until you pass `--apply`; the two
+other deleting commands, `telemetry clear` and `fetch --discard`, act immediately.
 
 The sources depend on how you run it:
 

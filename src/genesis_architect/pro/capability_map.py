@@ -114,7 +114,7 @@ CAPABILITIES: tuple[Capability, ...] = (
                "grid, saved as outline.json/fields.json",
                "genesis decide \"research <topic>\""),
     Capability("field_intelligence", "Field Intelligence",
-               "Practitioner signal from Reddit Answers and similar surfaces",
+               "Builds practitioner-signal queries and classifies the findings you bring back; does not fetch them",
                "genesis decide \"research <topic>\""),
     Capability("source_registry", "Source Registry",
                "Which sources are trusted for which kind of claim",

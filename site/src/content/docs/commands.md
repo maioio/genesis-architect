@@ -31,7 +31,7 @@ Run `genesis <command> --help` for exact options. A test compares this page with
 
 | Command | Status | Needs | What it does |
 |---|---|---|---|
-| `engines` | PUBLIC | Nothing | List every engine and the command that reaches it |
+| `engines` | PUBLIC | Nothing | List every capability and the command that reaches it |
 | `advise` | PUBLIC | Nothing | Recommend MCP servers and skills for this project. Installs nothing |
 | `doctor` | PUBLIC | Nothing | Readiness check for the install |
 | `config` | PUBLIC | Nothing | Set, get or show API keys |

@@ -34,7 +34,7 @@ A row with `Writes: nothing` does not change your files. Commands that write sta
 | Media Research | Builds YouTube/Reddit/Instagram queries and parses the results _Builds the queries and parses what comes back; downloading and transcribing the video is done by the /watch skill, not by Genesis._ | `genesis research "<topic>" --video` | optional | .genesis/ and reports | offline; the /watch agent skill (yt-dlp, ffmpeg) |
 | Video to Pitfall | Turns a /watch analysis into cited PITFALLS.md entries | `genesis research "<topic>" --absorb FILE` | optional | .genesis/ and reports | offline; ffmpeg |
 | Research Outline | States what to research before investigating: an items x fields grid, saved as outline.json/fields.json | `genesis decide "research <topic>"` | stable | .genesis/ and reports | offline |
-| Field Intelligence | Practitioner signal from Reddit Answers and similar surfaces | `genesis decide "research <topic>"` | stable | .genesis/ and reports | offline |
+| Field Intelligence | Builds practitioner-signal queries and classifies the findings you bring back; does not fetch them | `genesis decide "research <topic>"` | stable | .genesis/ and reports | offline |
 | Source Registry | Which sources are trusted for which kind of claim | `genesis decide "research <topic>"` | stable | .genesis/ and reports | offline |
 | Source Anchor | Pins drift findings to the file and line they came from | `genesis recover [PATH]` | stable | nothing | offline |
 | Evidence Pack | Bundles the evidence behind a decision for review | `genesis decide "research <topic>"` | stable | .genesis/ and reports | offline |
@@ -136,7 +136,7 @@ A row with `Writes: nothing` does not change your files. Commands that write sta
 | `genesis decide` | PUBLIC | Run a full decision session on an instruction |
 | `genesis explain` | PUBLIC | Print the last session's decision log |
 | `genesis memory` | PUBLIC | Show or manage per-project memory in .genesis/ |
-| `genesis engines` | PUBLIC | List every capability and the door that reaches it |
+| `genesis engines` | PUBLIC | List every capability and the command that reaches it |
 | `genesis deps` | PUBLIC | Third-party dependencies per module, plus advisories |
 | `genesis ui` | PUBLIC | Generate the self-contained HTML canvas workspace |
 | `genesis companion` | ADVANCED | Local health page, notifications and optional voice |

@@ -69,7 +69,7 @@ Generated from [`ARCHITECTURE_INVARIANTS.json`](https://github.com/maioio/genesi
 
 ## Dry runs
 
-- Commands that delete anything are dry runs until you pass `--apply`. `genesis purge` reports the expired worktrees and locks it would remove; `genesis purge --apply` removes them.
+- `genesis purge` is a dry run until you pass `--apply`: it reports the expired worktrees and locks it would remove, and `genesis purge --apply` removes them. Two other commands delete and are not dry runs: `genesis telemetry clear` deletes the locally stored telemetry events, and `genesis fetch --discard` removes a fetched skill pack from its sandbox. Both act immediately and only on Genesis's own files.
 - `genesis sync` is not a dry run by default: it marks GREEN findings as applied and writes `.genesis/sync_log.jsonl` (and `.genesis/pending.json` for YELLOW findings). `genesis sync --dry-run` writes nothing.
 - `genesis fetch` clones into a short-lived sandbox, never into your project.
 

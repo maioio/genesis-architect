@@ -18,7 +18,7 @@ maturity: ``stable`` (default install, tested), ``optional`` (needs an extra or 
 writes:   ``none`` (writes nothing), ``state`` (only ``.genesis/`` and generated
           reports in the project), ``project`` (can create or delete files
           elsewhere in the project or on disk; the note says where, and
-          anything that deletes is a dry run until ``--apply``).
+          ``genesis purge`` is a dry run until ``--apply``).
 network:  ``none``, ``optional`` (works offline, uses the network when enabled),
           ``required``.
 """
@@ -141,7 +141,7 @@ COMMANDS: tuple[CommandInfo, ...] = (
     CommandInfo("decide", "PUBLIC", "Run a full decision session on an instruction", "argparse"),
     CommandInfo("explain", "PUBLIC", "Print the last session's decision log", "argparse"),
     CommandInfo("memory", "PUBLIC", "Show or manage per-project memory in .genesis/", "argparse"),
-    CommandInfo("engines", "PUBLIC", "List every capability and the door that reaches it", "argparse"),
+    CommandInfo("engines", "PUBLIC", "List every capability and the command that reaches it", "argparse"),
     CommandInfo("deps", "PUBLIC", "Third-party dependencies per module, plus advisories", "argparse"),
     CommandInfo("ui", "PUBLIC", "Generate the self-contained HTML canvas workspace", "argparse"),
     CommandInfo("companion", "ADVANCED", "Local health page, notifications and optional voice", "argparse"),
